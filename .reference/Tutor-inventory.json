@@ -1,0 +1,130 @@
+{
+  "file": "CampusTutor · Tutor.html",
+  "sha256": "f65362c5dba42453de30276d4bdcf526aec20bdead6e3d2e980f72a51421cadf",
+  "styles": [
+    {
+      "length": 36205
+    }
+  ],
+  "images": [
+    {
+      "type": "webp",
+      "bytes": 5442
+    },
+    {
+      "type": "webp",
+      "bytes": 5601
+    },
+    {
+      "type": "webp",
+      "bytes": 5283
+    },
+    {
+      "type": "webp",
+      "bytes": 5742
+    },
+    {
+      "type": "webp",
+      "bytes": 5331
+    },
+    {
+      "type": "webp",
+      "bytes": 5211
+    },
+    {
+      "type": "webp",
+      "bytes": 5547
+    },
+    {
+      "type": "jpeg",
+      "bytes": 5625
+    },
+    {
+      "type": "jpeg",
+      "bytes": 18795
+    },
+    {
+      "type": "webp",
+      "bytes": 5700
+    },
+    {
+      "type": "webp",
+      "bytes": 5643
+    },
+    {
+      "type": "webp",
+      "bytes": 6093
+    },
+    {
+      "type": "webp",
+      "bytes": 5547
+    },
+    {
+      "type": "webp",
+      "bytes": 5331
+    },
+    {
+      "type": "webp",
+      "bytes": 5211
+    },
+    {
+      "type": "webp",
+      "bytes": 5442
+    },
+    {
+      "type": "png",
+      "bytes": 24357
+    },
+    {
+      "type": "png",
+      "bytes": 110949
+    }
+  ],
+  "references": [
+    "https://fonts.googleapis.com",
+    "https://fonts.gstatic.com",
+    "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+    "${IMGS[id]}",
+    "${IMGS.logo}",
+    "${IMGS.campus}",
+    "${meIMG()}",
+    "${x.link}",
+    "${b.photo||IMGS.juan}",
+    "${o.img||(S.pedit&&S.pedit.photo)||S.profile.photo||IMGS.juan}"
+  ],
+  "handlers": "const A={\n go:v=>go(v),pop:v=>{S.pop=S.pop===v?null:v;render()},\n role:v=>{if(v==='learner')showLearner()},\n logout:()=>{S.pop=null;S.ov=S.ov.filter(o=>o.t==='logout');push({t:'logout'})},\n logoutGo:()=>{S.ov=[];S.signedOut=true;render()},signin:()=>{S.signedOut=false;render();toast('Signed in as Juan Dela Cruz')},\n sesTab:v=>{S.ses.tab=v;S.ses.page=1;if(S.view!=='sessions')go('sessions');else{S.ov=[];render()}},\n sesPage:v=>{S.ses.page=+v;render()},sesClear:()=>{S.ses.q='';S.ses.type='All Session Types';render()},\n avTab:v=>{S.av.tab=v;if(S.view!=='avail')go('avail');else{S.ov=[];S.av.sel=null;render()}},\n reviews:()=>push({t:'reviews'}),\n details:v=>{const t=topO();S.gq='';S.pop=null;if(t&&t.t==='details'&&t.id===v){render();return}push({t:'details',id:v})},\n chat:v=>{chatTo(v);S.ov=[];go('messages')},selC:v=>{chatTo(v);S.pop=null;render()},\n svcNew:()=>push({t:'svcForm',f:{title:'',sub:'',cat:'',level:'',desc:'',topics:[],rate:'',modes:[],slots:[]},topicIn:''}),\n slotAdd:()=>{const f=topO().f,l=f.slots[f.slots.length-1];f.slots.push(l?{date:addD(l.date,1)>SEM_END?l.date:addD(l.date,1),s:l.s,e:l.e}:{date:'2026-09-18',s:1080,e:1140});render()},\n slotDel:v=>{topO().f.slots.splice(+v,1);render()},\n slotWeek:()=>{const f=topO().f,l=f.slots[f.slots.length-1];for(let k=1;k<=4;k++){const d=addD(l.date,7*k);if(d<=SEM_END&&!f.slots.some(q=>q.date===d&&q.s===l.s))f.slots.push({date:d,s:l.s,e:l.e})}render()},\n svcView:v=>{S.gq='';if(S.view!=='services')go('services');push({t:'svcView',id:v})},\n svcEdit:v=>{const s=svc(v);if(s.status==='Suspended')return;const o={t:'svcForm',id:v,f:clone({title:s.title,sub:s.sub,cat:s.cat,level:s.level,desc:s.desc,topics:s.topics,rate:String(s.rate),modes:s.modes,slots:svcSlots(v).map(a=>({id:a.id,date:a.date,s:a.s,e:a.e}))}),topicIn:''};if(topO()&&topO().t==='svcView')S.ov.pop();push(o)},\n svcTopicAdd:()=>{const o=topO(),t=(o.topicIn||'').trim();if(!t)return;if(!o.f.topics.some(x=>x.toLowerCase()===t.toLowerCase()))o.f.topics.push(t);o.topicIn='';render()},\n svcTopicDel:v=>{topO().f.topics.splice(+v,1);render()},\n svcMode:v=>{const f=topO().f;f.modes=f.modes.includes(v)?f.modes.filter(m=>m!==v):[...f.modes,v].sort((a,b)=>a==='Online'?-1:1);render()},\n svcSave:()=>{const o=topO(),f=o.f,e={};if(f.title.trim().length<3)e.title='Enter a service title (3+ characters).';if(!f.sub.trim())e.sub='Enter the subject.';if(!f.cat)e.cat='Choose a category.';if(!f.level)e.level='Choose a level.';if(f.desc.trim().length<15)e.desc='Describe the service in at least 15 characters.';if(!f.topics.length)e.topics='Add at least one topic or skill.';const r=Number(f.rate);if(!(r>=100&&r<=1000))e.rate='Enter an hourly rate from ₱100 to ₱1,000.';if(!f.modes.length)e.modes='Choose at least one session type.';if(slotChecks(f.slots).some(c=>c.bad))e.slots='Fix or remove the conflicting dates and times.';\n  if(S.services.some(s=>s.id!==o.id&&s.title.toLowerCase()===f.title.trim().toLowerCase()))e.title='You already have a service with this title.';o.err=e;if(Object.keys(e).length){render();return}\n  const applySlots=id=>{const md=slotMode(f.modes);const keep=f.slots.filter(r=>r.id).map(r=>r.id);S.avail=S.avail.filter(a=>!(a.svc===id&&a.date>=TODAY&&!isPast(a.date,a.e)&&!keep.includes(a.id)));f.slots.forEach(r=>{if(r.id){Object.assign(S.avail.find(a=>a.id===r.id),{date:r.date,s:+r.s,e:+r.e,mode:md})}else S.avail.push({id:S.aid++,date:r.date,s:+r.s,e:+r.e,kind:'avail',mode:md,svc:id})})};const nsl=f.slots.length;\n  if(o.id){applySlots(o.id);Object.assign(svc(o.id),{title:f.title.trim(),sub:f.sub.trim(),cat:f.cat,level:f.level,desc:f.desc.trim(),topics:f.topics,rate:r,modes:f.modes});S.ov.pop();render();toast(`${f.title.trim()} updated. New bookings use ₱${r}/hour; existing bookings keep their price.`)}\n  else{const id='s'+Date.now();S.services.push({id,title:f.title.trim(),sub:f.sub.trim(),cat:f.cat,level:f.level,desc:f.desc.trim(),topics:f.topics,rate:r,modes:f.modes,status:'Active',rating:0,done:0});SVC_ICON[id]=['book','#0b6b33'];applySlots(id);S.ov=[];if(S.view!=='services')go('services');else render();toast(`${f.title.trim()} created${nsl?` with ${nsl} date${nsl>1?'s':''} and times, all clear of your classes`:''}`)}},\n svcDeact:v=>{const s=svc(v);const up=upcoming().filter(x=>x.svc===v).length;push({t:'confirm',i:'ban',tt:`Deactivate ${s.title}?`,yes:'Deactivate Service',m:`Learners won’t be able to find or book ${esc(s.title)}. ${up?`Your ${up} existing upcoming booking${up>1?'s':''} stay${up>1?'':'s'} scheduled.`:'You have no upcoming bookings for it.'} You can reactivate it anytime.`,then:()=>{s.status='Inactive';S.ov=S.ov.filter(o=>o.t!=='svcView');toast(`${s.title} deactivated`,()=>{s.status='Active'})}})},\n svcReact:v=>{const s=svc(v);push({t:'confirm',i:'refresh',tone:'g',tt:`Reactivate ${s.title}?`,yes:'Reactivate Service',m:`${esc(s.title)} becomes visible to learners again and uses your current availability.`,then:()=>{s.status='Active';S.ov=S.ov.filter(o=>o.t!=='svcView');toast(`${s.title} is active again`)}})},\n svcClear:()=>{S.svcF={q:'',st:'All Statuses',cat:'All Categories'};render()},\n avNav:v=>{const a=S.av;v=+v;if(a.mode==='week')a.wk=v===0?monday(TODAY):addD(a.wk,7*v);else{if(v===0)a.mon='2026-09-01';else{const d=pd(a.mon);d.setUTCMonth(d.getUTCMonth()+v);a.mon=iso(d)}}a.sel=null;render()},\n avMode:v=>{S.av.mode=v;if(v==='month')S.av.mon=S.av.wk.slice(0,8)+'01';S.av.sel=null;render()},\n avDay:v=>{S.av.mode='week';S.av.wk=monday(v);render()},\n avAdd:v=>{S.av.sel=null;avFormNew(v)},avPast:()=>toast('That time has passed. Choose a future time.'),\n blkSel:v=>{const [k,a,b]=v.split(':');const nv=k==='cls'?{k,j:+a,date:b}:{k:'av',id:+a};const s=S.av.sel;S.av.sel=s&&JSON.stringify(s)===JSON.stringify(nv)?null:nv;render()},\n avEdit:v=>{const x=S.avail.find(a=>a.id===+v);S.av.sel=null;push({t:'avForm',id:x.id,f:{date:x.date,s:x.s,e:x.e,kind:x.kind,mode:x.mode||'Online',rep:'once'}})},\n avRemove:v=>{const x=S.avail.find(a=>a.id===+v);S.av.sel=null;push({t:'confirm',i:'trash',tt:'Remove this availability?',yes:'Remove Availability',m:`${fDL(x.date)}, ${fR(x.s,x.e)}${x.kind==='avail'?' · '+x.mode:' · Unavailable'}. ${x.kind==='avail'?'Learners will no longer be able to book this time. Booked sessions aren’t affected.':'This time becomes open on your calendar.'}`,then:()=>{S.avail=S.avail.filter(a=>a!==x);toast('Availability removed',()=>S.avail.push(x))}})},\n avKind:v=>{topO().f.kind=v;render()},avModeSet:v=>{topO().f.mode=v;render()},\n avSave:()=>{const o=topO(),f=o.f,c=avCheck(f,o.id);if(c.bad||c.past||c.cls.length||c.ses.length||c.own.length){render();return}\n  if(o.id){const x=S.avail.find(a=>a.id===o.id);Object.assign(x,{date:f.date,s:+f.s,e:+f.e,kind:f.kind,mode:f.kind==='avail'?f.mode:''});toast('Availability updated')}\n  else{c.dates.forEach(d=>S.avail.push({id:S.aid++,date:d,s:+f.s,e:+f.e,kind:f.kind,mode:f.kind==='avail'?f.mode:''}));toast(c.dates.length>1?`Availability added for ${c.dates.length} weeks`:'Availability added')}\n  S.ov.pop();S.av.mode='week';S.av.wk=monday(f.date);render()},\n avJumpConf:()=>{const x=S.avail.filter(a=>a.date>=TODAY&&isConflictAvail(a)).sort((a,b)=>a.date<b.date?-1:1)[0];if(!x)return;S.av.mode='week';S.av.wk=monday(x.date);S.av.sel={k:'av',id:x.id};render()},\n csUpload:()=>csStart(),csSample:()=>{const o=topO();o.file={name:'COR_1stSem_2026-2027.pdf',size:'412 KB'};o.step='file';render()},\n csFileX:()=>{const o=topO();o.file=null;o.step='select';render()},csOCR:()=>runOCR(topO()),\n csAck:()=>{const o=topO();o.ack=!o.ack;render()},\n csConfirm:()=>{const o=topO();const aff=affectedAvail(o.rows).filter(a=>!S.classes.some(c=>c.day===dow(a.date)&&ov(a.s,a.e,c.s,c.e))).length;push({t:'confirm',i:'ticketck',tone:'g',tt:o.upd?'Replace your confirmed class schedule?':'Confirm your class schedule?',yes:'Confirm Class Schedule',no:'Back to review',m:`${o.rows.length} classes will become read-only and block tutoring time${o.upd?', replacing the schedule last updated '+S.cs.updated:''}.${aff?` ${aff} upcoming availability block${aff>1?'s':''} will need updating.`:''}`,then:()=>{applySchedule(o)}})},\n csDoneTo:v=>{S.ov=[];A.avTab(v)},\n csDiscard:()=>push({t:'confirm',i:'trash',tt:'Discard the updated schedule?',yes:'Discard',m:'The extracted schedule and your corrections will be deleted. Your confirmed schedule stays as it is.',then:()=>{S.cs.draft=null;toast('Updated schedule discarded')}}),\n meet:v=>{S.pop=null;push({t:'meet',id:v})},meetGo:()=>{const o=topO();setTimeout(()=>{o.opened=true;render()},60)},\n resched:v=>{if(topO()&&topO().t==='cancel')S.ov.pop();push({t:'resched',id:v,day:null,pick:null,reason:''})},\n rsDay:v=>{const o=topO();o.day=v;o.pick=null;render()},rsPick:v=>{const [d,s]=v.split('|');topO().pick={d,s:+s};render()},\n rsSend:()=>{const o=topO(),x=ses(o.id);x.rq={by:'tutor',date:o.pick.d,s:o.pick.s,reason:o.reason.trim(),at:stamp(),status:'sent'};const c=cv(x.lr);if(c){c.msgs.push({me:1,t:`I sent a reschedule request for our ${svcTitle(x.svc)} session: ${DOW[dow(o.pick.d)]}, ${fDs(o.pick.d)} at ${fT(o.pick.s)}. Reason: ${o.reason.trim()}`,at:nowAt(),st:1});c.time=fT(NOWM+clockM)}S.ov.pop();render();toast(`Reschedule request sent to ${L[x.lr].name}`)},\n rqAccept:v=>{const x=ses(v);const nd=x.rq.date,ns=x.rq.s;moveSession(x,nd,ns);S.notifs.forEach(n=>{if(n.type==='resched'&&n.go[1]===v)n.read=true});const c=cv(x.lr);if(c){c.msgs.push({me:1,t:`I accepted your reschedule request. See you on ${DOWL[dow(nd)]}, ${fDs(nd)} at ${fT(ns)}.`,at:nowAt(),st:1});c.time=fT(NOWM+clockM)}render();toast(`Rescheduled to ${DOW[dow(nd)]}, ${fDs(nd)} · ${fT(ns)}. ${L[x.lr].name} was notified.`)},\n rqDecline:v=>{const x=ses(v);push({t:'confirm',i:'calr',tt:`Decline ${L[x.lr].name.split(' ')[0]}’s request?`,yes:'Decline Request',m:`The session stays on ${fDL(x.date)}, ${fR(x.s,sEnd(x))}. You can message ${L[x.lr].name.split(' ')[0]} or send your own Request Reschedule.`,then:()=>{x.rq.status='declined';S.notifs.forEach(n=>{if(n.type==='resched'&&n.go[1]===v)n.read=true});toast('Reschedule request declined')}})},\n cancelS:v=>push({t:'cancel',id:v,reason:'',note:''}),\n cxGo:()=>{const o=topO(),x=ses(o.id);x.st='Cancelled';x.pay=x.pay==='Paid'?'Refund Under Review':'Not charged';x.cx={by:'Tutor (you)',at:stamp(),reason:o.reason+(o.note.trim()?': '+o.note.trim():'')};if(x.rq&&['pending','sent'].includes(x.rq.status))x.rq=null;restoreAvail(x);S.ov.pop();S.ses.tab='cancelled';render();toast(`Session cancelled. ${x.pay==='Refund Under Review'?'The payment is now under refund review.':'No payment was taken.'}`)},\n report:v=>push({t:'report',id:v,type:'',desc:'',files:[]}),evDel:v=>{topO().files.splice(+v,1);render()},\n repGo:()=>{const o=topO(),x=ses(o.id);const id='IR-2026-0'+(S.caseN++);x.rep={id,type:o.type,status:'Submitted',filed:stamp(),desc:o.desc.trim(),files:o.files};addN({type:'report',title:'Incident Report Submitted',text:`${id} was sent to CampusTutor Admin for review.`,meta:`${svcTitle(x.svc)} · ${x.id}`,go:['session',x.id],read:true});S.ov.pop();render();toast(`${id} submitted to Admin`)},\n shareLink:()=>{const c=cv(S.sel),x=ses(c.sid);S.pop=null;shareLinkIn(c,x);chatScroll=true;render();setTimeout(()=>{c.msgs.forEach(m=>{if(m.me)m.st=2});render()},800);reply(c,c.id==='allen'?'Got it, thank you, Sir! See you on Saturday.':'Thank you, Sir! I saved the link.')},\n txn:v=>push({t:'txn',id:v}),earnSt:v=>{S.earn.st=v;S.earn.page=1;render()},earnPage:v=>{S.earn.page=+v;render()},earnClear:()=>{S.earn={q:'',st:'All',date:'All dates',svc:'All services',page:1};render()},\n payInfo:()=>push({t:'payInfo'}),\n nOpen:v=>{const n=S.notifs.find(z=>z.id===+v);n.read=true;S.pop=null;const [k,id]=n.go;\n  if(k==='session')openSession(id);else if(k==='txn'){go('earnings');push({t:'txn',id})}else if(k==='chat'){chatTo(id);go('messages')}else if(k==='service'){go('services');push({t:'svcView',id})}else if(k==='avail'){A.avTab(id)}},\n nReadAll:()=>{const n=S.notifs.filter(z=>!z.read).length;S.notifs.forEach(z=>z.read=true);S.pop=null;render();if(n)toast(`${n} notification${n>1?'s':''} marked as read`)},\n nTab:v=>{S.nf.tab=v;render()},nClear:()=>{S.nf={q:'',cat:'All Notifications',tab:S.nf.tab};render()},\n pEdit:()=>{S.pedit=Object.assign(clone(S.profile),{tin:'',err:{}});render()},\n pCancel:()=>{if(dirtyP())push({t:'confirm',i:'edit',tone:'w',tt:'Discard your changes?',yes:'Discard changes',no:'Keep editing',m:'Your bio, expertise, topics, contact number, and photo go back to the saved version.',then:()=>{S.pedit=null;toast('Changes discarded')}});else{S.pedit=null;render()}},\n pSave:()=>{const e=S.pedit,er={};if(e.bio.trim().length<30)er.bio='Write at least 30 characters so learners know how you tutor.';if(e.exp.trim().length<5)er.exp='Add a short expertise summary.';if(!e.topics.length)er.topics='Add at least one topic.';if(e.phone.trim()&&!/^09\\d{2}\\s?\\d{3}\\s?\\d{4}$/.test(e.phone.trim()))er.phone='Use the format 09XX XXX XXXX.';e.err=er;if(Object.keys(er).length){render();return}\n  Object.assign(S.profile,{bio:e.bio.trim(),exp:e.exp.trim(),topics:e.topics,phone:e.phone.trim(),photo:e.photo});S.pedit=null;render();toast('Profile changes saved')},\n pTopicAdd:()=>{const e=S.pedit,t=(e.tin||'').trim();if(t&&!e.topics.some(x=>x.toLowerCase()===t.toLowerCase())&&e.topics.length<10)e.topics.push(t);e.tin='';render()},pTopicDel:v=>{S.pedit.topics.splice(+v,1);render()},\n photo:()=>{if(!S.pedit)S.pedit=Object.assign(clone(S.profile),{tin:'',err:{}});push({t:'photo',img:null})},\n photoUse:()=>{const o=topO();S.pedit.photo=o.img;S.ov.pop();render();toast('New photo ready. Select Save Changes to apply it.')},\n helpT:v=>{S.help.open[v]=!S.help.open[v];render()},faqT:v=>{S.help.faq[v]=!S.help.faq[v];render()},\n helpOpen:v=>{S.help.open[v]=true;go('help');setTimeout(()=>{const el=document.getElementById('h-'+v);if(el)el.scrollIntoView({block:'center'})},30)},\n support:()=>push({t:'support',topic:'',msg:''}),supGo:()=>{const o=topO();o.done='SUP-2026-0917-'+String(S.supN++).padStart(2,'0');render()},\n close:()=>{S.ov.pop();render()},\n cfYes:()=>{const o=S.ov.pop();o.then&&o.then();render()},\n pcT:()=>{S.pc=!S.pc;render()},\n pcDo:v=>{S.pc=false;if(v==='reset'){S=initState();chatScroll=true;render();toast('Prototype data reset');return}\n  if(v==='clsConf'||v==='sesConf'){S.av.tab='avail';S.av.mode='week';S.av.wk=monday(TODAY);go('avail');push({t:'avForm',f:v==='clsConf'?{date:'2026-09-19',s:600,e:720,kind:'avail',mode:'Online',rep:'once'}:{date:'2026-09-19',s:930,e:1020,kind:'avail',mode:'Online',rep:'once'}});return}\n  if(v==='noCs'){S.cs.state='none';S.classes=[];S.cs.draft=null;S.cs.updated='—';S.av.tab='class';go('avail');toast('Class schedule cleared for the first-upload flow');return}\n  if(v==='lylaPay'){const x=ses('BK-2026-1837');x.st='Confirmed';x.pay='Paid';x.txn='TXN-2026-0921-029';x.paidAt=stamp();x.pref='pay_6Lp4TrW9sQ2dK8';addN({type:'payment',title:'Payment Confirmed',text:`₱600.00 was paid for Lyla Shane B.’s Statistics session.`,meta:'GCash via PayMongo · Transaction TXN-2026-0921-029',go:['txn','TXN-2026-0921-029']});addN({type:'booking',title:'Booking Confirmed',text:'Lyla Shane B.’s Statistics session is confirmed.',meta:'Probability Distributions · Sep 21, 2026 · 10:00 AM–11:30 AM',go:['session',x.id]});render();toast('Lyla paid ₱600.00 via GCash. Booking confirmed.');return}\n  if(v==='lrAccept'){const x=S.sessions.find(z=>z.rq&&z.rq.status==='sent');if(!x)return;const nd=x.rq.date,ns=x.rq.s;moveSession(x,nd,ns);addN({type:'resched',title:'Reschedule Accepted',text:`${L[x.lr].name} accepted your new schedule for ${svcTitle(x.svc)}.`,meta:`Now ${fD(nd)} · ${fR(ns,ns+x.d)}`,go:['session',x.id]});render();toast(`${L[x.lr].name} accepted: ${fDs(nd)} · ${fT(ns)}`)}}\n};\n/* confirm title field compatibility */\nconst _cf=confirmOv;OVS.confirm=o=>_cf(Object.assign({},o,{t:o.tt||o.t2||'Are you sure?'}));\n/* ---------- events ---------- */\ndocument.addEventListener('click',e=>{const el=e.target.closest('[data-a]');const inPop=e.target.closest('[data-popk]');\n if(S.pop&&!inPop&&!(el&&el.dataset.a==='pop')){S.pop=null;if(!el){render();return}}\n if(S.av.sel&&!e.target.closest('.blk,.bpop')&&!el){S.av.sel=null;render();return}\n if(!el){const ovEl=e.target.classList&&e.target.classList.contains('ov')?e.target:null;if(ovEl&&+ovEl.dataset.ovi===S.ov.length-1){const t=topO();if(t&&!(t.t==='cs'&&t.step==='ocr')){S.ov.pop();render()}}return}\n if(el.tagName==='SELECT'||el.tagName==='INPUT'&&el.type!=='checkbox')return;\n const f=A[el.dataset.a];if(!f)return;if(el.tagName!=='A'&&el.type!=='checkbox')e.preventDefault();e.stopPropagation();f(el.dataset.v)});\nfunction setPath(p,v){const k=p.split('.');let o=S;for(let i=0;i<k.length-1;i++)o=o[k[i]];const last=k[k.length-1];if(typeof o[last]==='number')v=Number(v);o[last]=v;\n const m=p.match(/^ov\\.0\\.rows\\.(\\d+)\\.(\\w+)$/);if(m){const r=S.ov[0].rows[+m[1]];r.fl=r.fl.filter(x=>x!==m[2])}\n if(p.startsWith('earn.')&&p!=='earn.page')S.earn.page=1;if(p.startsWith('ses.')&&p!=='ses.page')S.ses.page=1;if(p==='gq')S.pop=v.trim()?'gs':null;\n if(p.startsWith('ov.')){const i=+k[1];if(S.ov[i]&&S.ov[i].err){const fk=k[k.length-1];delete S.ov[i].err[fk]}}\n if(p.startsWith('pedit.')&&S.pedit.err)delete S.pedit.err[last]}\ndocument.addEventListener('input',e=>{const t=e.target;if(t.dataset.s&&t.tagName!=='SELECT'){setPath(t.dataset.s,t.value);render()}});\ndocument.addEventListener('change',e=>{const t=e.target;if(t.dataset.s&&t.tagName==='SELECT'){setPath(t.dataset.s,t.value);render();return}\n if(t.dataset.file){const fs=[...t.files];if(!fs.length)return;const o=topO();\n  if(t.dataset.file==='cs'){const f=fs[0];if(!/\\.(pdf|jpe?g|png)$/i.test(f.name)){o.err='Use a PDF, JPG, or PNG file.';render();return}if(f.size>10*1024*1024){o.err='That file is over 10 MB.';render();return}o.err=null;o.file={name:f.name,size:f.size>1048576?(f.size/1048576).toFixed(1)+' MB':Math.max(1,Math.round(f.size/1024))+' KB'};o.step='file';render()}\n  else if(t.dataset.file==='evidence'){fs.forEach(f=>o.files.push(f.name));render()}\n  else if(t.dataset.file==='photo'){const f=fs[0];if(!/^image\\//.test(f.type)){o.err='Choose a JPG or PNG image.';render();return}const r=new FileReader();r.onload=()=>{o.img=r.result;o.name=f.name;o.err=null;render()};r.readAsDataURL(f)}}});\ndocument.addEventListener('submit',e=>{e.preventDefault();const f=e.target.dataset.f;\n if(f==='gsearch'){const r=gResults()[0];if(r){S.pop=null;const q=S.gq;A[r.a](r.v);S.gq=''}else render()}\n if(f==='send'){const t=S.draft.trim();if(!t)return;const c=cv(S.sel);c.msgs.push({me:1,t,at:nowAt(),st:1});c.time=fT(NOWM+clockM);S.draft='';chatScroll=true;render();setTimeout(()=>{c.msgs.forEach(m=>{if(m.me)m.st=2});render()},900);\n  const R={maria:'Thank you, Sir Juan! See you tomorrow.',allen:c.shared?'Thank you, Sir! See you on Saturday.':'Noted, Sir. Could you share the Zoom link here too?',lyla:'Noted, Sir. I’ll finish the GCash payment today.',rianne:'Thank you, Sir! See you next time.',mark:'Thank you, Sir. I’ll watch for the update in My Sessions.'};reply(c,R[c.id]||'Thank you, Sir!')}});\ndocument.addEventListener('keydown',e=>{if(e.key==='Escape'){if(S.pop){S.pop=null;render();return}if(S.av.sel){S.av.sel=null;render();return}if(S.ov.length){const t=topO();if(t.t==='cs'&&t.step==='ocr')return;S.ov.pop();render()}return}\n if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr[data-a],div[data-a][role=button]')){e.preventDefault();e.target.click()}\n if(e.key==='Enter'&&e.target.dataset.s==='ov.0.topicIn'){e.preventDefault();A.svcTopicAdd()}if(e.key==='Enter'&&e.target.dataset.s==='pedit.tin'){e.preventDefault();A.pTopicAdd()}});\n/* ---------- learner role (embedded finalized Learner prototype) ---------- */\nlet lf=null;\nfunction showLearner(){if(!lf){lf=document.createElement('iframe');lf.className='lframe';lf.title='CampusTutor Learner';lf.srcdoc=LEARNER_HTML;document.body.appendChild(lf)}lf.style.display='block';document.title='CampusTutor · Learner';setTimeout(()=>{try{lf.focus()}catch(e){}},50)}\nwindow.addEventListener('message',e=>{if(e.data&&e.data.ct==='role'&&e.data.v==='tutor'&&lf){lf.style.display='none';document.title='CampusTutor · Tutor';go('dashboard');toast('Switched to Tutor · same account')}});\nrender();\n\n",
+  "forms": [
+    "gsearch",
+    "send"
+  ],
+  "bindings": [
+    "${path}",
+    "gq",
+    "svcF.q",
+    "ov.0.f.title",
+    "ov.0.f.sub",
+    "ov.0.f.desc",
+    "ov.0.topicIn",
+    "ov.0.f.rate",
+    "ov.0.f.slots.${i}.date",
+    "ov.0.f.date",
+    "ov.0.rows.${i}.code",
+    "ov.0.rows.${i}.name",
+    "ov.0.rows.${i}.room",
+    "ses.q",
+    "ov.0.reason",
+    "ov.0.note",
+    "ov.0.desc",
+    "cq",
+    "draft",
+    "earn.q",
+    "nf.q",
+    "pedit.bio",
+    "pedit.exp",
+    "pedit.tin",
+    "pedit.phone",
+    "help.q",
+    "ov.0.msg",
+    "${CSS.escape(fds)}"
+  ]
+}

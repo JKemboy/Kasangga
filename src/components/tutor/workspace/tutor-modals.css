@@ -1,0 +1,22 @@
+.tutor-modal{margin:auto;width:min(580px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:0;border-radius:14px;background:white;color:#101418;box-shadow:0 24px 60px #00000038;overflow:hidden}
+.tutor-modal[open]{display:flex;flex-direction:column}
+.tutor-modal::backdrop{background:rgba(15,22,18,.45)}
+.tutor-modal--large{width:min(860px,calc(100vw - 32px))}
+.tutor-modal--small{width:min(480px,calc(100vw - 32px))}
+.tutor-modal-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 24px;border-bottom:1px solid #eef0f2;flex-shrink:0}
+.tutor-modal-header h2{font-size:19px;line-height:1.35;font-weight:700;margin:0}
+.tutor-modal-header>button{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border-radius:7px;color:#59616c}
+.tutor-modal-header>button:hover{background:#f3f4f6}
+.tutor-modal-subtitle{margin-top:3px;color:#6b7280;font-size:13px}
+.tutor-modal-body{padding:20px 24px;overflow:auto;min-height:0;font-size:14px;line-height:1.5}
+.tutor-modal-body label{font-size:13px;font-weight:600}
+.tutor-modal-body :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){min-height:40px;border-radius:7px;border-color:#dcdfe3;padding:9px 12px;font-size:14px;font-weight:400}
+.tutor-modal-body textarea{min-height:90px;resize:vertical}
+.tutor-modal-body button{min-height:36px;border-radius:7px;font-size:13px}
+.tutor-modal-body button:disabled{opacity:.45;cursor:not-allowed}
+.tutor-modal-body form>div:last-child:has(button),.tutor-modal-footer{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;border-top:1px solid #eef0f2;padding-top:14px;margin-top:18px}
+.tutor-modal-footer{padding:14px 24px;margin-top:0;flex-shrink:0}
+.tutor-modal :focus-visible{outline:2px solid #fcc802;outline-offset:2px}
+.tutor-danger-button{background:#d92d20;color:white;padding:8px 18px;font-weight:600;border:1px solid #d92d20}
+.tutor-danger-button:hover{background:#b42318}
+@media(max-width:600px){.tutor-modal-header{padding:14px 16px}.tutor-modal-body{padding:16px}.tutor-modal{max-height:calc(100dvh - 24px)}}

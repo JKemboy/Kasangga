@@ -1,0 +1,35 @@
+  if(v==='lrAccept'){const x=S.sessions.find(z=>z.rq&&z.rq.status==='sent');if(!x)return;const nd=x.rq.date,ns=x.rq.s;moveSession(x,nd,ns);addN({type:'resched',title:'Reschedule Accepted',text:`${L[x.lr].name} accepted your new schedule for ${svcTitle(x.svc)}.`,meta:`Now ${fD(nd)} · ${fR(ns,ns+x.d)}`,go:['session',x.id]});render();toast(`${L[x.lr].name} accepted: ${fDs(nd)} · ${fT(ns)}`)}}
+};
+/* confirm title field compatibility */
+const _cf=confirmOv;OVS.confirm=o=>_cf(Object.assign({},o,{t:o.tt||o.t2||'Are you sure?'}));
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');const inPop=e.target.closest('[data-popk]');
+ if(S.pop&&!inPop&&!(el&&el.dataset.a==='pop')){S.pop=null;if(!el){render();return}}
+ if(S.av.sel&&!e.target.closest('.blk,.bpop')&&!el){S.av.sel=null;render();return}
+ if(!el){const ovEl=e.target.classList&&e.target.classList.contains('ov')?e.target:null;if(ovEl&&+ovEl.dataset.ovi===S.ov.length-1){const t=topO();if(t&&!(t.t==='cs'&&t.step==='ocr')){S.ov.pop();render()}}return}
+ if(el.tagName==='SELECT'||el.tagName==='INPUT'&&el.type!=='checkbox')return;
+ const f=A[el.dataset.a];if(!f)return;if(el.tagName!=='A'&&el.type!=='checkbox')e.preventDefault();e.stopPropagation();f(el.dataset.v)});
+function setPath(p,v){const k=p.split('.');let o=S;for(let i=0;i<k.length-1;i++)o=o[k[i]];const last=k[k.length-1];if(typeof o[last]==='number')v=Number(v);o[last]=v;
+ const m=p.match(/^ov\.0\.rows\.(\d+)\.(\w+)$/);if(m){const r=S.ov[0].rows[+m[1]];r.fl=r.fl.filter(x=>x!==m[2])}
+ if(p.startsWith('earn.')&&p!=='earn.page')S.earn.page=1;if(p.startsWith('ses.')&&p!=='ses.page')S.ses.page=1;if(p==='gq')S.pop=v.trim()?'gs':null;
+ if(p.startsWith('ov.')){const i=+k[1];if(S.ov[i]&&S.ov[i].err){const fk=k[k.length-1];delete S.ov[i].err[fk]}}
+ if(p.startsWith('pedit.')&&S.pedit.err)delete S.pedit.err[last]}
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset.s&&t.tagName!=='SELECT'){setPath(t.dataset.s,t.value);render()}});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.s&&t.tagName==='SELECT'){setPath(t.dataset.s,t.value);render();return}
+ if(t.dataset.file){const fs=[...t.files];if(!fs.length)return;const o=topO();
+  if(t.dataset.file==='cs'){const f=fs[0];if(!/\.(pdf|jpe?g|png)$/i.test(f.name)){o.err='Use a PDF, JPG, or PNG file.';render();return}if(f.size>10*1024*1024){o.err='That file is over 10 MB.';render();return}o.err=null;o.file={name:f.name,size:f.size>1048576?(f.size/1048576).toFixed(1)+' MB':Math.max(1,Math.round(f.size/1024))+' KB'};o.step='file';render()}
+  else if(t.dataset.file==='evidence'){fs.forEach(f=>o.files.push(f.name));render()}
+  else if(t.dataset.file==='photo'){const f=fs[0];if(!/^image\//.test(f.type)){o.err='Choose a JPG or PNG image.';render();return}const r=new FileReader();r.onload=()=>{o.img=r.result;o.name=f.name;o.err=null;render()};r.readAsDataURL(f)}}});
+document.addEventListener('submit',e=>{e.preventDefault();const f=e.target.dataset.f;
+ if(f==='gsearch'){const r=gResults()[0];if(r){S.pop=null;const q=S.gq;A[r.a](r.v);S.gq=''}else render()}
+ if(f==='send'){const t=S.draft.trim();if(!t)return;const c=cv(S.sel);c.msgs.push({me:1,t,at:nowAt(),st:1});c.time=fT(NOWM+clockM);S.draft='';chatScroll=true;render();setTimeout(()=>{c.msgs.forEach(m=>{if(m.me)m.st=2});render()},900);
+  const R={maria:'Thank you, Sir Juan! See you tomorrow.',allen:c.shared?'Thank you, Sir! See you on Saturday.':'Noted, Sir. Could you share the Zoom link here too?',lyla:'Noted, Sir. I’ll finish the GCash payment today.',rianne:'Thank you, Sir! See you next time.',mark:'Thank you, Sir. I’ll watch for the update in My Sessions.'};reply(c,R[c.id]||'Thank you, Sir!')}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(S.pop){S.pop=null;render();return}if(S.av.sel){S.av.sel=null;render();return}if(S.ov.length){const t=topO();if(t.t==='cs'&&t.step==='ocr')return;S.ov.pop();render()}return}
+ if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr[data-a],div[data-a][role=button]')){e.preventDefault();e.target.click()}
+ if(e.key==='Enter'&&e.target.dataset.s==='ov.0.topicIn'){e.preventDefault();A.svcTopicAdd()}if(e.key==='Enter'&&e.target.dataset.s==='pedit.tin'){e.preventDefault();A.pTopicAdd()}});
+/* ---------- learner role (embedded finalized Learner prototype) ---------- */
+let lf=null;
+function showLearner(){if(!lf){lf=document.createElement('iframe');lf.className='lframe';lf.title='CampusTutor Learner';lf.srcdoc=LEARNER_HTML;document.body.appendChild(lf)}lf.style.display='block';document.title='CampusTutor · Learner';setTimeout(()=>{try{lf.focus()}catch(e){}},50)}
+window.addEventListener('message',e=>{if(e.data&&e.data.ct==='role'&&e.data.v==='tutor'&&lf){lf.style.display='none';document.title='CampusTutor · Tutor';go('dashboard');toast('Switched to Tutor · same account')}});
+render();
+

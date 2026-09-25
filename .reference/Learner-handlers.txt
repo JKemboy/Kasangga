@@ -1,0 +1,48 @@
+ // help
+ hcat:v=>{S.help.cat=v||null;S.help.all=false;render()},
+ hall:v=>{S.help.all=v==='1';S.help.cat=null;S.help.q='';render()},
+ article:v=>openOv({t:'article',q:v})
+};
+document.addEventListener('click',e=>{
+ const el=e.target.closest('[data-a]');
+ if(!el){if(S.pop&&!e.target.closest('.pop')){S.pop=null;render()}return}
+ if(el.tagName==='INPUT'&&el.type==='checkbox'){A[el.dataset.a]?.(el.dataset.v,el,e);return}
+ if(el.tagName==='A'&&el.dataset.a!=='meetgo')e.preventDefault();
+ if(el.disabled)return;
+ if(S.pop&&el.dataset.a!=='pop'&&!el.closest('.pop'))S.pop=null;
+ A[el.dataset.a]?.(el.dataset.v,el,e);
+});
+document.addEventListener('input',e=>{const el=e.target,m=el.dataset.m;if(!m)return;
+ if(m.startsWith('ov.')){const k=m.split('.');let o=S.ov[Number(k[1])];for(let i=2;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=el.value}else setPath(m,el.value);
+ const rr=el.dataset.rr;
+ if(rr==='1')render();
+ else if(rr==='send')document.getElementById('sendbtn').disabled=!(S.draft.trim()||S.attach);
+ else if(rr==='rep'){const f=S.ov[0].f;document.getElementById('repbtn').disabled=!(f.sid&&f.type&&f.desc.trim().length>=20)}
+ else if(rr==='rate'){const f=S.ov[0].f;document.getElementById('ratebtn').disabled=!(f.rating&&f.text.trim().length>=10)}
+ else if(rr==='del')document.getElementById('cfbtn').disabled=el.value.trim()!=='DELETE';
+ if(S.ov[0]&&S.ov[0].t==='resched'){const b=document.getElementById('rsbtn');const f=S.ov[0].f;if(b)b.disabled=!(f.date&&f.start!=null&&f.reason.trim().length>=5)}
+});
+document.addEventListener('change',e=>{const el=e.target;
+ if(el.dataset.s){const k=el.dataset.s,v=el.value;
+  if(k.startsWith('dash.')){S.find=initState().find;S.find[k.slice(5)]=v;go('find');return}
+  if(k.startsWith('ov.')){const p=k.split('.');let o=S.ov[Number(p[1])];for(let i=2;i<p.length-1;i++)o=o[p[i]];o[p[p.length-1]]=v;render();return}
+  setPath(k,v);if(k.startsWith('find.'))S.find.shown=4;
+  if(k==='tutorStatus'&&v==='Not Applied'&&S.view==='apply')S.app.step='status';
+  render();return}
+ if(el.dataset.file){const k=el.dataset.file,files=[...el.files];if(!files.length)return;
+  if(k==='attach')S.attach=files[0].name;
+  if(k.startsWith('doc:'))S.app.docs[k.slice(4)]=files[0].name;
+  if(k==='resub')S.app.resub=files[0].name;
+  if(k==='evidence')S.ov[0].f.files.push(...files.map(f=>f.name));
+  if(k==='photo'){const f=files[0];if(f.size>5e6){S.ov[0].err='That image is over 5 MB. Choose a smaller one.';render();return}const r=new FileReader();r.onload=()=>{S.ov[0].src=r.result;S.ov[0].err=null;render()};r.readAsDataURL(f);return}
+  render()}
+});
+document.addEventListener('submit',e=>{e.preventDefault();const f=e.target.dataset.f;
+ if(f==='gsearch'){const q=e.target.q.value.trim();S.find=initState().find;S.find.q=q;go('find')}
+ if(f==='send'){const txt=S.draft.trim();if(!txt&&!S.attach)return;const c=S.convos.find(x=>x.id===S.selConvo);const m={me:1,t:txt||'Sent an attachment',at:'10:32 AM',st:1};if(S.attach)m.file=S.attach;c.msgs.push(m);c.time='Now';S.draft='';S.attach=null;render();
+  setTimeout(()=>{m.st=2;S.typing=true;if(S.view==='messages')render()},900);
+  setTimeout(()=>{S.typing=false;if(c.id==='ma'&&!c.sentLink){c.sentLink=true;c.msgs.push({me:0,t:"Here's the Zoom link for our Tuesday, Sep 22 session at 1:00 PM.",link:{p:'Zoom',u:'https://zoom.us/j/987654321',sid:'BK-2026-1843'},at:'10:33 AM'})}else if(c.tutor){c.msgs.push({me:0,t:'Noted, thanks Juan!',at:'10:33 AM'})}else{c.msgs.push({me:0,t:'Thanks, Juan. A support agent will reply within 24 hours.',at:'10:33 AM'})}if(S.view==='messages'&&S.selConvo===c.id)render()},2600)}
+ if(f==='addint'){const v=e.target.i.value.trim();if(v&&!S.editBuf.interests.includes(v))S.editBuf.interests.push(v);render()}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(S.pop){S.pop=null;render()}else if(S.ov.length&&!(S.ov[0].b&&S.ov[0].b.pay==='processing'))closeOv()}});
+render();

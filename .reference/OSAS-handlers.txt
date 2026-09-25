@@ -1,0 +1,19 @@
+ secCodes:()=>{const o=topO();const r=()=>Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();o.codes=Array.from({length:8},r);render()},
+ secOut:v=>{const o=topO();const x=o.sess[+v];push({t:'confirm',ic:'logout',tone:'w',tt:'Sign out this session?',m:`${x[0]} (${x[1]}) will be signed out.`,yes:'Sign out',then:()=>{o.sess.splice(+v,1);toast('Session signed out')}})},
+ close:()=>{S.ov.pop();render()},cfYes:()=>{const o=S.ov.pop();o.then&&o.then();render()}
+};
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');const inPop=e.target.closest('[data-popk]');
+ if(S.pop&&!inPop&&!(el&&el.dataset.a==='pop')){S.pop=null;if(!el){render();return}}
+ if(!el){const ovEl=e.target.classList&&e.target.classList.contains('ov')?e.target:null;if(ovEl&&+ovEl.dataset.ovi===S.ov.length-1){S.ov.pop();render()}return}
+ if(el.tagName==='SELECT'||(el.tagName==='INPUT'&&el.type!=='checkbox'))return;
+ const f=A[el.dataset.a];if(!f)return;if(el.type!=='checkbox')e.preventDefault();e.stopPropagation();f(el.dataset.v)});
+function setPath(p,v){const k=p.split('.');let o=S;for(let i=0;i<k.length-1;i++)o=o[k[i]];const last=k[k.length-1];if(typeof o[last]==='number')v=Number(v);o[last]=v;
+ if(['cr','ev','im','cl','po','ar'].includes(k[0])&&last!=='page')S[k[0]].page=1;if(p==='gq')S.pop=v.trim()?'gs':null;if(k[0]==='set'&&S.set.err)delete S.set.err[last];if(k[0]==='ov'){const x=S.ov[+k[1]];if(x&&x.err)x.err=null}if(p.startsWith('rp.'))S.rp.sel=null}
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset.s&&t.tagName!=='SELECT'){setPath(t.dataset.s,t.value);render()}});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.s&&t.tagName==='SELECT'){setPath(t.dataset.s,t.value);render()}});
+document.addEventListener('submit',e=>{e.preventDefault();if(e.target.dataset.f==='gsearch'){const r=gResults()[0];if(r){S.pop=null;A[r.a](r.v);S.gq=''}else render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(S.pop){S.pop=null;render();return}if(S.ov.length){S.ov.pop();render()}return}
+ if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr[data-a]')){e.preventDefault();e.target.click()}});
+INIT=snap();render();
+

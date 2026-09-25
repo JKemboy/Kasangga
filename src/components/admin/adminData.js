@@ -1,0 +1,261 @@
+export const configDefaults = {
+  name: "Admin User",
+  email: "admin@csu.edu.ph",
+  contact: "+63 912 345 6789",
+  position: "System Administrator",
+  department: "Information Technology Services",
+  ocr: true,
+  threshold: 80,
+  emailVerification: true,
+  twoFactor: true,
+  maintenance: false,
+  tutorAlerts: true,
+  paymentAlerts: true,
+  incidentAlerts: true,
+  maintenanceAlerts: true,
+};
+export const applications = [
+  [
+    "0132",
+    "John Michael Perez",
+    "2020-00077",
+    "CCIS",
+    "BS Information Technology",
+    "2026-09-16",
+    "Complete",
+    96,
+    "Matched",
+    "Pending",
+  ],
+  [
+    "0131",
+    "Maria Angelica Reyes",
+    "2022-00456",
+    "CSM",
+    "BS Mathematics",
+    "2026-09-15",
+    "Complete",
+    93,
+    "Matched",
+    "Under Review",
+  ],
+  [
+    "0130",
+    "Ella Mae Santos",
+    "2022-00321",
+    "CCIS",
+    "BS Computer Science",
+    "2026-09-15",
+    "Complete",
+    92,
+    "Partial Match",
+    "Pending",
+  ],
+  [
+    "0129",
+    "Kristine Joy Lagmay",
+    "2022-00412",
+    "CSM",
+    "BS Statistics",
+    "2026-09-14",
+    "Incomplete",
+    78,
+    "Partial Match",
+    "Resubmission Required",
+  ],
+  [
+    "0128",
+    "Mark Joseph Paloma",
+    "2023-00678",
+    "CCIS",
+    "BS Information Technology",
+    "2026-09-13",
+    "Complete",
+    85,
+    "Matched",
+    "Under Review",
+  ],
+  [
+    "0127",
+    "Adrian Paul Flores",
+    "2023-00544",
+    "CEIT",
+    "BS Civil Engineering",
+    "2026-09-13",
+    "Complete",
+    82,
+    "Matched",
+    "Approved",
+  ],
+  [
+    "0126",
+    "Karl Jhon Dimaano",
+    "2021-00198",
+    "CCIS",
+    "BS Information Technology",
+    "2026-09-12",
+    "Invalid File",
+    62,
+    "Not Matched",
+    "Rejected",
+  ],
+].map(
+  ([
+    id,
+    name,
+    studentId,
+    college,
+    program,
+    date,
+    documents,
+    confidence,
+    match,
+    status,
+  ]) => ({
+    id: `APP-2026-${id}`,
+    name,
+    studentId,
+    college,
+    program,
+    date,
+    documents,
+    confidence,
+    match,
+    status,
+    history: [],
+  }),
+);
+export const adminServices = [
+  [
+    "1042",
+    "Maria Angelica Reyes",
+    "Calculus Tutorial",
+    "Calculus",
+    "Mathematics",
+    350,
+    "Online",
+    "2026-09-02",
+    "Active",
+  ],
+  [
+    "1038",
+    "Ella Mae Santos",
+    "Python Programming",
+    "Programming",
+    "IT",
+    400,
+    "Online",
+    "2026-09-01",
+    "Active",
+  ],
+  [
+    "1034",
+    "Kristine Joy Lagmay",
+    "Statistics Coaching",
+    "Statistics",
+    "Mathematics",
+    350,
+    "Online",
+    "2026-08-28",
+    "Active",
+  ],
+  [
+    "1029",
+    "Karl Jhon Dimaano",
+    "Web Development Basics",
+    "Web Development",
+    "IT",
+    450,
+    "Online",
+    "2026-08-25",
+    "Suspended",
+  ],
+  [
+    "1025",
+    "Mark Joseph Paloma",
+    "Database Management Systems",
+    "Database",
+    "IT",
+    400,
+    "Online",
+    "2026-08-22",
+    "Active",
+  ],
+  [
+    "1021",
+    "Renalyn Laurente",
+    "English Grammar & Writing",
+    "English",
+    "Language",
+    250,
+    "Online",
+    "2026-08-20",
+    "Inactive",
+  ],
+  [
+    "1016",
+    "Adrian Paul Flores",
+    "Engineering Mathematics",
+    "Mathematics",
+    "Engineering",
+    375,
+    "In-person",
+    "2026-08-15",
+    "Archived",
+  ],
+].map(([id, tutor, title, subject, category, rate, type, date, status]) => ({
+  id: `SRV-2026-${id}`,
+  tutor,
+  title,
+  subject,
+  category,
+  rate,
+  type,
+  date,
+  status,
+  history: [],
+}));
+export function loadCollection(key, fallback) {
+  try {
+    const d = JSON.parse(localStorage.getItem(key));
+    if (
+      Array.isArray(d) &&
+      d.length === fallback.length &&
+      new Set(d.map((r) => r.id)).size === d.length &&
+      d.every(
+        (r) => fallback.some((v) => v.id === r.id) && Array.isArray(r.history),
+      )
+    )
+      return d;
+  } catch {}
+  return structuredClone(fallback);
+}
+export function loadConfig() {
+  try {
+    const d = JSON.parse(localStorage.getItem("campustutor:admin-config:v1"));
+    if (
+      d &&
+      Number.isFinite(d.threshold) &&
+      d.threshold >= 0 &&
+      d.threshold <= 100
+    )
+      return { ...configDefaults, ...d };
+  } catch {}
+  return { ...configDefaults };
+}
+export function downloadData(name, rows) {
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" }),
+  );
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+export const dateLabel = (v) =>
+  new Date(v + "T12:00:00").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });

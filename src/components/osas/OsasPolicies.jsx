@@ -1,0 +1,517 @@
+import { useState } from "react";
+import {
+  BookOpen,
+  Pencil,
+  History,
+  Archive,
+  FileText,
+  Shield,
+  Search,
+  Eye,
+  Info,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+} from "lucide-react";
+import { Modal, button, input } from "../tutor/workspace/ui.jsx";
+
+const office = "Office of Student Affairs and Services",
+  unit = "OSAS Case Management Unit";
+const policies = [
+  [
+    "Student Code of Conduct",
+    "Student Conduct",
+    "v2.1",
+    "2026-01-15",
+    office,
+    "Active",
+    "2026-09-10",
+  ],
+  [
+    "Incident Reporting and Referral Guidelines",
+    "Incident Reporting",
+    "v1.6",
+    "2026-02-01",
+    unit,
+    "Active",
+    "2026-09-08",
+  ],
+  [
+    "Evidence Handling and Validation Procedure",
+    "Evidence Handling",
+    "v1.4",
+    "2026-03-01",
+    unit,
+    "Active",
+    "2026-09-05",
+  ],
+  [
+    "Institutional Case Review Procedure",
+    "Case Review Procedures",
+    "v2.0",
+    "2026-04-15",
+    office,
+    "Active",
+    "2026-08-28",
+  ],
+  [
+    "Student Clearance Review Guidelines",
+    "Student Clearance",
+    "v1.3",
+    "2026-06-01",
+    "OSAS Clearance Unit",
+    "Active",
+    "2026-08-22",
+  ],
+  [
+    "Tutoring Conduct and Safety Standards",
+    "Tutoring Conduct / Safety",
+    "v1.5",
+    "2026-07-01",
+    office,
+    "Active",
+    "2026-08-15",
+  ],
+  [
+    "Case Documentation Retention Guide",
+    "Case Review Procedures",
+    "v0.9",
+    "",
+    unit,
+    "Draft",
+    "2026-09-12",
+  ],
+  [
+    "Legacy Incident Handling Guide",
+    "Incident Reporting",
+    "v1.0",
+    "2024-01-10",
+    office,
+    "Archived",
+    "2026-07-30",
+  ],
+].map(([title, category, version, effective, owner, status, updated], i) => ({
+  id: `POL-${String(i + 1).padStart(3, "0")}`,
+  title,
+  category,
+  version,
+  effective,
+  owner,
+  status,
+  updated,
+}));
+
+export default function OsasPolicies({ settings }) {
+  const [query, setQuery] = useState(""),
+    [category, setCategory] = useState(""),
+    [status, setStatus] = useState(""),
+    [owner, setOwner] = useState(""),
+    [effective, setEffective] = useState(""),
+    [month, setMonth] = useState("2026-09"),
+    [recent, setRecent] = useState(false),
+    [page, setPage] = useState(1),
+    [selected, setSelected] = useState(null),
+    [categoriesOpen, setCategoriesOpen] = useState(false);
+  const end = month
+    ? new Date(Number(month.slice(0, 4)), Number(month.slice(5)), 0)
+    : null;
+  const endDay = end
+    ? `${month}-${String(end.getDate()).padStart(2, "0")}`
+    : "9999-12-31";
+  const cutoff = end
+    ? new Date(end.getFullYear(), end.getMonth(), end.getDate() - 29)
+    : null;
+  const cutoffDay = cutoff
+    ? `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`
+    : "";
+  const available = policies.filter((p) => p.updated <= endDay);
+  const updated = (p) => p.updated >= cutoffDay && p.updated <= endDay;
+  const categories = [...new Set(policies.map((p) => p.category))];
+  const filtered = available.filter(
+    (p) =>
+      (!category || p.category === category) &&
+      (!status || p.status === status) &&
+      (!owner || p.owner === owner) &&
+      (!recent || updated(p)) &&
+      (!effective ||
+        (effective === "none"
+          ? !p.effective
+          : p.effective && p.effective.startsWith(effective))) &&
+      `${p.title} ${p.category} ${p.owner} ${p.id}`
+        .toLowerCase()
+        .includes(query.trim().toLowerCase()),
+  );
+  const size = Number(settings.pageSize),
+    pages = Math.max(1, Math.ceil(filtered.length / size)),
+    current = Math.min(page, pages),
+    visible = filtered.slice((current - 1) * size, current * size);
+  const date = (v) =>
+    !v
+      ? "—"
+      : settings.dateFormat === "iso"
+        ? v
+        : new Date(v + "T12:00:00").toLocaleDateString("en-US", {
+            month: settings.dateFormat === "short" ? "2-digit" : "short",
+            day: "numeric",
+            year: "numeric",
+          });
+  function change(setter, value) {
+    setter(value);
+    setPage(1);
+  }
+  function reset() {
+    setQuery("");
+    setCategory("");
+    setStatus("");
+    setOwner("");
+    setEffective("");
+    setRecent(false);
+    setMonth("2026-09");
+    setPage(1);
+  }
+  function download() {
+    const text = `DEMO POLICY REFERENCE — NOT AN OFFICIAL POLICY DOCUMENT\n\n${selected.title}\nReference: ${selected.id}\nCategory: ${selected.category}\nVersion: ${selected.version}\nEffective date: ${date(selected.effective)}\nDocument owner: ${selected.owner}\nStatus: ${selected.status}\nLast updated: ${date(selected.updated)}\n\nOfficial policy text and attachments are not connected. Request the approved document from its document owner before relying on this reference.\n`;
+    const url = URL.createObjectURL(
+      new Blob([text], { type: "text/plain;charset=utf-8" }),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${selected.id}-demo-reference.txt`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  return (
+    <section className="op-policies">
+      <div className="osas-heading">
+        <div>
+          <h1>
+            Policies &amp; Procedures{" "}
+            <Shield size={23} className="text-green-800" />
+          </h1>
+          <p>
+            Access institutional guidelines relevant to CampusTutor cases,
+            student conduct, clearance, evidence, and case handling.
+          </p>
+        </div>
+        <label className="op-month">
+          Record month
+          <input
+            aria-label="Policy record month"
+            className={input}
+            type="month"
+            min="2024-01"
+            max="2099-12"
+            value={month}
+            onChange={(e) => change(setMonth, e.target.value)}
+          />
+        </label>
+      </div>
+      <div className="op-metrics">
+        {[
+          [
+            BookOpen,
+            available.filter((p) => p.status === "Active").length,
+            "Active Policies",
+            "Published and visible",
+            "Active",
+          ],
+          [
+            Pencil,
+            available.filter((p) => p.status === "Draft").length,
+            "Draft Policies",
+            "Under development",
+            "Draft",
+          ],
+          [
+            History,
+            available.filter(updated).length,
+            "Recently Updated",
+            "Last 30 days of selected month",
+            "recent",
+          ],
+          [
+            Archive,
+            available.filter((p) => p.status === "Archived").length,
+            "Archived Policies",
+            "No longer active",
+            "Archived",
+          ],
+          [
+            FileText,
+            new Set(available.map((p) => p.category)).size,
+            "Policy Categories",
+            "Organized groups",
+            "categories",
+          ],
+        ].map(([Icon, count, label, hint, value], i) => (
+          <button
+            key={label}
+            aria-pressed={value === "recent" ? recent : status === value}
+            onClick={() => {
+              if (value === "categories") setCategoriesOpen(true);
+              else if (value === "recent") {
+                setStatus("");
+                change(setRecent, !recent);
+              } else {
+                setRecent(false);
+                change(setStatus, status === value ? "" : value);
+              }
+            }}
+          >
+            <span
+              style={{
+                background: [
+                  "#006333",
+                  "#ffb800",
+                  "#0874ff",
+                  "#f50029",
+                  "#7522dc",
+                ][i],
+              }}
+            >
+              <Icon size={24} />
+            </span>
+            <div>
+              <b>{count}</b>
+              <strong>{label}</strong>
+              <small>{hint}</small>
+            </div>
+          </button>
+        ))}
+      </div>
+      <label className="osas-search">
+        <Search size={17} />
+        <input
+          aria-label="Search policies"
+          placeholder="Search policies by title, category, or keyword..."
+          value={query}
+          onChange={(e) => change(setQuery, e.target.value)}
+        />
+      </label>
+      <div className="op-filters">
+        <select
+          aria-label="Policy category"
+          className={input}
+          value={category}
+          onChange={(e) => change(setCategory, e.target.value)}
+        >
+          <option value="">All Categories</option>
+          {categories.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Policy status"
+          className={input}
+          value={status}
+          onChange={(e) => change(setStatus, e.target.value)}
+        >
+          <option value="">All Statuses</option>
+          {["Active", "Draft", "Archived"].map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Document owner"
+          className={input}
+          value={owner}
+          onChange={(e) => change(setOwner, e.target.value)}
+        >
+          <option value="">All Document Owners</option>
+          {[...new Set(policies.map((p) => p.owner))].map((o) => (
+            <option key={o}>{o}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Effective date"
+          className={input}
+          value={effective}
+          onChange={(e) => change(setEffective, e.target.value)}
+        >
+          <option value="">All Effective Dates</option>
+          <option value="2026">Effective in 2026</option>
+          <option value="2024">Effective in 2024</option>
+          <option value="none">Not yet effective</option>
+        </select>
+        <button className={button} onClick={reset}>
+          Reset filters
+        </button>
+      </div>
+      {recent && (
+        <div className="text-xs text-blue-700">
+          Showing updates from {date(cutoffDay)} to {date(endDay)}.{" "}
+          <button className="underline" onClick={() => setRecent(false)}>
+            Clear recent filter
+          </button>
+        </div>
+      )}
+      <div className="op-table">
+        <table>
+          <thead>
+            <tr>
+              {[
+                "#",
+                "Policy Title",
+                "Category",
+                "Version",
+                "Effective Date",
+                "Document Owner",
+                "Status",
+                "Last Updated",
+                "Action",
+              ].map((h) => (
+                <th key={h}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((p, i) => (
+              <tr key={p.id}>
+                <td>{(current - 1) * size + i + 1}</td>
+                <td>
+                  <button
+                    className="text-left hover:underline"
+                    onClick={() => setSelected(p)}
+                  >
+                    {p.title}
+                  </button>
+                </td>
+                <td>
+                  <span
+                    className={`op-category category-${categories.indexOf(p.category)}`}
+                  >
+                    {p.category}
+                  </span>
+                </td>
+                <td>{p.version}</td>
+                <td>{date(p.effective)}</td>
+                <td>{p.owner}</td>
+                <td>
+                  <span className={`op-status ${p.status.toLowerCase()}`}>
+                    {p.status}
+                  </span>
+                </td>
+                <td>{date(p.updated)}</td>
+                <td>
+                  <button
+                    className={button + " op-view"}
+                    aria-label={`View ${p.title}`}
+                    onClick={() => setSelected(p)}
+                  >
+                    <Eye size={13} />
+                    View Policy
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!visible.length && (
+          <p className="p-8 text-center text-xs text-slate-500">
+            No matching policies. Try resetting your filters.
+          </p>
+        )}
+      </div>
+      <div className="op-pagination">
+        <span>
+          Showing {filtered.length ? (current - 1) * size + 1 : 0} to{" "}
+          {Math.min(current * size, filtered.length)} of {filtered.length}{" "}
+          entries
+        </span>
+        <div>
+          <button
+            className={button}
+            aria-label="Previous policy page"
+            disabled={current === 1}
+            onClick={() => setPage(current - 1)}
+          >
+            <ChevronLeft size={15} />
+          </button>
+          <span>{current}</span>
+          <button
+            className={button}
+            aria-label="Next policy page"
+            disabled={current === pages}
+            onClick={() => setPage(current + 1)}
+          >
+            <ChevronRight size={15} />
+          </button>
+        </div>
+      </div>
+      {settings.tips && (
+        <div className="op-note">
+          <Info size={18} />
+          <p>
+            Demo reference catalog. Official policy documents are not attached.
+            These references support OSAS review; technical configuration
+            remains under authorized platform administration.
+          </p>
+        </div>
+      )}
+      {selected && (
+        <Modal title={selected.title} onClose={() => setSelected(null)}>
+          <div className="space-y-3 text-xs">
+            <p className="rounded bg-amber-50 p-3 text-amber-900">
+              Demo reference only. Official policy text and attachments are not
+              connected.
+            </p>
+            <dl className="grid grid-cols-[120px_1fr] gap-2">
+              {[
+                ["Reference", selected.id],
+                ["Category", selected.category],
+                ["Version", selected.version],
+                ["Effective Date", date(selected.effective)],
+                ["Document Owner", selected.owner],
+                ["Status", selected.status],
+                ["Last Updated", date(selected.updated)],
+              ].map(([label, value]) => (
+                <div key={label} className="contents">
+                  <dt className="text-slate-500">{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p>
+              {selected.status === "Draft"
+                ? "This draft is not an active institutional policy."
+                : selected.status === "Archived"
+                  ? "This archived reference is no longer active. Request the current approved document from its owner."
+                  : "Request the approved document from its owner before relying on this reference."}
+            </p>
+            <button
+              className={button + " flex items-center gap-2"}
+              onClick={download}
+            >
+              <Download size={14} />
+              Download demo reference
+            </button>
+          </div>
+        </Modal>
+      )}
+      {categoriesOpen && (
+        <Modal
+          title="Policy Categories"
+          onClose={() => setCategoriesOpen(false)}
+        >
+          <div className="space-y-2">
+            {[...new Set(available.map((p) => p.category))].map((c) => (
+              <button
+                className="flex w-full justify-between rounded border p-3 text-left text-xs hover:bg-green-50"
+                key={c}
+                onClick={() => {
+                  change(setCategory, c);
+                  setStatus("");
+                  setRecent(false);
+                  setCategoriesOpen(false);
+                }}
+              >
+                {c}
+                <b>{available.filter((p) => p.category === c).length}</b>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+    </section>
+  );
+}

@@ -1,0 +1,419 @@
+﻿.sessions-reference {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 125px);
+  color: #111b35;
+}
+.sessions-reference > div:first-child h1 {
+  font-size: 28px;
+  line-height: 1.2;
+}
+.session-search-row {
+  display: flex;
+  gap: 14px;
+  margin: 26px 0 20px;
+}
+.session-search-box {
+  position: relative;
+  width: min(435px, 55%);
+}
+.session-search-box input {
+  height: 40px;
+  padding-left: 38px;
+}
+.session-search-box svg {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  color: #7c86a5;
+}
+.session-filter {
+  position: relative;
+  width: 215px;
+}
+.session-filter select {
+  height: 40px;
+  padding-left: 40px;
+  appearance: none;
+  padding-right: 30px;
+}
+.session-filter svg {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  pointer-events: none;
+}
+.session-filter svg:last-child {
+  left: auto;
+  right: 14px;
+}
+.session-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #e5eaf2;
+  margin-bottom: 15px;
+}
+.session-tabs button {
+  padding: 13px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+  color: #4d587b;
+}
+.session-tabs button[aria-pressed="true"] {
+  border-color: #22ad59;
+  color: #007022;
+}
+.session-table-scroll {
+  overflow-x: auto;
+}
+.session-card-table {
+  min-width: 1040px;
+}
+.session-column-head,
+.session-card-row {
+  display: grid;
+  grid-template-columns: 0.85fr 1.05fr 0.98fr 0.95fr 0.9fr 0.85fr 1.03fr 0.62fr 0.9fr 0.86fr 2.32fr;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 13px;
+}
+.session-column-head {
+  background: #f8f9fc;
+  border: 1px solid #e6eaf2;
+  border-radius: 5px 5px 0 0;
+  font-size: 9px;
+  text-transform: uppercase;
+  color: #657096;
+  font-weight: 600;
+  min-height: 55px;
+}
+.session-card-row {
+  background: white;
+  border: 1px solid #e6eaf2;
+  border-radius: 5px;
+  margin-bottom: 9px;
+  min-height: 148px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.session-card-row:last-child {
+  min-height: 112px;
+}
+.session-learner {
+  font-size: 10px;
+  line-height: 1.4;
+}
+.session-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f0f3f2, #cdded5);
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  color: #076133;
+  margin-bottom: 6px;
+}
+.session-muted {
+  color: #46547b;
+}
+.session-provider {
+  margin-top: 6px;
+}
+.session-location {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.session-location svg {
+  flex-shrink: 0;
+}
+.session-price {
+  font-size: 13px;
+  color: #080c12;
+}
+.session-status {
+  background: #e0f4e7;
+  color: #006520;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 5px;
+  text-align: center;
+}
+.session-status.pending {
+  background: #fff2d9;
+  color: #b36d00;
+}
+.session-status.unpaid {
+  background: #ffe4e8;
+  color: #e90013;
+}
+.session-actions > div {
+  display: grid;
+  grid-template-columns: 1fr 1.12fr;
+  gap: 7px;
+}
+.session-actions button {
+  border: 1px solid #12833d;
+  border-radius: 5px;
+  background: white;
+  min-height: 33px;
+  color: #006622;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px;
+}
+.session-actions .session-meeting {
+  margin-top: 8px;
+  width: 100%;
+  background: linear-gradient(110deg, #006333, #007323);
+  color: white;
+  border: 1px solid #007231;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 3px;
+}
+.session-meeting > span:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 11px;
+}
+.meeting-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.zoom-symbol {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  background: #1688ff;
+  color: white;
+  border-radius: 50%;
+}
+.zoom-brand {
+  color: #1680ff;
+  font-size: 17px;
+}
+.session-meeting .zoom-brand {
+  color: white;
+  font-size: 16px;
+}
+.session-footer-note {
+  margin-top: auto;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #e8f2ff;
+  border-radius: 7px;
+  font-size: 11px;
+  color: #0030b6;
+}
+.session-footer-note svg {
+  flex-shrink: 0;
+}
+.session-footer-note span:last-child {
+  border-left: 1px solid #aabeda;
+  padding-left: 20px;
+}
+@media (min-width: 1450px) {
+  .session-card-row {
+    min-height: 165px;
+    font-size: 12px;
+  }
+  .session-card-row:last-child {
+    min-height: 112px;
+  }
+  .session-actions button {
+    font-size: 11px;
+  }
+  .sessions-reference {
+    min-height: calc(100dvh - 115px);
+  }
+}
+@media (max-height: 800px) {
+  .session-card-row {
+    min-height: 125px;
+  }
+  .session-card-row:last-child {
+    min-height: 100px;
+  }
+  .session-search-row {
+    margin-top: 16px;
+    margin-bottom: 12px;
+  }
+  .session-footer-note {
+    padding: 12px;
+    margin-top: 20px;
+  }
+}
+@media (max-width: 767px) {
+  .session-search-row {
+    flex-wrap: wrap;
+  }
+  .session-search-box {
+    width: 100%;
+  }
+  .session-footer-note {
+    flex-wrap: wrap;
+  }
+  .session-footer-note span:last-child {
+    border: 0;
+    padding: 0;
+  }
+}
+
+/* Compact tutor workspace, including full five-session pages. */
+.sessions-reference {
+  min-height: 0;
+  gap: 8px;
+}
+.sessions-reference > div:first-child h1 {
+  font-size: 22px;
+  line-height: 28px;
+}
+.session-search-row {
+  margin: 0;
+  gap: 10px;
+}
+.session-search-box input,
+.session-filter select {
+  height: 32px;
+  font-size: 11px;
+}
+.session-search-box svg,
+.session-filter svg {
+  top: 8px;
+  width: 15px;
+  height: 15px;
+}
+.session-tabs {
+  margin-bottom: 0;
+}
+.session-tabs button {
+  padding: 7px 18px;
+  font-size: 11px;
+}
+.session-column-head,
+.session-card-row {
+  gap: 7px;
+  padding: 7px 8px;
+}
+.session-column-head {
+  min-height: 34px;
+  font-size: 8px;
+}
+.session-card-row,
+.session-card-row:last-child {
+  min-height: 76px;
+  margin-bottom: 4px;
+  font-size: 10px;
+  line-height: 1.3;
+}
+.session-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+  margin-bottom: 3px;
+}
+.session-learner {
+  font-size: 9px;
+}
+.session-price {
+  font-size: 11px;
+}
+.session-status {
+  font-size: 9px;
+  padding: 4px;
+}
+.session-provider {
+  margin-top: 3px;
+}
+.session-location {
+  font-size: 9px;
+  margin-top: 2px;
+}
+.session-actions > div {
+  gap: 5px;
+}
+.session-actions button {
+  min-height: 26px;
+  font-size: 9px;
+  padding: 4px;
+}
+.session-actions .session-meeting {
+  min-height: 35px;
+  margin-top: 4px;
+  padding: 4px;
+  flex-direction: row;
+  justify-content: center;
+  gap: 6px;
+}
+.session-meeting > span:first-child {
+  font-size: 9px;
+  gap: 4px;
+}
+.session-meeting .meeting-brand,
+.session-meeting .zoom-brand {
+  font-size: 10px;
+}
+.session-footer-note {
+  margin-top: 0;
+  padding: 8px 10px;
+  font-size: 10px;
+  line-height: 14px;
+  gap: 10px;
+}
+.session-footer-note span:last-child {
+  padding-left: 10px;
+}
+@media (min-width: 768px) and (max-height: 740px) {
+  .sessions-reference {
+    gap: 6px;
+  }
+  .session-card-row,
+  .session-card-row:last-child {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    min-height: 68px;
+  }
+  .session-provider {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .session-card-row,
+  .session-card-row:last-child {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .session-provider {
+    margin-top: 0;
+  }
+  .session-provider .meeting-brand svg {
+    height: 15px;
+  }
+  .session-provider .zoom-brand {
+    font-size: 12px;
+  }
+  .session-card-row {
+    margin-bottom: 2px;
+  }
+  .session-column-head {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+}
+
+@media (min-width: 768px) { .sessions-reference { gap: 4px; } }

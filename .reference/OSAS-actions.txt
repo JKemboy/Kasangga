@@ -1,0 +1,102 @@
+const A={
+ go:v=>go(v),pop:v=>{S.pop=S.pop===v?null:v;render()},
+ logout:()=>{S.pop=null;S.ov=S.ov.filter(o=>o.t!=='logout');push({t:'logout'})},logoutGo:()=>{S.ov=[];S.signedOut=true;render()},signin:()=>{S.signedOut=false;render();toast('Signed in as Maria Santos')},
+ page:v=>{const [k,p]=v.split('|');S[k].page=Math.max(1,+p);render()},
+ perSet:v=>{const [k,val]=v.split('|');if(k==='cr')S.cr.dr=val;if(k==='ev'||k==='im'){S.ev.mo=val;if(k==='im')S.im.dt=val==='sep'?'September 2026':'All Dates'}if(k==='cl')S.cl.ay=val;if(k==='ar')S.ar.ay=val;S.pop=null;render()},
+ caseOpen:v=>{S.gq='';S.pop=null;if(!cs(v)){A.arcOpen(v);return}const t=topO();if(t&&t.t==='case'&&t.id===v){render();return}push({t:'case',id:v})},
+ arcOpen:v=>{S.gq='';push({t:'arc',id:v})},incOpen:v=>{S.gq='';push({t:'inc',id:v})},
+ evOpen:v=>{S.gq='';const e=evd(v);push({t:'ev',id:v,ck:clone((e.rev&&e.rev.ck)||{}),res:e.st==='Under Review'||e.st==='Pending Review'?null:e.st,notes:e.rev&&e.st!=='Validated'?e.rev.notes:'',zoom:false})},
+ clrOpen:v=>{S.gq='';push({t:'clr',id:v,d:null,notes:''})},polOpen:v=>push({t:'pol',id:v}),
+ student:k=>{S.gq='';const c=S.clearances.find(x=>x.s===k);if(c){go('clearance');S.cl.q=ST[k].sid;render();push({t:'clr',id:c.id,d:null,notes:''})}else{const x=S.cases.find(y=>y.resp===k||y.rep===k);go('cases');S.cr.q=ST[k].name;S.cr.dr='all';render()}},
+ caseEv:v=>{const c=cs(v);const e=c.ev.map(evd).find(x=>x.st!=='Validated')||evd(c.ev[0]);A.evOpen(e.id)},
+ toCases:v=>{go('cases');resetF('cr');S.cr.dr='all';if(v==='follow')S.cr.asg='follow';else if(v!=='all')S.cr.st=v;render()},
+ toCasesPri:v=>{go('cases');resetF('cr');S.cr.dr='all';S.cr.pri=v;render()},
+ toEvidence:v=>{const [st,m]=v.split('|');go('evidence');resetF('ev');S.ev.st=st;S.ev.mo='all';S.ev.mine=m==='mine';render()},
+ toClear:v=>{go('clearance');resetF('cl');S.cl.st=v;render()},
+ toIncType:v=>{go('incidents');resetF('im');S.im.type=TYPES.includes(v)||v==='Technical Platform Issue'?v:'Incident Type';render()},
+ crCard:v=>{S.cr.st=S.cr.st===v?'All Case Statuses':v;S.cr.dr='all';S.cr.page=1;render()},
+ crAsg:v=>{S.cr.asg=v;S.cr.page=1;S.pop=null;render()},crClear:()=>{resetF('cr');S.pop=null;render()},
+ evCard:v=>{S.ev.st=S.ev.st===v?'All Validation Statuses':v;S.ev.mo='all';S.ev.page=1;render()},
+ evMine:()=>{S.ev.mine=!S.ev.mine;S.pop=null;render()},evClear:()=>{resetF('ev');S.pop=null;render()},
+ imCard:v=>{if(S.im.kk===v){S.im.kk=null;S.im.kpi=null}else{S.im.kk=v;S.im.kpi=IMK[v]}S.im.page=1;render()},
+ imHas:()=>{S.im.hasCase=!S.im.hasCase;S.pop=null;render()},imClear:()=>{resetF('im');S.pop=null;render()},
+ clCard:v=>{S.cl.st=S.cl.st===v?'All Clearance Statuses':v;S.cl.page=1;render()},clHas:()=>{S.cl.cst='Has relevant case';S.pop=null;render()},clClear:()=>{resetF('cl');S.pop=null;render()},
+ poCard:v=>{const [k,val]=v.split('|');resetF('po');if(k==='recent')S.po.recent=true;else S.po[k]=val;S.pop=null;render()},poRecent:()=>{S.po.recent=!S.po.recent;S.pop=null;render()},poClear:()=>{resetF('po');S.pop=null;render()},
+ arCard:v=>{resetF('ar');if(v==='all')S.ar.ay='All academic years';if(v==='res')S.ar.out='Resolved';if(v==='mo')S.ar.dr='Archived in September 2026';render()},
+ arBy:v=>{S.ar.by=v;S.pop=null;render()},arClear:()=>{resetF('ar');S.pop=null;render()},arEv:v=>push({t:'arEv',id:v}),
+ /* case actions */
+ noteNew:v=>{S.pop=null;push({t:'note',id:v,k:'Case note',tx:''})},
+ noteSave:()=>{const o=topO();if(o.nocase){const i=inc(o.inc);i.closed={d:TODAY,note:o.tx.trim()};i.cur='Closed — No Formal Case';S.ov.pop();render();toast(`${i.id} closed without a formal case`);return}const c=cs(o.id);const [d,t]=stamp();c.notes.push({d,t,by:ME,k:o.k,tx:o.tx.trim()});c.tl.push({d,t,ev:o.k+' recorded',by:ME,p:o.tx.trim()});S.ov.pop();render();toast(`${o.k} saved to ${c.id}`)},
+ caseSt:v=>{const [id,to]=v.split('|');const c=cs(id);S.pop=null;if(to==='req'){push({t:'req',id,from:c.rep,tx:'',due:addD(TODAY,3)});return}
+  const apply=()=>{const from=c.st;c.st=to;addTL(c,`Status changed from ${from} to ${to}`);toast(`${c.id} is now ${to}`)};
+  if(to==='Pending Decision'){const un=c.ev.map(evd).filter(e=>e.st==='Pending Review'||e.st==='Under Review');if(un.length){push({t:'confirm',ic:'alert',tone:'w',tt:'Evidence still under validation',m:`${un.map(e=>e.id).join(', ')} ${un.length>1?'have':'has'} not been validated. Move ${c.id} to Pending Decision anyway?`,yes:'Move to Pending Decision',then:apply});return}}
+  apply();render()},
+ reqSave:()=>{const o=topO(),c=cs(o.id);c.st='Awaiting Evidence';c.due=o.due;c.follow=true;addTL(c,'Additional evidence requested',`From ${ST[o.from].name}: ${o.tx.trim()} Due ${fD(o.due)}.`);addTL(c,'Status changed to Awaiting Evidence');S.ov.pop();render();toast(`Evidence request sent to ${ST[o.from].name}`)},
+ decNew:v=>push({t:'dec',id:v,o:null,basis:'',pol:'',hasCond:false,cond:'',condDue:'',ack:false,notify:true}),
+ decO:v=>{topO().o=v;render()},decCond:()=>{const o=topO();o.hasCond=!o.hasCond;render()},decAck:()=>{const o=topO();o.ack=!o.ack;render()},decNotify:()=>{const o=topO();o.notify=!o.notify;render()},
+ decSave:()=>{const o=topO(),c=cs(o.id);push({t:'confirm',ic:'scale',tt:`Record ${o.o} for ${c.id}?`,m:'The decision becomes part of the institutional case record. It can’t be edited after the case is archived.',yes:'Record Decision',then:()=>{const [d,t]=stamp();
+  c.dec={o:o.o,label:o.hasCond?'Resolved — Conditions Pending':'Resolved — '+o.o,basis:o.basis.trim(),pol:o.pol,cond:o.hasCond?o.cond.trim():null,condDue:o.hasCond?o.condDue:null,condDone:false,by:ME,d,t,clr:o.o==='Clearance Hold Recommended'?'Hold recommended to Student Clearance Review':o.hasCond?'Requires Resolution until the condition is completed':'None'};
+  c.st='Resolved';c.follow=!!o.hasCond;c.due=null;addTL(c,`Decision recorded: ${o.o}`,o.hasCond?`Condition: ${o.cond.trim()} by ${fD(o.condDue)}.`:'');if(o.notify)addTL(c,'Decision notice sent to both parties');
+  if(o.o==='Clearance Hold Recommended'){addTL(c,'Clearance hold recommendation sent to Student Clearance Review');addN({type:'clear',title:'Clearance Review',text:`${c.id} recommends a clearance hold for ${ST[c.resp].name}. Review required.`,go:['clear',(S.clearances.find(x=>x.s===c.resp)||{}).id||'']})}
+  S.ov=S.ov.filter(x=>x.t!=='dec');toast(`Decision recorded for ${c.id}`)}})},
+ condDone:v=>{const c=cs(v);push({t:'confirm',ic:'checkc',tt:'Mark the condition completed?',m:`${esc(c.dec.cond)} for ${ST[c.resp].name}. The case can then be archived, and the clearance reviewer can finalize clearance.`,yes:'Mark Completed',then:()=>{c.dec.condDone=true;c.follow=false;addTL(c,'Condition completed',c.dec.cond);toast('Condition marked completed')}})},
+ caseArc:v=>{const c=cs(v);push({t:'confirm',ic:'archive',tt:`Archive ${c.id}?`,m:'Archived cases become read-only institutional records. They can’t be edited, deleted, or have their decision changed.',yes:'Resolve & Archive',then:()=>{const d=c.dec;const out=d.cond?'Resolved — Conditions Completed':{'No Violation':'No Violation Found','Case Dismissed':'Case Dismissed','Counseled':'Counseling Completed','Verbal Warning':'Verbal Warning Issued','Written Warning':'Written Warning Issued','Referred for Further Action':'Referred for Further Action','Clearance Hold Recommended':'Clearance Hold Recommended'}[d.o];
+  addTL(c,'Case resolved and archived');S.archive.push({id:c.id,inc:c.inc,resp:c.resp,rep:c.rep,type:c.type,opened:c.opened,resolved:d.d,out,ok:d.o==='Case Dismissed'?'neu':/Warning|Referred|Hold/.test(out)?'info':'ok',archived:TODAY,by:ME,ev:c.ev,desc:c.desc,basis:d.basis,full:clone(c)});S.cases=S.cases.filter(x=>x!==c);S.ov=[];toast(`${c.id} archived as a read-only record`)}})},
+ incCase:v=>{const i=inc(v);push({t:'confirm',ic:'doc',tt:`Open a formal case for ${i.id}?`,m:'A formal OSAS case starts the institutional review. Opening a case is not a finding of responsibility and does not affect clearance.',yes:'Open Formal Case',then:()=>{const [d,t]=stamp();const id='CASE-2026-0'+(S.caseSeq++);
+  S.cases.push({id,inc:i.id,bk:i.bk,type:i.type,pri:i.pri,opened:TODAY,asg:ME,st:'Open',rep:i.rep,resp:i.resp,repRole:'Party',respRole:'Party',sess:'Session '+i.bk+' (see booking record)',desc:i.refn.desc+' The respondent has not yet responded.',ev:[],follow:false,
+   tl:[{d:i.d,t:'09:00',ev:`Incident report ${i.id} submitted`,by:ST[i.rep].name+' (reporter)',p:''},{d:i.refn.d,t:i.refn.t,ev:'Referred to OSAS',by:'CampusTutor Admin',p:'Referral does not imply responsibility.'},{d,t,ev:'Assessed by OSAS and formal case opened',by:ME,p:''}],notes:[]});
+  i.cs=id;i.ref='Case Created';toast(`${id} opened for ${i.id}`)}})},
+ incNoCase:v=>{const i=inc(v);push({t:'note',id:null,inc:v,k:'Assessment',tx:'',nocase:true})},
+ /* evidence */
+ evCk:v=>{const o=topO();o.ck[v]=o.ck[v]===true?false:true;if(o.res==='Validated'&&!CK.every(([k])=>o.ck[k]===true||(k==='src'&&o.ck[k]==='na')))o.res=null;render()},
+ evNA:()=>{const o=topO();o.ck.src=o.ck.src==='na'?false:'na';render()},evRes:v=>{topO().res=v;render()},evZoom:()=>{const o=topO();o.zoom=!o.zoom;render()},
+ evSave:()=>{const o=topO(),e=evd(o.id),c=cs(e.cs);e.hist=(e.hist||[]);if(e.rev&&e.rev.res)e.hist.push({d:e.rev.d,t:'—',ev:'Earlier result: '+e.rev.res,by:e.rev.by});e.rev={by:ME,d:TODAY,ck:clone(o.ck),res:o.res,notes:(o.notes||'').trim()||'All criteria met.'};e.st=o.res;
+  if(c)addTL(c,`Evidence ${e.id} marked ${o.res}`,e.rev.notes);S.notifs.forEach(n=>{if(n.go[1]===e.id)n.read=true});S.ov.pop();render();toast(`${e.id} saved as ${o.res}`)},
+ evHist:v=>{S.pop=null;push({t:'evHist',id:v})},
+ /* clearance */
+ clrD:v=>{topO().d=v;render()},
+ clrSave:()=>{const o=topO(),c=clr(o.id),x=clrOpts(c);const nm=ST[c.s].name;const map={Cleared:'Cleared','On Hold':'On Hold','Requires Resolution':'Requires Resolution'};
+  const done=()=>{if(o.d==='keep'){c.note=o.notes.trim();c.hist.push({d:TODAY,ev:'Review note',by:ME});toast('Review note saved; status unchanged')}else{c.st=map[o.d];c.rev=TODAY;c.note=o.notes.trim();if(o.d==='Cleared')c.hold=null;if(o.d==='On Hold'){const k=x.holdRec;c.hold={id:'HOLD-2026-'+String(S.holdSeq++).padStart(3,'0'),basis:'Case decision · '+k.id+' (Clearance Hold Recommended)',auth:ME+', OSAS Case Officer',d:TODAY,release:'Lifted when the case decision’s requirements are met and recorded.',review:addD(TODAY,14)};addTL(k,'Clearance hold placed',c.hold.id)}toast(`${nm}: ${c.st}`)}S.notifs.forEach(n=>{if(n.go[1]===c.id)n.read=true});S.ov=S.ov.filter(z=>z.t!=='clr')};
+  if(o.d==='On Hold')push({t:'confirm',ic:'lock',tone:'w',tt:`Place ${nm}’s clearance on hold?`,m:`Basis: recorded decision in ${x.holdRec.id}. The hold is documented and reviewed within 14 days.`,yes:'Place On Hold',then:done});else{done();render()}},
+ /* reports */
+ rpCs:v=>{S.rp.sel=S.rp.sel&&S.rp.sel.k==='cs'&&S.rp.sel.v===v?null:{k:'cs',v};render()},rpType:v=>{S.rp.sel=S.rp.sel&&S.rp.sel.k==='type'&&S.rp.sel.v===v?null:{k:'type',v};render()},
+ rpPri:v=>{S.rp.sel=S.rp.sel&&S.rp.sel.v===v?null:{k:'pri',v};render()},rpClr:v=>{S.rp.sel=S.rp.sel&&S.rp.sel.v===v?null:{k:'clr',v};render()},rpMon:v=>{S.rp.sel=S.rp.sel&&S.rp.sel.v===v?null:{k:'mon',v};render()},
+ rpSel:()=>{S.rp.sel=null;render()},rpApply:()=>{toast(`Showing ${RD[rpKey()].lab}${S.rp.type!=='All'?' · '+S.rp.type:''}${S.rp.cst!=='All'?' · '+S.rp.cst:''}`)},rpSem1:()=>{S.rp.sem='1st Semester';render()},
+ finOpen:()=>push({t:'fin'}),
+ export:v=>{const [k,fmt]=v.split('|');S.pop=null;let rows,title;
+  if(k==='im'){rows=[['Incident Report ID','Booking ID','Reporter','Reported Student','Type','Priority','Submitted','Referral Status','Case ID','Current Status'],...imList().map(i=>[i.id,i.bk||'',ST[i.rep].name,ST[i.resp].name,i.type,i.pri,i.d,i.ref,i.cs||'',incStatus(i)])];title='Incident Monitoring'}
+  else if(k==='cl'){rows=[['Clearance Review ID','Student ID','Student','College / Program','Relevant Cases','Case Status','Clearance Status','Requested','Reviewed'],...clList().map(c=>[c.id,ST[c.s].sid,ST[c.s].name,ST[c.s].col+' — '+ST[c.s].prog,c.cs.join(' ')||'None',clCaseSt(c),c.st,c.req,c.rev||''])];title='Student Clearance Review'}
+  else{const d=RD[rpKey()];rows=[['Period','Gross','Tutor 90%','OSAS 5%','Platform 5%'],...d.wk.map((g,i)=>['Week '+(i+1),g,g*.9,g*.05,g*.05]),['Total',d.gross,d.gross*.9,d.gross*.05,d.gross*.05]];title='OSAS Financial Allocation'}
+  push({t:'export',fmt,rows,title})},
+ copyCsv:()=>{const el=document.getElementById('csvout');const tx=el?el.textContent:'';const o=topO();const fin=()=>{o.copied=true;render();toast('CSV copied to clipboard')};try{navigator.clipboard.writeText(tx).then(fin,fin)}catch(e){fin()}},
+ /* notifications */
+ nOpen:v=>{const n=S.notifs.find(z=>z.id===+v);n.read=true;S.pop=null;const [k,id]=n.go;
+  if(k==='case'){go('cases');A.caseOpen(id)}else if(k==='evidence'){go('evidence');A.evOpen(id)}else if(k==='clear'){go('clearance');if(id)push({t:'clr',id,d:null,notes:''})}else if(k==='policy'){go('policies');push({t:'pol',id})}else render()},
+ nReadAll:()=>{const n=unread();S.notifs.forEach(z=>z.read=true);S.pop=null;render();if(n)toast(`${n} notification${n>1?'s':''} marked as read`)},
+ /* settings */
+ nSw:v=>{const [k,c]=v.split('|');S.set.n[k][c]=!S.set.n[k][c];render()},prefCk:v=>{S.set.pref[v]=!S.set.pref[v];render()},
+ setReset:()=>{setInit();render();toast('Changes discarded')},
+ setSave:()=>{const s=S.set,er={};if(!/^09\d{2}\s?\d{3}\s?\d{4}$/.test(s.contact.trim()))er.contact='Use the format 09XX XXX XXXX.';if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.alt.trim()))er.alt='Enter a valid email address.';s.err=er;if(Object.keys(er).length){render();return}
+  if(!setDirty()){toast('No changes to save');return}const a=clone(s);delete a.err;a.pref.ipp=+a.pref.ipp;SAVED=a;Object.assign(PREF,a.pref);setInit();render();toast('Settings saved')},
+ pwd:()=>push({t:'pwd',step:'form',c:'',n:'',c2:''}),pwdNext:()=>{topO().step='verify';render()},
+ pwdOtp:()=>{const o=topO();if(o.otp!=='482913'){o.err='That code is incorrect. Check your email and try again.';render();return}o.step='done';SAVED.pwd=TODAY;if(S.set)S.set.pwd=TODAY;render()},
+ sec:()=>push({t:'sec',codes:null,sess:[['This device · Chrome on Windows',`CSU Network · ${fD(TODAY)}, 8:42 AM`],['Chrome on Android',`Butuan City · ${fD('2026-09-15')}, 7:10 PM`]]}),
+ secCodes:()=>{const o=topO();const r=()=>Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();o.codes=Array.from({length:8},r);render()},
+ secOut:v=>{const o=topO();const x=o.sess[+v];push({t:'confirm',ic:'logout',tone:'w',tt:'Sign out this session?',m:`${x[0]} (${x[1]}) will be signed out.`,yes:'Sign out',then:()=>{o.sess.splice(+v,1);toast('Session signed out')}})},
+ close:()=>{S.ov.pop();render()},cfYes:()=>{const o=S.ov.pop();o.then&&o.then();render()}
+};
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');const inPop=e.target.closest('[data-popk]');
+ if(S.pop&&!inPop&&!(el&&el.dataset.a==='pop')){S.pop=null;if(!el){render();return}}
+ if(!el){const ovEl=e.target.classList&&e.target.classList.contains('ov')?e.target:null;if(ovEl&&+ovEl.dataset.ovi===S.ov.length-1){S.ov.pop();render()}return}
+ if(el.tagName==='SELECT'||(el.tagName==='INPUT'&&el.type!=='checkbox'))return;
+ const f=A[el.dataset.a];if(!f)return;if(el.type!=='checkbox')e.preventDefault();e.stopPropagation();f(el.dataset.v)});
+function setPath(p,v){const k=p.split('.');let o=S;for(let i=0;i<k.length-1;i++)o=o[k[i]];const last=k[k.length-1];if(typeof o[last]==='number')v=Number(v);o[last]=v;
+ if(['cr','ev','im','cl','po','ar'].includes(k[0])&&last!=='page')S[k[0]].page=1;if(p==='gq')S.pop=v.trim()?'gs':null;if(k[0]==='set'&&S.set.err)delete S.set.err[last];if(k[0]==='ov'){const x=S.ov[+k[1]];if(x&&x.err)x.err=null}if(p.startsWith('rp.'))S.rp.sel=null}
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset.s&&t.tagName!=='SELECT'){setPath(t.dataset.s,t.value);render()}});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.s&&t.tagName==='SELECT'){setPath(t.dataset.s,t.value);render()}});
+document.addEventListener('submit',e=>{e.preventDefault();if(e.target.dataset.f==='gsearch'){const r=gResults()[0];if(r){S.pop=null;A[r.a](r.v);S.gq=''}else render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(S.pop){S.pop=null;render();return}if(S.ov.length){S.ov.pop();render()}return}
+ if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr[data-a]')){e.preventDefault();e.target.click()}});
+INIT=snap();render();
+
