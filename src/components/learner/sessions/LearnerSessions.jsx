@@ -1,4 +1,4 @@
-import {useLearnerWorkspace} from "../workspace/LearnerWorkspace.jsx";
+import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { useState } from "react";
 import { filterSessions } from "./sessionFilters.js";
 import {
@@ -16,79 +16,28 @@ import {
   XCircle,
 } from "lucide-react";
 
-const sessions = [
-  [
-    "JAN",
-    "14",
-    "WED",
-    "John Michael P.",
-    "BS Mathematics",
-    "4.9",
-    "128 reviews",
-    "Calculus",
-    "Derivatives and Applications",
-    "January 14, 2026",
-    "(Wednesday)",
-    "2:00 PM - 3:30 PM",
-    "Online",
-    "Google Meet",
-    "₱400",
-    "Paid",
-    "JM",
-  ],
-  [
-    "JAN",
-    "17",
-    "SAT",
-    "Maria Angelica R.",
-    "BS Physics",
-    "4.8",
-    "95 reviews",
-    "Statistics",
-    "Probability Distributions",
-    "January 17, 2026",
-    "(Saturday)",
-    "10:00 AM - 11:30 AM",
-    "Online",
-    "Zoom",
-    "₱350",
-    "Pending",
-    "MA",
-  ],
-  [
-    "JAN",
-    "20",
-    "TUE",
-    "Janine Claire T.",
-    "BS English",
-    "4.7",
-    "82 reviews",
-    "English",
-    "Argumentative Essay",
-    "January 20, 2026",
-    "(Tuesday)",
-    "1:00 PM - 2:30 PM",
-    "On-Campus",
-    "Main Library, CSU Study Room 3",
-    "₱300",
-    "Paid",
-    "JC",
-  ],
-];
-
-const sessionRecords = sessions.map((details, index) => ({
-  id: index + 1,
-  lifecycle: "Upcoming",
-  date: details[9],
-  paymentStatus: details[15],
-  details,
-}));
+import { sessionRecords } from "./sessionRecords.js";
 const tabs = ["Upcoming", "Ongoing", "Completed", "Cancelled"];
 
 export default function LearnerSessions() {
-  const work=useLearnerWorkspace();
-  const records=sessionRecords.map(s=>({...s,...work.data.sessions.find(x=>x.id===s.id)}));
-  function act(kind,name,date){const source=records.find(s=>s.details[3]===name&&s.date===date);const d=source.details;work.open(kind,{...source,name,subject:d[7],time:d[11],link:source.link});}
+  const work = useLearnerWorkspace();
+  const records = sessionRecords.map((s) => ({
+    ...s,
+    ...work.data.sessions.find((x) => x.id === s.id),
+  }));
+  function act(kind, name, date) {
+    const source = records.find(
+      (s) => s.details[3] === name && s.date === date,
+    );
+    const d = source.details;
+    work.open(kind, {
+      ...source,
+      name,
+      subject: d[7],
+      time: d[11],
+      link: source.link,
+    });
+  }
   const [activeTab, setActiveTab] = useState("Upcoming");
   const [selectedDate, setSelectedDate] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -124,11 +73,7 @@ export default function LearnerSessions() {
               className={`border-b-2 pb-2 ${activeTab === tab ? "border-[#087542] text-[#087542]" : "border-transparent hover:text-[#087542]"}`}
             >
               {tab} (
-              {
-                sessionRecords.filter((session) => session.lifecycle === tab)
-                  .length
-              }
-              )
+              {records.filter((session) => session.lifecycle === tab).length})
             </button>
           ))}
         </nav>
@@ -141,7 +86,7 @@ export default function LearnerSessions() {
               className="h-8 rounded-md border border-[#dfe5ed] bg-white px-3 text-xs"
             >
               <option value="all">All Dates</option>
-              {[...new Set(sessionRecords.map((session) => session.date))].map(
+              {[...new Set(records.map((session) => session.date))].map(
                 (date) => (
                   <option key={date} value={date}>
                     {date}
@@ -159,9 +104,7 @@ export default function LearnerSessions() {
             >
               <option value="all">All Status</option>
               {[
-                ...new Set(
-                  sessionRecords.map((session) => session.paymentStatus),
-                ),
+                ...new Set(records.map((session) => session.paymentStatus)),
               ].map((status) => (
                 <option key={status} value={status}>
                   {status}
@@ -198,6 +141,8 @@ export default function LearnerSessions() {
         {visibleSessions.map(
           ({
             id,
+            lifecycle,
+            paymentStatus,
             details: [
               month,
               day,
@@ -286,14 +231,18 @@ export default function LearnerSessions() {
               <div className="text-center">
                 <p className="text-base font-bold">{price}</p>
                 <span
-                  className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${status === "Paid" ? "bg-[#dff8e8] text-[#087542]" : "bg-[#e7f3ff] text-[#1675df]"}`}
+                  className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${paymentStatus === "Paid" ? "bg-[#dff8e8] text-[#087542]" : "bg-[#e7f3ff] text-[#1675df]"}`}
                 >
-                  {status}
+                  {paymentStatus}
                 </span>
               </div>
               <div className="col-span-2 border-t border-[#e1e7ef] pt-2 sm:col-span-3 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-2 lg:pt-0">
                 <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-1">
-                  <button onClick={()=>act("meeting",name,date)}
+                  <button
+                    disabled={
+                      lifecycle === "Cancelled" || lifecycle === "Completed"
+                    }
+                    onClick={() => act("meeting", name, date)}
                     type="button"
                     className="min-h-6 px-1 py-0.5 rounded-md bg-[#075d34] text-xs font-semibold text-white"
                   >
@@ -302,7 +251,8 @@ export default function LearnerSessions() {
                     )}
                     Join Session <ExternalLink className="inline h-4 w-4" />
                   </button>
-                  <button onClick={()=>work.message({name})}
+                  <button
+                    onClick={() => work.message({ name })}
                     type="button"
                     className="min-h-6 px-1 py-0.5 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
                   >
@@ -310,15 +260,30 @@ export default function LearnerSessions() {
                     Message Tutor
                   </button>
                   <div className="grid grid-cols-[1.4fr_1fr] gap-1">
-                    <button onClick={()=>act("reschedule",name,date)} className="min-h-6 px-1 py-0.5 rounded-md border border-[#f2a400] text-xs font-semibold text-[#d98d00]">
+                    <button
+                      disabled={
+                        lifecycle === "Cancelled" || lifecycle === "Completed"
+                      }
+                      onClick={() => act("reschedule", name, date)}
+                      className="min-h-6 px-1 py-0.5 rounded-md border border-[#f2a400] text-xs font-semibold text-[#d98d00]"
+                    >
                       Reschedule
                     </button>
-                    <button onClick={()=>act("cancel",name,date)} className="min-h-6 px-1 py-0.5 rounded-md border border-red-500 text-xs font-semibold text-red-600">
+                    <button
+                      disabled={
+                        lifecycle === "Cancelled" || lifecycle === "Completed"
+                      }
+                      onClick={() => act("cancel", name, date)}
+                      className="min-h-6 px-1 py-0.5 rounded-md border border-red-500 text-xs font-semibold text-red-600"
+                    >
                       <XCircle className="mr-1 inline h-4 w-4" />
                       Cancel
                     </button>
                   </div>
-                  <button onClick={()=>act("details",name,date)} className="min-h-6 px-1 py-0.5 rounded-md border border-[#dfe5ed] text-xs font-semibold">
+                  <button
+                    onClick={() => act("details", name, date)}
+                    className="min-h-6 px-1 py-0.5 rounded-md border border-[#dfe5ed] text-xs font-semibold"
+                  >
                     <View className="mr-2 inline h-4 w-4" />
                     View Details
                   </button>

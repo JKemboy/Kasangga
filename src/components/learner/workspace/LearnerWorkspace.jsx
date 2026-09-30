@@ -1,3 +1,4 @@
+import SessionDialog from "./SessionDialog.jsx";
 import TutorProfile from "./TutorProfile.jsx";
 import BookingFlow from "./BookingFlow.jsx";
 import { createContext, useContext, useState } from "react";
@@ -101,7 +102,11 @@ export default function LearnerWorkspace({ children, go }) {
               ? "profile"
               : dialog.kind === "book"
                 ? "booking"
-                : "default"
+                : dialog.kind === "details"
+                  ? "session-drawer"
+                  : ["cancel", "reschedule"].includes(dialog.kind)
+                    ? "session-modal"
+                    : "default"
           }
           title={
             {
@@ -146,55 +151,46 @@ export default function LearnerWorkspace({ children, go }) {
               }
             />
           )}
-          {dialog.kind === "details" && (
-            <div className="space-y-3 text-sm">
-              <dl className="grid grid-cols-2 gap-3">
-                {Object.entries(r)
-                  .filter(
-                    ([k, v]) =>
-                      !["details", "initials"].includes(k) &&
-                      typeof v !== "object",
-                  )
-                  .map(([k, v]) => (
-                    <div key={k}>
-                      <dt className="font-semibold capitalize">{k}</dt>
-                      <dd>{v}</dd>
-                    </div>
-                  ))}
-              </dl>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  className={button}
-                  onClick={() => message({ name: r.name })}
-                >
-                  Message Tutor
-                </button>
-                {!["Completed", "Cancelled"].includes(r.lifecycle) && (
-                  <>
-                    <button
-                      className={button}
-                      onClick={() => open("reschedule", r)}
-                    >
-                      Reschedule
-                    </button>
-                    <button
-                      className={button}
-                      onClick={() => open("cancel", r)}
-                    >
-                      Cancel Session
-                    </button>
-                  </>
-                )}
-                <button className={button} onClick={() => open("report", r)}>
-                  Report an Issue
-                </button>
-                {r.lifecycle === "Completed" && (
-                  <button className={button} onClick={() => open("review", r)}>
-                    Rate & Review
-                  </button>
-                )}
-              </div>
-            </div>
+          {["details", "cancel", "reschedule"].includes(dialog.kind) && (
+            <SessionDialog
+              key={dialog.kind}
+              kind={dialog.kind}
+              record={{
+                ...r,
+                review:
+                  data.reviews.find((x) => x.sessionId === r.id) || r.review,
+              }}
+              onClose={() => setDialog(null)}
+              onOpen={open}
+              onMessage={message}
+              onRequest={(values) =>
+                request("reschedule", { sessionId: r.id, ...values })
+              }
+              onCancel={(values) => {
+                if (
+                  commit((d) => ({
+                    ...d,
+                    sessions: [
+                      ...d.sessions.filter((s) => s.id !== r.id),
+                      {
+                        ...r,
+                        ...values,
+                        lifecycle: "Cancelled",
+                        refundStatus:
+                          r.paymentStatus === "Paid"
+                            ? "Under Review"
+                            : undefined,
+                      },
+                    ],
+                  }))
+                ) {
+                  setDialog(null);
+                  toast(
+                    "Session cancelled locally. Server cancellation and refund processing are not connected.",
+                  );
+                }
+              }}
+            />
           )}
           {dialog.kind === "meeting" && (
             <div className="space-y-3 text-sm">
@@ -216,9 +212,7 @@ export default function LearnerWorkspace({ children, go }) {
               </button>
             </div>
           )}
-          {["reschedule", "cancel", "report", "review"].includes(
-            dialog.kind,
-          ) && (
+          {["report", "review"].includes(dialog.kind) && (
             <form
               className="space-y-3 text-sm"
               onSubmit={async (e) => {
