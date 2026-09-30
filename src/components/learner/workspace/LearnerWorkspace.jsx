@@ -1,3 +1,4 @@
+import AccountAction from "./AccountAction.jsx";
 import ReviewDialog from "./ReviewDialog.jsx";
 import LearnerReport from "./LearnerReport.jsx";
 import SessionDialog from "./SessionDialog.jsx";
@@ -108,13 +109,13 @@ export default function LearnerWorkspace({ children, go }) {
                 ? "booking"
                 : dialog.kind === "details"
                   ? "session-drawer"
-                  : ["cancel", "reschedule"].includes(dialog.kind)
+                  : ["cancel", "reschedule", "report", "review"].includes(
+                        dialog.kind,
+                      )
                     ? "session-modal"
-                    : dialog.kind === "report"
-                      ? "session-modal"
-                      : dialog.kind === "review"
-                        ? "session-modal"
-                        : "default"
+                    : ["data", "delete"].includes(dialog.kind)
+                      ? "account"
+                      : "default"
           }
           title={
             {
@@ -367,35 +368,14 @@ export default function LearnerWorkspace({ children, go }) {
               <button className={primary}>Save Application</button>
             </form>
           )}
-          {dialog.kind === "data" && (
-            <div className="space-y-3 text-sm">
-              <p>
-                Request a copy of your profile, sessions, messages and payment
-                history.
-              </p>
-              <button
-                className={primary}
-                onClick={() => request("data-export", {})}
-              >
-                Request My Data
-              </button>
-            </div>
-          )}
-          {dialog.kind === "delete" && (
-            <form
-              className="space-y-3 text-sm"
-              onSubmit={(e) => {
-                e.preventDefault();
-                request("account-deletion", {});
-              }}
-            >
-              <p>
-                Account deletion requires review. Paid session and incident
-                records may be retained under institutional policy.
-              </p>
-              <Field label="Type DELETE to confirm" pattern="DELETE" required />
-              <button className={button}>Request Account Deletion</button>
-            </form>
+          {["data", "delete"].includes(dialog.kind) && (
+            <AccountAction
+              key={dialog.kind}
+              kind={dialog.kind}
+              email={data.profile.email || "juan.delacruz@carsu.edu.ph"}
+              onClose={() => setDialog(null)}
+              onRequest={request}
+            />
           )}
           {dialog.kind === "article" && (
             <div className="space-y-3 text-sm">
