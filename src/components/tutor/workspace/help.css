@@ -2,49 +2,49 @@
   color: #111b35;
 }
 .help-reference > div:first-child h1 {
-  font-size: 28px;
+  font-size: 23px;
   font-weight: 750;
   letter-spacing: -0.7px;
 }
 .help-reference > div:first-child p {
-  font-size: 13px;
+  font-size: 12px;
   color: #132a60;
 }
 .help-reference-search {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 42px;
+  height: 34px;
   padding: 0 14px;
   border: 1px solid #e1e7f0;
   border-radius: 7px;
   background: white;
-  margin: 10px 0 15px;
+  margin: 8px 0 10px;
   color: #24385d;
 }
 .help-reference-search input {
   width: 100%;
-  font-size: 13px;
+  font-size: 12px;
   outline: none;
   background: transparent;
 }
 .help-reference-grid {
   display: grid;
   grid-template-columns: 1.26fr 1fr;
-  gap: 20px;
+  gap: 10px;
   align-items: start;
 }
 .help-reference-column {
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 8px;
   min-width: 0;
 }
 .help-reference-card {
   display: flex;
   align-items: flex-start;
-  gap: 20px;
-  padding: 13px 14px;
+  gap: 10px;
+  padding: 9px 11px;
   border: 1px solid #e1e7f0;
   border-radius: 8px;
   background: white;
@@ -53,8 +53,8 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   border-radius: 9px;
   color: #006b24;
   background: #e4f8e8;
@@ -64,8 +64,8 @@
   flex: 1;
 }
 .help-reference-content h2 {
-  font-size: 15px;
-  line-height: 22px;
+  font-size: 12px;
+  line-height: 18px;
   font-weight: 700;
   letter-spacing: -0.3px;
   margin: 0;
@@ -101,7 +101,7 @@
 .help-faq-list details {
   border: 1px solid #e1e7f0;
   border-radius: 6px;
-  padding: 7px 10px;
+  padding: 5px 8px;
   font-size: 12px;
 }
 .help-faq-list summary {
@@ -122,7 +122,7 @@
   transform: rotate(180deg);
 }
 .help-faq-list details p {
-  margin-top: 9px;
+  margin-top: 6px;
 }
 .help-shares {
   display: grid;
@@ -130,7 +130,7 @@
   background: #fff7db;
   border-radius: 8px;
   margin: 7px 0;
-  padding: 10px 0;
+  padding: 6px 0;
   text-align: center;
 }
 .help-shares > div + div {
@@ -143,8 +143,8 @@
 }
 .help-shares b {
   display: block;
-  font-size: 23px;
-  line-height: 27px;
+  font-size: 19px;
+  line-height: 23px;
   color: #003e29;
 }
 .help-allocation {
@@ -153,7 +153,7 @@
   padding: 6px 12px;
   margin-top: 5px;
   color: #354a76;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
 }
 .help-reference-content .help-extra {
@@ -165,8 +165,8 @@
   gap: 14px;
   border: 1px solid #087232;
   border-radius: 5px;
-  padding: 9px 18px;
-  margin-top: 10px;
+  padding: 6px 12px;
+  margin-top: 7px;
   font-size: 12px;
   font-weight: 600;
   color: #005c24;
@@ -181,8 +181,8 @@
   background: linear-gradient(100deg, #005f21, #00732d);
   color: white;
   width: 100%;
-  padding: 10px;
-  margin-top: 9px;
+  padding: 7px;
+  margin-top: 6px;
   font-size: 12px;
   font-weight: 600;
 }
@@ -201,25 +201,6 @@
 .help-reference-note svg {
   flex-shrink: 0;
 }
-@media (min-width: 1500px) {
-  .help-reference-card {
-    padding: 14px;
-    gap: 20px;
-  }
-  .help-reference-content h2 {
-    font-size: 16px;
-  }
-  .help-reference-content p {
-    font-size: 13px;
-  }
-  .help-faq-list details {
-    font-size: 13px;
-    padding: 8px 10px;
-  }
-  .help-reference-column {
-    gap: 14px;
-  }
-}
 @media (max-width: 1000px) {
   .help-reference-grid {
     grid-template-columns: 1fr;
@@ -228,32 +209,8 @@
     gap: 12px;
   }
 }
-@media (max-height: 800px) and (min-width: 1001px) {
-  .help-reference-column {
-    gap: 9px;
-  }
-  .help-reference-card {
-    padding: 10px 12px;
-    gap: 14px;
-  }
-  .help-reference-icon {
-    height: 38px;
-    width: 38px;
-  }
-  .help-reference-content p {
-    font-size: 11px;
-  }
-  .help-reference-content h2 {
-    font-size: 14px;
-  }
-  .help-faq-list details {
-    padding: 5px 8px;
-  }
-  .help-shares {
-    padding: 6px 0;
-  }
-  .help-reference-search {
-    height: 38px;
-    margin-bottom: 12px;
-  }
+
+.help-reference-icon > svg {
+  width: 19px;
+  height: 19px;
 }
