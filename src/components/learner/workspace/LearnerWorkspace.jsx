@@ -1,3 +1,4 @@
+import LearnerReport from "./LearnerReport.jsx";
 import SessionDialog from "./SessionDialog.jsx";
 import TutorProfile from "./TutorProfile.jsx";
 import BookingFlow from "./BookingFlow.jsx";
@@ -68,10 +69,12 @@ export default function LearnerWorkspace({ children, go }) {
   }
   function message(tutor) {
     if (
-      !data.threads.some((t) => t.name === tutor.name) &&
       !commit((d) => ({
         ...d,
-        threads: [...d.threads, { name: tutor.name, messages: [], unread: 0 }],
+        activeThread: tutor.name,
+        threads: d.threads.some((t) => t.name === tutor.name)
+          ? d.threads
+          : [...d.threads, { name: tutor.name, messages: [], unread: 0 }],
       }))
     )
       return;
@@ -106,7 +109,9 @@ export default function LearnerWorkspace({ children, go }) {
                   ? "session-drawer"
                   : ["cancel", "reschedule"].includes(dialog.kind)
                     ? "session-modal"
-                    : "default"
+                    : dialog.kind === "report"
+                      ? "session-modal"
+                      : "default"
           }
           title={
             {
@@ -212,7 +217,14 @@ export default function LearnerWorkspace({ children, go }) {
               </button>
             </div>
           )}
-          {["report", "review"].includes(dialog.kind) && (
+          {dialog.kind === "report" && (
+            <LearnerReport
+              record={r}
+              onClose={() => setDialog(null)}
+              onSubmit={(values) => request("report", values)}
+            />
+          )}
+          {["review"].includes(dialog.kind) && (
             <form
               className="space-y-3 text-sm"
               onSubmit={async (e) => {
