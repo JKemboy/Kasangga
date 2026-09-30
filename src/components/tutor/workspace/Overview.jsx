@@ -1,3 +1,8 @@
+import { confirmedClasses } from "./scheduleReview.js";
+import CreateService from "./CreateService.jsx";
+import { useState } from "react";
+import SessionDetails, { TransactionDetails } from "./SessionDetails.jsx";
+import { notificationDestination } from "./notificationTargets.js";
 import {
   ArrowRight,
   Bell,
@@ -56,6 +61,27 @@ function Initials({ name }) {
   );
 }
 export default function Overview({ data, go, update }) {
+  const [creating, setCreating] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [transactionId, setTransactionId] = useState(null);
+  const transaction = data.sessions.find(
+    (s) => s.transaction === transactionId,
+  );
+  function openActivity(n) {
+    const target = notificationDestination(n);
+    if (
+      target?.view === "sessions" &&
+      data.sessions.some((s) => s.id === target.args.sessionId)
+    )
+      setSessionId(target.args.sessionId);
+    else if (
+      target?.view === "earnings" &&
+      data.sessions.some((s) => s.transaction === target.args.transactionId)
+    )
+      setTransactionId(target.args.transactionId);
+    else if (target) go(target.view, target.args);
+    else go("notifications", { notificationId: n.id });
+  }
   const totals = allocation(data.sessions);
   const upcoming = data.sessions
     .filter((s) => ["Pending", "Confirmed"].includes(s.status))
@@ -85,12 +111,17 @@ export default function Overview({ data, go, update }) {
     minute: "2-digit",
     hourCycle: "h23",
   }).format(now);
-  const source = { classes, slots: data.slots, sessions: data.sessions };
+  const source = {
+    classes: confirmedClasses(data),
+    slots: data.slots,
+    sessions: data.sessions,
+  };
   const openFor = (date) => {
     const events = eventsForDate(date, source);
     return events.filter(
       (e) =>
         e.kind === "available" &&
+        !e.conflict &&
         !events.some(
           (other) =>
             other.kind !== "available" &&
@@ -186,7 +217,7 @@ export default function Overview({ data, go, update }) {
             key={label}
             aria-label={`Open ${label}`}
             className={`flex min-w-0 items-center gap-2 rounded-lg border bg-white p-2 text-left hover:bg-green-50 focus-visible:outline-green-700 ${gold ? "border-amber-100" : "border-[#e0e7f0]"}`}
-            onClick={() => go(view, args)}
+            onClick={() => (args.create ? setCreating(true) : go(view, args))}
           >
             <span
               className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-white ${gold ? "bg-amber-400" : "bg-green-800"}`}
@@ -262,7 +293,7 @@ export default function Overview({ data, go, update }) {
                         type="button"
                         aria-label={`View session with ${s.learner}`}
                         className="flex items-center gap-1.5 text-left hover:text-green-800"
-                        onClick={() => go("sessions", { sessionId: s.id })}
+                        onClick={() => setSessionId(s.id)}
                       >
                         <Initials name={s.learner} />
                         <span className="break-words leading-[14px]">
@@ -333,7 +364,9 @@ export default function Overview({ data, go, update }) {
                 type="button"
                 key={label}
                 className="flex min-h-11 items-center gap-3 rounded-md border border-[#e0e7f0] bg-[#fcfdfd] p-2 text-left text-xs font-medium hover:bg-green-50"
-                onClick={() => go(view, args)}
+                onClick={() =>
+                  args.create ? setCreating(true) : go(view, args)
+                }
               >
                 <span
                   className={`grid h-8 w-8 shrink-0 place-items-center rounded-md text-white ${gold ? "bg-amber-400" : "bg-green-800"}`}
@@ -401,47 +434,50 @@ export default function Overview({ data, go, update }) {
             Recent Activity / Notifications
           </h2>
           <div className="divide-y divide-[#edf0f5]">
-            {data.notifications.slice(0, 3).map((n) => {
-              const Icon =
-                n.category === "Payments"
-                  ? CreditCard
-                  : n.category === "Messages"
-                    ? MessageCircle
-                    : CalendarCheck;
-              return (
-                <button
-                  type="button"
-                  key={n.id}
-                  aria-label={`Open notification: ${n.title}`}
-                  className="flex w-full items-center gap-2 py-1 text-left hover:bg-green-50"
-                  onClick={() => {
-                    if (!n.read)
-                      update((d) => ({
-                        ...d,
-                        notifications: d.notifications.map((v) =>
-                          v.id === n.id ? { ...v, read: true } : v,
-                        ),
-                      }));
-                    go("notifications", { notificationId: n.id });
-                  }}
-                >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#e7f4ed] text-green-800">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[11px] font-medium">
-                      {n.title}
+            {[...data.notifications]
+              .sort((a, b) => String(b.time).localeCompare(String(a.time)))
+              .slice(0, 5)
+              .map((n) => {
+                const Icon =
+                  n.category === "Payments"
+                    ? CreditCard
+                    : n.category === "Messages"
+                      ? MessageCircle
+                      : CalendarCheck;
+                return (
+                  <button
+                    type="button"
+                    key={n.id}
+                    aria-label={`Open notification: ${n.title}`}
+                    className="flex w-full items-center gap-2 py-1 text-left hover:bg-green-50"
+                    onClick={() => {
+                      if (!n.read)
+                        update((d) => ({
+                          ...d,
+                          notifications: d.notifications.map((v) =>
+                            v.id === n.id ? { ...v, read: true } : v,
+                          ),
+                        }));
+                      openActivity(n);
+                    }}
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#e7f4ed] text-green-800">
+                      <Icon className="h-4 w-4" />
                     </span>
-                    <span className="mt-0.5 block truncate text-[10px] text-[#657599]">
-                      {n.text}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[11px] font-medium">
+                        {n.title}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[10px] text-[#657599]">
+                        {n.text}
+                      </span>
                     </span>
-                  </span>
-                  <time className="max-w-28 shrink-0 text-right text-[9px] leading-4 text-[#657599]">
-                    {n.time}
-                  </time>
-                </button>
-              );
-            })}
+                    <time className="max-w-28 shrink-0 text-right text-[9px] leading-4 text-[#657599]">
+                      {n.time}
+                    </time>
+                  </button>
+                );
+              })}
             {!data.notifications.length && (
               <p className="py-5 text-center text-[#657599]">
                 No recent notifications.
@@ -450,6 +486,32 @@ export default function Overview({ data, go, update }) {
           </div>
         </section>
       </div>
+      {sessionId && (
+        <SessionDetails
+          data={data}
+          update={update}
+          go={go}
+          sessionId={sessionId}
+          onClose={() => setSessionId(null)}
+        />
+      )}
+      {transaction && (
+        <TransactionDetails
+          session={transaction}
+          onClose={() => setTransactionId(null)}
+          onSession={() => {
+            setTransactionId(null);
+            setSessionId(transaction.id);
+          }}
+        />
+      )}
+      {creating && (
+        <CreateService
+          data={data}
+          update={update}
+          onClose={() => setCreating(false)}
+        />
+      )}
     </section>
   );
 }

@@ -262,8 +262,10 @@ export default function Notifications({ data, update, go, args = {} }) {
                   aria-label={`Open ${n.title}: ${n.text}`}
                   className={`grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-2 px-3 py-2 text-left transition-colors hover:bg-[#e8f4ed] focus-visible:relative focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green-700 lg:h-14 lg:grid-cols-[36px_minmax(0,1.35fr)_minmax(0,1fr)_142px_56px] lg:py-1.5 ${n.read ? "bg-white" : "bg-[#eff8f3]"}`}
                   onClick={() => {
-                    setSelectedId(n.id);
                     if (!n.read) markRead(n.id, true);
+                    const target = notificationDestination(n);
+                    if (target) go(target.view, target.args);
+                    else setSelectedId(n.id);
                   }}
                 >
                   <span
