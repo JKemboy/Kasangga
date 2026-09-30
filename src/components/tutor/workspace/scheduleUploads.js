@@ -1,4 +1,4 @@
-export const MAX_SCHEDULE_FILE_SIZE = 5 * 1024 * 1024;
+export const MAX_SCHEDULE_FILE_SIZE = 10 * 1024 * 1024;
 const allowedTypes = new Set(["image/png", "image/jpeg", "application/pdf"]);
 const databaseName = "campustutor-schedule-uploads";
 const storeName = "files";
@@ -9,7 +9,7 @@ export function scheduleFileError(file) {
   if (!Number.isFinite(file.size) || file.size <= 0)
     return "This file is empty. Choose a file with your class schedule.";
   if (file.size > MAX_SCHEDULE_FILE_SIZE)
-    return "The file is too large. Choose a file of 5 MB or less.";
+    return "The file is too large. Choose a file of 10 MB or less.";
   return "";
 }
 

@@ -22,7 +22,7 @@ function memoryStorage() {
   };
 }
 
-test("schedule validation accepts supported nonempty files up to exactly 5 MB", () => {
+test("schedule validation accepts supported nonempty files up to exactly 10 MB", () => {
   for (const type of ["image/png", "image/jpeg", "application/pdf"]) {
     assert.equal(scheduleFileError({ type, size: 1 }), "");
     assert.equal(scheduleFileError({ type, size: MAX_SCHEDULE_FILE_SIZE }), "");
@@ -36,7 +36,7 @@ test("schedule validation accepts supported nonempty files up to exactly 5 MB", 
   assert.match(scheduleFileError({ type: "image/png", size: NaN }), /empty/);
   assert.match(
     scheduleFileError({ type: "image/png", size: MAX_SCHEDULE_FILE_SIZE + 1 }),
-    /5 MB/,
+    /10 MB/,
   );
 });
 

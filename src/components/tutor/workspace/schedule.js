@@ -114,6 +114,7 @@ export function eventsForDate(
       events.push({
         id: `slot:${slot.id ?? index}:${iso}`,
         kind: "available",
+        conflict: slot.kind !== "unavailable" && classes.some(c => c[0] === day && slot.start < c[2] && c[1] < slot.end),
         start: slot.start,
         end: slot.end,
         title: `Available · ${slot.type === "Both" ? "Online / In-person" : slot.type}`,

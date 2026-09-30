@@ -1,0 +1,146 @@
+﻿.tutor-modal--schedule-review {
+  width: min(1080px, calc(100vw - 24px));
+}
+.ocr-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e6eaf0;
+  font-size: 12px;
+}
+.ocr-steps li,
+.ocr-summary span {
+  padding: 6px 9px;
+  border-radius: 5px;
+  background: #eef0f3;
+  color: #596272;
+}
+.ocr-steps .complete,
+.ocr-summary span:first-child {
+  background: #e2f4e8;
+  color: #057130;
+}
+.ocr-steps .current {
+  background: #e3edff;
+  color: #1655df;
+}
+.ocr-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+.ocr-summary span:nth-child(2) {
+  background: #fff0d9;
+  color: #aa6800;
+}
+.ocr-summary .errors {
+  background: #fff0ec;
+  color: #d9271a;
+}
+.ocr-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  border: 2px dashed #b8dcc6;
+  border-radius: 12px;
+  background: #f7fbf8;
+  padding: 32px 20px;
+}
+.ocr-upload span {
+  font-size: 13px;
+  color: #6b7588;
+}
+.ocr-processing {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding: 28px 12px;
+}
+.ocr-processing h3 {
+  font-weight: 700;
+}
+.ocr-processing progress {
+  width: min(380px, 100%);
+  accent-color: #087542;
+}
+.ocr-spinner {
+  height: 40px;
+  width: 40px;
+  border: 4px solid #e2f4e8;
+  border-top-color: #087542;
+  border-radius: 50%;
+  animation: ocr-spin 1s linear infinite;
+}
+@keyframes ocr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ocr-table-wrap {
+  overflow: auto;
+}
+.ocr-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.ocr-table th {
+  background: #f5f7f9;
+  text-align: left;
+  padding: 10px 6px;
+}
+.ocr-table td {
+  padding: 7px 5px;
+  vertical-align: top;
+  border-bottom: 1px solid #edf0f3;
+}
+.ocr-table td:nth-child(2) {
+  width: 34%;
+}
+.ocr-table td:nth-child(1) {
+  width: 12%;
+}
+.ocr-table input,
+.ocr-table select {
+  min-width: 82px;
+}
+.ocr-table .ocr-field-uncertain input,
+.ocr-table .ocr-field-uncertain select {
+  border-color: #eea22e;
+  background: #fff9ee;
+}
+.ocr-table .ocr-field-error input,
+.ocr-table .ocr-field-error select {
+  border-color: #f44336;
+  background: #fff7f7;
+}
+.ocr-raw {
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
+  background: #f8fafc;
+  padding: 12px;
+}
+.ocr-preview {
+  width: 100%;
+  height: 360px;
+  object-fit: contain;
+  border: 1px solid #e1e5eb;
+  margin-top: 10px;
+}
+.schedule-event-conflict {
+  background: repeating-linear-gradient(
+    135deg,
+    #fff0dc,
+    #fff0dc 6px,
+    #ffe0af 6px,
+    #ffe0af 12px
+  ) !important;
+  border-color: #d97706 !important;
+}

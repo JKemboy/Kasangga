@@ -361,7 +361,7 @@ export const hour = (t) => minutes(t) / 60;
 export const time = (h) =>
   `${Math.floor(h) % 12 || 12}:${String(Math.round((h % 1) * 60)).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 export const overlaps = (a, b, c, d) => a < d && c < b;
-export function slotError(slot, existing, sessions) {
+export function slotError(slot, existing, sessions, confirmed = classes) {
   if (
     !Number.isFinite(slot?.start) ||
     !Number.isFinite(slot?.end) ||
@@ -398,7 +398,7 @@ export function slotError(slot, existing, sessions) {
   if (slot.repeat !== undefined && typeof slot.repeat !== "boolean")
     return "Choose a valid weekly repeat option.";
   if (
-    classes.some(
+    confirmed.some(
       ([day, start, end]) =>
         day === slot.day && overlaps(slot.start, slot.end, start, end),
     )
