@@ -1,20 +1,15 @@
-import { sessionAction, meetingUrl } from "./sessionActions.js";
+import SessionDetails from "./SessionDetails.jsx";
 import { Search, ListFilter, ChevronDown, Info } from "lucide-react";
 import SessionCards from "./SessionCards.jsx";
 import { useState } from "react";
-import { money, allocation, hour, time } from "./data.js";
+import { money, hour, time } from "./data.js";
 import {
   Heading,
-  Panel,
   Table,
   Pager,
   Avatar,
   Badge,
   Empty,
-  Modal,
-  Field,
-  button,
-  primary,
   input,
   matches,
 } from "./ui.jsx";
@@ -76,8 +71,7 @@ export function Sessions({ data, update, go, args = {} }) {
     ),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(initialSession || null),
-    [action, setAction] = useState(""),
-    [feedback, setFeedback] = useState("");
+    [action, setAction] = useState("");
   const rows = data.sessions.filter(
     (s) =>
       (tab === "Upcoming"
@@ -86,17 +80,6 @@ export function Sessions({ data, update, go, args = {} }) {
       (type === "All" || s.type === type) &&
       matches(s, query),
   );
-  function submit(e) {
-    e.preventDefault();
-    const form = Object.fromEntries(new FormData(e.currentTarget));
-    try {
-      const next = sessionAction(data, selected.id, action, {...form, acknowledged:form.acknowledged === 'on'});
-      if (update(() => next) === false) throw new Error('Could not save. Please try again.');
-      if(action==='cancel') {setTab('Cancelled');setSelected(null);}
-      else {setSelected(next.sessions.find(s=>s.id===selected.id));setFeedback(action==='reschedule'?'Reschedule request saved locally. The original time stays until accepted.':'Report saved locally for review.');}
-      setAction('');
-    } catch(error) {setFeedback(error.message);}
-  }
   return (
     <div className="sessions-reference">
       <Heading
@@ -154,13 +137,11 @@ export function Sessions({ data, update, go, args = {} }) {
         onDetails={(s) => {
           setSelected(s);
           setAction("");
-          setFeedback("");
         }}
         onMessage={(s) => go("messages", { learner: s.learner })}
         onMeeting={(s) => {
           setSelected(s);
           setAction("meeting");
-          setFeedback("");
         }}
       />
       <Empty show={!rows.length} />
@@ -176,91 +157,17 @@ export function Sessions({ data, update, go, args = {} }) {
         </span>
       </div>
       {selected && (
-        <Modal title={action === "cancel" ? "Cancel Session" : action === "reschedule" ? "Request Reschedule" : action === "incident" ? "Report an Issue" : action === "meeting" ? "Open External Meeting" : "Session Details"} subtitle={`${selected.learner} ? ${selected.service}`} onClose={() => { setSelected(null); setAction(""); }}>
-          {!action && <>
-          <dl className="grid grid-cols-2 gap-3 text-xs">
-            {Object.entries(selected)
-              .filter(([k]) => !["id"].includes(k))
-              .map(([k, v]) => (
-                <div key={k}>
-                  <dt className="font-semibold capitalize">{k}</dt>
-                  <dd>{String(v)}</dd>
-                </div>
-              ))}
-          </dl>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              className={button}
-              onClick={() => go("messages", { learner: selected.learner })}
-            >
-              Message Learner
-            </button>
-            {["Confirmed", "Pending"].includes(selected.status) && (
-              <>
-                <button
-                  className={button}
-                  onClick={() => setAction("reschedule")}
-                >
-                  Request Reschedule
-                </button>
-                <button className={button} onClick={() => setAction("cancel")}>
-                  Cancel Session
-                </button>
-              </>
-            )}
-            <button className={button} onClick={() => setAction("incident")}>
-              Report an Issue
-            </button>
-          </div>
-          </>}
-          {action === "meeting" && <div className="space-y-3 text-sm"><p>This meeting runs on {selected.provider || "an external platform"}, outside CampusTutor.</p>{meetingUrl(selected.meetingUrl || selected.link) ? <a className={primary} href={meetingUrl(selected.meetingUrl || selected.link)} target="_blank" rel="noopener noreferrer">Open Meeting</a> : <p role="status">No meeting link has been provided. Contact the learner or update the session meeting information.</p>}<button className={button} onClick={()=>setAction("")}>Back</button></div>}
-          {action && action !== "meeting" && (
-            <form onSubmit={submit} className="mt-2 space-y-3">
-              <p className="text-xs">
-                {action === "cancel"
-                  ? "Cancel this session in the local demo? Refund eligibility is reviewed separately."
-                  : "Prepare a local request draft. Review and submission services are not connected."}
-              </p>
-              {action === "reschedule" && (
-                <>
-                  <Field
-                    label="Requested date"
-                    name="date"
-                    type="date"
-                    required
-                  />
-                  <Field
-                    label="Requested time"
-                    name="time"
-                    type="time"
-                    required
-                  />
-                </>
-              )}
-              {action === "incident" && <Field label="Incident type"><select name="incidentType" className={input} required><option value="">Select a type</option>{["No-show","Inappropriate behavior","Harassment","Payment concern","Technical issue","Other"].map(t=><option key={t}>{t}</option>)}</select></Field>}
-              {action === "cancel" && <label className="flex gap-2 text-xs"><input name="acknowledged" type="checkbox" required/>I understand that cancellation does not automatically guarantee a refund.</label>}
-              <Field
-                label="Reason / Details"
-                name="reason"
-                required
-                maxLength={2000}
-              />
-              <button className={action === "cancel" ? "tutor-danger-button" : primary}>
-                {action === "cancel" ? "Confirm Cancellation" : "Save Draft"}
-              </button>
-              <button
-                type="button"
-                className={button}
-                onClick={() => setAction("")}
-              >
-                Back
-              </button>
-            </form>
-          )}
-          <p role="status" className="mt-2 text-xs">
-            {feedback}
-          </p>
-        </Modal>
+        <SessionDetails
+          data={data}
+          update={update}
+          go={go}
+          sessionId={selected.id}
+          initialAction={action}
+          onClose={() => {
+            setSelected(null);
+            setAction("");
+          }}
+        />
       )}
     </div>
   );

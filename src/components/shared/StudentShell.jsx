@@ -1,9 +1,14 @@
 import {useLogout} from "./LogoutProvider.jsx";
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {GraduationCap,LogOut,Menu,Bell,MessageCircle} from 'lucide-react';
 import {Avatar} from '../tutor/workspace/ui.jsx';
 export default function StudentShell({role,nav,view,go,name='Juan Dela Cruz',unread=0,searchContent}){
+ useEffect(() => {
+   const previous = document.body.dataset.workspaceRole;
+   document.body.dataset.workspaceRole = role;
+   return () => { if (previous) document.body.dataset.workspaceRole = previous; else delete document.body.dataset.workspaceRole; };
+ }, [role]);
  const requestLogout = useLogout();
 
  const navigate=useNavigate();const [open,setOpen]=useState(false);
