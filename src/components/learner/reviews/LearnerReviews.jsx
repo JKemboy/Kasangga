@@ -1,4 +1,4 @@
-import {useLearnerWorkspace} from "../workspace/LearnerWorkspace.jsx";
+import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { useState } from "react";
 import { sortReviews } from "./reviewFilters.js";
 import {
@@ -62,23 +62,97 @@ const Summary = ({ icon: Icon, value, title, detail, color }) => (
 );
 
 // No completed sessions awaiting a review are supplied by the current sample data.
-const pendingReviews = [];
+
 const PAGE_SIZE = 3;
 
 export default function LearnerReviews() {
- const work=useLearnerWorkspace();
- const original=reviews;
- const rows=original.map(row=>{const stored=work.data.reviews.find(r=>r.sessionId===`${row[0]}:${row[6]}`);return stored?[row[0],row[1],row[2],String(stored.rating),stored.rating,stored.text,row[6],stored.date.slice(0,10),row[8]]:row;});
+  const work = useLearnerWorkspace();
+  const original = reviews;
+  const completed = work.data.sessions.filter(
+    (s) => s.lifecycle === "Completed",
+  );
+  const pendingReviews = completed
+    .filter((s) => !work.data.reviews.some((r) => r.sessionId === s.id))
+    .map((s) => [
+      s.name,
+      s.course || "",
+      s.service || s.subject || "",
+      0,
+      0,
+      "Reviews are only available for completed sessions.",
+      s.date,
+      "",
+      s.name
+        ?.split(" ")
+        .map((n) => n[0])
+        .join(""),
+      s,
+    ]);
+  function reviewRecord(name, date, topic, program, rating, text, session) {
+    return {
+      ...session,
+      id: session?.id || name + ":" + date,
+      name,
+      course: program,
+      subject: topic,
+      date,
+      lifecycle: "Completed",
+      review: Number(rating) ? { rating: Number(rating), text } : undefined,
+    };
+  }
+
+  const rows = original.map((row) => {
+    const stored = work.data.reviews.find(
+      (r) => r.sessionId === `${row[0]}:${row[6]}`,
+    );
+    return stored
+      ? [
+          row[0],
+          row[1],
+          row[2],
+          String(stored.rating),
+          stored.rating,
+          stored.text,
+          row[6],
+          stored.date.slice(0, 10),
+          row[8],
+        ]
+      : row;
+  });
+  rows.push(
+    ...work.data.reviews
+      .filter(
+        (r) => !original.some((row) => r.sessionId === row[0] + ":" + row[6]),
+      )
+      .map((r) => {
+        const s =
+          completed.find((s) => s.id === r.sessionId) || r.session || {};
+        return [
+          r.name,
+          s.course || "",
+          s.service || s.subject || "",
+          String(r.rating),
+          r.rating,
+          r.text,
+          s.date || "",
+          r.date.slice(0, 10),
+          r.name
+            ?.split(" ")
+            .map((n) => n[0])
+            .join(""),
+          { ...s, id: r.sessionId },
+        ];
+      }),
+  );
   const [activeTab, setActiveTab] = useState("Submitted");
   const [sort, setSort] = useState("recent");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const selectedReviews = activeTab === "Submitted" ? rows : pendingReviews;
   const sortedReviews = sortReviews(selectedReviews, sort);
   const visibleReviews = sortedReviews.slice(0, visibleCount);
-  const averageRating = reviews.length
+  const averageRating = rows.length
     ? (
-        reviews.reduce((sum, review) => sum + Number(review[3]), 0) /
-        reviews.length
+        rows.reduce((sum, review) => sum + Number(review[3]), 0) / rows.length
       ).toFixed(1)
     : "0.0";
 
@@ -94,7 +168,7 @@ export default function LearnerReviews() {
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
         <Summary
           icon={Star}
-          value={reviews.length}
+          value={rows.length}
           title="Total Reviews"
           detail="Tutors you have reviewed"
           color="bg-[#ffb800]"
@@ -131,7 +205,7 @@ export default function LearnerReviews() {
               className={`border-b-2 pb-2 ${activeTab === tab ? "border-[#087542] text-[#087542]" : "border-transparent text-[#173a9b]"}`}
             >
               {tab} Reviews (
-              {tab === "Submitted" ? reviews.length : pendingReviews.length})
+              {tab === "Submitted" ? rows.length : pendingReviews.length})
             </button>
           ))}
         </nav>
@@ -176,9 +250,10 @@ export default function LearnerReviews() {
             date,
             reviewed,
             initials,
+            session,
           ]) => (
             <article
-              key={name}
+              key={session?.id || name + date}
               className="grid items-center gap-3 rounded-xl border border-[#e0e7f0] bg-white p-3 text-xs [&>div]:min-w-0 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.8fr)_115px_120px]"
             >
               <div className="flex items-center gap-2">
@@ -210,15 +285,49 @@ export default function LearnerReviews() {
               <div className="border-l border-[#e1e7ef] pl-3">
                 <p className="font-bold">{date}</p>
                 <p className="mt-2 text-xs text-[#637191]">
-                  Reviewed on {reviewed}
+                  {reviewed
+                    ? `Reviewed on ${reviewed}`
+                    : "Awaiting your review"}
                 </p>
               </div>
               <div className="grid gap-2">
-                <button onClick={()=>work.open("review",{id:name+":"+date,name,subject:topic,date,lifecycle:"Completed"})} className="h-8 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]">
+                <button
+                  onClick={() =>
+                    work.open(
+                      "review",
+                      reviewRecord(
+                        name,
+                        date,
+                        topic,
+                        program,
+                        rating,
+                        review,
+                        session,
+                      ),
+                    )
+                  }
+                  className="h-8 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
+                >
                   <Pencil className="mr-2 inline h-4 w-4" />
-                  Edit Review
+                  {activeTab === "Submitted" ? "Edit Review" : "Write Review"}
                 </button>
-                <button onClick={()=>work.open("details",{id:name+":"+date,name,subject:topic,date,lifecycle:"Completed"})} className="h-8 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]">
+                <button
+                  onClick={() =>
+                    work.open(
+                      "details",
+                      reviewRecord(
+                        name,
+                        date,
+                        topic,
+                        program,
+                        rating,
+                        review,
+                        session,
+                      ),
+                    )
+                  }
+                  className="h-8 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
+                >
                   <Eye className="mr-2 inline h-4 w-4" />
                   View Session
                 </button>

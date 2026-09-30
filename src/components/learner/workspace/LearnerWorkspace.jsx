@@ -1,3 +1,4 @@
+import ReviewDialog from "./ReviewDialog.jsx";
 import LearnerReport from "./LearnerReport.jsx";
 import SessionDialog from "./SessionDialog.jsx";
 import TutorProfile from "./TutorProfile.jsx";
@@ -111,7 +112,9 @@ export default function LearnerWorkspace({ children, go }) {
                     ? "session-modal"
                     : dialog.kind === "report"
                       ? "session-modal"
-                      : "default"
+                      : dialog.kind === "review"
+                        ? "session-modal"
+                        : "default"
           }
           title={
             {
@@ -122,7 +125,10 @@ export default function LearnerWorkspace({ children, go }) {
               reschedule: "Request Reschedule",
               cancel: "Cancel Session",
               report: "Report an Issue",
-              review: "Rate & Review",
+              review:
+                data.reviews.find((x) => x.sessionId === r.id) || r.review
+                  ? "Edit Review"
+                  : "Rate & Review Tutor",
               editProfile: "Edit Profile",
               application: "Apply as Tutor",
               data: "Request My Data",
@@ -224,164 +230,35 @@ export default function LearnerWorkspace({ children, go }) {
               onSubmit={(values) => request("report", values)}
             />
           )}
-          {["review"].includes(dialog.kind) && (
-            <form
-              className="space-y-3 text-sm"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const f = Object.fromEntries(new FormData(e.currentTarget));
-                if (dialog.kind === "cancel") {
-                  if (
-                    !(await confirm({
-                      title: "Cancel this session?",
-                      message:
-                        "Refund eligibility is reviewed separately. Your original session cannot be restored by closing this dialog.",
-                      accept: "Confirm Cancellation",
-                      danger: true,
-                    }))
-                  )
-                    return;
-                  const record = {
-                    ...r,
-                    lifecycle: "Cancelled",
-                    paymentStatus:
-                      r.paymentStatus === "Paid"
-                        ? "Refund Under Review"
-                        : "Payment Voided",
-                    reason: f.reason,
-                  };
-                  if (
-                    commit((d) => ({
-                      ...d,
-                      sessions: [
-                        ...d.sessions.filter((s) => s.id !== r.id),
-                        record,
-                      ],
-                    }))
-                  ) {
-                    setDialog(null);
-                    toast("Session cancelled locally.");
-                  }
-                  return;
+          {dialog.kind === "review" && (
+            <ReviewDialog
+              record={r}
+              review={
+                data.reviews.find((x) => x.sessionId === r.id) || r.review
+              }
+              onClose={() => setDialog(null)}
+              onSave={(values) => {
+                if (r.lifecycle !== "Completed") return;
+                if (
+                  commit((d) => ({
+                    ...d,
+                    reviews: [
+                      ...d.reviews.filter((x) => x.sessionId !== r.id),
+                      {
+                        sessionId: r.id,
+                        name: r.name,
+                        ...values,
+                        date: new Date().toISOString(),
+                        session: r,
+                      },
+                    ],
+                  }))
+                ) {
+                  setDialog(null);
+                  toast("Review saved locally.");
                 }
-                if (dialog.kind === "review") {
-                  if (
-                    commit((d) => ({
-                      ...d,
-                      reviews: [
-                        ...d.reviews.filter((x) => x.sessionId !== r.id),
-                        {
-                          sessionId: r.id,
-                          name: r.name,
-                          rating: Number(f.rating),
-                          text: f.reason,
-                          date: new Date().toISOString(),
-                        },
-                      ],
-                    }))
-                  ) {
-                    setDialog(null);
-                    toast("Review saved.");
-                  }
-                  return;
-                }
-                request(dialog.kind, { sessionId: r.id, ...f });
               }}
-            >
-              <p>
-                {r.name} · {r.subject || r.service} · {r.date}
-              </p>
-              {dialog.kind === "reschedule" && (
-                <>
-                  <Field
-                    label="New Date"
-                    type="date"
-                    name="date"
-                    required
-                    min={new Date().toLocaleDateString("en-CA", {
-                      timeZone: "Asia/Manila",
-                    })}
-                  />
-                  <Field label="New Time" type="time" name="time" required />
-                  <p className="text-xs">
-                    The original session stays scheduled until your tutor
-                    accepts.
-                  </p>
-                </>
-              )}
-              {dialog.kind === "report" && (
-                <Field label="Incident Type">
-                  <select name="type" className={input} required>
-                    <option value="">Select a type</option>
-                    {[
-                      "No-show",
-                      "Inappropriate behavior or harassment",
-                      "Payment concern",
-                      "Technical issue",
-                      "Other",
-                    ].map((v) => (
-                      <option key={v}>{v}</option>
-                    ))}
-                  </select>
-                </Field>
-              )}
-              {dialog.kind === "review" && (
-                <Field label="Rating">
-                  <select
-                    name="rating"
-                    className={input}
-                    defaultValue={
-                      data.reviews.find((x) => x.sessionId === r.id)?.rating ||
-                      ""
-                    }
-                    required
-                  >
-                    <option value="">Choose a rating</option>
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <option key={n} value={n}>
-                        {n} stars
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              )}
-              <Field
-                label={
-                  dialog.kind === "review" ? "Your Review" : "Reason / Details"
-                }
-              >
-                <textarea
-                  name="reason"
-                  className={input}
-                  required
-                  minLength={dialog.kind === "report" ? 20 : 3}
-                  maxLength={2000}
-                  defaultValue={
-                    dialog.kind === "review"
-                      ? data.reviews.find((x) => x.sessionId === r.id)?.text
-                      : ""
-                  }
-                />
-              </Field>
-              {dialog.kind === "cancel" && (
-                <label className="flex gap-2 text-xs">
-                  <input type="checkbox" required />I understand that a refund
-                  is not automatically guaranteed.
-                </label>
-              )}
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  className={button}
-                  onClick={() => setDialog(null)}
-                >
-                  Cancel
-                </button>
-                <button className={primary}>
-                  {dialog.kind === "cancel" ? "Confirm Cancellation" : "Submit"}
-                </button>
-              </div>
-            </form>
+            />
           )}
           {dialog.kind === "editProfile" && (
             <form
