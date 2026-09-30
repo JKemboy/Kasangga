@@ -140,16 +140,17 @@ test("weekly availability repeats by weekday while one-time slots and sessions u
     sessions: [session, { ...session, id: "pending", status: "Pending" }],
   };
   const selected = eventsForDate(parseDate("2026-09-14"), data);
+  assert.equal(selected.find(event => event.sessionId === "pending").pending, true);
   assert.equal(
     selected.filter((event) => event.kind === "available").length,
     2,
   );
-  assert.equal(selected.filter((event) => event.kind === "session").length, 1);
+  assert.equal(selected.filter((event) => event.kind === "session").length, 2);
   assert.deepEqual(
     selected
       .filter((event) => event.kind === "session")
       .map(({ start, end }) => [start, end]),
-    [[13.25, 13.75]],
+    [[13.25, 13.75], [13.25, 13.75]],
   );
   assert.equal(
     selected.find((event) => event.slot?.id === "weekly").slot,

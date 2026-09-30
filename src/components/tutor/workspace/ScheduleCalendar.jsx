@@ -1,3 +1,4 @@
+import { confirmedClasses } from "./scheduleReview.js";
 import { LockKeyhole, MoreHorizontal } from "lucide-react";
 import { classes, time } from "./data.js";
 import {
@@ -51,11 +52,15 @@ function EventIcon({ kind }) {
 
 function WeekCalendar({ anchor, classOnly, height, source, onEvent, onDay }) {
   const first = weekStart(anchor);
-  const dates = Array.from({ length: classOnly ? 6 : 7 }, (_, i) =>
-    addDays(first, i),
+  const dates = Array.from(
+    { length: classOnly && !source.classes.some((c) => c[0] === 6) ? 6 : 7 },
+    (_, i) => addDays(first, i),
   );
-  const startHour = 7;
-  const endHour = classOnly ? 19 : 21;
+  const startHour = Math.min(7, ...source.classes.map((c) => Math.floor(c[1])));
+  const endHour = Math.max(
+    classOnly ? 19 : 21,
+    ...source.classes.map((c) => Math.ceil(c[2])),
+  );
   const hours = endHour - startHour;
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Manila",
@@ -123,7 +128,7 @@ function WeekCalendar({ anchor, classOnly, height, source, onEvent, onDay }) {
                   <button
                     key={event.id}
                     type="button"
-                    className={`schedule-event schedule-event-${event.kind}`}
+                    className={`schedule-event schedule-event-${event.kind} ${event.conflict ? "schedule-event-conflict" : ""} ${event.pending ? "schedule-event-pending" : ""}`}
                     style={{
                       top: `calc(${((visibleStart - startHour) / hours) * 100}% + 1px)`,
                       height: `calc(${((visibleEnd - visibleStart) / hours) * 100}% - 2px)`,
@@ -132,9 +137,17 @@ function WeekCalendar({ anchor, classOnly, height, source, onEvent, onDay }) {
                     }}
                     aria-label={label}
                     title={label}
-                    onClick={() => onEvent(event, date)}
+                    onClick={(e) =>
+                      onEvent(
+                        event,
+                        date,
+                        e.currentTarget.getBoundingClientRect(),
+                      )
+                    }
                   >
-                    <span className="schedule-event-title">{event.title}</span>
+                    <span className="schedule-event-title">
+                      {event.conflict ? "Conflicts with class" : event.title}
+                    </span>
                     <EventIcon kind={event.kind} />
                     <span className="schedule-event-time">
                       {time(event.start)} – {time(event.end)}
@@ -213,10 +226,16 @@ function MonthCalendar({ anchor, classOnly, height, source, onEvent, onDay }) {
                 <button
                   key={event.id}
                   type="button"
-                  className={`schedule-month-event schedule-event-${event.kind}`}
+                  className={`schedule-month-event schedule-event-${event.kind} ${event.conflict ? "schedule-event-conflict" : ""} ${event.pending ? "schedule-event-pending" : ""}`}
                   aria-label={eventLabel(event, date)}
                   title={eventLabel(event, date)}
-                  onClick={() => onEvent(event, date)}
+                  onClick={(e) =>
+                    onEvent(
+                      event,
+                      date,
+                      e.currentTarget.getBoundingClientRect(),
+                    )
+                  }
                 >
                   <span>
                     {time(event.start)} · {event.title}
@@ -251,7 +270,11 @@ export default function ScheduleCalendar({
   onDay,
 }) {
   const Calendar = mode === "Month" ? MonthCalendar : WeekCalendar;
-  const source = { classes, slots: data.slots, sessions: data.sessions };
+  const source = {
+    classes: confirmedClasses(data),
+    slots: data.slots,
+    sessions: data.sessions,
+  };
   return (
     <div
       className="schedule-calendar-scroll"

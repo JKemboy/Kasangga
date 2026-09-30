@@ -113,21 +113,36 @@ export function eventsForDate(
       if (slot.day !== day || (!slot.repeat && slot.date !== iso)) return;
       events.push({
         id: `slot:${slot.id ?? index}:${iso}`,
-        kind: "available",
-        conflict: slot.kind !== "unavailable" && classes.some(c => c[0] === day && slot.start < c[2] && c[1] < slot.end),
+        kind: slot.kind === "unavailable" ? "protected" : "available",
+        conflict:
+          slot.kind !== "unavailable" &&
+          classes.some(
+            (c) => c[0] === day && slot.start < c[2] && c[1] < slot.end,
+          ),
         start: slot.start,
         end: slot.end,
-        title: `Available · ${slot.type === "Both" ? "Online / In-person" : slot.type}`,
-        detail: slot.repeat ? "Repeats weekly" : "One-time availability",
+        title:
+          (slot.kind === "unavailable" ? "Unavailable" : slot.serviceName) ||
+          `Available · ${slot.type === "Both" ? "Online / In-person" : slot.type}`,
+        detail: slot.serviceId
+          ? "Reserved for this service"
+          : slot.repeat
+            ? "Repeats weekly"
+            : "One-time availability",
         slot,
       });
     });
     sessions.forEach((session, index) => {
-      if (session.date !== iso || session.status !== "Confirmed") return;
+      if (
+        session.date !== iso ||
+        !["Confirmed", "Pending"].includes(session.status)
+      )
+        return;
       events.push({
         id: `session:${session.id ?? index}:${iso}`,
         sessionId: session.id,
         kind: "session",
+        pending: session.status === "Pending",
         start: decimalHour(session.start),
         end: decimalHour(session.end),
         title: session.service,

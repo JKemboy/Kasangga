@@ -1,3 +1,8 @@
+import AvailabilityEditor from "./AvailabilityEditor.jsx";
+import AvailabilityPopover from "./AvailabilityPopover.jsx";
+import SessionDetails from "./SessionDetails.jsx";
+import "./availability-interactions.css";
+import { confirmedClasses } from "./scheduleReview.js";
 import { useInteractions } from "../../shared/InteractionProvider.jsx";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
@@ -15,6 +20,7 @@ import { hour, time, slotError } from "./data.js";
 import { Modal, Field, button, primary, input } from "./ui.jsx";
 import {
   addDays,
+  eventsForDate,
   formatTimeInput,
   isoDate,
   parseDate,
@@ -73,13 +79,14 @@ function rangeLabel(anchor, mode) {
 export default function Availability({ data, update, go, args = {} }) {
   const [tab, setTab] = useState(tabs.includes(args.tab) ? args.tab : tabs[0]);
   const [anchor, setAnchor] = useState(
-    () => parseDate(args.date) || new Date(2026, 8, 14, 12),
+    () => parseDate(args.date) || todayInManila(),
   );
   const [mode, setMode] = useState("Week");
   const [edit, setEdit] = useState(null);
   const [upload, setUpload] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
   const [day, setDay] = useState(null);
   const [calendarHeight, setCalendarHeight] = useState(380);
   const calendarRef = useRef(null);
@@ -119,71 +126,78 @@ export default function Availability({ data, update, go, args = {} }) {
       day: (date.getDay() + 6) % 7,
       start: 7,
       end: 8,
-      repeat: true,
+      repeat: false,
+      kind: "available",
       type: "Online",
     };
     for (let start = 7; start <= 20; start += 0.5) {
       candidate.start = start;
       candidate.end = start + 1;
-      if (!slotError(candidate, data.slots, data.sessions)) break;
+      if (
+        !slotError(candidate, data.slots, data.sessions, confirmedClasses(data))
+      )
+        break;
     }
     setError("");
     setDay(null);
     setEdit(candidate);
   }
 
-  function openEvent(event, date) {
+  function openEvent(event, date, rect) {
     setDay(null);
     setError("");
-    if (event.kind === "available")
-      setEdit({ ...event.slot, date: isoDate(date) });
-    else setSelected({ event, date });
+    if (event.kind === "session") {
+      setSelected(null);
+      setSessionId(event.sessionId);
+    } else setSelected({ event, date, rect });
   }
-
-  function save(e) {
-    e.preventDefault();
-    const fields = Object.fromEntries(new FormData(e.currentTarget));
-    const date = parseDate(fields.date);
-    if (!date) return setError("Choose a valid date.");
-    if (edit.id && !data.slots.some((slot) => slot.id === edit.id))
-      return setError(
-        "This availability no longer exists. Close the form and try again.",
-      );
-    const slot = {
-      id: edit.id || crypto.randomUUID(),
-      date: fields.date,
-      day: (date.getDay() + 6) % 7,
-      start: hour(fields.start),
-      end: hour(fields.end),
-      repeat: fields.repeat === "on",
-      type: fields.type,
-    };
-    const validation = slotError(slot, data.slots, data.sessions);
-    if (validation) return setError(validation);
-    const saved = update((d) => ({
-      ...d,
-      slots: edit.id
-        ? d.slots.map((s) => (s.id === edit.id ? slot : s))
-        : [...d.slots, slot],
-    }));
-    if (saved === false)
-      return setError(
-        "Could not save availability. Please try again when browser storage is available.",
-      );
+  const { confirm } = useInteractions();
+  async function deleteSlot(slot) {
+    setSelected(null);
+    if (
+      !(await confirm({
+        title: "Remove this availability?",
+        message: slot.repeat
+          ? "Remove this weekly block? Existing booked sessions stay scheduled."
+          : "Learners can no longer book this time. Existing booked sessions stay scheduled.",
+        accept: "Remove Availability",
+        danger: true,
+      }))
+    )
+      return;
+    if (
+      update((d) => ({
+        ...d,
+        slots: d.slots.filter((s) => s.id !== slot.id),
+      })) === false
+    ) {
+      setError("Could not remove this block. Please try again.");
+      return;
+    }
+    closeEdit();
+  }
+  const classConflicts = data.slots.filter(
+    (s) =>
+      (!s.kind || s.kind === "available") &&
+      confirmedClasses(data).some(
+        (c) => c[0] === s.day && s.start < c[2] && c[1] < s.end,
+      ),
+  );
+  function showConflict() {
+    const slot = classConflicts[0];
+    if (!slot) return;
+    let date = parseDate(slot.date);
+    if (slot.repeat) {
+      date = addDays(weekStart(anchor), slot.day);
+    }
     setAnchor(date);
-    closeEdit();
-  }
-
-  const {confirm} = useInteractions();
-  async function deleteSlot() {
-    if (!await confirm({title:"Remove this availability?",message:"Learners can no longer book this time. Existing booked sessions are not affected.",accept:"Remove Availability",danger:true})) return;
-    const saved = update((d) => ({
-      ...d,
-      slots: d.slots.filter((s) => s.id !== edit.id),
-    }));
-    if (saved === false)
-      return setError("Could not delete this slot. Please try again.");
-    closeEdit();
+    setMode("Week");
+    const event = eventsForDate(date, {
+      classes: confirmedClasses(data),
+      slots: data.slots,
+      sessions: data.sessions,
+    }).find((e) => e.slot?.id === slot.id);
+    if (event) setSelected({ event, date });
   }
 
   return (
@@ -227,7 +241,10 @@ export default function Availability({ data, update, go, args = {} }) {
               }
             }}
             className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-t-md border border-b-2 px-3 py-2 text-xs font-medium sm:min-w-44 sm:px-5 ${tab === name ? "border-green-800 border-b-amber-400 bg-green-800 text-white" : "border-[#e0e7f0] bg-white text-[#23356b] hover:bg-green-50"}`}
-            onClick={() => setTab(name)}
+            onClick={() => {
+              setSelected(null);
+              setTab(name);
+            }}
           >
             <CalendarDays className="h-4 w-4 shrink-0" />
             {name}
@@ -262,7 +279,18 @@ export default function Availability({ data, update, go, args = {} }) {
               {[
                 ["Academic Year", "2026 – 2027"],
                 ["Semester", "First Semester"],
-                ["Last Updated", "September 10, 2026"],
+                [
+                  "Last Updated",
+                  data.classSchedule?.confirmedAt
+                    ? new Date(
+                        data.classSchedule.confirmedAt,
+                      ).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })
+                    : "September 10, 2026",
+                ],
               ].map(([label, value]) => (
                 <div
                   key={label}
@@ -278,7 +306,11 @@ export default function Availability({ data, update, go, args = {} }) {
                 onClick={() => setUpload(true)}
               >
                 <Upload className="h-4 w-4 shrink-0" />
-                <span>Upload Updated Class Schedule</span>
+                <span>
+                  {data.scheduleReview
+                    ? "Continue Schedule Review"
+                    : "Upload Updated Class Schedule"}
+                </span>
               </button>
             </div>
             <div className="flex items-center gap-3 rounded-md border border-blue-100 bg-[#eaf4ff] px-3 py-2 text-[11px] leading-4 text-[#00257a]">
@@ -391,6 +423,23 @@ export default function Availability({ data, update, go, args = {} }) {
           </>
         )}
 
+        {!classOnly && !!classConflicts.length && (
+          <div className="availability-conflict-banner">
+            <div>
+              <strong>
+                {classConflicts.length} availability blocks overlap your class
+                schedule
+              </strong>
+              <p>
+                These times cannot be booked. Update or remove the striped
+                blocks.
+              </p>
+            </div>
+            <button className={button} onClick={showConflict}>
+              Show first conflict
+            </button>
+          </div>
+        )}
         <div
           aria-label="Calendar legend"
           className="flex flex-wrap justify-end gap-x-4 gap-y-1 text-[10px] text-[#344675]"
@@ -427,144 +476,47 @@ export default function Availability({ data, update, go, args = {} }) {
       </div>
 
       {edit && (
-        <Modal
-          title={edit.id ? "Edit Availability" : "Add Availability"}
+        <AvailabilityEditor
+          slot={edit}
+          data={data}
+          update={update}
           onClose={closeEdit}
-        >
-          <form onSubmit={save} className="space-y-3 p-1">
-            <Field
-              label="Date"
-              name="date"
-              type="date"
-              required
-              defaultValue={edit.date}
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <Field
-                label="Start Time"
-                name="start"
-                type="time"
-                min="07:00"
-                max="20:59"
-                step="60"
-                required
-                defaultValue={formatTimeInput(edit.start)}
-              />
-              <Field
-                label="End Time"
-                name="end"
-                type="time"
-                min="07:01"
-                max="21:00"
-                step="60"
-                required
-                defaultValue={formatTimeInput(edit.end)}
-              />
-            </div>
-            <Field label="Session Type">
-              <select
-                name="type"
-                className={input}
-                defaultValue={edit.type || "Online"}
-              >
-                {["Online", "In-person", "Both"].map((name) => (
-                  <option key={name}>{name}</option>
-                ))}
-              </select>
-            </Field>
-            <label className="flex items-center gap-2 text-xs">
-              <input
-                name="repeat"
-                type="checkbox"
-                defaultChecked={edit.repeat ?? true}
-                className="accent-green-800"
-              />
-              Repeat weekly on this day
-            </label>
-            {edit.id && edit.repeat && (
-              <p className="text-[11px] leading-5 text-[#455780]">
-                Editing or deleting this slot updates its weekly availability.
-              </p>
-            )}
-            <p className="text-[11px] text-[#455780]">
-              Times use Asia/Manila (GMT+08:00). Available hours: 7:00 AM–9:00
-              PM.
-            </p>
-            {error && (
-              <p
-                role="alert"
-                className="rounded bg-red-50 p-2 text-xs text-red-700"
-              >
-                {error}
-              </p>
-            )}
-            <div className="flex flex-wrap justify-end gap-2">
-              {edit.id && (
-                <button
-                  type="button"
-                  className="mr-auto inline-flex items-center gap-1.5 rounded-md border border-red-300 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
-                  onClick={deleteSlot}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Delete Slot
-                </button>
-              )}
-              <button type="button" className={button} onClick={closeEdit}>
-                Cancel
-              </button>
-              <button className={primary}>Save Availability</button>
-            </div>
-          </form>
-        </Modal>
+          onSaved={(date) => {
+            setAnchor(date);
+            closeEdit();
+          }}
+          onDelete={deleteSlot}
+        />
       )}
-
       {selected && (
-        <Modal title={selected.event.title} onClose={() => setSelected(null)}>
-          <div className="space-y-3 p-1 text-sm">
-            <p className="flex items-center gap-2 text-xs text-[#455780]">
-              <LockKeyhole className="h-4 w-4" />
-              {eventLabels[selected.event.kind]} · Read-only
-            </p>
-            <p className="font-medium">{fullDate(selected.date)}</p>
-            <p>
-              {time(selected.event.start)} – {time(selected.event.end)}
-            </p>
-            {selected.event.detail && (
-              <p className="break-words leading-6">{selected.event.detail}</p>
-            )}
-            {selected.event.room && <p>{selected.event.room}</p>}
-            {selected.event.kind === "protected" && (
-              <p className="text-xs text-[#455780]">
-                This protected time is unavailable for tutoring.
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className={button}
-                onClick={() => setSelected(null)}
-              >
-                Close
-              </button>
-              {selected.event.kind === "session" &&
-                selected.event.sessionId && (
-                  <button
-                    type="button"
-                    className={primary}
-                    onClick={() =>
-                      go("sessions", {
-                        sessionId: selected.event.sessionId,
-                      })
-                    }
-                  >
-                    View Session
-                  </button>
-                )}
-            </div>
-          </div>
-        </Modal>
+        <AvailabilityPopover
+          selection={selected}
+          onClose={() => setSelected(null)}
+          onEdit={(slot, date) => {
+            setEdit({ ...slot, date: isoDate(date) });
+            setSelected(null);
+          }}
+          onDelete={deleteSlot}
+          onClassSchedule={() => {
+            setSelected(null);
+            setTab("Class Schedule");
+          }}
+        />
       )}
-
+      {sessionId && (
+        <SessionDetails
+          data={data}
+          update={update}
+          go={go}
+          sessionId={sessionId}
+          onClose={() => setSessionId(null)}
+        />
+      )}
+      {error && !edit && (
+        <p role="alert" className="text-red-600">
+          {error}
+        </p>
+      )}
       {day && (
         <Modal title={fullDate(day.date)} onClose={() => setDay(null)}>
           <div className="space-y-2 p-1">
@@ -613,13 +565,16 @@ export default function Availability({ data, update, go, args = {} }) {
           </div>
         </Modal>
       )}
-      {upload && (
-        <ScheduleUpload
-          data={data}
-          update={update}
-          onClose={() => setUpload(false)}
-        />
-      )}
+      <ScheduleUpload
+        data={data}
+        update={update}
+        visible={upload}
+        onClose={() => setUpload(false)}
+        onReviewAvailability={() => {
+          setUpload(false);
+          setTab("Tutoring Availability");
+        }}
+      />
     </section>
   );
 }
