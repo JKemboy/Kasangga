@@ -1,5 +1,5 @@
 import "./tutor-modals.css";
-﻿import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 export const button =
   "rounded-md border border-green-700 px-2.5 py-1.5 text-xs font-semibold text-green-800 hover:bg-green-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400";
@@ -51,7 +51,14 @@ export function Heading({ title, subtitle, action }) {
   );
 }
 export const TutorModalContext = createContext(false);
-export function Modal({ title, children, onClose, subtitle, footer, size = "default" }) {
+export function Modal({
+  title,
+  children,
+  onClose,
+  subtitle,
+  footer,
+  size = "default",
+}) {
   const tutor = useContext(TutorModalContext);
   const ref = useRef(null);
   useEffect(() => {
@@ -67,10 +74,21 @@ export function Modal({ title, children, onClose, subtitle, footer, size = "defa
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
-      className={tutor ? `tutor-modal tutor-modal--${size}` : "m-auto max-h-[85dvh] w-[min(600px,94vw)] overflow-y-auto rounded-xl p-3 shadow-xl backdrop:bg-black/40"}
+      className={
+        tutor
+          ? `tutor-modal tutor-modal--${size}`
+          : `${size === "profile" ? "learner-profile-modal " : size === "booking" ? "learner-booking-modal " : size === "session-drawer" ? "learner-session-drawer " : size === "session-modal" ? "learner-session-modal " : size === "account" ? "learner-account-modal " : ""}m-auto max-h-[85dvh] w-[min(600px,94vw)] overflow-y-auto rounded-xl p-3 shadow-xl backdrop:bg-black/40`
+      }
     >
-      <div className={tutor ? "tutor-modal-header" : "mb-2 flex justify-between gap-3"}>
-        <div><h2 className="font-bold">{title}</h2>{subtitle && <p className="tutor-modal-subtitle">{subtitle}</p>}</div>
+      <div
+        className={
+          tutor ? "tutor-modal-header" : "mb-2 flex justify-between gap-3"
+        }
+      >
+        <div>
+          <h2 className="font-bold">{title}</h2>
+          {subtitle && <p className="tutor-modal-subtitle">{subtitle}</p>}
+        </div>
         <button type="button" aria-label="Close dialog" onClick={onClose}>
           <X className="h-5 w-5" />
         </button>
