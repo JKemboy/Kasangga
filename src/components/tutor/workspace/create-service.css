@@ -1,0 +1,188 @@
+﻿.tutor-modal--service {
+  width: min(920px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+}
+.tutor-modal--service .tutor-modal-header {
+  padding: 8px 16px;
+}
+.tutor-modal--service .tutor-modal-header h2 {
+  font-size: 18px;
+}
+.tutor-modal--service .tutor-modal-body {
+  padding: 16px 20px;
+}
+.tutor-modal--service .tutor-modal-footer {
+  justify-content: space-between;
+  padding: 10px 20px;
+}
+.tutor-modal--service .tutor-modal-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+.create-service-form {
+  display: grid;
+  gap: 10px;
+}
+.create-service-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.create-service-form h3,
+.create-service-form legend,
+.create-service-form label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.create-service-form label > input,
+.create-service-form label > select,
+.create-service-form label > textarea {
+  display: block;
+  margin-top: 5px;
+}
+.create-service-form textarea {
+  min-height: 64px;
+}
+.create-service-hint {
+  color: #778094;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+.create-service-form > .create-service-hint {
+  margin-top: -8px;
+}
+.service-topic-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.service-topic-input > input {
+  flex: 1;
+  min-width: 0;
+}
+.service-topic-input button,
+.service-availability-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  padding: 6px 10px;
+}
+.service-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+.service-topics > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #e7f4eb;
+  color: #065d31;
+}
+.service-types {
+  display: flex;
+  gap: 18px;
+  min-height: 34px;
+  align-items: center;
+  margin-top: 5px;
+}
+.service-types label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 400;
+}
+.service-types input {
+  width: 16px;
+  height: 16px;
+  accent-color: #006333;
+}
+.service-availability-heading {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.service-availability-heading > div {
+  flex: 1;
+}
+.service-availability-heading > span {
+  white-space: nowrap;
+  background: #e5f5e9;
+  color: #057132;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.service-availability {
+  border: 1px solid #e1e5eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.service-availability-row {
+  display: grid;
+  grid-template-columns: 1.25fr 0.95fr 0.95fr 1.9fr 24px;
+  gap: 10px;
+  padding: 10px;
+  align-items: start;
+  border-bottom: 1px solid #edf0f3;
+}
+.service-slot-valid,
+.service-slot-error {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.service-slot-valid {
+  color: #087b38;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.service-slot-valid svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.service-slot-error {
+  color: #b42318;
+}
+.service-availability-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: #fafbfc;
+  padding: 8px 10px;
+}
+@media (max-width: 700px) {
+  .create-service-columns {
+    grid-template-columns: 1fr;
+  }
+  .service-availability-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .service-availability-row > div,
+  .service-availability-row > p {
+    grid-column: 1/-1;
+  }
+  .service-availability-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tutor-modal--service .tutor-modal-body,
+  .tutor-modal--service .tutor-modal-header {
+    padding: 14px;
+  }
+  .tutor-modal--service .tutor-modal-footer {
+    padding: 10px 18px;
+  }
+}

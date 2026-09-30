@@ -1,3 +1,5 @@
+import ServiceDetails from "./ServiceDetails.jsx";
+import CreateService from "./CreateService.jsx";
 import { useInteractions } from "../../shared/InteractionProvider.jsx";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
@@ -614,74 +616,10 @@ export default function Services({
         </nav>
       </footer>
 
-      {detail && (
-        <Modal title={detail.name} onClose={() => setDetailId(null)}>
-          <div className="space-y-4 p-1 text-sm">
-            <div className="flex items-center gap-3">
-              <ServiceIcon service={detail} />
-              <div>
-                <p className="text-xs text-[#455780]">{detail.subtitle}</p>
-                <div className="mt-1">
-                  <StatusBadge status={detail.status} />
-                </div>
-              </div>
-            </div>
-            <p className="break-words leading-6">{detail.description}</p>
-            <dl className="grid gap-3 text-xs sm:grid-cols-2">
-              {[
-                ["Category", detail.category],
-                ["Level", detail.level],
-                ["Rate per hour", money(detail.rate)],
-                [
-                  "Session Type",
-                  detail.type === "Both" ? "Online and In-person" : detail.type,
-                ],
-                ["Rating", detail.rating || "No ratings yet"],
-                ["Completed Sessions", detail.completed],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt className="text-[#455780]">{label}</dt>
-                  <dd className="mt-1 font-medium">{value}</dd>
-                </div>
-              ))}
-              <div className="sm:col-span-2">
-                <dt className="text-[#455780]">Topics / Skills</dt>
-                <dd className="mt-1 break-words leading-5">{detail.topics}</dd>
-              </div>
-            </dl>
-            {detail.status === "Suspended" && (
-              <p className="flex gap-2 rounded-md bg-red-50 p-3 text-xs leading-5 text-red-700">
-                <ShieldAlert className="h-4 w-4 shrink-0" />
-                Suspended by Admin — editing and status changes are unavailable
-                while moderation applies.
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className={button}
-                onClick={() => setDetailId(null)}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className={primary}
-                disabled={detail.status === "Suspended"}
-                onClick={() => {
-                  setEdit(detail);
-                  setDetailId(null);
-                  setError("");
-                }}
-              >
-                Edit Service
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {detail && <ServiceDetails service={detail} data={data} update={update} go={go} onClose={()=>setDetailId(null)} onToggle={toggleService} onEdit={service=>{setEdit(service);setDetailId(null);setError('');}}/>}
 
-      {edit && (
+      {edit && !edit.id && <CreateService data={data} update={update} onClose={close}/> }
+      {edit?.id && (
         <Modal
           title={edit.id ? "Edit Service" : "Create New Service"}
           onClose={close}
