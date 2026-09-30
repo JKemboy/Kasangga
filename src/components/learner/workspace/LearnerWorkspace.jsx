@@ -96,7 +96,13 @@ export default function LearnerWorkspace({ children, go }) {
       {children}
       {dialog && (
         <Modal
-          size={dialog.kind === "profile" ? "profile" : "default"}
+          size={
+            dialog.kind === "profile"
+              ? "profile"
+              : dialog.kind === "book"
+                ? "booking"
+                : "default"
+          }
           title={
             {
               profile: "Tutor Profile",
@@ -133,7 +139,7 @@ export default function LearnerWorkspace({ children, go }) {
                 commit((d) => ({
                   ...d,
                   sessions: [
-                    ...d.sessions,
+                    ...d.sessions.filter((s) => s.id !== booking.bookingId),
                     { ...booking, id: booking.bookingId },
                   ],
                 }))
