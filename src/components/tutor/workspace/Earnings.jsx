@@ -1,3 +1,4 @@
+import { TransactionDetails } from "./SessionDetails.jsx";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
   CalendarCheck,
@@ -15,7 +16,7 @@ import {
 } from "lucide-react";
 import { money } from "./data.js";
 import { sessionAllocation, summarizeEarnings } from "./earnings.js";
-import { Modal, button } from "./ui.jsx";
+import { button } from "./ui.jsx";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -71,8 +72,10 @@ function PaymentBadge({ status }) {
   );
 }
 
-export default function Earnings({ data, args = {} }) {
-  const [selected,setSelected]=useState(null);
+export default function Earnings({ data, go, args = {} }) {
+  const [selected, setSelected] = useState(
+    data.sessions.find((s) => s.transaction === args.transactionId) || null,
+  );
   const [query, setQuery] = useState(args.transactionId || args.query || "");
   const [status, setStatus] = useState("All");
   const [page, setPage] = useState(1);
@@ -344,7 +347,19 @@ export default function Earnings({ data, args = {} }) {
             {visible.map((s) => {
               const amounts = sessionAllocation(s);
               return (
-                <tr key={s.id} className="h-12" tabIndex={0} aria-label={`View transaction ${s.transaction || s.id}`} onClick={()=>setSelected(s)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelected(s);}}}>
+                <tr
+                  key={s.id}
+                  className="h-12"
+                  tabIndex={0}
+                  aria-label={`View transaction ${s.transaction || s.id}`}
+                  onClick={() => setSelected(s)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelected(s);
+                    }
+                  }}
+                >
                   <th
                     scope="row"
                     className="break-words px-1.5 py-1.5 font-normal leading-[14px]"
@@ -488,7 +503,13 @@ export default function Earnings({ data, args = {} }) {
           </button>
         </nav>
       </footer>
-      {selected&&<Modal title="Transaction Details" onClose={()=>setSelected(null)}><dl className="grid grid-cols-2 gap-3 text-sm">{Object.entries({Transaction:selected.transaction,Booking:selected.booking,Learner:selected.learner,Service:selected.service,Date:selected.date,Payment:selected.payment,Gross:money(selected.amount),'Tutor Share':money(Number(selected.amount)*.9),'OSAS Share':money(Number(selected.amount)*.05),'Platform Share':money(Number(selected.amount)*.05)}).map(([k,v])=><div key={k}><dt className="font-semibold">{k}</dt><dd>{v||'Not available'}</dd></div>)}</dl><button className={button+' mt-4'} onClick={()=>setSelected(null)}>Done</button></Modal>}
+      {selected && (
+        <TransactionDetails
+          session={selected}
+          onClose={() => setSelected(null)}
+          onSession={() => go("sessions", { sessionId: selected.id })}
+        />
+      )}
     </section>
   );
 }
