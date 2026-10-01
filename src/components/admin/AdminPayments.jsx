@@ -1,3 +1,5 @@
+import PaymentDetails from "./PaymentDetails.jsx";
+import UserExport from "./UserExport.jsx";
 import { useState } from "react";
 import {
   CreditCard,
@@ -26,7 +28,7 @@ import {
 import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./adminData.js";
 
-const transactions = [
+const initialTransactions = [
   [
     "0917",
     "1842",
@@ -93,11 +95,16 @@ const transactions = [
   time,
   status: "Completed",
   method: "GCash via PayMongo",
+  refundRequestedAt: id === "1831" ? "Sep 16, 2026 ? 9:41 AM by Mark Joseph Paloma" : undefined,
+  refundReason: id === "1831" ? "Cancelled 20 minutes before the session because of a class schedule conflict." : undefined,
 }));
 // Refund-review rows retain the original paid allocation, but are excluded from
 // settled earnings until the review is resolved. This is reference data only.
 const originalAllocation = (r) => sessionAllocation({ ...r, payment: "Paid" });
 export default function AdminPayments() {
+  const [transactions,setTransactions]=useState(()=>{try{const saved=JSON.parse(localStorage.getItem('campustutor:admin-refund-reviews:v1'))||{};return initialTransactions.map(r=>({...r,...(saved[r.id]?{refundDecision:saved[r.id].refundDecision,history:saved[r.id].history}: {})}));}catch{return initialTransactions;}});
+  function saveReview(updated){const next=transactions.map(r=>r.id===updated.id?updated:r);try{localStorage.setItem('campustutor:admin-refund-reviews:v1',JSON.stringify(Object.fromEntries(next.filter(r=>r.refundDecision).map(r=>[r.id,{refundDecision:r.refundDecision,history:r.history}]))));setTransactions(next);return true;}catch{return false;}}
+
   const [status, setStatus] = useState(""),
     [query, setQuery] = useState(""),
     [start, setStart] = useState("2026-09-01"),
@@ -276,10 +283,7 @@ export default function AdminPayments() {
           <Filter size={14} />
           Filter
         </button>
-        <button className={primary + " ml-auto"} onClick={exportCsv}>
-          <Download size={14} />
-          Export
-        </button>
+        <UserExport kind="payments" rows={filtered} onCsv={exportCsv} onNotice={setNotice} />
       </div>
       <div className="ap-search">
         <label className="osas-search">
@@ -483,49 +487,7 @@ export default function AdminPayments() {
           </div>
         </Modal>
       )}
-      {selected && (
-        <Modal title="Transaction Details" onClose={() => setSelected(null)}>
-          <div className="space-y-3 text-xs">
-            <p className="rounded bg-blue-50 p-3">
-              Read-only demo record. No payment, refund, or payout can be
-              initiated here.
-            </p>
-            <dl className="grid grid-cols-[140px_1fr] gap-2">
-              {[
-                ["Transaction ID", selected.id],
-                ["Booking ID", selected.booking],
-                ["Learner", selected.learner],
-                ["Tutor", selected.tutor],
-                ["Gross Amount", money(selected.amount)],
-                ["Tutor Share", money(originalAllocation(selected).tutor)],
-                ["OSAS Share", money(originalAllocation(selected).osas)],
-                [
-                  "Platform Share",
-                  money(originalAllocation(selected).platform),
-                ],
-                ["Payment Method", selected.method],
-                ["Payment Status", selected.payment],
-                ["Paid Date", paidDate(selected)],
-              ].map(([label, value]) => (
-                <div className="contents" key={label}>
-                  <dt className="text-slate-500">{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
-            {selected.payment === "Refund Review" && (
-              <p className="rounded bg-amber-50 p-3">
-                Refund review is pending. Original shares are references, not a
-                confirmed refund or current payout entitlement.
-              </p>
-            )}
-            <p className="text-slate-500">
-              Amounts use cent-safe 90% / 5% / 5% allocation. Rounding preserves
-              the exact gross amount.
-            </p>
-          </div>
-        </Modal>
-      )}
+      {selected && <PaymentDetails record={transactions.find(r=>r.id===selected.id)||selected} onSave={saveReview} onClose={()=>setSelected(null)} />}
     </section>
   );
 }
