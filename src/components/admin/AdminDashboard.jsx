@@ -213,6 +213,7 @@ export default function AdminDashboardPage() {
           <AdminOverview
             users={rows}
             applications={apps}
+            onUpdateApplications={(next) => persist("applications", next)}
             services={services}
             config={config}
             go={go}

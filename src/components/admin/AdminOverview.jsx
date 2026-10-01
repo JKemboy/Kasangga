@@ -1,4 +1,6 @@
+import BookingDetails from "./BookingDetails.jsx";
 import { useState } from "react";
+import ApplicationReview from "./ApplicationReview.jsx";
 import {
   Users,
   GraduationCap,
@@ -10,16 +12,19 @@ import {
 import { Modal, button, Avatar } from "../tutor/workspace/ui.jsx";
 import { seed, money } from "../tutor/workspace/data.js";
 import { summarizeEarnings } from "../tutor/workspace/earnings.js";
-import { incidents } from "../osas/OsasIncidents.jsx";
+import IncidentDetails from "./IncidentDetails.jsx";
+import { loadIncidents, saveIncidents } from "./incidentData.js";
 import { dateLabel } from "./adminData.js";
 export default function AdminOverview({
   users,
   applications,
+  onUpdateApplications,
   services,
   config,
   go,
 }) {
   const [detail, setDetail] = useState(null);
+  const [incidents, setIncidents] = useState(loadIncidents);
   const [workspace] = useState(() => {
     try {
       const d = JSON.parse(
@@ -232,7 +237,7 @@ export default function AdminOverview({
                         </small>
                       </span>
                     </td>
-                    <td>{badge(r.status)}</td>
+                    <td>{badge(r.referral === "Referred to OSAS" ? r.referral : r.status)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -245,7 +250,7 @@ export default function AdminOverview({
         <section className="ad-panel">
           <div className="ao-title">
             <h2>Recent Incident Reports</h2>
-            <button onClick={() => setDetail({ kind: "incidents" })}>
+            <button onClick={() => go("Incident Reports")}>
               View All
             </button>
           </div>
@@ -276,7 +281,7 @@ export default function AdminOverview({
                       </button>
                     </td>
                     <td>{r.booking || "—"}</td>
-                    <td>{r.type}</td>
+                    <td>{r.issue}</td>
                     <td>{badge(r.status)}</td>
                   </tr>
                 ))}
@@ -299,7 +304,18 @@ export default function AdminOverview({
         tutor-workspace bookings, and incident references. Totals reflect these
         records, not live platform activity.
       </p>
-      {detail && (
+      {detail?.kind === "application" && (
+        <ApplicationReview
+          application={applications.find(r => r.id === detail.record.id) || detail.record}
+          account={users.find(u => u.id === detail.record.studentId || u.name === detail.record.name)}
+          config={config}
+          onSave={updated => onUpdateApplications(applications.map(r => r.id === updated.id ? updated : r))}
+          onClose={() => setDetail(null)}
+        />
+      )}
+      {detail?.kind === "incident" && <IncidentDetails record={incidents.find(r => r.id === detail.record.id) || detail.record} onClose={() => setDetail(null)} onSave={updated => { const next = incidents.map(r => r.id === updated.id ? updated : r); if (!saveIncidents(next)) return false; setIncidents(next); return true; }} />}
+      {detail?.kind === "booking" && <BookingDetails record={detail.record} tutor={workspace.profile.name} incidents={incidents} onClose={() => setDetail(null)} onIncident={record => setDetail({kind:"incident",record})} />}
+      {detail && !["application", "incident", "booking"].includes(detail.kind) && (
         <Modal
           title={
             {
