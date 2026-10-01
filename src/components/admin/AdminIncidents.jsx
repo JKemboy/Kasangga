@@ -1,4 +1,13 @@
-import {useInteractions} from "../shared/InteractionProvider.jsx";
+import UserExport from "./UserExport.jsx";
+import ServiceMenu from "./ServiceMenu.jsx";
+import EvidencePreview from "./EvidencePreview.jsx";
+import BookingDetails from "./BookingDetails.jsx";
+import UserDetails from "./UserDetails.jsx";
+import {paymentBookings} from "./paymentDetailsData.js";
+import {seed} from "../tutor/workspace/data.js";
+import {CalendarDays,UserRound,Image} from "lucide-react";
+import IncidentDetails from "./IncidentDetails.jsx";
+import { loadIncidents, saveIncidents } from "./incidentData.js";
 import { useState } from "react";
 import {
   ShieldCheck,
@@ -20,122 +29,14 @@ import {
   Avatar,
 } from "../tutor/workspace/ui.jsx";
 import { dateLabel, loadCollection } from "./adminData.js";
-const key = "campustutor:admin-incidents:v1";
-const initial = [
-  [
-    "0142",
-    "1842",
-    "Juan Dela Cruz",
-    "Maria Angelica Reyes",
-    "Platform / Technical",
-    "Meeting link inaccessible",
-    "Medium",
-    "2026-09-17",
-    "Under Admin Review",
-    "Not Required",
-  ],
-  [
-    "0141",
-    "1835",
-    "Karl Jhon Dimaano",
-    "Maria Angelica Reyes",
-    "Institutional Conduct",
-    "Inappropriate conduct",
-    "High",
-    "2026-09-16",
-    "Admin Screening Complete",
-    "Referred to OSAS",
-  ],
-  [
-    "0140",
-    "1839",
-    "Renalyn Laurente",
-    "Ella Mae Santos",
-    "Platform / Technical",
-    "Notification failure",
-    "Low",
-    "2026-09-16",
-    "Resolved by Admin",
-    "Not Required",
-  ],
-  [
-    "0139",
-    "1818",
-    "Ella Mae Santos",
-    "Adrian Paul Flores",
-    "Platform / Technical",
-    "Service access concern",
-    "Medium",
-    "2026-09-15",
-    "Resolved by Admin",
-    "Not Required",
-  ],
-  [
-    "0138",
-    "1824",
-    "John Michael Perez",
-    "Mark Joseph Paloma",
-    "Institutional Conduct",
-    "Harassment allegation",
-    "High",
-    "2026-09-15",
-    "Pending Review",
-    "Not Yet Referred",
-  ],
-  [
-    "0137",
-    "",
-    "Mark Joseph Paloma",
-    "Karl Jhon Dimaano",
-    "Platform / Technical",
-    "Account access",
-    "Medium",
-    "2026-09-14",
-    "Under Admin Review",
-    "Not Required",
-  ],
-  [
-    "0136",
-    "1827",
-    "Adrian Paul Flores",
-    "Ella Mae Santos",
-    "Institutional Conduct",
-    "Misconduct allegation",
-    "High",
-    "2026-09-14",
-    "Admin Screening Complete",
-    "Referred to OSAS",
-  ],
-].map(
-  ([
-    id,
-    booking,
-    reporter,
-    reported,
-    type,
-    issue,
-    priority,
-    date,
-    status,
-    referral,
-  ]) => ({
-    id: `IR-2026-${id}`,
-    booking: booking ? `BK-2026-${booking}` : "",
-    reporter,
-    reported,
-    type,
-    issue,
-    priority,
-    date,
-    status,
-    referral,
-    history: [],
-  }),
-);
-export default function AdminIncidents() {
-  const {confirm}=useInteractions();
+export default function AdminIncidents({users=[],applications=[],services=[],config,onUserSave,onServiceSave,onApplicationSave}) {
+ const [linked,setLinked]=useState(null);
+ const [workspace]=useState(()=>{try{const d=JSON.parse(localStorage.getItem("campustutor:tutor-workspace:v2"));if(Array.isArray(d?.sessions))return d;}catch{}return seed;});
+ function related(r,kind){if(kind==="booking"){const b=workspace.sessions.find(b=>b.booking===r.booking)||paymentBookings[r.booking];if(b)setLinked({kind,record:b});else setNotice("No related booking in the available records.");}else if(kind==="account"){const u=users.find(u=>u.name===r.reporter);if(u)setLinked({kind,id:u.id});else setNotice("Reporter account is not available.");}else setLinked({kind,record:r});}
 
-  const [rows, setRows] = useState(() => loadCollection(key, initial)),
+
+
+  const [rows, setRows] = useState(loadIncidents),
     [query, setQuery] = useState(""),
     [type, setType] = useState(""),
     [status, setStatus] = useState(""),
@@ -145,9 +46,6 @@ export default function AdminIncidents() {
     [end, setEnd] = useState("2026-09-30"),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
-    [decision, setDecision] = useState(""),
-    [notes, setNotes] = useState(""),
-    [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const invalid = start && end && start > end;
   const period = invalid
@@ -184,61 +82,7 @@ export default function AdminIncidents() {
     setQuery("");
     setPage(1);
   }
-  function open(r) {
-    setSelected(r);
-    setDecision("Under Admin Review");
-    setNotes("");
-    setError("");
-  }
-  async function save(e) {
-    e.preventDefault();
-    if (!notes.trim()) {
-      setError("Enter review notes before saving.");
-      return;
-    }
-    const allowed =
-      selected.type === "Platform / Technical"
-        ? ["Under Admin Review", "Resolved by Admin"]
-        : ["Under Admin Review", "Referred to OSAS"];
-    if (!allowed.includes(decision)) {
-      setError("Choose an action appropriate for this report.");
-      return;
-    }
-    if(decision!=="Under Admin Review"&&!await confirm({title:decision==="Referred to OSAS"?"Refer this report to OSAS?":"Mark this issue resolved?",message:notes,accept:decision}))return;
-    const next = rows.map((r) =>
-      r.id === selected.id
-        ? {
-            ...r,
-            status:
-              decision === "Referred to OSAS"
-                ? "Admin Screening Complete"
-                : decision,
-            referral: decision === "Referred to OSAS" ? decision : r.referral,
-            history: [
-              ...r.history,
-              {
-                action: decision,
-                notes: notes.trim(),
-                at: new Date().toISOString(),
-                by: "Admin User",
-              },
-            ],
-          }
-        : r,
-    );
-    try {
-      localStorage.setItem(key, JSON.stringify(next));
-      setRows(next);
-      setSelected(null);
-      setNotice(
-        decision === "Referred to OSAS"
-          ? "Referral recorded locally. No external notification was sent."
-          : "Admin review saved on this browser.",
-      );
-    } catch {
-      setError("Could not save. Browser storage is unavailable or full.");
-    }
-  }
+  function open(r) { setSelected(r); }
   function exportCsv() {
     const fields = [
       "id",
@@ -422,10 +266,7 @@ export default function AdminIncidents() {
         >
           Reset filters
         </button>
-        <button className={primary} onClick={exportCsv}>
-          <Download size={14} />
-          Export
-        </button>
+        <UserExport kind="incidents" rows={filtered} onCsv={exportCsv} onNotice={setNotice} />
       </div>
       {invalid && (
         <p role="alert" className="text-xs text-red-600">
@@ -504,13 +345,7 @@ export default function AdminIncidents() {
                           ? "View Report"
                           : "Review Report"}
                       </button>
-                      <button
-                        className={button}
-                        aria-label={`Details ${r.id}`}
-                        onClick={() => open(r)}
-                      >
-                        <MoreHorizontal size={14} />
-                      </button>
+                      <ServiceMenu service={{title:r.id}} options={[[CalendarDays,"View booking","booking"],[UserRound,"View reporter account","account"],[Image,"Preview evidence","evidence"]]} onSelect={kind=>related(r,kind)} />
                     </div>
                   </td>
                 </tr>
@@ -548,92 +383,10 @@ export default function AdminIncidents() {
           </div>
         </div>
       </div>
-      {selected && (
-        <Modal
-          title={`Incident Report · ${selected.id}`}
-          onClose={() => setSelected(null)}
-        >
-          <form onSubmit={save} className="space-y-3 text-xs">
-            <p>
-              <b>{selected.issue}</b> · {selected.type}
-            </p>
-            <p>
-              Reporter: {selected.reporter} · Reported user: {selected.reported}
-            </p>
-            <p>
-              Booking: {selected.booking || "None"} · {dateLabel(selected.date)}{" "}
-              · {selected.priority} priority
-            </p>
-            <p>
-              {selected.status} · {selected.referral}
-            </p>
-            <p className="rounded bg-blue-50 p-3">
-              Demo record. Original evidence and external OSAS delivery are not
-              connected. No user sanction or misconduct finding is created by
-              this review.
-            </p>
-            {selected.history.length > 0 && (
-              <details>
-                <summary>Review history ({selected.history.length})</summary>
-                {selected.history.map((h, i) => (
-                  <div key={i} className="mt-2 rounded border p-2">
-                    <b>{h.action}</b>
-                    <p>{h.notes}</p>
-                    <p>
-                      {h.by} ·{" "}
-                      {new Date(h.at).toLocaleString("en-PH", {
-                        timeZone: "Asia/Manila",
-                      })}
-                    </p>
-                  </div>
-                ))}
-              </details>
-            )}
-            {["Admin Screening Complete", "Resolved by Admin"].includes(
-              selected.status,
-            ) ? (
-              <p>Read-only completed Admin review.</p>
-            ) : (
-              <>
-                <label className="block">
-                  Admin action
-                  <select
-                    aria-label="Admin incident action"
-                    className={input}
-                    value={decision}
-                    onChange={(e) => setDecision(e.target.value)}
-                  >
-                    <option>Under Admin Review</option>
-                    <option>
-                      {selected.type === "Platform / Technical"
-                        ? "Resolved by Admin"
-                        : "Referred to OSAS"}
-                    </option>
-                  </select>
-                </label>
-                <label className="block">
-                  Review notes
-                  <textarea
-                    aria-label="Incident review notes"
-                    className={input}
-                    required
-                    maxLength={2000}
-                    rows={3}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </label>
-                {error && (
-                  <p role="alert" className="text-red-600">
-                    {error}
-                  </p>
-                )}
-                <button className={primary}>Save Review</button>
-              </>
-            )}
-          </form>
-        </Modal>
-      )}
+      {selected && <IncidentDetails onBooking={r=>related(r,"booking")} onAccount={r=>related(r,"account")} record={rows.find(r => r.id === selected.id) || selected} onClose={() => setSelected(null)} onSave={updated => { const next = rows.map(r => r.id === updated.id ? updated : r); if (!saveIncidents(next)) return false; setRows(next); return true; }} />}
+      {linked?.kind==='evidence'&&<EvidencePreview record={linked.record} onClose={()=>setLinked(null)}/>}
+      {linked?.kind==='booking'&&<BookingDetails record={linked.record} tutor={linked.record.tutor||workspace.profile?.name} incidents={rows} onClose={()=>setLinked(null)}/>}
+      {linked?.kind==='account'&&<UserDetails user={users.find(u=>u.id===linked.id)} applications={applications} services={services} config={config} onSave={onUserSave} onServiceSave={onServiceSave} onApplicationSave={onApplicationSave} onClose={()=>setLinked(null)}/>}
     </section>
   );
 }

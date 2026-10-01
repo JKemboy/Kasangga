@@ -249,7 +249,7 @@ export default function AdminDashboardPage() {
         ) : view === "Bookings Monitoring" ? (
           <AdminBookings />
         ) : view === "Incident Reports" ? (
-          <AdminIncidents />
+          <AdminIncidents users={rows} applications={apps} services={services} config={config} onUserSave={updated=>{const next=rows.map(u=>u.id===updated.id?updated:u);try{localStorage.setItem('campustutor:admin-users:v1',JSON.stringify(next));setRows(next);return true;}catch{return false;}}} onServiceSave={updated=>persist('services',services.map(s=>s.id===updated.id?updated:s))} onApplicationSave={updated=>persist('applications',apps.map(a=>a.id===updated.id?updated:a))}/>
         ) : view === "Payments & Transactions" ? (
           <AdminPayments />
         ) : view === "Reports & Analytics" ? (

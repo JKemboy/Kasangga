@@ -1,0 +1,123 @@
+import { loadCollection } from "./adminData.js";
+export const incidentKey = "campustutor:admin-incidents:v1";
+export const initialIncidents = [
+  [
+    "0142",
+    "1842",
+    "Juan Dela Cruz",
+    "Maria Angelica Reyes",
+    "Platform / Technical",
+    "Meeting link inaccessible",
+    "Medium",
+    "2026-09-17",
+    "Under Admin Review",
+    "Not Required",
+  ],
+  [
+    "0141",
+    "1835",
+    "Karl Jhon Dimaano",
+    "Maria Angelica Reyes",
+    "Institutional Conduct",
+    "Inappropriate conduct",
+    "High",
+    "2026-09-16",
+    "Admin Screening Complete",
+    "Referred to OSAS",
+  ],
+  [
+    "0140",
+    "1839",
+    "Renalyn Laurente",
+    "Ella Mae Santos",
+    "Platform / Technical",
+    "Notification failure",
+    "Low",
+    "2026-09-16",
+    "Resolved by Admin",
+    "Not Required",
+  ],
+  [
+    "0139",
+    "1818",
+    "Ella Mae Santos",
+    "Adrian Paul Flores",
+    "Platform / Technical",
+    "Service access concern",
+    "Medium",
+    "2026-09-15",
+    "Resolved by Admin",
+    "Not Required",
+  ],
+  [
+    "0138",
+    "1824",
+    "John Michael Perez",
+    "Mark Joseph Paloma",
+    "Institutional Conduct",
+    "Harassment allegation",
+    "High",
+    "2026-09-15",
+    "Pending Review",
+    "Not Yet Referred",
+  ],
+  [
+    "0137",
+    "",
+    "Mark Joseph Paloma",
+    "Karl Jhon Dimaano",
+    "Platform / Technical",
+    "Account access",
+    "Medium",
+    "2026-09-14",
+    "Under Admin Review",
+    "Not Required",
+  ],
+  [
+    "0136",
+    "1827",
+    "Adrian Paul Flores",
+    "Ella Mae Santos",
+    "Institutional Conduct",
+    "Misconduct allegation",
+    "High",
+    "2026-09-14",
+    "Admin Screening Complete",
+    "Referred to OSAS",
+  ],
+].map(
+  ([
+    id,
+    booking,
+    reporter,
+    reported,
+    type,
+    issue,
+    priority,
+    date,
+    status,
+    referral,
+  ]) => ({
+    id: `IR-2026-${id}`,
+    booking: booking ? `BK-2026-${booking}` : "",
+    reporter,
+    reported,
+    type,
+    issue,
+    priority,
+    date,
+    status,
+    referral,
+    description: id === "0142" ? 'The Google Meet link in the booking returned "You cannot join this video call." The session did not start.' : "",
+    history: [],
+  }),
+);
+
+export function loadIncidents() { return loadCollection(incidentKey, initialIncidents); }
+export function saveIncidents(rows) { try { localStorage.setItem(incidentKey, JSON.stringify(rows)); return true; } catch { return false; } }
+export function reviewIncident(record, action, notes) {
+ if (['Admin Screening Complete', 'Resolved by Admin'].includes(record.status)) throw new Error('This review is complete.');
+ if (!['Resolved by Admin', 'Referred to OSAS'].includes(action) || (action === 'Resolved by Admin' && record.type !== 'Platform / Technical')) throw new Error('Choose an action appropriate for this report.');
+ if (notes.trim().length < 15) throw new Error('Enter at least 15 characters.');
+ return {...record, status: action === 'Referred to OSAS' ? 'Admin Screening Complete' : action, referral: action === 'Referred to OSAS' ? action : record.referral, history:[...(record.history || []),{action, notes:notes.trim(), at:new Date().toISOString(), by:'Admin User'}]};
+}
