@@ -1,3 +1,5 @@
+import UserExport from "./UserExport.jsx";
+import UserDetails from "./UserDetails.jsx";
 import {useInteractions} from "../shared/InteractionProvider.jsx";
 import { useState } from "react";
 import {
@@ -119,7 +121,7 @@ export function loadAdminUsers() {
   } catch {}
   return structuredClone(initial);
 }
-export default function AdminUsers({ rows, onUpdate, query, setQuery }) {
+export default function AdminUsers({ rows, onUpdate, query, setQuery, applications, services, config, onServiceSave, onApplicationSave }) {
   const {confirm}=useInteractions();
 
   const [tab, setTab] = useState("All Users"),
@@ -157,44 +159,6 @@ export default function AdminUsers({ rows, onUpdate, query, setQuery }) {
     setStatus(r.status);
     setReason("");
     setError("");
-  }
-  async function save(e) {
-    e.preventDefault();
-    if (status === selected.status) {
-      setError("Choose a different account status.");
-      return;
-    }
-    if (!reason.trim()) {
-      setError("Enter a reason for this change.");
-      return;
-    }
-    if(!await confirm({title:`Change account status to ${status}?`,message:`${selected.name}: ${reason.trim()}. This is a platform account action; existing institutional records are retained.`,accept:status==="Suspended"?"Suspend User":status==="Active"?"Reactivate User":"Restrict User",danger:status!=="Active"}))return;
-    const next = rows.map((r) =>
-      r.id === selected.id
-        ? {
-            ...r,
-            status,
-            history: [
-              ...r.history,
-              {
-                from: r.status,
-                to: status,
-                reason: reason.trim(),
-                at: new Date().toISOString(),
-                by: "Admin User",
-              },
-            ],
-          }
-        : r,
-    );
-    try {
-      localStorage.setItem(key, JSON.stringify(next));
-      onUpdate(next);
-      setSelected(null);
-      setNotice("Account status saved on this browser.");
-    } catch {
-      setError("Could not save. Browser storage is unavailable or full.");
-    }
   }
   function exportCsv() {
     const fields = [
@@ -336,13 +300,7 @@ export default function AdminUsers({ rows, onUpdate, query, setQuery }) {
           <Filter size={14} />
           Filter{college || role ? " •" : ""}
         </button>
-        <button
-          className={primary + " flex items-center gap-2"}
-          onClick={exportCsv}
-        >
-          <Download size={15} />
-          Export
-        </button>
+        <UserExport rows={filtered} onCsv={exportCsv} onNotice={setNotice} />
       </div>
       {filters && (
         <div className="au-filters">
@@ -489,96 +447,7 @@ export default function AdminUsers({ rows, onUpdate, query, setQuery }) {
       <p className="text-[9px] text-slate-400">
         Local demo · Account changes do not affect institutional sign-in.
       </p>
-      {selected && (
-        <Modal
-          title={`Manage User · ${selected.name}`}
-          onClose={() => setSelected(null)}
-        >
-          <form className="space-y-3 text-xs" onSubmit={save}>
-            <div className="flex items-center gap-3">
-              <Avatar name={selected.name} />
-              <div>
-                <b>{selected.name}</b>
-                <p>
-                  {selected.id} · {selected.email}
-                </p>
-              </div>
-            </div>
-            <p>
-              {selected.college} · {selected.program}
-            </p>
-            <p>
-              Roles: {selected.tutor ? "Learner + Verified Tutor" : "Learner"} ·
-              Registered {date(selected.registered)}
-            </p>
-            <label className="block">
-              Account status
-              <select
-                aria-label="Account status"
-                className={input}
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                {["Active", "Suspended", "Restricted"].map((v) => (
-                  <option key={v}>{v}</option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              Reason for status change
-              <textarea
-                aria-label="Status change reason"
-                className={input}
-                required
-                maxLength={1000}
-                rows={3}
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              />
-            </label>
-            <p className="text-slate-500">
-              Saved changes apply to this demo only. Institutional access
-              controls are not connected.
-            </p>
-            {selected.history.length > 0 && (
-              <details>
-                <summary>Account history ({selected.history.length})</summary>
-                {selected.history.map((h, i) => (
-                  <div className="mt-2 rounded border p-2" key={i}>
-                    <b>
-                      {h.from} → {h.to}
-                    </b>
-                    <p>{h.reason}</p>
-                    <p>
-                      {h.by} ·{" "}
-                      {new Date(h.at).toLocaleString("en-PH", {
-                        timeZone: "Asia/Manila",
-                      })}
-                    </p>
-                  </div>
-                ))}
-              </details>
-            )}
-            {error && (
-              <p role="alert" className="text-red-600">
-                {error}
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className={button}
-                onClick={() => setSelected(null)}
-              >
-                Close
-              </button>
-              <button className={primary} disabled={status === selected.status}>
-                Save Changes
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      {selected && <UserDetails user={rows.find(r=>r.id===selected.id) || selected} applications={applications} services={services} config={config} onServiceSave={onServiceSave} onApplicationSave={onApplicationSave} onClose={()=>setSelected(null)} onSave={updated=>{const next=rows.map(r=>r.id===updated.id?updated:r);try{localStorage.setItem(key,JSON.stringify(next));onUpdate(next);return true;}catch{return false;}}} />}
     </section>
   );
 }

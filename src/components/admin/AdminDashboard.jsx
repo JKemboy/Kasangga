@@ -230,6 +230,10 @@ export default function AdminDashboardPage() {
         ) : view === "Service Management" ? (
           <AdminCatalog
             key="services"
+            users={rows}
+            applications={apps}
+            onUserSave={updated => { const next = rows.map(u=>u.id===updated.id?updated:u); try {localStorage.setItem("campustutor:admin-users:v1",JSON.stringify(next));setRows(next);return true;} catch {return false;} }}
+            onApplicationSave={updated=>persist("applications",apps.map(a=>a.id===updated.id?updated:a))}
             kind="services"
             rows={services}
             onUpdate={(next) => persist("services", next)}
@@ -252,6 +256,11 @@ export default function AdminDashboardPage() {
           <AdminReports users={rows} services={services} go={go} />
         ) : (
           <AdminUsers
+            applications={apps}
+            services={services}
+            config={config}
+            onServiceSave={updated => persist("services", services.map(s => s.id === updated.id ? updated : s))}
+            onApplicationSave={updated => persist("applications", apps.map(a => a.id === updated.id ? updated : a))}
             rows={rows}
             onUpdate={setRows}
             query={query}

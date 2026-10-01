@@ -1,4 +1,10 @@
+import ServiceDetails from "./ServiceDetails.jsx";
+import ServiceMenu from "./ServiceMenu.jsx";
+import UserDetails from "./UserDetails.jsx";
+import UserExport from "./UserExport.jsx";
+import {serviceCsv} from "./serviceActions.js";
 import {useInteractions} from "../shared/InteractionProvider.jsx";
+import ApplicationReview from "./ApplicationReview.jsx";
 import { useState } from "react";
 import {
   ShieldCheck,
@@ -17,8 +23,9 @@ import {
   Avatar,
 } from "../tutor/workspace/ui.jsx";
 import { dateLabel, downloadData } from "./adminData.js";
-export default function AdminCatalog({ kind, rows, onUpdate, config }) {
-  const {confirm}=useInteractions();
+export default function AdminCatalog({ kind, rows, onUpdate, config, users = [], onUserSave, applications = [], onApplicationSave }) {
+  const [serviceAction,setServiceAction]=useState("");
+  const [userId,setUserId]=useState(null);
 
   const verification = kind === "applications",
     title = verification ? "Tutor Verification" : "Service Management";
@@ -59,44 +66,16 @@ export default function AdminCatalog({ kind, rows, onUpdate, config }) {
     visible = filtered.slice((current - 1) * 7, current * 7);
   function open(r) {
     setSelected(r);
+    setServiceAction("");
     setAction(verification ? r.status : "");
     setReason("");
     setError("");
   }
-  async function save(e) {
-    e.preventDefault();
-    if (!reason.trim()) {
-      setError("Enter review notes or a moderation reason.");
-      return;
-    }
-    if(!await confirm({title:`${action}?`,message:reason.trim(),accept:action,danger:["Rejected","Suspended"].includes(action), acknowledgement:verification&&action==="Approved"?"I understand this records a local prototype decision. OCR does not establish document authenticity.":undefined}))return;
-    const next = rows.map((r) =>
-      r.id === selected.id
-        ? {
-            ...r,
-            status: action === "Request Changes" ? r.status : action,
-            history: [
-              ...r.history,
-              {
-                from: r.status,
-                to: action,
-                reason: reason.trim(),
-                at: new Date().toISOString(),
-                by: "Admin User",
-              },
-            ],
-          }
-        : r,
-    );
-    if (onUpdate(next)) {
-      setSelected(null);
-      setNotice(
-        verification
-          ? "Application review saved locally."
-          : "Moderation action recorded locally.",
-      );
-    } else setError("Could not save. Browser storage is unavailable or full.");
+  function serviceOption(r, action) {
+    if(action === "account") {const user=users.find(u=>u.name===r.tutor);if(user)setUserId(user.id);else setNotice("No matching tutor account in the available records.");return;}
+    setServiceAction(action);setSelected(r);
   }
+  function exportServices() {const url=URL.createObjectURL(new Blob(['\uFEFF'+serviceCsv(filtered)],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='admin-services.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice('Exported '+filtered.length+' matching services.');}
   const pill = (v) => (
     <span
       className={`au-status ${["Active", "Approved", "Complete", "Matched"].includes(v) ? "active" : ["Rejected", "Suspended", "Invalid File", "Incomplete", "Not Matched"].includes(v) ? "suspended" : "restricted"}`}
@@ -219,13 +198,7 @@ export default function AdminCatalog({ kind, rows, onUpdate, config }) {
           Filter
         </button>
         {!verification && (
-          <button
-            className={primary}
-            onClick={() => downloadData("admin-services.json", filtered)}
-          >
-            <Download size={14} />
-            Export
-          </button>
+          <UserExport kind="services" rows={filtered} onCsv={exportServices} onNotice={setNotice} />
         )}
       </div>
       {filter && (
@@ -382,13 +355,7 @@ export default function AdminCatalog({ kind, rows, onUpdate, config }) {
                         )}
                       </button>
                       {!verification && (
-                        <button
-                          className={button}
-                          aria-label={`Moderate ${r.id}`}
-                          onClick={() => open(r)}
-                        >
-                          <MoreHorizontal size={14} />
-                        </button>
+                        <ServiceMenu service={r} onSelect={action=>serviceOption(r,action)} />
                       )}
                     </div>
                   </td>
@@ -432,92 +399,16 @@ export default function AdminCatalog({ kind, rows, onUpdate, config }) {
           ? "Demo application metadata. Source documents and actual OCR processing are not attached."
           : "Tutor-owned content is read-only. Moderation and change requests are recorded locally; no message is sent."}
       </p>
-      {selected && (
-        <Modal
-          title={
-            verification
-              ? `Application · ${selected.id}`
-              : `Service · ${selected.id}`
-          }
+      {selected && verification && (
+        <ApplicationReview
+          application={rows.find(r => r.id === selected.id) || selected}
+          config={config}
+          onSave={updated => onUpdate(rows.map(r => r.id === updated.id ? updated : r))}
           onClose={() => setSelected(null)}
-        >
-          <form onSubmit={save} className="space-y-3 text-xs">
-            <p>
-              <b>{verification ? selected.name : selected.title}</b> ·{" "}
-              {verification ? selected.studentId : selected.tutor}
-            </p>
-            {verification ? (
-              <p>
-                Documents: {selected.documents} · OCR: {selected.confidence}% ·{" "}
-                {selected.match}. Original files are not connected. Decisions here affect only this local prototype.
-              </p>
-            ) : (
-              <p>
-                {selected.subject} · {selected.category} · ₱{selected.rate}/hr ·{" "}
-                {selected.type}
-              </p>
-            )}
-            {selected.history.length > 0 && (
-              <details>
-                <summary>Review history ({selected.history.length})</summary>
-                {selected.history.map((h, i) => (
-                  <p className="rounded border p-2 mt-2" key={i}>
-                    {h.from} → {h.to}: {h.reason}
-                  </p>
-                ))}
-              </details>
-            )}
-            {verification &&
-            ["Approved", "Rejected"].includes(selected.status) ? (
-              <p>Final demo decision: {selected.status}. Read-only.</p>
-            ) : (
-              <>
-                <label className="block">
-                  {verification ? "Review decision" : "Moderation action"}
-                  <select
-                    className={input}
-                    aria-label="Catalog decision"
-                    required
-                    value={action}
-                    onChange={(e) => setAction(e.target.value)}
-                  >
-                    <option value="">Choose action</option>
-                    {(verification
-                      ? statuses
-                      : ["Suspended", "Active", "Archived", "Request Changes"]
-                    ).map((s) => (
-                      <option
-                        key={s}
-                        disabled={false}
-                      >
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block">
-                  {verification ? "Review notes" : "Reason / requested changes"}
-                  <textarea
-                    className={input}
-                    aria-label="Catalog review notes"
-                    rows={3}
-                    required
-                    maxLength={2000}
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                  />
-                </label>
-                {error && (
-                  <p role="alert" className="text-red-600">
-                    {error}
-                  </p>
-                )}
-                <button className={primary}>Save Review</button>
-              </>
-            )}
-          </form>
-        </Modal>
+        />
       )}
+      {selected && !verification && <ServiceDetails key={selected.id+serviceAction} service={rows.find(r=>r.id===selected.id)||selected} initialAction={['Request Changes','Suspend Service','Lift Suspension'].includes(serviceAction)?serviceAction:''} showBookings={serviceAction==='bookings'} onTutor={()=>serviceOption(selected,'account')} onSave={updated=>onUpdate(rows.map(r=>r.id===updated.id?updated:r))} onClose={()=>setSelected(null)} />}
+      {userId && <UserDetails user={users.find(u=>u.id===userId)} services={rows} applications={applications} config={config} onSave={onUserSave} onApplicationSave={onApplicationSave} onServiceSave={updated=>onUpdate(rows.map(r=>r.id===updated.id?updated:r))} onClose={()=>setUserId(null)} />}
     </section>
   );
 }
