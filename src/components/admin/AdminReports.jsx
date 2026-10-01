@@ -1,3 +1,5 @@
+import UserExport from "./UserExport.jsx";
+import {reportRows,reportCsv,reportHtml} from "./reportExport.js";
 import { useState } from "react";
 import { ChartNoAxesCombined, Download } from "lucide-react";
 import {
@@ -57,6 +59,7 @@ function Chart({ title, values, labels, color = "#00723d" }) {
   );
 }
 export default function AdminReports({ users, services, go }) {
+  const [notice,setNotice]=useState("");
   const [start, setStart] = useState("2026-01-01"),
     [end, setEnd] = useState("2026-09-30"),
     [college, setCollege] = useState(""),
@@ -123,24 +126,9 @@ export default function AdminReports({ users, services, go }) {
             trends.
           </p>
         </div>
-        <button
-          className={primary}
-          onClick={() =>
-            downloadData("admin-report.json", {
-              filters: { start, end, college, subject, status },
-              users: accounts.length,
-              services: offerings.length,
-              bookings: bookings.length,
-              financial,
-              distribution,
-              popular,
-            })
-          }
-        >
-          <Download size={14} />
-          Export Report
-        </button>
+        <UserExport label="Export Report" disabled={!!invalid} rows={reportRows({filters:{start,end,college,subject,status},accounts,offerings,bookings,financial,distribution,popular,months,counts})} renderSummary={reportHtml} onNotice={setNotice} onCsv={()=>{const rows=reportRows({filters:{start,end,college,subject,status},accounts,offerings,bookings,financial,distribution,popular,months,counts});const url=URL.createObjectURL(new Blob(['\uFEFF'+reportCsv(rows)],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='admin-report.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice('Exported the filtered report as CSV.');}} />
       </div>
+      {notice&&<p role="status" className="text-xs text-green-800">{notice}</p>}
       <div className="ad-report-filters">
         <label>
           From
