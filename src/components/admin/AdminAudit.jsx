@@ -1,10 +1,11 @@
+import AuditDetails, { auditSummary } from './AuditDetails.jsx';
+import UserExport from './UserExport.jsx';
 import { useState } from "react";
 import {
   ClipboardList,
   Info,
   Search,
   Eye,
-  Download,
   CalendarDays,
 } from "lucide-react";
 import {
@@ -15,6 +16,7 @@ import {
   Avatar,
 } from "../tutor/workspace/ui.jsx";
 const examples = [
+  ["0917-1251a", "Incident Review Started", "Incident Reports", "IR-2026-0138", "2026-09-17T12:51:00+08:00", "Success"],
   [
     "0917-0842",
     "Tutor Approved",
@@ -88,10 +90,12 @@ const examples = [
   result,
   actor: "Admin User",
   email: "admin@csu.edu.ph",
-  ip: "Not collected",
+  ip: id === "0914-2318" ? "203.177.45.82" : "192.168.1.15",
+  device: id === "0914-2318" ? "Unknown browser ? Linux" : "Chrome 128 ? Windows 11",
+  before: id === "0917-1251a" ? "Pending Review" : null,
+  after: id === "0917-1251a" ? "Under Admin Review" : null,
   source: "Sample",
-  notes:
-    "Illustrative audit record only; this does not represent an observed system event.",
+  notes: id === "0914-2318" ? "Incorrect password ? 2FA not reached ? source IP outside CSU network" : "",
 }));
 function dateKey(value) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -235,6 +239,9 @@ export default function AdminAudit({ users, applications, services, config }) {
       "ip",
       "result",
       "source",
+      "before",
+      "after",
+      "device",
       "notes",
     ];
     const safe = (v) =>
@@ -244,7 +251,7 @@ export default function AdminAudit({ users, applications, services, config }) {
         '""',
       ) +
       '"';
-    const csv = [fields, ...filtered.map((r) => fields.map((f) => r[f]))]
+    const csv = [fields, ...filtered.map((r) => fields.map((f) => r[f] ?? ""))]
       .map((r) => r.map(safe).join(","))
       .join("\r\n");
     const url = URL.createObjectURL(
@@ -287,10 +294,7 @@ export default function AdminAudit({ users, applications, services, config }) {
         {select("All Modules", module, setModule, "module")}
         {select("All Actions", action, setAction, "action")}
         {select("All Results", result, setResult, "result")}
-        <button className={primary} onClick={exportCsv}>
-          <Download size={14} />
-          Export
-        </button>
+        <UserExport rows={filtered} onCsv={exportCsv} onNotice={setNotice} renderSummary={auditSummary} disabled={!!invalid} />
       </div>
       <div className="ad-toolbar">
         <label className="osas-search">
@@ -469,42 +473,7 @@ export default function AdminAudit({ users, applications, services, config }) {
           </div>
         </Modal>
       )}
-      {selected && (
-        <Modal title="Audit Record Details" onClose={() => setSelected(null)}>
-          <div className="space-y-3 text-xs">
-            <p className="rounded bg-blue-50 p-3">
-              {selected.source === "Sample"
-                ? "Illustrative sample, not an observed system event."
-                : "Recorded from a successfully saved local administrative action."}
-            </p>
-            <dl className="grid grid-cols-[120px_1fr] gap-2">
-              {[
-                ["Log ID", selected.id],
-                ["User / Admin", selected.actor],
-                ["Action", selected.action],
-                ["Module", selected.module],
-                ["Target", selected.target],
-                ["Date / Time", timestamp(selected.at) + " (Asia/Manila)"],
-                ["IP Address", selected.ip],
-                ["Result", selected.result],
-                ["Source", selected.source],
-                ["Notes", selected.notes],
-                ...(selected.before
-                  ? [
-                      ["Before", selected.before],
-                      ["After", selected.after],
-                    ]
-                  : []),
-              ].map(([label, value]) => (
-                <div className="contents" key={label}>
-                  <dt className="text-slate-500">{label}</dt>
-                  <dd className="break-words">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </Modal>
-      )}
+      {selected && <AuditDetails record={selected} onClose={() => setSelected(null)} />}
     </section>
   );
 }
