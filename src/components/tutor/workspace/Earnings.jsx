@@ -74,7 +74,9 @@ function PaymentBadge({ status }) {
 
 export default function Earnings({ data, go, args = {} }) {
   const [selected, setSelected] = useState(
-    data.sessions.find((s) => s.transaction === args.transactionId) || null,
+    args.transactionId
+      ? data.sessions.find((s) => s.transaction === args.transactionId) || null
+      : null,
   );
   const [query, setQuery] = useState(args.transactionId || args.query || "");
   const [status, setStatus] = useState("All");
