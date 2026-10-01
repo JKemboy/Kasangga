@@ -1,5 +1,10 @@
 ﻿import { parseScheduleLines } from "./scheduleReview.js";
-export async function extractSchedule(file, onProgress = () => {}, signal) {
+export async function extractSchedule(
+  file,
+  onProgress = () => {},
+  signal,
+  mode = "schedule",
+) {
   let worker, loading, pdf;
   const check = () => {
     if (signal?.aborted)
@@ -84,7 +89,11 @@ export async function extractSchedule(file, onProgress = () => {}, signal) {
               .join(" "),
             confidence: 100,
           }));
-        if (!parseScheduleLines(pageLines).rows.length) {
+        if (
+          mode === "document"
+            ? !pageLines.length
+            : !parseScheduleLines(pageLines).rows.length
+        ) {
           const base = page.getViewport({ scale: 1 });
           const scale = Math.min(2, 2400 / Math.max(base.width, base.height));
           const viewport = page.getViewport({ scale });
@@ -104,11 +113,14 @@ export async function extractSchedule(file, onProgress = () => {}, signal) {
     } else lines = await recognize(file, 1, 1);
     check();
     onProgress({
-      label: "Detecting courses, days, times and overlaps",
+      label:
+        mode === "document"
+          ? "Reading document text"
+          : "Detecting courses, days, times and overlaps",
       progress: 1,
     });
     return {
-      ...parseScheduleLines(lines),
+      ...(mode === "document" ? {} : parseScheduleLines(lines)),
       text: lines.map((l) => l.text).join("\n"),
     };
   } finally {

@@ -55,6 +55,11 @@ export default function LearnerWorkspace({ children, go }) {
   }
   function open(kind, record = {}) {
     setError("");
+    if (kind === "application") {
+      setDialog(null);
+      go("application");
+      return;
+    }
     setDialog({ kind, record, step: 0 });
   }
   function toggleSave(tutor) {
@@ -100,7 +105,7 @@ export default function LearnerWorkspace({ children, go }) {
   return (
     <Context.Provider value={api}>
       {children}
-      {dialog && (
+      {dialog && dialog.kind !== "application" && (
         <Modal
           size={
             dialog.kind === "profile"
@@ -313,59 +318,6 @@ export default function LearnerWorkspace({ children, go }) {
                 </select>
               </Field>
               <button className={primary}>Save Changes</button>
-            </form>
-          )}
-          {dialog.kind === "application" && (
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const form = Object.fromEntries(new FormData(e.currentTarget));
-                if (
-                  commit((d) => ({
-                    ...d,
-                    application: {
-                      ...form,
-                      status: "Under Review",
-                      created: new Date().toISOString(),
-                    },
-                  }))
-                ) {
-                  setDialog(null);
-                  toast("Application saved locally for review.");
-                }
-              }}
-            >
-              {data.application && (
-                <p className="text-sm">
-                  Current status: {data.application.status}
-                </p>
-              )}
-              <Field label="Subjects" name="subjects" required />
-              <Field label="Tutoring Bio">
-                <textarea
-                  className={input}
-                  name="bio"
-                  minLength={30}
-                  required
-                />
-              </Field>
-              <Field label="Session Type">
-                <select className={input} name="type">
-                  <option>Online</option>
-                  <option>In-person</option>
-                  <option>Both</option>
-                </select>
-              </Field>
-              <p className="text-xs">
-                Required documents must be uploaded through the document service
-                before institutional review.
-              </p>
-              <label className="flex gap-2 text-xs">
-                <input type="checkbox" required />I confirm my application
-                information is accurate.
-              </label>
-              <button className={primary}>Save Application</button>
             </form>
           )}
           {["data", "delete"].includes(dialog.kind) && (

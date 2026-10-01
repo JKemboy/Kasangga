@@ -1,5 +1,6 @@
 import LearnerWorkspace from "../components/learner/workspace/LearnerWorkspace.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
+import TutorApplication from "../components/learner/application/TutorApplication.jsx";
 import { useState } from "react";
 import StudentShell from "../components/shared/StudentShell.jsx";
 import {Home,Search,CalendarDays,MessageCircle,Bookmark,Star,Bell,UserRound,Settings,CircleHelp} from "lucide-react";
@@ -29,6 +30,7 @@ export default function Dashboard() {
         {view === "dashboard" && <LearnerOverview go={setView} />}
         {view === "messages" && <LearnerMessages />}
         {view === "profile" && <LearnerProfile />}
+        {view === "application" && <TutorApplication onClose={() => setView("profile")} />}
         {view === "find-tutor" && <LearnerFindTutor />}
         {view === "help-support" && <LearnerHelpSupport />}
         {view === "settings" && <LearnerSettings />}

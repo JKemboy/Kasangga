@@ -341,7 +341,7 @@ export default function LearnerProfile() {
                 <BookOpen className="h-4 w-4 text-[#d99000]" />
                 Tutor{" "}
                 <span className="ml-auto text-xs text-[#d99000]">
-                  Not Applied
+                  {work.data.application?.status || "Not Applied"}
                 </span>
               </p>
               <button
@@ -349,7 +349,7 @@ export default function LearnerProfile() {
                 type="button"
                 className="mt-2 h-7 rounded-md border border-[#15924f] px-4 text-xs font-semibold text-[#087542]"
               >
-                Apply as Tutor
+                {work.data.application ? "View Application" : "Apply as Tutor"}
               </button>
             </div>
           </section>
