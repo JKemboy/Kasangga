@@ -1,3 +1,5 @@
+import HeaderInbox from '../shared/HeaderInbox.jsx';
+import { adminAlerts, adminThreads } from '../shared/headerInboxData.js';
 import {useLogout} from "../shared/LogoutProvider.jsx";
 import AdminAudit from "./AdminAudit.jsx";
 import AdminBookings from "./AdminBookings.jsx";
@@ -185,15 +187,7 @@ export default function AdminDashboardPage() {
           </button>
         </form>
         <div className="ml-auto flex items-center gap-4">
-          <button
-            aria-label="Notifications"
-            onClick={() => setModal("Notifications")}
-          >
-            <Bell size={21} />
-          </button>
-          <button aria-label="Messages" onClick={() => setModal("Messages")}>
-            <MessageCircle size={21} />
-          </button>
+          <HeaderInbox role="admin" notifications={adminAlerts} threads={adminThreads} onNavigate={go}/>
           <button
             className="flex items-center gap-2 text-left"
             aria-label="Admin account"

@@ -21,6 +21,7 @@ export default function LearnerMessages() {
     [draft, setDraft] = useState(""),
     [attachment, setAttachment] = useState(null),
     [error, setError] = useState("");
+  useEffect(()=>{if(work.data.activeThread)setSelected(work.data.activeThread);},[work.data.activeThread]);
   const picker = useRef(null),
     bottom = useRef(null);
   const thread = work.data.threads.find((t) => t.name === selected);

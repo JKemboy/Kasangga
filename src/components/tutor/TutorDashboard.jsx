@@ -100,7 +100,7 @@ export default function TutorDashboardPage() {
   ].filter((r) => matches(r.label, search));
   return (
     <TutorModalContext.Provider value={true}><div className="min-h-screen bg-[#fbfcfe] text-[#101828]">
-      <StudentShell role="tutor" nav={nav} view={view} go={go} name={data.profile.name} unread={data.notifications.filter(n=>!n.read).length} searchContent={<>        <form
+      <StudentShell inboxData={data} onInboxRead={ids=>update(d=>({...d,notifications:d.notifications.map(n=>ids.includes(n.id)?{...n,read:true}:n)}))} role="tutor" nav={nav} view={view} go={go} name={data.profile.name} unread={data.notifications.filter(n=>!n.read).length} searchContent={<>        <form
           className="relative w-full max-w-lg"
           onSubmit={(e) => {
             e.preventDefault();

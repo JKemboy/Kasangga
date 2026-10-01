@@ -1,3 +1,4 @@
+import HeaderInbox from '../shared/HeaderInbox.jsx';
 import {useLogout} from "../shared/LogoutProvider.jsx";
 import OsasEvidence from "./OsasEvidence.jsx";
 import OsasArchive from "./OsasArchive.jsx";
@@ -426,15 +427,7 @@ export default function OsasDashboardPage() {
           </button>
         </form>
         <div className="ml-auto flex items-center gap-4">
-          <button
-            aria-label="Notifications"
-            onClick={() => setModal("Notifications")}
-          >
-            <Bell size={21} />
-          </button>
-          <button aria-label="Messages" onClick={() => setModal("Messages")}>
-            <MessageCircle size={21} />
-          </button>
+          <HeaderInbox role="osas" notifications={rows.map(r=>({id:r.id,title:"Case record update",text:`${r.name || r.id}: ${r.status}`,kind:"incident",time:r.updatedAt || r.date || "",record:r}))} onNotification={n=>{setSelected(n.record);setModal("Case Record");}}/>
           <button
             className="flex items-center gap-2 text-left"
             aria-label="Open account menu"

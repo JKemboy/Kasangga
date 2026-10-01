@@ -1,14 +1,23 @@
+import { initialNotifications } from '../learner/notifications/LearnerNotifications.jsx';
+import HeaderInbox from './HeaderInbox.jsx';
+import { useLearnerWorkspace } from '../learner/workspace/LearnerWorkspace.jsx';
+import { notificationDestination } from '../tutor/workspace/notificationTargets.js';
 import {useLogout} from "./LogoutProvider.jsx";
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {GraduationCap,LogOut,Menu,Bell,MessageCircle} from 'lucide-react';
 import {Avatar} from '../tutor/workspace/ui.jsx';
-export default function StudentShell({role,nav,view,go,name='Juan Dela Cruz',unread=0,searchContent}){
+export default function StudentShell({role,nav,view,go,name='Juan Dela Cruz',unread=0,searchContent,inboxData,onInboxRead}){
  useEffect(() => {
    const previous = document.body.dataset.workspaceRole;
    document.body.dataset.workspaceRole = role;
    return () => { if (previous) document.body.dataset.workspaceRole = previous; else delete document.body.dataset.workspaceRole; };
  }, [role]);
+ const learner = useLearnerWorkspace();
+ const inbox = inboxData || learner?.data || {};
+ const [sampleRead,setSampleRead]=useState(()=>{try{return JSON.parse(sessionStorage.getItem("campustutor:learner:sample-notification-read-ids")||"[]");}catch{return [];}});
+ const alerts=role === "learner" ? [...(inbox.notifications || []),...initialNotifications.map(n=>({...n,read:!n.unread || sampleRead.includes(n.id),demo:true,view:"notifications"}))] : inbox.notifications || [];
+ function readLearner(ids){learner?.commit(d=>({...d,notifications:d.notifications.map(n=>ids.includes(n.id)?{...n,read:true}:n)}));const next=[...new Set([...sampleRead,...ids])];setSampleRead(next);try{sessionStorage.setItem("campustutor:learner:sample-notification-read-ids",JSON.stringify(next));window.dispatchEvent(new Event("learner-notification-read"));}catch{}}
  const requestLogout = useLogout();
 
  const navigate=useNavigate();const [open,setOpen]=useState(false);
@@ -88,19 +97,7 @@ export default function StudentShell({role,nav,view,go,name='Juan Dela Cruz',unr
         </button>
         {searchContent}
         <div className="ml-auto flex items-center gap-3">
-          <button
-            aria-label="Notifications"
-            className="relative"
-            onClick={() => select("notifications")}
-          >
-            <Bell className="h-5 w-5" />
-            <span className="absolute -right-2 -top-2 rounded-full bg-green-800 px-1 text-[9px] text-white">
-              {unread}
-            </span>
-          </button>
-          <button aria-label="Messages" onClick={() => select("messages")}>
-            <MessageCircle className="h-5 w-5" />
-          </button>
+          <HeaderInbox role={role} notifications={alerts} threads={inbox.threads || []} onRead={onInboxRead || (learner ? readLearner : undefined)} onNavigate={select} onNotification={role==='tutor' ? n=>{const target=notificationDestination(n);go(target?.view || 'notifications',target?.args || {notificationId:n.id});} : undefined} onThread={t=>role==='learner' && learner ? learner.message(t) : go('messages',{learner:t.name})}/>
           <button
             className="flex items-center gap-2"
             onClick={() => select("profile")}
@@ -109,7 +106,7 @@ export default function StudentShell({role,nav,view,go,name='Juan Dela Cruz',unr
             <Avatar name={name} />
             <span className="hidden text-left text-xs lg:block">
               <b>{name}</b>
-              <span className="block text-slate-500">Tutor</span>
+              <span className="block text-slate-500">{role === "tutor" ? "Tutor" : "Learner"}</span>
             </span>
           </button>
         </div>

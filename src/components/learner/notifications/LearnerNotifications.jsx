@@ -107,7 +107,7 @@ const categories = [
   "System",
   "System",
 ];
-const initialNotifications = notifications.map(
+export const initialNotifications = notifications.map(
   ([Icon, title, text, time, color, unread], index) => ({
     id: title,
     Icon,
@@ -137,6 +137,7 @@ export default function LearnerNotifications({ onOpenSettings }) {
   });
   const [activeFilter, setActiveFilter] = useState("All Notifications");
   const [expandedId, setExpandedId] = useState(null);
+  useEffect(()=>{const sync=()=>{try{const ids=JSON.parse(sessionStorage.getItem(storageKey)||"[]");setItems(current=>current.map(n=>ids.includes(n.id)?{...n,unread:false}:n));}catch{}};window.addEventListener("learner-notification-read",sync);return()=>window.removeEventListener("learner-notification-read",sync);},[]);
   useEffect(() => {
     try {
       sessionStorage.setItem(
