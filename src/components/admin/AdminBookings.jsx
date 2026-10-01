@@ -1,3 +1,7 @@
+import BookingDetails from "./BookingDetails.jsx";
+import IncidentDetails from "./IncidentDetails.jsx";
+import {loadIncidents,saveIncidents} from "./incidentData.js";
+import UserExport from "./UserExport.jsx";
 import { useState } from "react";
 import {
   CalendarDays,
@@ -18,6 +22,8 @@ import {
 import { seed, money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./adminData.js";
 export default function AdminBookings() {
+  const [incidents,setIncidents]=useState(loadIncidents);
+  const [incident,setIncident]=useState(null);
   const [workspace] = useState(() => {
     try {
       const d = JSON.parse(
@@ -267,10 +273,7 @@ export default function AdminBookings() {
         >
           Reset filters
         </button>
-        <button className={primary} onClick={exportCsv}>
-          <Download size={14} />
-          Export
-        </button>
+        <UserExport kind="bookings" rows={filtered.map(r=>({...r,tutor:r.tutor||workspace.profile.name}))} onCsv={exportCsv} onNotice={setNotice} />
       </div>
       {notice && (
         <p role="status" className="text-xs text-green-800">
@@ -423,40 +426,8 @@ export default function AdminBookings() {
           </div>
         </Modal>
       )}
-      {selected && (
-        <Modal title="Booking Details" onClose={() => setSelected(null)}>
-          <div className="space-y-3 text-xs">
-            <p className="rounded bg-blue-50 p-3">
-              Read-only demo booking. No schedule, payment, or cancellation
-              changes are made here.
-            </p>
-            <dl className="grid grid-cols-[125px_1fr] gap-2">
-              {[
-                ["Booking ID", selected.booking || selected.id],
-                ["Learner", selected.learner],
-                ["Tutor", workspace.profile.name],
-                ["Service", selected.service],
-                ["Specific Topic", selected.topic],
-                ["Session Date", dateLabel(selected.date)],
-                [
-                  "Time",
-                  `${time(selected.start)} – ${time(selected.end)} (Asia/Manila)`,
-                ],
-                ["Session Type", selected.type],
-                ["Platform / Location", selected.provider || "Not recorded"],
-                ["Gross Amount", money(selected.amount)],
-                ["Booking Status", selected.status],
-                ["Payment Status", selected.payment],
-              ].map(([label, value]) => (
-                <div className="contents" key={label}>
-                  <dt className="text-slate-500">{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </Modal>
-      )}
+      {selected && <BookingDetails record={selected} tutor={workspace.profile.name} incidents={incidents} onIncident={setIncident} onClose={()=>setSelected(null)} />}
+      {incident && <IncidentDetails record={incidents.find(r=>r.id===incident.id)||incident} onClose={()=>setIncident(null)} onSave={updated=>{const next=incidents.map(r=>r.id===updated.id?updated:r);if(!saveIncidents(next))return false;setIncidents(next);return true;}} />}
     </section>
   );
 }
