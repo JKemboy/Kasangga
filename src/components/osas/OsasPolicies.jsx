@@ -11,9 +11,10 @@ import {
   Info,
   ChevronLeft,
   ChevronRight,
-  Download,
 } from "lucide-react";
 import { Modal, button, input } from "../tutor/workspace/ui.jsx";
+
+import PolicyDetails from "./PolicyDetails.jsx";
 
 const office = "Office of Student Affairs and Services",
   unit = "OSAS Case Management Unit";
@@ -168,17 +169,6 @@ export default function OsasPolicies({ settings }) {
     setRecent(false);
     setMonth("2026-09");
     setPage(1);
-  }
-  function download() {
-    const text = `DEMO POLICY REFERENCE — NOT AN OFFICIAL POLICY DOCUMENT\n\n${selected.title}\nReference: ${selected.id}\nCategory: ${selected.category}\nVersion: ${selected.version}\nEffective date: ${date(selected.effective)}\nDocument owner: ${selected.owner}\nStatus: ${selected.status}\nLast updated: ${date(selected.updated)}\n\nOfficial policy text and attachments are not connected. Request the approved document from its document owner before relying on this reference.\n`;
-    const url = URL.createObjectURL(
-      new Blob([text], { type: "text/plain;charset=utf-8" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${selected.id}-demo-reference.txt`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   return (
     <section className="op-policies">
@@ -449,44 +439,13 @@ export default function OsasPolicies({ settings }) {
         </div>
       )}
       {selected && (
-        <Modal title={selected.title} onClose={() => setSelected(null)}>
-          <div className="space-y-3 text-xs">
-            <p className="rounded bg-amber-50 p-3 text-amber-900">
-              Demo reference only. Official policy text and attachments are not
-              connected.
-            </p>
-            <dl className="grid grid-cols-[120px_1fr] gap-2">
-              {[
-                ["Reference", selected.id],
-                ["Category", selected.category],
-                ["Version", selected.version],
-                ["Effective Date", date(selected.effective)],
-                ["Document Owner", selected.owner],
-                ["Status", selected.status],
-                ["Last Updated", date(selected.updated)],
-              ].map(([label, value]) => (
-                <div key={label} className="contents">
-                  <dt className="text-slate-500">{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
-            <p>
-              {selected.status === "Draft"
-                ? "This draft is not an active institutional policy."
-                : selected.status === "Archived"
-                  ? "This archived reference is no longer active. Request the current approved document from its owner."
-                  : "Request the approved document from its owner before relying on this reference."}
-            </p>
-            <button
-              className={button + " flex items-center gap-2"}
-              onClick={download}
-            >
-              <Download size={14} />
-              Download demo reference
-            </button>
-          </div>
-        </Modal>
+        <PolicyDetails
+          policy={selected}
+          policies={policies}
+          date={date}
+          onSelect={setSelected}
+          onClose={() => setSelected(null)}
+        />
       )}
       {categoriesOpen && (
         <Modal
