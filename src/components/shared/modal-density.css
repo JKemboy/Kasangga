@@ -1,0 +1,45 @@
+/* Shared density follows the compact tutor workspace without scaling text. */
+html dialog {
+  max-height: calc(100dvh - 24px);
+  font-size: 12px;
+  line-height: 1.45;
+}
+html dialog.workspace-modal {
+  width: min(520px, calc(100vw - 24px));
+  border-radius: 10px;
+}
+html dialog.workspace-modal:is(.learner-profile-modal, .learner-booking-modal) {
+  width: min(720px, calc(100vw - 24px));
+}
+html dialog.workspace-modal.learner-session-drawer {
+  width: min(560px, 100vw);
+  max-height: 100dvh;
+  border-radius: 0;
+}
+html dialog.workspace-modal > div:first-child {
+  padding: 10px 14px;
+  margin: 0;
+}
+html dialog.workspace-modal > div:nth-child(2) {
+  padding: 10px 14px;
+  min-height: 0;
+  overflow-y: auto;
+}
+html dialog.workspace-modal { padding: 0; }
+html dialog.workspace-modal[open] { display: flex; flex-direction: column; }
+html dialog.workspace-modal > div:first-child,
+html dialog.workspace-modal > .tutor-modal-footer { flex-shrink: 0; }
+html dialog.workspace-modal > .tutor-modal-footer { padding: 8px 14px; }
+html dialog h2 { font-size: 16px; }
+html dialog :is(button, input, select, textarea) { font-size: 12px; }
+html dialog :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select) {
+  padding: 6px 9px;
+}
+html dialog textarea { padding: 8px 10px; }
+html dialog button { min-height: 30px; }
+html dialog[aria-labelledby="logout-title"] { max-width: 420px; padding: 20px; }
+html dialog[aria-labelledby="logout-title"] h2 { font-size: 18px; margin-top: 12px; }
+html dialog[aria-labelledby="logout-title"] p { font-size: 12px; }
+@media (max-width: 600px) {
+  html dialog button { min-height: 36px; }
+}

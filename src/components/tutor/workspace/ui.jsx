@@ -77,7 +77,7 @@ export function Modal({
       className={
         tutor
           ? `tutor-modal tutor-modal--${size}`
-          : `${size === "profile" ? "learner-profile-modal " : size === "booking" ? "learner-booking-modal " : size === "session-drawer" ? "learner-session-drawer " : size === "session-modal" ? "learner-session-modal " : size === "account" ? "learner-account-modal " : ""}m-auto max-h-[85dvh] w-[min(600px,94vw)] overflow-y-auto rounded-xl p-3 shadow-xl backdrop:bg-black/40`
+          : `workspace-modal ${size === "profile" ? "learner-profile-modal " : size === "booking" ? "learner-booking-modal " : size === "session-drawer" ? "learner-session-drawer " : size === "session-modal" ? "learner-session-modal " : size === "account" ? "learner-account-modal " : ""}m-auto max-h-[85dvh] w-[min(600px,94vw)] overflow-y-auto rounded-xl p-3 shadow-xl backdrop:bg-black/40`
       }
     >
       <div
