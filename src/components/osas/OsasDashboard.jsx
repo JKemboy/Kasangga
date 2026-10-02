@@ -1,3 +1,6 @@
+import ClearanceReview from './ClearanceReview.jsx';
+import UserExport from '../admin/UserExport.jsx';
+import {reportHtml} from '../admin/reportExport.js';
 import HeaderInbox from '../shared/HeaderInbox.jsx';
 import {useLogout} from "../shared/LogoutProvider.jsx";
 import OsasEvidence from "./OsasEvidence.jsx";
@@ -614,13 +617,7 @@ export default function OsasDashboardPage() {
                   onChange={(e) => change(setQuery, e.target.value)}
                 />
               </label>
-              <button
-                className={primary + " flex items-center gap-2"}
-                onClick={exportCsv}
-              >
-                <Download size={15} />
-                Export CSV
-              </button>
+              <UserExport rows={filtered} onCsv={exportCsv} onNotice={setNotice} renderSummary={rows=>reportHtml([['Student ID','Field','Value'],...rows.flatMap(r=>[['Student',r.name],['Program',r.program],['Status',r.status],['Requested',r.requested],['Reviewed',r.reviewed]].map(([label,value])=>[r.id,label,value||'Not recorded']))]).replace(/<p>Local demo records[\s\S]*?<\/p>/, '<p>Filtered local student clearance records.</p>').replaceAll('Reports &amp; Analytics','Student Clearance Review').replaceAll('Reports & Analytics','Student Clearance Review')}/>
             </div>
             {notice && (
               <p role="status" className="text-xs text-green-800">
@@ -748,95 +745,10 @@ export default function OsasDashboardPage() {
           </>
         )}
       </main>
-      {modal && (
+      {modal === "Review Clearance" && <ClearanceReview record={rows.find(r=>r.id===selected.id)||selected} onClose={()=>setModal(null)} onSave={updated=>{try{const next=rows.map(r=>r.id===updated.id?updated:r);localStorage.setItem(storageKey,JSON.stringify(next));setRows(next);return true;}catch{return false;}}}/>}
+      {modal && modal !== "Review Clearance" && (
         <Modal title={modal} onClose={() => setModal(null)}>
-          {modal === "Review Clearance" ? (
-            <form onSubmit={save} className="space-y-3 text-xs">
-              <p>
-                <b>{selected.name}</b> · {selected.id}
-              </p>
-              <p>{selected.program}</p>
-              <div className="rounded bg-slate-50 p-3">
-                {selected.caseId} · {selected.caseStatus}
-                <p className="mt-2">
-                  Current clearance: <Status value={selected.status} /> ·
-                  Reviewed: {dateLabel(selected.reviewed)}
-                </p>
-              </div>
-              {selected.history.length > 0 && (
-                <details>
-                  <summary className="cursor-pointer font-semibold">
-                    Review history ({selected.history.length})
-                  </summary>
-                  {selected.history.map((h, i) => (
-                    <div key={i} className="mt-2 rounded border p-2">
-                      <b>{h.status}</b> · {dateLabel(h.reviewed)} · {h.officer}
-                      <p>Basis: {h.basis}</p>
-                      <p>{h.notes}</p>
-                    </div>
-                  ))}
-                </details>
-              )}
-              <Field label="Clearance decision">
-                <select
-                  className={input}
-                  value={decision}
-                  onChange={(e) => setDecision(e.target.value)}
-                >
-                  {statuses.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field
-                label="Institutional basis"
-                value={basis}
-                onChange={(e) => setBasis(e.target.value)}
-                required
-                maxLength={500}
-                placeholder="Applicable policy or authorized decision reference"
-              />
-              <Field label="Review notes">
-                <textarea
-                  className={input}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  required
-                  maxLength={2000}
-                  rows={3}
-                />
-              </Field>
-              <label className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  checked={confirmed}
-                  onChange={(e) => setConfirmed(e.target.checked)}
-                  required
-                />
-                I have reviewed the relevant records and documented the basis
-                for this decision.
-              </label>
-              {error && (
-                <p role="alert" className="text-red-600">
-                  {error}
-                </p>
-              )}
-              <p className="text-slate-500">
-                This demo saves a local review; it does not issue institutional
-                clearance.
-              </p>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  className={button}
-                  onClick={() => setModal(null)}
-                >
-                  Cancel
-                </button>
-                <button className={primary}>Save Review</button>
-              </div>
-            </form>
-          ) : modal === "Case Record" ? (
+          {modal === "Case Record" ? (
             <div className="space-y-3 text-xs">
               <p>
                 <b>{selected.caseId}</b> · {selected.name}
