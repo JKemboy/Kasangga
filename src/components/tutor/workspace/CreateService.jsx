@@ -10,7 +10,11 @@ import {
 import { Modal, Field, input, button, primary } from "./ui.jsx";
 import { money, time } from "./data.js";
 import { SERVICE_CATEGORIES, SERVICE_LEVELS } from "./serviceRules.js";
-import { serviceAvailabilityErrors, createService } from "./createService.js";
+import {
+  serviceAvailabilityErrors,
+  createService,
+  editService,
+} from "./createService.js";
 import "./create-service.css";
 const today = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -26,13 +30,29 @@ const newRow = (date = today()) => ({
   end: 19,
 });
 const times = Array.from({ length: 48 }, (_, i) => i / 2);
-export default function CreateService({ data, update, onClose }) {
-  const [topics, setTopics] = useState([]),
+export default function CreateService({
+  data,
+  update,
+  onClose,
+  service = null,
+}) {
+  const [topics, setTopics] = useState(
+      service?.topics
+        ?.split(/[,·]/)
+        .map((t) => t.trim())
+        .filter(Boolean) || [],
+    ),
     [topic, setTopic] = useState(""),
-    [description, setDescription] = useState(""),
-    [rate, setRate] = useState(""),
-    [types, setTypes] = useState([]),
-    [rows, setRows] = useState(() => [newRow()]),
+    [description, setDescription] = useState(service?.description || ""),
+    [rate, setRate] = useState(service?.rate ?? ""),
+    [types, setTypes] = useState(
+      service
+        ? service.type === "Both"
+          ? ["Online", "In-person"]
+          : [service.type]
+        : [],
+    ),
+    [rows, setRows] = useState(() => (service ? [] : [newRow()])),
     [error, setError] = useState("");
   const type = types.length === 2 ? "Both" : types[0] || "";
   const errors = serviceAvailabilityErrors(rows, type, data);
@@ -74,7 +94,9 @@ export default function CreateService({ data, update, onClose }) {
         type,
         topics: topics.join(", "),
       };
-      const next = createService(data, values, rows);
+      const next = service
+        ? editService(data, service.id, values, rows)
+        : createService(data, values, rows);
       if (update(() => next) === false)
         throw new Error("Could not save this service. Please try again.");
       onClose();
@@ -85,8 +107,10 @@ export default function CreateService({ data, update, onClose }) {
   return (
     <Modal
       size="service"
-      title="Create New Service"
-      subtitle="New services go live for learners once saved."
+      title={service ? "Edit Service" : "Create New Service"}
+      subtitle={
+        service?.name || "New services go live for learners once saved."
+      }
       onClose={onClose}
       footer={
         <>
@@ -94,7 +118,7 @@ export default function CreateService({ data, update, onClose }) {
             Cancel
           </button>
           <button className={primary} type="submit" form="create-service-form">
-            <Check size={18} /> Create Service
+            <Check size={18} /> {service ? "Save Changes" : "Create Service"}
           </button>
         </>
       }
@@ -109,6 +133,7 @@ export default function CreateService({ data, update, onClose }) {
             <input
               className={input}
               name="name"
+              defaultValue={service?.name || ""}
               placeholder="e.g., Calculus 1"
               maxLength={200}
               required
@@ -118,13 +143,19 @@ export default function CreateService({ data, update, onClose }) {
             <input
               className={input}
               name="subtitle"
+              defaultValue={service?.subtitle || ""}
               placeholder="e.g., Differential & Integral Calculus"
               maxLength={200}
               required
             />
           </Field>
           <Field label="Category">
-            <select className={input} name="category" defaultValue="" required>
+            <select
+              className={input}
+              name="category"
+              defaultValue={service?.category || ""}
+              required
+            >
               <option value="" disabled>
                 Select a category
               </option>
@@ -139,7 +170,12 @@ export default function CreateService({ data, update, onClose }) {
             </select>
           </Field>
           <Field label="Level">
-            <select className={input} name="level" defaultValue="" required>
+            <select
+              className={input}
+              name="level"
+              defaultValue={service?.level || ""}
+              required
+            >
               <option value="" disabled>
                 Select a level
               </option>
@@ -262,6 +298,19 @@ export default function CreateService({ data, update, onClose }) {
             </span>
           </div>
           <div className="service-availability">
+            {service && (
+              <p className="create-service-hint p-3">
+                {data.slots.filter((s) => s.serviceId === service.id).length}{" "}
+                existing service slots are retained. Add dates below; existing
+                bookings stay scheduled.
+              </p>
+            )}
+            {!rows.length && (
+              <p className="create-service-hint p-3">
+                No new dates and times. Learners can still use your available
+                general schedule.
+              </p>
+            )}
             {rows.map((r, i) => (
               <div className="service-availability-row" key={r.id}>
                 <div>

@@ -63,3 +63,27 @@ export function createService(data, input, rows, now = new Date()) {
     ],
   };
 }
+
+export function editService(data, id, input, rows, now = new Date()) {
+  const result = validateService(input, data.services, id);
+  if (result.error) throw new Error(result.error);
+  if (result.values.description.length > 160)
+    throw new Error("Description must be 160 characters or fewer.");
+  const errors = serviceAvailabilityErrors(rows, result.values.type, data, now);
+  if (errors.some(Boolean)) throw new Error(errors.find(Boolean));
+  return {
+    ...data,
+    services: data.services.map((s) =>
+      s.id === id ? { ...s, ...result.values } : s,
+    ),
+    slots: [
+      ...data.slots,
+      ...rows.map((row) => ({
+        ...slot(row, result.values.type),
+        id: crypto.randomUUID(),
+        serviceId: id,
+        serviceName: result.values.name,
+      })),
+    ],
+  };
+}

@@ -141,7 +141,7 @@ export default function Services({
   clearCreate,
   args = {},
 }) {
-  const {confirm} = useInteractions();
+  const { confirm } = useInteractions();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState(
     ["Active", "Inactive", "Suspended"].includes(args.status)
@@ -616,124 +616,30 @@ export default function Services({
         </nav>
       </footer>
 
-      {detail && <ServiceDetails service={detail} data={data} update={update} go={go} onClose={()=>setDetailId(null)} onToggle={toggleService} onEdit={service=>{setEdit(service);setDetailId(null);setError('');}}/>}
+      {detail && (
+        <ServiceDetails
+          service={detail}
+          data={data}
+          update={update}
+          go={go}
+          onClose={() => setDetailId(null)}
+          onToggle={toggleService}
+          onEdit={(service) => {
+            setEdit(service);
+            setDetailId(null);
+            setError("");
+          }}
+        />
+      )}
 
-      {edit && !edit.id && <CreateService data={data} update={update} onClose={close}/> }
-      {edit?.id && (
-        <Modal
-          title={edit.id ? "Edit Service" : "Create New Service"}
+      {edit && (
+        <CreateService
+          key={edit.id || "new"}
+          service={edit.id ? edit : null}
+          data={data}
+          update={update}
           onClose={close}
-        >
-          <form onSubmit={save} className="space-y-3 p-1">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Service / Subject">
-                <input
-                  name="name"
-                  className={control}
-                  defaultValue={edit.name || ""}
-                  required
-                  maxLength={200}
-                />
-              </FormField>
-              <FormField label="Subtitle">
-                <input
-                  name="subtitle"
-                  className={control}
-                  defaultValue={edit.subtitle || ""}
-                  required
-                  maxLength={200}
-                />
-              </FormField>
-              <FormField label="Category">
-                <Select
-                  label="Category"
-                  name="category"
-                  defaultValue={edit.category || "Mathematics"}
-                >
-                  {[
-                    ...new Set([
-                      ...SERVICE_CATEGORIES,
-                      ...data.services.map((s) => s.category),
-                    ]),
-                  ].map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </Select>
-              </FormField>
-              <FormField label="Level">
-                <Select
-                  label="Level"
-                  name="level"
-                  defaultValue={edit.level || "College"}
-                >
-                  {SERVICE_LEVELS.map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </Select>
-              </FormField>
-            </div>
-            <FormField label="Description">
-              <textarea
-                name="description"
-                className={`${control} h-auto resize-y py-2`}
-                rows={2}
-                defaultValue={edit.description || ""}
-                required
-                maxLength={600}
-              />
-            </FormField>
-            <FormField label="Topics / Skills">
-              <textarea
-                name="topics"
-                className={`${control} h-auto resize-y py-2`}
-                rows={2}
-                defaultValue={edit.topics || ""}
-                required
-                maxLength={200}
-                placeholder="Separate topics with commas"
-              />
-            </FormField>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Rate per hour (PHP)">
-                <input
-                  name="rate"
-                  className={control}
-                  type="number"
-                  min="1"
-                  max="10000"
-                  step="0.01"
-                  defaultValue={edit.rate ?? 350}
-                  required
-                />
-              </FormField>
-              <FormField label="Session Type">
-                <Select
-                  label="Session Type"
-                  name="type"
-                  defaultValue={edit.type || "Online"}
-                >
-                  {SERVICE_TYPES.map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </Select>
-              </FormField>
-            </div>
-            {error && (
-              <p
-                role="alert"
-                className="rounded-md bg-red-50 p-2 text-xs text-red-700"
-              >
-                {error}
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <button type="button" className={button} onClick={close}>
-                Cancel
-              </button>
-              <button className={primary}>Save Service</button>
-            </div>
-          </form>
-        </Modal>
+        />
       )}
     </section>
   );

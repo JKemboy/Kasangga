@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { seed } from "../src/components/tutor/workspace/data.js";
 import {
   createService,
+  editService,
   serviceAvailabilityErrors,
 } from "../src/components/tutor/workspace/createService.js";
 import {
@@ -21,6 +22,40 @@ const values = {
   type: "Online",
 };
 const rows = [{ id: "draft", date: "2026-09-18", start: 18, end: 19 }];
+test("editing preserves bookings and existing slots while validating new dates", () => {
+  const original = seed.services[0];
+  const next = editService(
+    seed,
+    original.id,
+    { ...original, description: "Updated guidance" },
+    [],
+    now,
+  );
+  assert.equal(next.services[0].description, "Updated guidance");
+  assert.equal(next.services[0].status, original.status);
+  assert.deepEqual(next.sessions, seed.sessions);
+  assert.deepEqual(next.slots, seed.slots);
+  const added = editService(
+    seed,
+    original.id,
+    { ...original, description: "Updated guidance" },
+    rows,
+    now,
+  );
+  assert.equal(added.slots.at(-1).serviceId, original.id);
+  assert.throws(
+    () =>
+      editService(
+        seed,
+        original.id,
+        original,
+        [{ ...rows[0], date: "2020-01-01" }],
+        now,
+      ),
+    /future/,
+  );
+  assert.throws(() => editService(seed, "missing", original, [], now));
+});
 test("creating a service saves linked availability and retains existing records", () => {
   const before = structuredClone(seed);
   const next = createService(seed, values, rows, now);
