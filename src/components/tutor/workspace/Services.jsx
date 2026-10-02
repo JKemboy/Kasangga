@@ -250,7 +250,22 @@ export default function Services({
 
   async function toggleService(service) {
     if (service.status === "Suspended") return;
-    if (!await confirm({title:`${service.status === "Active" ? "Deactivate" : "Reactivate"} ${service.name}?`, message:service.status === "Active" ? "Learners will no longer be able to find or book this service. Existing bookings stay scheduled. You can reactivate it anytime." : "This service becomes visible to learners again and uses your current availability.", accept:service.status === "Active" ? "Deactivate Service" : "Reactivate Service", danger:service.status === "Active"})) return;
+    if (
+      !(await confirm({
+        presentation: "service",
+        title: `${service.status === "Active" ? "Deactivate" : "Reactivate"} ${service.name}?`,
+        message:
+          service.status === "Active"
+            ? `Learners will no longer be able to find or book ${service.name}. Your ${data.sessions.filter((s) => (s.serviceId === service.id || s.service === service.name) && ["Confirmed", "Pending"].includes(s.status)).length} existing upcoming bookings stay scheduled. You can reactivate it anytime.`
+            : "This service becomes visible to learners again and uses your current availability.",
+        accept:
+          service.status === "Active"
+            ? "Deactivate Service"
+            : "Reactivate Service",
+        danger: service.status === "Active",
+      }))
+    )
+      return;
     update((d) => ({
       ...d,
       services: d.services.map((s) =>
