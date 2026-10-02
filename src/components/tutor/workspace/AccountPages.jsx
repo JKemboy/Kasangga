@@ -1,7 +1,11 @@
-import {useInteractions} from "../../shared/InteractionProvider.jsx";
-import {meetingUrl} from "./sessionActions.js";
-﻿import { useEffect, useRef, useState } from "react";
+import SessionDetails from "./SessionDetails.jsx";
+import { time, hour } from "./data.js";
+import { useInteractions } from "../../shared/InteractionProvider.jsx";
+import { useEffect, useRef, useState } from "react";
 import {
+  ExternalLink,
+  Info,
+  Send,
   CalendarDays,
   Check,
   LockKeyhole,
@@ -33,11 +37,26 @@ export function Messages({ data, update, args = {} }) {
   const bottom = useRef(null);
   const thread =
     data.threads.find((t) => t.name === selected) || data.threads[0];
-  const session = data.sessions.find((s) => s.learner === selected);
+  const related = data.sessions.filter((s) => s.learner === thread?.name);
+  const session =
+    related.find((s) => s.id === thread?.sessionId) ||
+    related
+      .filter((s) => ["Confirmed", "Pending"].includes(s.status))
+      .sort((a, b) => a.date.localeCompare(b.date))[0] ||
+    related[0];
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "nearest" });
   }, [selected, thread?.messages.length]);
-  if (!thread) return <><Heading title="Messages" subtitle="Chat with learners about your sessions."/><Empty show={true}/></>;
+  if (!thread)
+    return (
+      <>
+        <Heading
+          title="Messages"
+          subtitle="Chat with learners about your sessions."
+        />
+        <Empty show={true} />
+      </>
+    );
   return (
     <div className="grid gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
       <div>
@@ -62,11 +81,15 @@ export function Messages({ data, update, args = {} }) {
                 onClick={() => {
                   setSelected(t.name);
                   setDraft("");
+                  setInfo(false);
                 }}
               >
                 <Avatar name={t.name} />
                 <div className="min-w-0">
                   <b className="text-xs">{t.name}</b>
+                  <p className="text-[11px] text-slate-600">
+                    {data.sessions.find((s) => s.learner === t.name)?.service}
+                  </p>
                   <p className="mt-1 truncate text-[10px] text-slate-500">
                     {t.messages.at(-1)?.text}
                   </p>
@@ -86,18 +109,44 @@ export function Messages({ data, update, args = {} }) {
               <p className="text-xs">
                 {session?.service} · {session?.topic}
               </p>
+              {session && (
+                <p className="text-[11px] text-slate-500">
+                  {session.date} &middot; {time(hour(session.start))} &ndash;{" "}
+                  {time(hour(session.end))} &middot; {session.type}
+                </p>
+              )}
             </div>
           </div>
-          <button className={button} onClick={() => setInfo(true)}>
-            Session / Meeting Info
-          </button>
+          <div className="flex items-center gap-2">
+            {session?.type === "Online" && (
+              <button
+                className={button + " text-blue-700"}
+                onClick={() => setInfo("meeting")}
+              >
+                <ExternalLink size={15} />
+                {session.provider || "Meeting"} &middot; External Link
+              </button>
+            )}
+            <button
+              className={button}
+              aria-label="Session details"
+              disabled={!session}
+              onClick={() => setInfo("details")}
+            >
+              <Info size={18} />
+            </button>
+          </div>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-3">
           <p className="mb-2 text-center text-xs text-slate-500">
             September 17, 2026
           </p>
           {thread.messages.map((m, i) => (
-            <div key={i} className={`mb-2 flex ${m.mine ? "justify-end" : ""}`}>
+            <div
+              key={i}
+              className={`mb-3 gap-2 flex ${m.mine ? "justify-end" : ""}`}
+            >
+              {!m.mine && <Avatar name={thread.name} />}
               <div
                 className={`max-w-[80%] rounded-xl p-3 text-sm ${m.mine ? "bg-green-50" : "bg-slate-100"}`}
               >
@@ -150,8 +199,12 @@ export function Messages({ data, update, args = {} }) {
               maxLength={3000}
               onChange={(e) => setDraft(e.target.value)}
             />
-            <button className={primary} disabled={!draft.trim()}>
-              Send
+            <button
+              className={primary}
+              aria-label="Send message"
+              disabled={!draft.trim()}
+            >
+              <Send size={18} />
             </button>
           </div>
           <p className="mt-2 text-[10px] text-slate-500">
@@ -160,21 +213,21 @@ export function Messages({ data, update, args = {} }) {
           </p>
         </form>
       </section>
-      {info && (
-        <Modal
-          title="Session / Meeting Information"
+      {info && session && (
+        <SessionDetails
+          key={session.id + info}
+          data={data}
+          update={update}
+          sessionId={session.id}
+          initialAction={info === "meeting" ? "meeting" : ""}
           onClose={() => setInfo(false)}
-        >
-          <p>
-            {session?.service} · {session?.date} · {session?.start}–
-            {session?.end}
-          </p>
-          <p className="mt-2 text-sm">
-            {session?.provider}. No meeting URL has been provided for this
-            sample session.
-          </p>
-          {meetingUrl(session?.meetingUrl || session?.link) && <button className={primary} onClick={()=>{const url=meetingUrl(session.meetingUrl||session.link);const saved=update(d=>({...d,threads:d.threads.map(t=>t.name===selected?{...t,messages:[...t.messages,{mine:true,text:`${session.provider}: ${url}`,time:new Date().toLocaleTimeString(),local:true}]}:t)}));if(saved!==false)setInfo(false);}}>Share Meeting Link</button>}
-        </Modal>
+          go={(view, args) => {
+            if (view === "messages") {
+              setInfo(false);
+              setSelected(args.learner);
+            }
+          }}
+        />
       )}
     </div>
   );
