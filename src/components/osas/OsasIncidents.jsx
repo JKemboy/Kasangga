@@ -1,3 +1,11 @@
+import IncidentAssessment from "./IncidentAssessment.jsx";
+import UserExport from "../admin/UserExport.jsx";
+import {
+  assessmentKey,
+  loadAssessments,
+  incidentSummary,
+} from "./incidentAssessment.js";
+import { loadOsasCases } from "./OsasCases.jsx";
 import { useState } from "react";
 import {
   TriangleAlert,
@@ -11,112 +19,10 @@ import {
   Info,
   ShieldAlert,
 } from "lucide-react";
-import {
-  Modal,
-  button,
-  primary,
-  input,
-} from "../tutor/workspace/ui.jsx";
+import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 
-// Fictional monitoring fixtures, independent of the clearance demonstration.
-export const incidents = [
-  [
-    "041",
-    "BK-2026-0914-001",
-    "Juan Dela Cruz",
-    "John Michael Perez",
-    "Inappropriate Behavior",
-    "High",
-    "2026-09-14",
-    "Referred to OSAS",
-    "CASE-2026-017",
-    "Under Institutional Review",
-  ],
-  [
-    "039",
-    "BK-2026-0913-004",
-    "Maria Angelica Reyes",
-    "Karl Jhon Dimaano",
-    "Harassment / Bullying",
-    "High",
-    "2026-09-13",
-    "Referred to OSAS",
-    "CASE-2026-016",
-    "Awaiting Evidence",
-  ],
-  [
-    "036",
-    "BK-2026-0911-002",
-    "Karl Jhon Dimaano",
-    "John Michael Perez",
-    "Academic Dishonesty",
-    "Medium",
-    "2026-09-11",
-    "Case Created",
-    "CASE-2026-015",
-    "Pending Decision",
-  ],
-  [
-    "034",
-    "BK-2026-0909-006",
-    "Janine Claire Tampus",
-    "Mark Joseph Paloma",
-    "Repeated No-Show",
-    "Low",
-    "2026-09-09",
-    "Assessed by OSAS",
-    "CASE-2026-014",
-    "Resolved",
-  ],
-  [
-    "033",
-    "",
-    "Marvin P. Esteban",
-    "Faye Ann Villanueva",
-    "Technical Platform Issue",
-    "Low",
-    "2026-09-08",
-    "Not Referred",
-    "",
-    "Admin Handling",
-  ],
-  [
-    "031",
-    "BK-2026-0907-003",
-    "Lyla Shane Balais",
-    "Allen Ezra Mandia",
-    "Threatening Conduct",
-    "High",
-    "2026-09-07",
-    "Referred to OSAS",
-    "CASE-2026-013",
-    "Open",
-  ],
-].map(
-  ([
-    id,
-    booking,
-    reporter,
-    student,
-    type,
-    priority,
-    date,
-    referral,
-    caseId,
-    status,
-  ]) => ({
-    id: `INC-2026-${id}`,
-    booking,
-    reporter,
-    student,
-    type,
-    priority,
-    date,
-    referral,
-    caseId,
-    status,
-  }),
-);
+import { incidents } from "./incidentMonitoringData.js";
+export { incidents } from "./incidentMonitoringData.js";
 function Badge({ value }) {
   return (
     <span
@@ -130,16 +36,17 @@ const scopeMatches = (r, scope) =>
   !scope ||
   (scope === "referred" && r.referral !== "Not Referred") ||
   (scope === "assessment" &&
-    r.status === "Open" &&
+    ["Open", "Awaiting OSAS Assessment"].includes(r.status) &&
     r.referral !== "Not Referred") ||
   (scope === "formal" && !!r.caseId) ||
   (scope === "active" &&
     [
       "Under Institutional Review",
+      "Under Review",
       "Awaiting Evidence",
       "Pending Decision",
     ].includes(r.status)) ||
-  (scope === "closed" && r.status === "Resolved");
+  (scope === "closed" && ["Resolved", "Closed / No Formal Case"].includes(r.status));
 export default function OsasIncidents({ settings }) {
   const [month, setMonth] = useState("2026-09"),
     [query, setQuery] = useState(""),
@@ -153,7 +60,25 @@ export default function OsasIncidents({ settings }) {
     [selected, setSelected] = useState(null),
     [caseView, setCaseView] = useState(false),
     [notice, setNotice] = useState("");
-  const monthly = incidents.filter((r) => !month || r.date.startsWith(month));
+  const [assessments, setAssessments] = useState(loadAssessments);
+  const cases = loadOsasCases();
+  const monitoring = incidents.map((r) => {
+    const record = assessments[r.id] || r;
+    const linked = cases.find((c) => c.caseId === record.caseId);
+    return linked ? { ...record, status: linked.status } : record;
+  });
+  function saveAssessment(updated) {
+    try {
+      const next = { ...loadAssessments(), [updated.id]: updated };
+      localStorage.setItem(assessmentKey, JSON.stringify(next));
+      setAssessments(next);
+      setSelected(updated);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  const monthly = monitoring.filter((r) => !month || r.date.startsWith(month));
   const filtered = monthly.filter(
     (r) =>
       scopeMatches(r, scope) &&
@@ -250,7 +175,7 @@ export default function OsasIncidents({ settings }) {
         onChange={(e) => change(setter, e.target.value)}
       >
         <option value="">{label}</option>
-        {[...new Set(incidents.map((r) => r[field]))].map((v) => (
+        {[...new Set(monitoring.map((r) => r[field]))].map((v) => (
           <option key={v}>{v}</option>
         ))}
       </select>
@@ -380,13 +305,12 @@ export default function OsasIncidents({ settings }) {
         <button className={button} onClick={reset}>
           Reset
         </button>
-        <button
-          className={primary + " flex items-center gap-2"}
-          onClick={exportCsv}
-        >
-          <Download size={14} />
-          Export
-        </button>
+        <UserExport
+          rows={filtered}
+          onCsv={exportCsv}
+          renderSummary={incidentSummary}
+          onNotice={setNotice}
+        />
       </div>
       {scope && (
         <p className="text-[10px] text-green-800">
@@ -544,56 +468,14 @@ export default function OsasIncidents({ settings }) {
         </p>
       </footer>
       {selected && (
-        <Modal
-          title={caseView ? "Related Case Reference" : "Incident Report"}
-          onClose={() => setSelected(null)}
-        >
-          <div className="space-y-3 text-xs">
-            <p className="rounded bg-blue-50 p-3 text-blue-900">
-              Fictional monitoring sample. Allegations have not been established
-              as findings. Official evidence and assessment workflows are not
-              connected.
-            </p>
-            <dl className="grid grid-cols-[130px_1fr] gap-2">
-              {(caseView
-                ? [
-                    ["Case ID", selected.caseId],
-                    ["Incident Report", selected.id],
-                    ["Reported Student", selected.student],
-                    ["Current Status", selected.status],
-                    ["Referral Status", selected.referral],
-                  ]
-                : [
-                    ["Incident Report", selected.id],
-                    ["Related Booking", selected.booking || "—"],
-                    ["Reporter", selected.reporter],
-                    ["Reported Student", selected.student],
-                    ["Incident Type", selected.type],
-                    ["Priority", selected.priority],
-                    ["Submitted Date", formatDate(selected.date)],
-                    ["Referral Status", selected.referral],
-                    ["Current Status", selected.status],
-                    ["Related Case", selected.caseId || "No formal case"],
-                  ]
-              ).map(([label, value]) => (
-                <div className="contents" key={label}>
-                  <dt className="text-slate-500">{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="text-slate-500">
-              {caseView
-                ? "This reference belongs to the monitoring sample; it is not linked to a different student’s clearance record."
-                : "Detailed narratives and attachments are not available in this demo."}
-            </p>
-            {selected.caseId && (
-              <button className={button} onClick={() => setCaseView(!caseView)}>
-                {caseView ? "Back to Incident" : "View Related Case"}
-              </button>
-            )}
-          </div>
-        </Modal>
+        <IncidentAssessment
+          record={assessments[selected.id] || selected}
+          onSave={saveAssessment}
+          onClose={() => {
+            setSelected(null);
+            setAssessments(loadAssessments());
+          }}
+        />
       )}
     </section>
   );
