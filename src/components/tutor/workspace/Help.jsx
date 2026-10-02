@@ -1,3 +1,4 @@
+import ContactSupport from "./ContactSupport.jsx";
 import {
   Search,
   CircleHelp,
@@ -172,8 +173,7 @@ function GuideCard({ guide, index, go, onContact }) {
 }
 export default function Help({ update, go, args = {} }) {
   const [query, setQuery] = useState(args.topic || ""),
-    [contact, setContact] = useState(false),
-    [sent, setSent] = useState(false);
+    [contact, setContact] = useState(false);
   const rows = guides.filter((g) => matches(g, query));
   return (
     <div className="help-reference">
@@ -225,7 +225,6 @@ export default function Help({ update, go, args = {} }) {
                   go={go}
                   onContact={() => {
                     setContact(true);
-                    setSent(false);
                   }}
                 />
               ),
@@ -242,7 +241,6 @@ export default function Help({ update, go, args = {} }) {
                   go={go}
                   onContact={() => {
                     setContact(true);
-                    setSent(false);
                   }}
                 />
               ),
@@ -256,48 +254,7 @@ export default function Help({ update, go, args = {} }) {
       </div>
       <Empty show={!rows.length && !faqs.some((f) => matches(f, query))} />
       {contact && (
-        <Modal title="Contact Support" onClose={() => setContact(false)}>
-          <form
-            className="space-y-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const values = Object.fromEntries(new FormData(e.currentTarget));
-              const saved=update((d) => ({
-                ...d,
-                reports: [
-                  ...d.reports,
-                  {
-                    ...values,
-                    id: crypto.randomUUID(),
-                    type: "support",
-                    created: new Date().toISOString(),
-                  },
-                ],
-              }));
-              setSent(saved!==false);
-            }}
-          >
-            <p className="text-xs">
-              Support delivery is not connected. Save your request as a local
-              draft.
-            </p>
-            <Field label="Subject" name="subject" required maxLength={150} />
-            <Field label="Details">
-              <textarea
-                name="details"
-                required
-                maxLength={3000}
-                className={`${input} h-28`}
-              />
-            </Field>
-            <button className={primary}>Save Support Draft</button>
-            {sent && (
-              <p role="status" className="text-xs">
-                Draft saved locally. It has not been sent.
-              </p>
-            )}
-          </form>
-        </Modal>
+        <ContactSupport update={update} onClose={() => setContact(false)} />
       )}
     </div>
   );
