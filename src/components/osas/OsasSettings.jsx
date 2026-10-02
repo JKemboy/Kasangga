@@ -11,12 +11,7 @@ import {
   CalendarDays,
   Info,
 } from "lucide-react";
-import {
-  Modal,
-  input,
-  button,
-  primary,
-} from "../tutor/workspace/ui.jsx";
+import { Modal, input, button, primary } from "../tutor/workspace/ui.jsx";
 
 export const settingsKey = "campustutor:osas-settings:v1";
 const notificationTypes = [
@@ -45,6 +40,7 @@ export const defaultSettings = {
   pageSize: "6",
   compact: true,
   tips: true,
+  showArchived: false,
   notifications: notificationTypes.map(() => ({ email: true, app: true })),
 };
 export function loadSettings() {
@@ -360,8 +356,16 @@ export default function OsasSettings({ settings, onSave }) {
                 />
                 Show tips and help text
               </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={draft.showArchived ?? false}
+                  onChange={(e) => set("showArchived", e.target.checked)}
+                />
+                Show archived records by default
+              </label>
               <p className="os-help">
-                Date format and table preferences apply to clearance records.
+                Language and timezone follow CSU settings.
               </p>
             </div>
           </div>
@@ -374,18 +378,19 @@ export default function OsasSettings({ settings, onSave }) {
             ? "You have unsaved changes."
             : "Changes apply only to your account and interface."}
         </span>
-        <button
-          type="button"
-          className={button}
-          disabled={!dirty}
-          onClick={() => {
-            setDraft(structuredClone(settings));
-            setError("");
-            setNotice("Changes reset.");
-          }}
-        >
-          Reset
-        </button>
+        {dirty && (
+          <button
+            type="button"
+            className={button}
+            onClick={() => {
+              setDraft(structuredClone(settings));
+              setError("");
+              setNotice("Changes discarded.");
+            }}
+          >
+            Discard
+          </button>
+        )}
         <button className={primary}>
           <Save size={15} />
           Save Changes
@@ -401,7 +406,7 @@ export default function OsasSettings({ settings, onSave }) {
       )}
       {security && (
         <Modal title={security} onClose={() => setSecurity(null)}>
-          <SecurityFlow mode={security} onClose={()=>setSecurity(null)}/>
+          <SecurityFlow mode={security} onClose={() => setSecurity(null)} />
         </Modal>
       )}
     </form>

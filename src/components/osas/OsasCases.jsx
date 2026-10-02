@@ -123,7 +123,7 @@ export default function OsasCases({ settings }) {
     ? []
     : rows.filter(
         (r) =>
-          !r.archived &&
+          (!r.archived || settings.showArchived) &&
           (!start || r.date >= start) &&
           (!end || r.date <= end),
       );
