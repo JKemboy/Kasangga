@@ -1,0 +1,36 @@
+html dialog.ocx-dialog {
+  width: min(820px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  border-radius: 10px;
+  font-size: 12px;
+}
+html dialog.ocx-small { width: min(480px, calc(100vw - 24px)); }
+html dialog:is(.ocx-incident, .clr-review, .policy-details, .archive-details) {
+  width: min(660px, calc(100vw - 24px));
+}
+html dialog.ocx-drawer {
+  width: min(660px, 100vw);
+  max-height: 100dvh;
+  border-radius: 0;
+}
+html dialog.ocx-dialog > :is(header, footer) { padding: 10px 14px; gap: 8px; }
+html dialog.ocx-dialog h2 { font-size: 16px; }
+html dialog.ocx-dialog .ocx-body { padding: 12px 14px; }
+html dialog.ocx-dialog .ocx-body section { padding: 12px; margin: 10px 0; }
+html dialog.ocx-dialog .ocx-facts { gap: 10px 14px; }
+html dialog.ocx-dialog :is(.ocx-warning, .ocx-evidence-row, .ocx-formal-case) { padding: 10px; }
+html dialog.ocx-dialog .ocx-evidence-grid { gap: 12px; }
+html dialog.ocx-dialog label { margin: 8px 0; }
+html dialog.ocx-dialog :is(textarea, select) { margin-top: 5px; }
+html dialog.ocx-incident .ocx-facts { margin: 12px 0 18px; }
+html dialog.ocx-incident .ocx-facts > div { margin: 8px 0; grid-template-columns: 140px minmax(0, 1fr); }
+html dialog.ocx-incident .ocx-facts dt { font-size: 12px; }
+html dialog.ocx-incident .ocx-body > h3 { margin: 16px 0 8px; }
+html dialog :is(.policy-facts, .archive-facts) { gap: 12px; }
+html dialog .policy-content { padding: 14px; margin-top: 12px; }
+html dialog .policy-content h3 { margin-top: 12px; }
+html dialog .archive-timeline li { padding-bottom: 12px; }
+@media (max-width: 600px) {
+  html dialog.ocx-dialog .ocx-evidence-grid { grid-template-columns: 1fr; }
+  html dialog.ocx-incident .ocx-facts > div { grid-template-columns: 110px minmax(0, 1fr); }
+}
