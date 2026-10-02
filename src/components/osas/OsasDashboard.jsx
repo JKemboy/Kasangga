@@ -447,6 +447,7 @@ export default function OsasDashboardPage() {
       >
         {view === "Overview" ? (
           <OsasOverview
+            onReports={()=>setView("Reports & Analytics")}
             rows={rows}
             settings={settings}
             onCase={(r) => {

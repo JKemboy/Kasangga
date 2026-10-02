@@ -1,3 +1,9 @@
+import { loadOsasEvidence } from "./OsasEvidence.jsx";
+import OverviewMonth from "./OverviewMonth.jsx";
+import CaseShortcut from "./CaseShortcut.jsx";
+import { loadOsasCases } from "./OsasCases.jsx";
+import ServiceMenu from "../admin/ServiceMenu.jsx";
+import { Eye, PenLine } from "lucide-react";
 import { useState } from "react";
 import {
   FileText,
@@ -13,22 +19,70 @@ import {
 import { Modal, button, input } from "../tutor/workspace/ui.jsx";
 
 const colors = ["#ff6971", "#ffc629", "#1686ff", "#65d3a8", "#006039"];
-export default function OsasOverview({ rows, settings, onCase, onClearance }) {
+export default function OsasOverview({
+  rows,
+  settings,
+  onCase,
+  onClearance,
+  onReports,
+}) {
   const [month, setMonth] = useState("2026-09"),
     [detail, setDetail] = useState(null);
+  const [caseRows, setCaseRows] = useState(loadOsasCases);
+  const [shortcut, setShortcut] = useState(null);
+  const openCase = (record, view = "case") =>
+    setShortcut({
+      caseId: record.caseId,
+      view,
+      evidenceId: view === "evidence" ? record.id : undefined,
+    });
+  const saveCase = (updated) => {
+    try {
+      const next = caseRows.map((r) =>
+        r.caseId === updated.caseId ? updated : r,
+      );
+      localStorage.setItem(
+        "campustutor:osas-case-reviews:v1",
+        JSON.stringify(next),
+      );
+      setCaseRows(next);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const records = rows.filter((r) => !month || r.requested.startsWith(month));
-  const cases = records
-    .filter((r) => r.caseId !== "None")
-    .sort((a, b) => b.requested.localeCompare(a.requested));
+  const cases = caseRows
+    .filter((r) => !r.archived && (!month || r.date.startsWith(month)))
+    .map((r) => ({
+      ...r,
+      name: r.student,
+      caseStatus: r.status,
+      requested: r.date,
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date));
   const open = cases.filter((r) => !r.caseStatus.startsWith("Resolved"));
-  const evidence = cases.filter((r) => r.caseStatus === "Awaiting Evidence");
+  const evidence = loadOsasEvidence()
+    .filter(
+      (e) =>
+        cases.some((c) => c.caseId === e.caseId) && e.status !== "Validated",
+    )
+    .map((e) => ({ ...e, name: e.evidenceType, caseStatus: e.status }));
   const review = cases.filter((r) => r.caseStatus === "Under Review");
   const clearance = records.filter((r) => r.status === "Pending Review");
   const resolved = cases.filter((r) => r.caseStatus.startsWith("Resolved"));
   const followup = cases.filter(
-    (r) => r.status === "Requires Resolution" || r.status === "On Hold",
+    (r) =>
+      ["Awaiting Evidence", "Pending Decision"].includes(r.status) ||
+      (r.evidenceRequest && r.status !== "Resolved"),
   );
-  const groups = [...new Set(cases.map((r) => r.caseStatus))].map((label) => ({
+  const groups = [
+    "Open",
+    "Under Review",
+    "Awaiting Evidence",
+    "Pending Decision",
+    "Resolved",
+  ].map((label) => ({
     label,
     records: cases.filter((r) => r.caseStatus === label),
   }));
@@ -49,7 +103,13 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
           year: "numeric",
         });
   const show = (title, items, clearanceAction = false) =>
-    setDetail({ title, items, clearanceAction });
+    setDetail({
+      title,
+      items,
+      clearanceAction,
+      view:
+        items === evidence ? "evidence" : items === followup ? "note" : "case",
+    });
   return (
     <section className="oo-overview">
       <div className="osas-heading">
@@ -60,18 +120,11 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
             student-clearance activity.
           </p>
         </div>
-        <label className="op-month">
-          Request month
-          <input
-            className={input}
-            aria-label="Overview month"
-            type="month"
-            value={month}
-            min="2024-01"
-            max="2099-12"
-            onChange={(e) => setMonth(e.target.value)}
-          />
-        </label>
+        <OverviewMonth
+          value={month}
+          onChange={setMonth}
+          onReports={onReports}
+        />
       </div>
       <div className="op-metrics">
         {[
@@ -80,7 +133,7 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
             SearchCheck,
             evidence,
             "Pending Evidence Review",
-            "Cases awaiting evidence",
+            "Evidence items requiring validation",
             "#0878ff",
           ],
           [
@@ -138,7 +191,7 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
                     "Student / Reported User",
                     "Incident Type",
                     "Priority",
-                    "Request Date",
+                    "Date Opened",
                     "Assigned OSAS Personnel",
                     "Case Status",
                     "Action",
@@ -149,19 +202,34 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
               </thead>
               <tbody>
                 {cases.slice(0, 5).map((r, i) => (
-                  <tr key={r.id}>
+                  <tr
+                    key={r.id}
+                    className="oo-case-row"
+                    tabIndex={0}
+                    aria-label={`Open case ${r.caseId}`}
+                    onClick={() => openCase(r)}
+                    onKeyDown={(e) => {
+                      if (
+                        e.target === e.currentTarget &&
+                        ["Enter", " "].includes(e.key)
+                      ) {
+                        e.preventDefault();
+                        openCase(r);
+                      }
+                    }}
+                  >
                     <td>{i + 1}</td>
                     <td>
-                      <button onClick={() => onCase(r)}>{r.caseId}</button>
+                      <button onClick={() => openCase(r)}>{r.caseId}</button>
                     </td>
                     <td>
                       {r.name}
-                      <small>ID: {r.id}</small>
+                      <small>{r.caseId}</small>
                     </td>
-                    <td className="text-slate-400">Not recorded</td>
+                    <td>{r.type}</td>
                     <td className="text-slate-400">—</td>
                     <td>{date(r.requested)}</td>
-                    <td className="text-slate-400">Not assigned</td>
+                    <td>{r.officer}</td>
                     <td>
                       <span
                         className={`oo-status ${r.caseStatus.startsWith("Resolved") ? "resolved" : r.caseStatus === "Awaiting Evidence" ? "evidence" : "review"}`}
@@ -169,14 +237,17 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
                         {r.caseStatus}
                       </span>
                     </td>
-                    <td>
-                      <button
-                        className={button}
-                        aria-label={`View case ${r.caseId}`}
-                        onClick={() => onCase(r)}
-                      >
-                        <MoreHorizontal size={15} />
-                      </button>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <ServiceMenu
+                        service={{ title: r.caseId }}
+                        options={[
+                          [Eye, "View case", "case"],
+                          [ShieldCheck, "Review evidence", "evidence"],
+                          [PenLine, "Add case action / note", "note"],
+                          [Info, "View incident report", "incident"],
+                        ]}
+                        onSelect={(view) => openCase(r, view)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -193,7 +264,12 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
           <section className="oo-card">
             <h2>Pending Actions</h2>
             {[
-              [FileText, evidence, "Cases awaiting evidence", "#ffb800"],
+              [
+                FileText,
+                evidence,
+                "Evidence items requiring validation",
+                "#ffb800",
+              ],
               [ShieldCheck, review, "Cases awaiting review", "#7622df"],
               [
                 Scale,
@@ -201,7 +277,12 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
                 "Clearance reviews requiring action",
                 "#006536",
               ],
-              [ClipboardList, followup, "Cases requiring follow-up", "#0878ff"],
+              [
+                ClipboardList,
+                followup,
+                "Cases requiring documentation / follow-up",
+                "#0878ff",
+              ],
             ].map(([Icon, items, title, color]) => (
               <button
                 className="oo-action"
@@ -219,9 +300,10 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
           <section className="oo-card">
             <h2>Case Status Overview</h2>
             <div className="oo-chart">
-              <div
+              <button
+                type="button"
+                onClick={() => show("All Cases", cases)}
                 className="oo-donut"
-                role="img"
                 aria-label={`${cases.length} total cases: ${groups.map((g) => `${g.label} ${g.records.length}`).join(", ")}`}
                 style={{
                   background: cases.length
@@ -233,7 +315,7 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
                   <b>{cases.length}</b>
                   <small>Total Cases</small>
                 </span>
-              </div>
+              </button>
               <div className="oo-legend">
                 {groups.map((g, i) => (
                   <button
@@ -256,11 +338,21 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
           <Info size={17} />
           <p>
             Incident reports remain allegations until OSAS completes impartial
-            review and records a final institutional decision. Demo totals use
-            clearance case references; incident types, assigned personnel, and
-            evidence-item counts are not connected.
+            review and records a final institutional decision. Case totals
+            reflect the local case records; clearance totals reflect clearance
+            requests.
           </p>
         </div>
+      )}
+      {shortcut && (
+        <CaseShortcut
+          key={shortcut.caseId + shortcut.view}
+          record={caseRows.find((r) => r.caseId === shortcut.caseId)}
+          initialView={shortcut.view}
+          initialEvidenceId={shortcut.evidenceId}
+          onClose={() => setShortcut(null)}
+          onSave={saveCase}
+        />
       )}
       {detail && (
         <Modal title={detail.title} onClose={() => setDetail(null)}>
@@ -272,7 +364,9 @@ export default function OsasOverview({ rows, settings, onCase, onClearance }) {
                   className="flex w-full items-center justify-between gap-3 rounded border p-3 text-left hover:bg-green-50"
                   onClick={() => {
                     setDetail(null);
-                    detail.clearanceAction ? onClearance(r) : onCase(r);
+                    detail.clearanceAction
+                      ? onClearance(r)
+                      : openCase(r, detail.view);
                   }}
                 >
                   <span>
