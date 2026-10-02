@@ -8,10 +8,12 @@ import {
   LockKeyhole,
   Info,
 } from "lucide-react";
-import { Modal, button, input } from "../tutor/workspace/ui.jsx";
+import { button, input } from "../tutor/workspace/ui.jsx";
+
+import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 
 // Fictional archive references matching the design; no official case documents.
-const initialRecords = [
+export const initialRecords = [
   [
     "014",
     "034",
@@ -112,10 +114,40 @@ const initialRecords = [
     officer,
     year: "2026–2027",
     status: "Resolved",
+    ...(caseId === "012"
+      ? {
+          studentId: "2022-00401",
+          reporter: "Marvin P. Esteban",
+          description:
+            "The reporter alleged disrespectful comments during an online session.",
+          resolutionNotes:
+            "Respondent acknowledged the tone of comments; counseling completed Sep 1, 2026.",
+          evidence: [
+            { id: "EVD-2026-040", filename: "archived_evidence_040.pdf" },
+          ],
+        }
+      : {}),
   }),
 );
 export default function OsasArchive({ settings }) {
-  const [records]=useState(()=>{try{const cases=JSON.parse(localStorage.getItem("campustutor:osas-case-reviews:v1"))||[];const added=cases.filter(c=>c.archived&&c.archiveRecord).map(c=>c.archiveRecord);return [...added,...initialRecords.filter(r=>!added.some(a=>a.caseId===r.caseId))];}catch{return initialRecords;}});
+  const [records] = useState(() => {
+    try {
+      const cases =
+        JSON.parse(localStorage.getItem("campustutor:osas-case-reviews:v1")) ||
+        [];
+      const added = cases
+        .filter((c) => c.archived && c.archiveRecord)
+        .map((c) => c.archiveRecord);
+      return [
+        ...added,
+        ...initialRecords.filter(
+          (r) => !added.some((a) => a.caseId === r.caseId),
+        ),
+      ];
+    } catch {
+      return initialRecords;
+    }
+  });
   const [query, setQuery] = useState(""),
     [year, setYear] = useState("2026–2027"),
     [type, setType] = useState(""),
@@ -442,46 +474,11 @@ export default function OsasArchive({ settings }) {
         </p>
       </div>
       {selected && (
-        <Modal
-          title={`Archived Case · ${selected.caseId}`}
+        <ArchivedCaseDetails
+          record={selected}
+          date={date}
           onClose={() => setSelected(null)}
-        >
-          <div className="space-y-3 text-xs">
-            <p className="flex items-center gap-2 rounded bg-green-50 p-3 text-green-800">
-              <LockKeyhole size={15} />
-              Read-only archived reference · Demo record
-            </p>
-            <dl className="grid grid-cols-[125px_1fr] gap-2">
-              {[
-                ["Case ID", selected.caseId],
-                ["Incident Report ID", selected.incident],
-                ["Student", selected.student],
-                ["Incident Type", selected.type],
-                ["Date Opened", date(selected.opened)],
-                ["Resolution Date", date(selected.resolved)],
-                ["Outcome", selected.outcome],
-                ["Archived Date", date(selected.archived)],
-                ["Archived By", selected.officer],
-                ["Academic Year", selected.year],
-              ].map(([label, value]) => (
-                <div className="contents" key={label}>
-                  <dt className="text-slate-500">{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="rounded bg-slate-50 p-3 text-slate-600">
-              Official decision documents, supporting evidence, and audit
-              records are not attached. This sample is separate from active
-              case-review and clearance records.
-            </p>
-            <div className="flex justify-end">
-              <button className={button} onClick={() => setSelected(null)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </Modal>
+        />
       )}
     </section>
   );

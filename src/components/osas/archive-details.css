@@ -1,0 +1,137 @@
+.archive-details {
+  width: min(720px, 96vw);
+  max-height: 97dvh;
+}
+.archive-details h2 {
+  font-size: 17px;
+}
+.archive-details h3 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.archive-details h3 svg {
+  color: #00733b;
+}
+.archive-badge {
+  background: #eef0f3;
+  color: #4a5568;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+.archive-readonly {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff8e7;
+  border: 1px solid #ffd27a;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 11px;
+}
+.archive-readonly svg {
+  flex-shrink: 0;
+}
+.archive-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 18px;
+  margin-top: 14px;
+  font-size: 12px;
+}
+.archive-facts dt {
+  color: #718096;
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+.archive-allegation {
+  background: #fffae9;
+  border: 1px solid #ffdc83;
+  border-radius: 7px;
+  padding: 12px;
+}
+.archive-allegation strong {
+  font-size: 10px;
+  color: #a86b00;
+}
+.archive-allegation p,
+.archive-resolution {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.archive-evidence {
+  border: 1px solid #e6eaf0;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.archive-evidence > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.archive-evidence p,
+.archive-timeline p {
+  color: #718096;
+  font-size: 11px;
+  margin-top: 3px;
+}
+.archive-evidence button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #006239;
+}
+.archive-timeline {
+  margin-left: 5px;
+}
+.archive-timeline li {
+  border-left: 2px solid #e1e6ed;
+  padding: 0 0 18px 16px;
+  position: relative;
+  font-size: 12px;
+}
+.archive-timeline li:last-child {
+  border-color: transparent;
+  padding-bottom: 0;
+}
+.archive-timeline li::before {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00753c;
+  top: 4px;
+  left: -5px;
+}
+.archive-details > footer {
+  border-top: 1px solid #e4e7ec;
+  justify-content: flex-end;
+}
+.archive-details footer small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.archive-close {
+  border-radius: 6px;
+  background: #005638;
+  color: white;
+  padding: 8px 15px;
+  font-weight: 600;
+}
+@media (max-width: 540px) {
+  .archive-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .archive-details footer small {
+    flex: 1;
+  }
+}

@@ -1,3 +1,4 @@
+import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 import { loadAssessments } from "./incidentAssessment.js";
 import CaseShortcut from "./CaseShortcut.jsx";
 import CaseActions from "./CaseActions.jsx";
@@ -536,7 +537,34 @@ export default function OsasCases({ settings }) {
           </div>
         </Modal>
       )}
-      {selected && <CaseShortcut record={rows.find(r=>r.caseId===selected.caseId)||selected} onClose={()=>setSelected(null)} onSave={persistCase}/>}
+      {selected?.archived ? (
+        <ArchivedCaseDetails
+          record={
+            selected.archiveRecord || {
+              caseId: selected.caseId,
+              incident: selected.id,
+              student: selected.student,
+              type: selected.type,
+              opened: selected.date,
+              resolved: selected.decision?.at?.slice(0, 10),
+              archived: selected.decision?.at?.slice(0, 10),
+              officer: selected.officer,
+              outcome: selected.decision?.outcome,
+              full: selected,
+            }
+          }
+          date={date}
+          onClose={() => setSelected(null)}
+        />
+      ) : (
+        selected && (
+          <CaseShortcut
+            record={rows.find((r) => r.caseId === selected.caseId) || selected}
+            onClose={() => setSelected(null)}
+            onSave={persistCase}
+          />
+        )
+      )}
     </section>
   );
 }
