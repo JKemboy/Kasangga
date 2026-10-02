@@ -1,5 +1,7 @@
+import { loadAssessments } from "./incidentAssessment.js";
+import CaseShortcut from "./CaseShortcut.jsx";
 import CaseActions from "./CaseActions.jsx";
-import {useInteractions} from "../shared/InteractionProvider.jsx";
+import { useInteractions } from "../shared/InteractionProvider.jsx";
 import { useState } from "react";
 import {
   FileText,
@@ -20,7 +22,7 @@ import {
   input,
   Avatar,
 } from "../tutor/workspace/ui.jsx";
-import { incidents } from "./OsasIncidents.jsx";
+import { incidents } from "./incidentMonitoringData.js";
 
 const key = "campustutor:osas-case-reviews:v1";
 const statuses = [
@@ -54,14 +56,37 @@ const initial = incidents
       personnel[2],
       personnel[1],
     ][i],
+    decision:
+      r.caseId === "CASE-2026-014"
+        ? {
+            outcome: "Verbal Warning",
+            notes:
+              "Attendance records and the learner statement describe three missed sessions without notice.",
+            basis: "Tutoring Conduct and Safety Standards v1.5 (sample)",
+            condition:
+              "Complete an OSAS attendance-commitment counseling session",
+            due: "2026-09-30",
+            conditionDone: false,
+            at: "2026-09-12T10:30:00+08:00",
+            notify: false,
+          }
+        : undefined,
     history: [],
   }));
-function load() {
+export function loadOsasCases() {
+  const merge = (records) => {
+    const extra = Object.values(loadAssessments())
+      .map((r) => r.formalCase)
+      .filter(Boolean);
+    return [
+      ...records,
+      ...extra.filter((r) => !records.some((c) => c.caseId === r.caseId)),
+    ];
+  };
   try {
     const saved = JSON.parse(localStorage.getItem(key));
     if (
       Array.isArray(saved) &&
-
       saved.every(
         (r) =>
           typeof r.caseId === "string" &&
@@ -69,14 +94,14 @@ function load() {
           Array.isArray(r.history),
       )
     )
-      return saved;
+      return merge(saved);
   } catch {}
-  return structuredClone(initial);
+  return merge(structuredClone(initial));
 }
 export default function OsasCases({ settings }) {
-  const {confirm}=useInteractions();
+  const { confirm } = useInteractions();
 
-  const [rows, setRows] = useState(load),
+  const [rows, setRows] = useState(loadOsasCases),
     [datesOpen, setDatesOpen] = useState(false),
     [query, setQuery] = useState(""),
     [status, setStatus] = useState(""),
@@ -96,7 +121,10 @@ export default function OsasCases({ settings }) {
   const period = invalid
     ? []
     : rows.filter(
-        (r) => !r.archived && (!start || r.date >= start) && (!end || r.date <= end),
+        (r) =>
+          !r.archived &&
+          (!start || r.date >= start) &&
+          (!end || r.date <= end),
       );
   const filtered = period.filter(
     (r) =>
@@ -133,8 +161,35 @@ export default function OsasCases({ settings }) {
     setter(value);
     setPage(1);
   }
-  function persistCase(record){try{const next=rows.map(r=>r.caseId===record.caseId?record:r);localStorage.setItem(key,JSON.stringify(next));setRows(next);setSelected(record);return true;}catch{setError("Could not save case.");return false;}}
-  function archiveCase(record){const archived={caseId:record.caseId,incident:record.id,student:record.student,type:record.type,opened:record.date,resolved:record.decision.at.slice(0,10),outcome:record.decision.outcome,archived:new Date().toISOString().slice(0,10),officer:record.officer,year:"2026-2027",full:record};if(persistCase({...record,archived:true,archiveRecord:archived}))setSelected(null);}
+  function persistCase(record) {
+    try {
+      const next = rows.map((r) => (r.caseId === record.caseId ? record : r));
+      localStorage.setItem(key, JSON.stringify(next));
+      setRows(next);
+      setSelected(record);
+      return true;
+    } catch {
+      setError("Could not save case.");
+      return false;
+    }
+  }
+  function archiveCase(record) {
+    const archived = {
+      caseId: record.caseId,
+      incident: record.id,
+      student: record.student,
+      type: record.type,
+      opened: record.date,
+      resolved: record.decision.at.slice(0, 10),
+      outcome: record.decision.outcome,
+      archived: new Date().toISOString().slice(0, 10),
+      officer: record.officer,
+      year: "2026-2027",
+      full: record,
+    };
+    if (persistCase({ ...record, archived: true, archiveRecord: archived }))
+      setSelected(null);
+  }
   function open(r) {
     setSelected(r);
     setDecision(r.status);
@@ -151,7 +206,17 @@ export default function OsasCases({ settings }) {
       );
       return;
     }
-    if(decision==="Resolved"&&!await confirm({title:"Record this decision?",message:`${selected.caseId}: ${basis}. The decision becomes part of the case record.`,accept:"Record Decision",acknowledgement:"I completed an impartial review and recorded the institutional basis."}))return;
+    if (
+      decision === "Resolved" &&
+      !(await confirm({
+        title: "Record this decision?",
+        message: `${selected.caseId}: ${basis}. The decision becomes part of the case record.`,
+        accept: "Record Decision",
+        acknowledgement:
+          "I completed an impartial review and recorded the institutional basis.",
+      }))
+    )
+      return;
     const entry = {
       status: decision,
       officer,
@@ -471,127 +536,7 @@ export default function OsasCases({ settings }) {
           </div>
         </Modal>
       )}
-      {selected && (
-        <Modal
-          title={`${selected.status === "Resolved" ? "View" : "Review"} Case · ${selected.caseId}`}
-          onClose={() => setSelected(null)}
-        >
-          <form onSubmit={save} className="space-y-3 text-xs">
-            <p>
-              <b>{selected.student}</b> · Reported by {selected.reporter}
-            </p>
-            <p>
-              {selected.id} · {selected.type} · {selected.priority} priority
-            </p>
-            <p className="rounded bg-blue-50 p-3">
-              Demo case record. Official evidence, statements, and institutional
-              decision documents are not connected.
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <label>
-                Case status
-                <select
-                  aria-label="Review case status"
-                  className={input}
-                  value={decision}
-                  onChange={(e) => setDecision(e.target.value)}
-                  disabled={selected.status === "Resolved"}
-                >
-                  {statuses.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Assigned personnel
-                <select
-                  aria-label="Assigned personnel"
-                  className={input}
-                  value={officer}
-                  onChange={(e) => setOfficer(e.target.value)}
-                  disabled={selected.status === "Resolved"}
-                >
-                  {personnel.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {selected.history.length > 0 && (
-              <details>
-                <summary className="cursor-pointer font-semibold">
-                  Review history ({selected.history.length})
-                </summary>
-                {selected.history.map((h, i) => (
-                  <div key={i} className="mt-2 rounded border p-2">
-                    <b>{h.status}</b> · {h.officer}
-                    <p>
-                      {new Date(h.at).toLocaleString("en-PH", {
-                        timeZone: "Asia/Manila",
-                        hour12: settings.timeFormat === "12",
-                      })}
-                    </p>
-                    <p>{h.notes}</p>
-                    {h.basis && <p>Basis: {h.basis}</p>}
-                  </div>
-                ))}
-              </details>
-            )}
-            {selected.status !== "Resolved" ? (
-              <>
-                <label className="block">
-                  Review notes
-                  <textarea
-                    aria-label="Review notes"
-                    className={input}
-                    rows={3}
-                    required
-                    maxLength={2000}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </label>
-                {decision === "Resolved" && (
-                  <label className="block">
-                    Institutional basis / decision reference
-                    <input
-                      aria-label="Decision reference"
-                      className={input}
-                      required
-                      maxLength={500}
-                      value={basis}
-                      onChange={(e) => setBasis(e.target.value)}
-                    />
-                  </label>
-                )}
-                {error && (
-                  <p role="alert" className="text-red-600">
-                    {error}
-                  </p>
-                )}
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    className={button}
-                    onClick={() => setSelected(null)}
-                  >
-                    Cancel
-                  </button>
-                  <button className={primary}>Save Review</button>
-                </div>
-              </>
-            ) : (
-              <p className="text-slate-500">
-                Resolved case · Read-only.{" "}
-                {selected.history.length
-                  ? "The saved local review is available above."
-                  : "No decision document or review history is attached to this sample."}
-              </p>
-            )}
-          </form>
-          <CaseActions record={selected} onChange={persistCase} onArchive={archiveCase}/>
-        </Modal>
-      )}
+      {selected && <CaseShortcut record={rows.find(r=>r.caseId===selected.caseId)||selected} onClose={()=>setSelected(null)} onSave={persistCase}/>}
     </section>
   );
 }

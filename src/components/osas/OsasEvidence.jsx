@@ -1,4 +1,7 @@
-import {useInteractions} from "../shared/InteractionProvider.jsx";
+import CaseShortcut from "./CaseShortcut.jsx";
+import { loadOsasCases } from "./OsasCases.jsx";
+import ServiceMenu from "../admin/ServiceMenu.jsx";
+import { History } from "lucide-react";
 import { useState } from "react";
 import {
   FileText,
@@ -16,13 +19,8 @@ import {
   Shield,
   TriangleAlert,
 } from "lucide-react";
-import {
-  Modal,
-  button,
-  primary,
-  input,
-} from "../tutor/workspace/ui.jsx";
-import { incidents } from "./OsasIncidents.jsx";
+import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
+import { incidents } from "./incidentMonitoringData.js";
 
 const storageKey = "campustutor:osas-evidence:v1";
 const statuses = [
@@ -62,7 +60,7 @@ const initial = incidents
     ][i],
     history: [],
   }));
-function load() {
+export function loadOsasEvidence() {
   try {
     const rows = JSON.parse(localStorage.getItem(storageKey));
     if (
@@ -81,9 +79,9 @@ function load() {
   return structuredClone(initial);
 }
 export default function OsasEvidence({ settings }) {
-  const {confirm}=useInteractions();
+  const [caseRows, setCaseRows] = useState(loadOsasCases);
 
-  const [rows, setRows] = useState(load),
+  const [rows, setRows] = useState(loadOsasEvidence),
     [month, setMonth] = useState("2026-09"),
     [status, setStatus] = useState(""),
     [type, setType] = useState(""),
@@ -92,10 +90,6 @@ export default function OsasEvidence({ settings }) {
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
     [mode, setMode] = useState("review"),
-    [decision, setDecision] = useState(""),
-    [notes, setNotes] = useState(""),
-    [checks, setChecks] = useState({}),
-    [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const monthly = rows.filter((r) => !month || r.date.startsWith(month));
   const filtered = monthly.filter(
@@ -139,48 +133,30 @@ export default function OsasEvidence({ settings }) {
     setter(value);
     setPage(1);
   }
-  function open(r, nextMode = "review") {
+  function open(r, nextMode = "evidence") {
+    if (
+      nextMode !== "history" &&
+      !caseRows.some((c) => c.caseId === r.caseId)
+    ) {
+      setNotice("No matching case record is available.");
+      return;
+    }
     setSelected(r);
     setMode(nextMode);
-    setDecision(r.status);
-    setNotes("");
-    setChecks(Object.fromEntries(criteria.map((c) => [c, "Not assessed"])));
-    setError("");
   }
-  async function save(e) {
-    e.preventDefault();
-    if (!notes.trim()) {
-      setError("Enter review notes before saving.");
-      return;
-    }
-    if(decision === "Validated" && !criteria.every(c=>checks[c]==="Meets criterion"||(c.includes("Source")&&checks[c]==="Not applicable"))){setError("Assess every criterion before selecting Validated. Only source verification may be not applicable.");return;}
-    if (
-      ["Requires Clarification", "Insufficient"].includes(decision) &&
-      !Object.values(checks).some((v) => v !== "Not assessed")
-    ) {
-      setError("Record at least one criterion assessment for this decision.");
-      return;
-    }
-    if(!await confirm({title:`Save evidence as ${decision}?`,message:notes,accept:"Save Review"}))return;
-    const entry = {
-      status: decision,
-      notes: notes.trim(),
-      criteria: checks,
-      reviewer: "Maria Santos",
-      at: new Date().toISOString(),
-    };
-    const next = rows.map((r) =>
-      r.id === selected.id
-        ? { ...r, status: decision, history: [...r.history, entry] }
-        : r,
-    );
+  function saveCase(record) {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(next));
-      setRows(next);
-      setSelected(null);
-      setNotice("Evidence review saved on this browser.");
+      const next = caseRows.map((c) =>
+        c.caseId === record.caseId ? record : c,
+      );
+      localStorage.setItem(
+        "campustutor:osas-case-reviews:v1",
+        JSON.stringify(next),
+      );
+      setCaseRows(next);
+      return true;
     } catch {
-      setError("Could not save. Browser storage is unavailable or full.");
+      return false;
     }
   }
   const badge = (v) => (
@@ -391,13 +367,15 @@ export default function OsasEvidence({ settings }) {
                         ? "View Evidence"
                         : "Review Evidence"}
                     </button>
-                    <button
-                      className={button}
-                      aria-label={`More details for ${r.id}`}
-                      onClick={() => open(r, "details")}
-                    >
-                      <MoreHorizontal size={15} />
-                    </button>
+                    <ServiceMenu
+                      service={{ title: r.id }}
+                      options={[
+                        [FileText, "View case", "case"],
+                        [Info, "View incident report", "incident"],
+                        [History, "Validation history", "history"],
+                      ]}
+                      onSelect={(view) => open(r, view)}
+                    />
                   </div>
                 </td>
               </tr>
@@ -466,133 +444,53 @@ export default function OsasEvidence({ settings }) {
           references do not include source attachments.
         </p>
       </section>
-      {selected && (
+      {selected && mode !== "history" && (
+        <CaseShortcut
+          key={selected.id + mode}
+          record={caseRows.find((c) => c.caseId === selected.caseId)}
+          initialView={mode}
+          initialEvidenceId={selected.id}
+          onSave={saveCase}
+          onEvidenceSave={setRows}
+          onClose={() => {
+            setSelected(null);
+            setRows(loadOsasEvidence());
+          }}
+        />
+      )}
+      {selected && mode === "history" && (
         <Modal
-          title={`${mode === "details" ? "Evidence Details" : selected.status === "Validated" ? "View Evidence" : "Review Evidence"} · ${selected.id}`}
+          title="Validation History"
+          subtitle={selected.id}
           onClose={() => setSelected(null)}
         >
-          <form className="space-y-3 text-xs" onSubmit={save}>
-            <p>
-              <b>{selected.student}</b> · {selected.caseId} ·{" "}
-              {selected.reportId}
-            </p>
-            <p>
-              {selected.evidenceType} · Submitted by {selected.reporter} ·{" "}
-              {date(selected.date)} {time(selected)}
-            </p>
-            {badge(selected.status)}
-            <p className="rounded bg-amber-50 p-3 text-amber-900">
-              Demo reference only. The original evidence file, provenance, and
-              official validation record are not attached. No file preview or
-              authenticity determination is available.
-            </p>
-            {selected.history.length > 0 && (
-              <details>
-                <summary className="cursor-pointer font-semibold">
-                  Review history ({selected.history.length})
-                </summary>
-                {selected.history.map((h, i) => (
-                  <div className="mt-2 rounded border p-2" key={i}>
-                    <b>{h.status}</b> · {h.reviewer}
-                    <p>
-                      {new Date(h.at).toLocaleString("en-PH", {
-                        timeZone: "Asia/Manila",
-                        hour12: settings.timeFormat === "12",
-                      })}
+          <ol className="ocx-timeline">
+            <li>
+              <b>Submitted</b>
+              <small>
+                {date(selected.date)} ? {time(selected)} ? {selected.reporter}
+              </small>
+            </li>
+            {(rows.find((r) => r.id === selected.id)?.history || []).map(
+              (h, i) => (
+                <li key={i}>
+                  <b>{h.status}</b>
+                  <small>
+                    {h.at} ? {h.reviewer}
+                  </small>
+                  <p>{h.notes}</p>
+                  {Object.entries(h.criteria || {}).map(([label, value]) => (
+                    <p key={label}>
+                      {label}: {value}
                     </p>
-                    <p>{h.notes}</p>
-                    {Object.entries(h.criteria).map(([c, v]) => (
-                      <p key={c}>
-                        {c}: {v}
-                      </p>
-                    ))}
-                  </div>
-                ))}
-              </details>
-            )}
-            {selected.status === "Validated" ? (
-              <p className="text-slate-500">
-                Read-only sample outcome. Supporting validation documentation is
-                unavailable.
-              </p>
-            ) : mode === "details" ? (
-              <button
-                type="button"
-                className={button}
-                onClick={() => setMode("review")}
-              >
-                Review Evidence
-              </button>
-            ) : (
-              <>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {criteria.map((c) => (
-                    <label key={c}>
-                      {c}
-                      <select
-                        aria-label={c}
-                        className={input}
-                        value={checks[c]}
-                        onChange={(e) =>
-                          setChecks({ ...checks, [c]: e.target.value })
-                        }
-                      >
-                        <option>Not assessed</option><option>Meets criterion</option><option>Does not meet criterion</option>
-                        <option>Unable to assess — source missing</option>
-                        <option>Clarification required</option>
-                        <option>Not applicable</option>
-                      </select>
-                    </label>
                   ))}
-                </div>
-                <label className="block">
-                  Validation status
-                  <select
-                    aria-label="Review validation status"
-                    className={input}
-                    value={decision}
-                    onChange={(e) => setDecision(e.target.value)}
-                  >
-                    {statuses.map((s) => (
-                      <option key={s} disabled={s === "Validated" && !criteria.every(c=>checks[c]==="Meets criterion"||(c.includes("Source")&&checks[c]==="Not applicable"))}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <p className="text-slate-500">
-                  Validation requires every criterion to be assessed. Local prototype decisions do not verify document authenticity.
-                </p>
-                <label className="block">
-                  Review notes / clarification request
-                  <textarea
-                    aria-label="Evidence review notes"
-                    className={input}
-                    rows={3}
-                    required
-                    maxLength={2000}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </label>
-                {error && (
-                  <p role="alert" className="text-red-600">
-                    {error}
-                  </p>
-                )}
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    className={button}
-                    onClick={() => setSelected(null)}
-                  >
-                    Cancel
-                  </button>
-                  <button className={primary}>Save Review</button>
-                </div>
-              </>
+                </li>
+              ),
             )}
-          </form>
+          </ol>
+          <button className={primary} onClick={() => setSelected(null)}>
+            Done
+          </button>
         </Modal>
       )}
     </section>

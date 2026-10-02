@@ -1,0 +1,482 @@
+﻿.ocx-dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  width: min(1010px, 96vw);
+  max-height: 94dvh;
+  color: #182026;
+  font-size: 13px;
+  box-shadow: 0 20px 70px #0003;
+}
+.ocx-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.ocx-dialog::backdrop {
+  background: #14231d70;
+}
+.ocx-drawer {
+  margin: 0 0 0 auto;
+  border-radius: 0;
+  width: min(820px, 96vw);
+  height: 100dvh;
+  max-height: 100dvh;
+}
+.ocx-small {
+  width: min(560px, 95vw);
+}
+.ocx-dialog > header,
+.ocx-dialog > footer {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.ocx-dialog > header {
+  border-bottom: 1px solid #e4e7ec;
+}
+.ocx-dialog h2 {
+  font-size: 19px;
+  font-weight: 700;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ocx-dialog header p,
+.ocx-muted,
+.ocx-dialog small {
+  color: #718096;
+  font-size: 11px;
+  margin-top: 5px;
+}
+.ocx-body {
+  overflow-y: auto;
+  padding: 22px 24px;
+  min-height: 0;
+}
+.ocx-body section {
+  border: 1px solid #e0e5eb;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 14px 0;
+}
+.ocx-dialog h3 {
+  font-weight: 700;
+  margin: 10px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.ocx-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.ocx-facts dt {
+  font-size: 11px;
+  color: #718096;
+  margin-bottom: 4px;
+}
+.ocx-facts dd {
+  overflow-wrap: anywhere;
+}
+.ocx-warning {
+  background: #fffbeb;
+  border: 1px solid #f9dc85;
+  border-radius: 8px;
+  padding: 14px;
+  line-height: 1.6;
+  margin: 14px 0;
+}
+.ocx-warning b {
+  font-size: 11px;
+  color: #986400;
+}
+.ocx-badge {
+  display: inline-flex;
+  border-radius: 5px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #edf2f6;
+  color: #456;
+}
+.ocx-badge.gold {
+  background: #fff4d9;
+  color: #a66b00;
+}
+.ocx-badge.red {
+  background: #ffe9eb;
+  color: #d82132;
+}
+.ocx-badge.green {
+  background: #dcf4e8;
+  color: #087542;
+}
+.ocx-link {
+  color: #006535;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ocx-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.ocx-stages span {
+  border-radius: 15px;
+  background: #eef1f4;
+  padding: 5px 9px;
+  font-size: 10px;
+  color: #64748b;
+}
+.ocx-stages .current {
+  color: white;
+  background: #00542f;
+}
+.ocx-evidence-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  padding: 13px;
+  margin: 8px 0;
+}
+.ocx-evidence-row small {
+  display: block;
+}
+.ocx-dialog > footer {
+  border-top: 1px solid #e4e7ec;
+  flex-wrap: wrap;
+}
+.ocx-dialog label {
+  display: block;
+  margin: 12px 0;
+  font-weight: 600;
+}
+.ocx-dialog textarea,
+.ocx-dialog select {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+.ocx-evidence-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.ocx-evidence-grid .ocx-facts {
+  grid-template-columns: 1fr;
+}
+.ocx-evidence-grid .ocx-facts > div {
+  display: grid;
+  grid-template-columns: 135px 1fr;
+  gap: 10px;
+}
+.ocx-preview {
+  min-height: 290px;
+  border: 1px solid #e0e5eb;
+  background: #f5f7f9;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 25px;
+  color: #64748b;
+  text-align: center;
+}
+.ocx-preview.large {
+  min-height: 450px;
+}
+.ocx-check {
+  border-bottom: 1px solid #edf0f3;
+  padding: 7px 0;
+}
+.ocx-check label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-weight: 400;
+  margin: 4px;
+}
+.ocx-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.oo-case-row {
+  cursor: pointer;
+}
+.oo-case-row:hover {
+  background: #f5faf7;
+}
+.oo-case-row:focus-visible {
+  outline: 2px solid #087542;
+  outline-offset: -2px;
+}
+@media (max-width: 650px) {
+  .ocx-evidence-grid {
+    grid-template-columns: 1fr;
+  }
+  .ocx-facts {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ocx-dialog > header,
+  .ocx-dialog > footer,
+  .ocx-body {
+    padding: 15px;
+  }
+  .ocx-evidence-grid .ocx-facts > div {
+    grid-template-columns: 110px 1fr;
+  }
+}
+.ocx-sample {
+  background: white;
+  border: 1px solid #e4e7ec;
+  box-shadow: 0 2px 4px #0001;
+  border-radius: 9px;
+  padding: 18px;
+  text-align: left;
+  width: 100%;
+  color: #20262b;
+}
+.ocx-sample p {
+  padding: 10px 0;
+  border-bottom: 1px solid #edf0f3;
+  line-height: 1.6;
+}
+.ocx-sample p:last-child {
+  border: 0;
+}
+.ocx-month {
+  position: relative;
+}
+.ocx-month > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ocx-calendar {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 265px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e1e5eb;
+  border-radius: 12px;
+  box-shadow: 0 15px 30px #0002;
+  z-index: 25;
+  font-size: 12px;
+}
+.ocx-calendar label {
+  display: block;
+  font-weight: 600;
+}
+.ocx-calendar input {
+  width: 100%;
+  margin: 8px 0;
+}
+.ocx-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  gap: 5px;
+}
+.ocx-calendar-grid > * {
+  padding: 5px 0;
+}
+.ocx-calendar p {
+  color: #718096;
+  margin: 12px 0;
+}
+.ocx-calendar .ocx-link {
+  text-align: left;
+}
+.ocx-status-menu {
+  position: relative;
+}
+.ocx-status-menu > div {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border: 1px solid #e4e7ec;
+  box-shadow: 0 10px 25px #0002;
+  border-radius: 9px;
+  padding: 6px;
+  width: 210px;
+}
+.ocx-status-menu > div button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  border-radius: 6px;
+}
+.ocx-status-menu > div button:hover {
+  background: #f1f6f3;
+}
+.ocx-workflow-form {
+  font-size: 13px;
+  max-height: 72dvh;
+  overflow-y: auto;
+}
+.ocx-workflow-form label {
+  display: block;
+  margin: 13px 0 6px;
+}
+.ocx-workflow-form textarea,
+.ocx-workflow-form input:not([type="checkbox"]),
+.ocx-workflow-form select {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+.ocx-outcomes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ocx-outcomes button {
+  text-align: left;
+  white-space: normal;
+}
+.ocx-timeline {
+  border-left: 2px solid #e2e8e5;
+  padding-left: 18px;
+}
+.ocx-timeline li {
+  position: relative;
+  margin: 15px 0;
+}
+.ocx-timeline li:before {
+  content: "";
+  position: absolute;
+  left: -23px;
+  top: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #087542;
+}
+.ocx-timeline small {
+  display: block;
+}
+.ocx-decision {
+  background: #f5fbf7;
+}
+.clr-review {
+  width: min(740px, 96vw);
+}
+.clr-effect {
+  padding: 14px;
+  border: 1px solid #dce3ec;
+  background: #f3f6fa;
+  border-radius: 9px;
+  margin: 14px 0;
+}
+.clr-review .ocx-outcomes button {
+  display: block;
+  padding: 14px;
+}
+.clr-review .ocx-outcomes button:disabled {
+  opacity: 0.45;
+}
+.clr-review label {
+  margin-top: 18px;
+}
+.ocx-incident {
+  width: min(860px, 96vw);
+  max-height: 96dvh;
+}
+.ocx-incident .ocx-facts {
+  display: block;
+  margin: 18px 0 26px;
+}
+.ocx-incident .ocx-facts > div {
+  display: grid;
+  grid-template-columns: 165px 1fr;
+  gap: 12px;
+  margin: 12px 0;
+  align-items: start;
+}
+.ocx-incident .ocx-facts dt {
+  font-size: 13px;
+}
+.ocx-incident .ocx-body > h3 {
+  font-weight: 700;
+  margin: 24px 0 10px;
+}
+.ocx-report-notice {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.ocx-report-notice svg {
+  flex-shrink: 0;
+  color: #0671ff;
+}
+.ocx-report-notice p {
+  margin-top: 4px;
+}
+.ocx-report-label {
+  display: block;
+  color: #a86b00;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+.ocx-formal-case {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid #b7d2ff;
+  border-radius: 9px;
+  padding: 12px;
+  background: #f5f8ff;
+}
+.ocx-formal-case > svg {
+  flex-shrink: 0;
+  color: #076eff;
+}
+.ocx-formal-case > div {
+  flex: 1;
+}
+.ocx-formal-case small {
+  display: block;
+}
+.ocx-formal-case button {
+  color: #005638;
+  border-color: #005638;
+  flex-shrink: 0;
+}
+.ocx-incident > footer {
+  justify-content: flex-end;
+  border-top: 1px solid #e4e7ec;
+}
+.ocx-badge.blue {
+  color: #0865ec;
+  background: #e3efff;
+}
+@media (max-width: 540px) {
+  .ocx-incident .ocx-facts > div {
+    grid-template-columns: 120px 1fr;
+  }
+  .ocx-formal-case {
+    flex-wrap: wrap;
+  }
+}
