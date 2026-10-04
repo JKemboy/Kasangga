@@ -13,9 +13,9 @@ The supplied values are already configured locally. Restart Vite after changing 
 
 ## Auth behavior
 
-Email/password login uses `signInWithPassword`. Registration uses `signUp` with first/last name metadata; it never accepts a role from the browser. With email confirmation enabled, signup creates an Auth user but **no session until confirmation/login**. Password login creates a real persistent Supabase session. The shared provider restores it and listens for refresh/sign-out changes. Logout signs out the current browser session.
+Login and Register now use passwordless email OTP. Register permits account creation; Login requires an existing account. Neither requests a password or name. A session is created after verifyOtp succeeds, not when the email is sent. Google sign-in uses the CSU Google account. Supabase restores the session on refresh and logout signs out the current browser session.
 
-Google uses Supabase OAuth if you enable the Google provider. Forgot Password sends a Supabase recovery email to `/reset-password`. The former Remember me checkbox is now Show password: Supabase sessions persist consistently rather than offering a nonfunctional persistence toggle.
+Google uses Supabase OAuth when enabled. Google controls its own verification challenges; the app does not force an extra OTP after OAuth. The existing recovery route is retained for older password accounts.
 
 Dashboard access requires an active `public.users` profile and a matching active `public.user_roles` row. Supported roles are exactly `learner`, `tutor`, `admin`, `osas`; default routing prioritizes admin, OSAS, tutor, then learner. Missing profiles/roles and database errors fail closed with a retry/sign-out screen. Browser-editable user metadata never grants a role. Client route checks are not a replacement for backend RLS.
 
@@ -69,7 +69,7 @@ for each row execute function public.provision_campustutor_account();
 
 This trigger handles new users only. Existing Auth users need matching `users` profiles and role rows provisioned manually with their real Auth UUIDs. Check unique `csu_email` / `student_id` constraints before backfilling. Assign an active `tutor` role to approved tutors; retain `learner` if they should use both portals. Do not allow authenticated clients to insert/update their own roles or `account_status`. Review existing permissive policies for privilege escalation. Keep required existing administrator policies when merging this setup.
 
-Name metadata is for display only. The email/password registration form accepts `carsu.edu.ph` and `csu.edu.ph`, matching existing project conventions. If CSU-only accounts are mandatory, enforce your institution's exact domain list in a Supabase Before User Created hook or equivalent trusted backend check, including OAuth. A browser validation alone is not enforcement. Configure Google only after deciding the same institution policy. Profile email synchronization after future Auth email changes is a separate backend concern.
+Only @carsu.edu.ph is accepted by the UI and portal guard. Enforce this on the backend using the hook below. Google hosted-domain parameters are hints, not security enforcement. OTP signup has no name metadata, so the provisioning SQL stores empty names until profile completion; Google may supply given/family name. Metadata never grants roles. Existing non-CSU accounts must be reviewed separately; the creation hook does not revoke existing users or prevent later email changes. Backend RLS must continue to enforce authorized access.
 
 ## Private schedule storage
 
@@ -87,3 +87,35 @@ Keep `schedule-uploads` private. The existing flow uses the current verified Aut
 The app's remaining domain data and draft persistence are not migrated to Supabase. Learner/Tutor drafts are now partitioned by user UUID, but browser storage is still local prototype persistence. No account was created, email sent, bucket changed or schema migration executed during automated verification. Live tests require configured accounts and dashboard settings.
 
 References: [Supabase signup](https://supabase.com/docs/reference/javascript/auth-signup), [user data](https://supabase.com/docs/guides/auth/managing-user-data), [auth events](https://supabase.com/docs/reference/javascript/auth-onauthstatechange).
+
+## Required passwordless setup
+
+Enable Google in Authentication > Sign In / Providers, with your Google client ID/secret and authorized Supabase callback URL. Keep your app /login redirect allowlisted.
+
+In Authentication > Email Templates > Magic Link, include `{{ .Token }}` so the email contains the code rather than only a magic link. Configure SMTP, OTP expiration and rate limits. Example body:
+
+```html
+<h2>CampusTutor verification code</h2>
+<p>Your code: {{ .Token }}</p>
+```
+
+Review and run the following function manually, then select it under Authentication > Hooks > Before User Created. No remote configuration has been applied.
+
+```sql
+create or replace function public.require_carsu_signup(event jsonb)
+returns jsonb language plpgsql set search_path = '' as $$
+begin
+  if coalesce(event->'user'->>'email', '') !~* '^[^[:space:]@]+@carsu[.]edu[.]ph$' then
+    return jsonb_build_object('error', jsonb_build_object('http_code', 403, 'message', 'Only @carsu.edu.ph accounts may register.'));
+  end if;
+  return '{}'::jsonb;
+end;
+$$;
+grant usage on schema public to supabase_auth_admin;
+grant execute on function public.require_carsu_signup(jsonb) to supabase_auth_admin;
+revoke execute on function public.require_carsu_signup(jsonb) from public, anon, authenticated;
+```
+
+This hook covers new email and OAuth signups. Keep the earlier profile/role provisioning trigger: this restriction hook does not create profiles. Verify OTP delivery and Google login with a real CSU test account after setup.
+
+References: [Email OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless), [Before User Created hook](https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook).
