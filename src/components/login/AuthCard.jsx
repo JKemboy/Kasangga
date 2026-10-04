@@ -40,6 +40,7 @@ export default function AuthCard() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   async function sendCode() {
+    if (cooldown > 0) return;
     const address = email.trim().toLowerCase();
     if (!isCsuEmail(address))
       throw Error("Use your @carsu.edu.ph email address.");
@@ -47,7 +48,19 @@ export default function AuthCard() {
       email: address,
       options: { shouldCreateUser: active === "Register" },
     });
-    if (error) throw error;
+    if (error) {
+      if (
+        error.status === 429 ||
+        error.code === "over_email_send_rate_limit" ||
+        error.code === "over_request_rate_limit"
+      ) {
+        setCooldown(60);
+        throw Error(
+          "Email requests are temporarily limited by Supabase. Wait before trying again. If this continues, the administrator must check the email quota and SMTP setup. This retry timer does not indicate when the server quota resets.",
+        );
+      }
+      throw error;
+    }
     setSentTo(address);
     setCode("");
     setCooldown(60);
@@ -55,7 +68,7 @@ export default function AuthCard() {
   }
   async function submit(e) {
     e.preventDefault();
-    if (busy) return;
+    if (busy || (!sentTo && cooldown > 0)) return;
     setBusy(true);
     setMessage("");
     try {
@@ -164,14 +177,16 @@ export default function AuthCard() {
           )}
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || (!sentTo && cooldown > 0)}
             className="h-8 w-full rounded-md bg-[#006b3c] text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#005932] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b3c]"
           >
             {busy
               ? "Please wait..."
               : sentTo
                 ? "Verify code"
-                : "Send verification code"}
+                : cooldown > 0
+                  ? `Try again in ${cooldown}s`
+                  : "Send verification code"}
           </button>
         </form>
         {sentTo && (
