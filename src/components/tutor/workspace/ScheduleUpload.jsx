@@ -1,11 +1,16 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { Upload, ShieldCheck, Plus, Trash2 } from "lucide-react";
 import { Modal, button, primary, input } from "./ui.jsx";
+import { scheduleFileStore } from "./scheduleUploads.js";
 import {
-  scheduleFileError,
-  scheduleFileStore,
-  saveScheduleDraft,
-} from "./scheduleUploads.js";
+  scheduleImageError,
+  extractScheduleText,
+} from "../../../services/ocrService.js";
+import {
+  requireScheduleUser,
+  uploadScheduleImage,
+  downloadScheduleImage,
+} from "../../../services/scheduleStorage.js";
 import {
   DAYS,
   confirmedClasses,
@@ -37,16 +42,24 @@ export default function ScheduleUpload({
     [draft, setDraft] = useState(data.scheduleReview || null),
     [stage, setStage] = useState(data.scheduleReview ? "review" : "upload"),
     [error, setError] = useState(""),
-    [progress, setProgress] = useState({ label: "Preparing upload", progress: 0 }),
+    [progress, setProgress] = useState({
+      label: "Preparing upload",
+      progress: 0,
+    }),
     [checked, setChecked] = useState(false),
     [confirming, setConfirming] = useState(false),
     [preview, setPreview] = useState("");
-  const controller = useRef(null),
+  const extracted = useRef(null),
+    busy = useRef(false),
+    controller = useRef(null),
     latest = useRef({ data, update });
   latest.current = { data, update };
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => {
-    if (!file) return;
+    if (!file) {
+      setPreview("");
+      return;
+    }
     const url = URL.createObjectURL(file);
     setPreview(url);
     return () => URL.revokeObjectURL(url);
@@ -98,29 +111,63 @@ export default function ScheduleUpload({
     }
   }
   async function process(selected = file) {
-    const validation = scheduleFileError(selected);
+    if (busy.current) return;
+    const validation = scheduleImageError(selected);
     if (validation) return setError(validation);
+    busy.current = true;
+    const abort = new AbortController();
+    controller.current = abort;
     setError("");
     setStage("processing");
     setChecked(false);
-    controller.current = new AbortController();
-    setProgress({ label: "Saving file", progress: 0 });
     try {
-      const metadata = await saveScheduleDraft(
-        selected,
-        (fn) => latest.current.update(fn),
-        { isCancelled: () => controller.current.signal.aborted },
-      );
-      if (!metadata) return;
-      const next = { ...metadata, rows: [], text: "", unparsed: [] };
-      persist(next);
+      setProgress({ label: "Checking your Supabase session", progress: 0 });
+      const user = await requireScheduleUser();
+      abort.signal.throwIfAborted();
+      if (
+        extracted.current?.file !== selected ||
+        extracted.current.userId !== user.id
+      ) {
+        const text = await extractScheduleText(selected, {
+          onProgress: setProgress,
+          signal: abort.signal,
+        });
+        extracted.current = { file: selected, userId: user.id, text };
+      }
+      abort.signal.throwIfAborted();
+      const result = extracted.current;
+      setProgress({
+        label: "Uploading original image to private storage",
+        progress: 1,
+      });
+      // Keep successful metadata for retry if local draft saving fails.
+      result.metadata ||= await uploadScheduleImage(selected, user.id);
+      abort.signal.throwIfAborted();
+      const next = { ...result.metadata, rows: [], text: result.text };
+      const saved = latest.current.update((d) => ({
+        ...d,
+        scheduleReview: next,
+        uploads: [
+          ...d.uploads.filter((u) => u.id !== next.id),
+          result.metadata,
+        ],
+      }));
       setDraft(next);
       setStage("review");
+      if (saved === false)
+        setError(
+          "Image uploaded successfully, but the local review could not be saved. Keep this page open and try Save for later.",
+        );
     } catch (e) {
-      if (e.name !== "AbortError") {
-        setError(e.message || "Could not save the file. Please try again.");
+      if (!abort.signal.aborted) {
+        setError(
+          e.message ||
+            "Could not process the image. Try a clearer image or check your connection.",
+        );
         setStage("upload");
       }
+    } finally {
+      busy.current = false;
     }
   }
   function patch(id, key, value) {
@@ -140,7 +187,11 @@ export default function ScheduleUpload({
   }
   async function openSource() {
     try {
-      const saved = file || (await scheduleFileStore.load(draft.id));
+      const saved =
+        file ||
+        (draft.storagePath
+          ? await downloadScheduleImage(draft)
+          : await scheduleFileStore.load(draft.id));
       if (!saved)
         throw new Error(
           "Original file is unavailable. Please choose it again.",
@@ -152,7 +203,9 @@ export default function ScheduleUpload({
   }
   async function loadPrevious(upload) {
     try {
-      const saved = await scheduleFileStore.load(upload.id);
+      const saved = upload.storagePath
+        ? await downloadScheduleImage(upload)
+        : await scheduleFileStore.load(upload.id);
       if (!saved)
         throw new Error("File unavailable on this browser. Choose it again.");
       setFile(saved);
@@ -204,10 +257,10 @@ export default function ScheduleUpload({
               </button>
               <button
                 className={primary}
-                disabled={!file || !!scheduleFileError(file)}
+                disabled={!file || !!scheduleImageError(file)}
                 onClick={() => process()}
               >
-                Upload and enter classes
+                Read image and upload
               </button>
             </>
           ) : stage === "processing" ? (
@@ -251,7 +304,7 @@ export default function ScheduleUpload({
         <ol className="schedule-steps">
           {[
             "Upload",
-            "Saving file",
+            "Read and upload",
             "Enter and review classes",
             "Confirm",
           ].map((label, i) => (
@@ -279,18 +332,40 @@ export default function ScheduleUpload({
               <input
                 aria-label="Class schedule file"
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => {
                   const chosen = e.target.files[0];
-                  setFile(chosen || null);
-                  setError(chosen ? scheduleFileError(chosen) : "");
+                  extracted.current = null;
+                  setFile(
+                    chosen && !scheduleImageError(chosen) ? chosen : null,
+                  );
+                  setError(chosen ? scheduleImageError(chosen) : "");
                 }}
               />
               {file && <b>{file.name}</b>}
             </label>
             <p className="session-muted">
-              Upload your official schedule, then enter its class rows manually.
+              OCR runs in this browser. The first run downloads the recognition
+              engine and English language data. Review the text, then enter
+              class rows manually.
             </p>
+            {preview && (
+              <img
+                src={preview}
+                alt="Selected schedule image"
+                className="schedule-preview"
+              />
+            )}
+            {extracted.current?.file === file && (
+              <section>
+                <h3>Extracted text</h3>
+                <pre className="schedule-raw">
+                  {extracted.current.text ||
+                    "No text detected. Try a clearer image."}
+                </pre>
+                <p>Text is kept here so you can retry a failed upload.</p>
+              </section>
+            )}
             {draft && (
               <button className={button} onClick={() => setStage("review")}>
                 Continue saved review: {draft.name}
@@ -327,12 +402,27 @@ export default function ScheduleUpload({
             <p>{progress.label}</p>
             <p className="session-muted">
               You may close this dialog while processing on this page. Leaving
-              the page cancels processing; the uploaded file remains saved.
+              the page stops OCR. Any upload already completed remains in
+              private storage.
             </p>
           </div>
         )}
         {stage === "review" && (
           <div className="space-y-3">
+            <section aria-label="OCR result">
+              <h3>Extracted text</h3>
+              <pre className="schedule-raw">
+                {draft.text ||
+                  "No readable text detected. Review the image and enter classes manually."}
+              </pre>
+              <p className="session-muted">
+                {draft.storagePath
+                  ? "Original image saved in private schedule storage."
+                  : "Legacy local draft."}{" "}
+                Text recognition does not automatically change your class
+                schedule.
+              </p>
+            </section>
             <div className="schedule-summary">
               <span>{rows.length} classes entered</span>
               <span className={invalid ? "errors" : ""}>
@@ -523,9 +613,9 @@ export default function ScheduleUpload({
                 checked={checked}
                 onChange={(e) => setChecked(e.target.checked)}
               />
-              I checked every row against my official
-              class schedule, including any missing classes. After confirmation
-              this schedule becomes read-only.
+              I checked every row against my official class schedule, including
+              any missing classes. After confirmation this schedule becomes
+              read-only.
             </label>
           </div>
         )}
