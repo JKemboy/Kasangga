@@ -2,7 +2,6 @@
 import assert from "node:assert/strict";
 import { seed, slotError } from "./fixtures/tutorData.js";
 import {
-  parseScheduleLines,
   rowErrors,
   confirmSchedule,
   confirmedClasses,
@@ -13,42 +12,12 @@ import {
   eventsForDate,
   parseDate,
 } from "../src/components/tutor/workspace/schedule.js";
-const extracted = () =>
-  parseScheduleLines([
-    {
-      text: "IT 108 Software Architecture Mon 8:00 AM - 10:00 AM CCIS 203",
-      confidence: 70,
-    },
-    {
-      text: "ITE 18 Application Development 9:00 AM - 11:00 AM TTh CCIS Lab 1",
-      confidence: 98,
-    },
-  ]);
-test("extracts actual text with days before and after times and expands TTh", () => {
-  const { rows } = extracted();
-  assert.equal(rows.length, 3);
-  assert.deepEqual(
-    rows.map((r) => r.day),
-    ["0", "1", "3"],
-  );
-  assert.equal(rows[0].name, "Software Architecture");
-  assert.equal(rows[0].start, "08:00");
-  assert.equal(rows[0].room, "CCIS 203");
-  assert.ok(rows[0].uncertain.includes("code"));
-  assert.equal(rows[1].uncertain.length, 0);
-});
-test("irrelevant text never produces fabricated classes and ambiguous times are flagged", () => {
-  assert.equal(
-    parseScheduleLines(["LOGOUT", "Welcome back Juan"]).rows.length,
-    0,
-  );
-  const { rows } = parseScheduleLines([
-    "IT 108 Software Architecture Mon 8:00 - 10:00 CCIS 203",
-  ]);
-  assert.ok(rows[0].uncertain.includes("start"));
-});
+const entered = () => ({rows: [
+{id:'1',code:'IT 108',name:'Software Architecture',day:'0',start:'08:00',end:'10:00',room:'CCIS 203'},
+...[1,3].map(day=>({id:String(day+1),code:'ITE 18',name:'Application Development',day:String(day),start:'09:00',end:'11:00',room:'CCIS Lab 1'}))
+]});
 test("review detects missing fields, invalid times and both sides of overlaps", () => {
-  const rows = extracted().rows;
+  const rows = entered().rows;
   rows.push({
     ...rows[0],
     id: "overlap",
@@ -66,7 +35,7 @@ test("review detects missing fields, invalid times and both sides of overlaps", 
   );
 });
 test("confirmation requires checked valid rows, atomically replaces classes and adds related notification", () => {
-  const draft = { name: "official.png", rows: extracted().rows };
+  const draft = { name: "official.png", rows: entered().rows };
   const before = structuredClone(seed);
   assert.throws(() => confirmSchedule(seed, draft, false), /Check every row/);
   assert.throws(

@@ -1,7 +1,7 @@
 ﻿.tutor-modal--schedule-review {
   width: min(1080px, calc(100vw - 24px));
 }
-.ocr-steps {
+.schedule-steps {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -10,37 +10,37 @@
   border-bottom: 1px solid #e6eaf0;
   font-size: 12px;
 }
-.ocr-steps li,
-.ocr-summary span {
+.schedule-steps li,
+.schedule-summary span {
   padding: 6px 9px;
   border-radius: 5px;
   background: #eef0f3;
   color: #596272;
 }
-.ocr-steps .complete,
-.ocr-summary span:first-child {
+.schedule-steps .complete,
+.schedule-summary span:first-child {
   background: #e2f4e8;
   color: #057130;
 }
-.ocr-steps .current {
+.schedule-steps .current {
   background: #e3edff;
   color: #1655df;
 }
-.ocr-summary {
+.schedule-summary {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   font-size: 12px;
 }
-.ocr-summary span:nth-child(2) {
+.schedule-summary span:nth-child(2) {
   background: #fff0d9;
   color: #aa6800;
 }
-.ocr-summary .errors {
+.schedule-summary .errors {
   background: #fff0ec;
   color: #d9271a;
 }
-.ocr-upload {
+.schedule-upload {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -51,83 +51,83 @@
   background: #f7fbf8;
   padding: 32px 20px;
 }
-.ocr-upload span {
+.schedule-upload span {
   font-size: 13px;
   color: #6b7588;
 }
-.ocr-processing {
+.schedule-processing {
   display: grid;
   justify-items: center;
   gap: 16px;
   padding: 28px 12px;
 }
-.ocr-processing h3 {
+.schedule-processing h3 {
   font-weight: 700;
 }
-.ocr-processing progress {
+.schedule-processing progress {
   width: min(380px, 100%);
   accent-color: #087542;
 }
-.ocr-spinner {
+.schedule-spinner {
   height: 40px;
   width: 40px;
   border: 4px solid #e2f4e8;
   border-top-color: #087542;
   border-radius: 50%;
-  animation: ocr-spin 1s linear infinite;
+  animation: schedule-spin 1s linear infinite;
 }
-@keyframes ocr-spin {
+@keyframes schedule-spin {
   to {
     transform: rotate(360deg);
   }
 }
-.ocr-table-wrap {
+.schedule-table-wrap {
   overflow: auto;
 }
-.ocr-table {
+.schedule-table {
   width: 100%;
   min-width: 850px;
   border-collapse: collapse;
   font-size: 12px;
 }
-.ocr-table th {
+.schedule-table th {
   background: #f5f7f9;
   text-align: left;
   padding: 10px 6px;
 }
-.ocr-table td {
+.schedule-table td {
   padding: 7px 5px;
   vertical-align: top;
   border-bottom: 1px solid #edf0f3;
 }
-.ocr-table td:nth-child(2) {
+.schedule-table td:nth-child(2) {
   width: 34%;
 }
-.ocr-table td:nth-child(1) {
+.schedule-table td:nth-child(1) {
   width: 12%;
 }
-.ocr-table input,
-.ocr-table select {
+.schedule-table input,
+.schedule-table select {
   min-width: 82px;
 }
-.ocr-table .ocr-field-uncertain input,
-.ocr-table .ocr-field-uncertain select {
+.schedule-table .schedule-field-uncertain input,
+.schedule-table .schedule-field-uncertain select {
   border-color: #eea22e;
   background: #fff9ee;
 }
-.ocr-table .ocr-field-error input,
-.ocr-table .ocr-field-error select {
+.schedule-table .schedule-field-error input,
+.schedule-table .schedule-field-error select {
   border-color: #f44336;
   background: #fff7f7;
 }
-.ocr-raw {
+.schedule-raw {
   white-space: pre-wrap;
   max-height: 220px;
   overflow: auto;
   background: #f8fafc;
   padding: 12px;
 }
-.ocr-preview {
+.schedule-preview {
   width: 100%;
   height: 360px;
   object-fit: contain;

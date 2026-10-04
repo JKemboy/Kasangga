@@ -345,20 +345,20 @@ body[data-workspace-role="tutor"] .service-availability-row {
   gap: 8px;
   padding: 8px;
 }
-body[data-workspace-role="tutor"] .ocr-upload {
+body[data-workspace-role="tutor"] .schedule-upload {
   padding: 18px 12px;
   gap: 10px;
 }
-body[data-workspace-role="tutor"] .ocr-processing {
+body[data-workspace-role="tutor"] .schedule-processing {
   padding: 16px 10px;
   gap: 10px;
 }
-body[data-workspace-role="tutor"] .ocr-steps {
+body[data-workspace-role="tutor"] .schedule-steps {
   margin-bottom: 10px;
   padding-bottom: 8px;
   font-size: 11px;
 }
-body[data-workspace-role="tutor"] .ocr-table td {
+body[data-workspace-role="tutor"] .schedule-table td {
   padding: 5px 4px;
 }
 body[data-workspace-role="tutor"] dialog:not(.tutor-modal) {

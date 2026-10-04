@@ -1,5 +1,5 @@
 // Replace these adapters when connecting the database/auth/payment services.
-// Never manufacture provider confirmations, password changes, OTPs or OCR output.
+// Never manufacture provider confirmations, password changes, or OTPs.
 const adapters = new Map();
 export function configurePortalApi(services) {
   for (const [name, fn] of Object.entries(services)) {

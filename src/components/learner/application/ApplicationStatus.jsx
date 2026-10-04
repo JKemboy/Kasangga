@@ -81,7 +81,7 @@ export default function ApplicationStatus({
                 !!application.id,
               ],
               [
-                "Documents processed (OCR assist)",
+                "Documents saved for manual review",
                 processed
                   ? "Text extracted and flagged for manual review"
                   : "Some documents need manual review or have not been uploaded.",

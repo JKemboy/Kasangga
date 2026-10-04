@@ -6,7 +6,6 @@ import {
   scheduleFileStore,
   saveScheduleDraft,
 } from "./scheduleUploads.js";
-import { extractSchedule } from "./scheduleOcr.js";
 import {
   DAYS,
   confirmedClasses,
@@ -38,7 +37,7 @@ export default function ScheduleUpload({
     [draft, setDraft] = useState(data.scheduleReview || null),
     [stage, setStage] = useState(data.scheduleReview ? "review" : "upload"),
     [error, setError] = useState(""),
-    [progress, setProgress] = useState({ label: "Preparing OCR", progress: 0 }),
+    [progress, setProgress] = useState({ label: "Preparing upload", progress: 0 }),
     [checked, setChecked] = useState(false),
     [confirming, setConfirming] = useState(false),
     [preview, setPreview] = useState("");
@@ -54,8 +53,7 @@ export default function ScheduleUpload({
   }, [file]);
   const rows = draft?.rows || [],
     errors = rowErrors(rows),
-    invalid = errors.filter((e) => Object.keys(e).length).length,
-    low = rows.reduce((n, r) => n + (r.uncertain?.length || 0), 0);
+    invalid = errors.filter((e) => Object.keys(e).length).length;
   const impact = scheduleImpact(
     data,
     rowsToClasses(rows.filter((r, i) => !Object.keys(errors[i]).length)),
@@ -114,18 +112,13 @@ export default function ScheduleUpload({
         { isCancelled: () => controller.current.signal.aborted },
       );
       if (!metadata) return;
-      const result = await extractSchedule(
-        selected,
-        setProgress,
-        controller.current.signal,
-      );
-      const next = { ...metadata, ...result };
+      const next = { ...metadata, rows: [], text: "", unparsed: [] };
       persist(next);
       setDraft(next);
       setStage("review");
     } catch (e) {
       if (e.name !== "AbortError") {
-        setError(e.message || "OCR failed. Please try a clearer file.");
+        setError(e.message || "Could not save the file. Please try again.");
         setStage("upload");
       }
     }
@@ -214,7 +207,7 @@ export default function ScheduleUpload({
                 disabled={!file || !!scheduleFileError(file)}
                 onClick={() => process()}
               >
-                Process with OCR
+                Upload and enter classes
               </button>
             </>
           ) : stage === "processing" ? (
@@ -255,11 +248,11 @@ export default function ScheduleUpload({
           )
         }
       >
-        <ol className="ocr-steps">
+        <ol className="schedule-steps">
           {[
             "Upload",
-            "OCR Processing",
-            "Review Extracted Schedule",
+            "Saving file",
+            "Enter and review classes",
             "Confirm",
           ].map((label, i) => (
             <li
@@ -276,7 +269,7 @@ export default function ScheduleUpload({
               Your current confirmed schedule stays active while the new one is
               processed and reviewed. Nothing changes until you confirm.
             </p>
-            <label className="ocr-upload">
+            <label className="schedule-upload">
               <Upload size={30} />
               <strong>Choose your class schedule file</strong>
               <span>
@@ -296,8 +289,7 @@ export default function ScheduleUpload({
               {file && <b>{file.name}</b>}
             </label>
             <p className="session-muted">
-              Text is read on this device. The OCR engine downloads its language
-              data the first time; an internet connection is needed.
+              Upload your official schedule, then enter its class rows manually.
             </p>
             {draft && (
               <button className={button} onClick={() => setStage("review")}>
@@ -318,7 +310,7 @@ export default function ScheduleUpload({
                       disabled={!u.id}
                       onClick={() => loadPrevious(u)}
                     >
-                      Read with OCR
+                      Enter classes
                     </button>
                   </div>
                 ))}
@@ -327,8 +319,8 @@ export default function ScheduleUpload({
           </div>
         )}
         {stage === "processing" && (
-          <div className="ocr-processing" aria-live="polite">
-            <div className="ocr-spinner" />
+          <div className="schedule-processing" aria-live="polite">
+            <div className="schedule-spinner" />
             <h3>Processing {file?.name}</h3>
             <p>Your confirmed schedule stays active during this step.</p>
             <progress value={progress.progress} max={1} />
@@ -341,9 +333,8 @@ export default function ScheduleUpload({
         )}
         {stage === "review" && (
           <div className="space-y-3">
-            <div className="ocr-summary">
-              <span>{rows.length} classes extracted</span>
-              <span>{low} low-confidence fields to check</span>
+            <div className="schedule-summary">
+              <span>{rows.length} classes entered</span>
               <span className={invalid ? "errors" : ""}>
                 {invalid ? `${invalid} rows need fixing` : "No errors"}
               </span>
@@ -380,26 +371,24 @@ export default function ScheduleUpload({
                   <iframe
                     title="Original class schedule"
                     src={preview}
-                    className="ocr-preview"
+                    className="schedule-preview"
                   />
                 ) : (
                   <img
                     src={preview}
                     alt="Original class schedule"
-                    className="ocr-preview"
+                    className="schedule-preview"
                   />
                 )}
               </details>
             )}
             {!rows.length && (
               <p role="status" className="session-warning">
-                No class rows could be reliably detected. Review the extracted
-                text below, add rows manually, or upload a clearer schedule. No
-                sample classes have been substituted.
+                Add the classes from your official schedule using Add class row.
               </p>
             )}
-            <div className="ocr-table-wrap">
-              <table className="ocr-table">
+            <div className="schedule-table-wrap">
+              <table className="schedule-table">
                 <thead>
                   <tr>
                     {[
@@ -424,9 +413,9 @@ export default function ScheduleUpload({
                             <div
                               className={
                                 errors[i][key]
-                                  ? "ocr-field-error"
+                                  ? "schedule-field-error"
                                   : r.uncertain?.includes(key)
-                                    ? "ocr-field-uncertain"
+                                    ? "schedule-field-uncertain"
                                     : ""
                               }
                             >
@@ -498,17 +487,7 @@ export default function ScheduleUpload({
             >
               <Plus size={14} className="inline" /> Add class row
             </button>
-            <details>
-              <summary>
-                Extracted text and unrecognized lines (
-                {draft.unparsed?.length || 0})
-              </summary>
-              <p className="session-muted">
-                Check for classes the reader missed. Add missing rows before
-                confirming.
-              </p>
-              <pre className="ocr-raw">{draft.text || "No text detected."}</pre>
-            </details>
+
             <h3 className="font-semibold">
               Changes from your current schedule
             </h3>
@@ -544,7 +523,7 @@ export default function ScheduleUpload({
                 checked={checked}
                 onChange={(e) => setChecked(e.target.checked)}
               />
-              I checked every row and all extracted text against my official
+              I checked every row against my official
               class schedule, including any missing classes. After confirmation
               this schedule becomes read-only.
             </label>

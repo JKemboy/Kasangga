@@ -63,16 +63,3 @@ export function applicationError(draft) {
     (!draft.certified ? "Check the certification box." : "")
   );
 }
-export function compareDocument(text, account) {
-  const normalize = (v) =>
-    String(v || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
-  const content = normalize(text);
-  return ["name", "studentId", "program", "year"].map((key) => ({
-    key,
-    expected: account[key],
-    matched:
-      !!normalize(account[key]) && content.includes(normalize(account[key])),
-  }));
-}

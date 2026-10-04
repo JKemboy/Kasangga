@@ -13,14 +13,12 @@ import {
   scheduleFileStore,
   scheduleFileError,
 } from "../../tutor/workspace/scheduleUploads.js";
-import { extractSchedule } from "../../tutor/workspace/scheduleOcr.js";
 import {
   SUBJECTS,
   DOCUMENTS,
   tutoringError,
   documentsError,
   applicationError,
-  compareDocument,
 } from "./applicationRules.js";
 import "./tutor-application.css";
 const STEPS = [
@@ -144,27 +142,6 @@ export default function TutorApplication({ onClose }) {
         size: file.size,
         state: "Needs Manual Review",
       };
-      let result;
-      try {
-        result = await extractSchedule(
-          file,
-          (p) => {
-            if (mounted.current) setProgress(p.label);
-          },
-          abort.signal,
-          "document",
-        );
-      } catch (e) {
-        if (abort.signal.aborted) throw e;
-        metadata.error =
-          "Text extraction failed. The document needs manual review.";
-      }
-      if (!mounted.current) {
-        await scheduleFileStore.remove(storageId);
-        return;
-      }
-      metadata.text = (result?.text || "").slice(0, 12000);
-      metadata.comparison = compareDocument(metadata.text, account);
       const next = {
         ...draftRef.current,
         documents: { ...draftRef.current.documents, [kind]: metadata },
@@ -332,39 +309,7 @@ export default function TutorApplication({ onClose }) {
             {draft.documents[doc.id].error && (
               <p>{draft.documents[doc.id].error}</p>
             )}
-            {!review && (
-              <details>
-                <summary>Extracted information (OCR assist)</summary>
-                <div className="ta-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Account field</th>
-                        <th>Compared with</th>
-                        <th>Text comparison</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(draft.documents[doc.id].comparison || []).map((c) => (
-                        <tr key={c.key}>
-                          <td>{fields.find((f) => f[1] === c.key)?.[0]}</td>
-                          <td>{c.expected}</td>
-                          <td>
-                            {c.matched
-                              ? "Found in document text"
-                              : "Needs manual review"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <pre>
-                  {draft.documents[doc.id].text ||
-                    "No readable text found. Manual review required."}
-                </pre>
-              </details>
-            )}
+
           </>
         )}
         {busy === doc.id && <p role="status">{progress}</p>}
@@ -653,10 +598,7 @@ export default function TutorApplication({ onClose }) {
                       <div className="ta-notice blue">
                         <Info size={22} />
                         <p>
-                          Document text is read using OCR or embedded PDF text
-                          and compared with your account. Text matches do not
-                          establish authenticity or approve your application.
-                          Missing or unclear information needs manual review.
+                          Documents require manual review by an authorized Admin.
                         </p>
                       </div>
                     </>
