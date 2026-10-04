@@ -29,11 +29,9 @@ test("overview shortcuts use formal case records and evidence validation remains
         onClearance: () => {},
       }),
     );
-    assert.match(html, /CASE-2026-017/);
-    assert.match(html, /Inappropriate Behavior/);
-    assert.match(html, /Maria Santos/);
-    assert.match(html, /Open case CASE-2026-017/);
-    const record = loadOsasCases()[0];
+    assert.doesNotMatch(html, /CASE-2026-017/);
+    assert.deepEqual(loadOsasCases(), []);
+    const record = {caseId:"TEST-1", id:"IR-TEST", status:"Open", type:"Test incident", student:"Student", reporter:"Reporter", history:[]};
     const drawer = renderToStaticMarkup(
       createElement(
         Provider,
@@ -46,7 +44,7 @@ test("overview shortcuts use formal case records and evidence validation remains
       ),
     );
     assert.match(drawer, /ocx-drawer/);
-    assert.match(drawer, /EVD-2026-045/);
+    assert.doesNotMatch(drawer, /EVD-2026-045/);
     assert.match(drawer, /Incident Report ID/);
     const evidence = { id: "E1", status: "Pending Review", history: [] };
     assert.throws(

@@ -65,11 +65,10 @@ export function loadOsasEvidence() {
     const rows = JSON.parse(localStorage.getItem(storageKey));
     if (
       Array.isArray(rows) &&
-      rows.length === initial.length &&
-      new Set(rows.map((r) => r.id)).size === initial.length &&
+      new Set(rows.map((r) => r.id)).size ===
       rows.every(
         (r) =>
-          initial.some((v) => v.id === r.id) &&
+          typeof r.id === "string" &&
           statuses.includes(r.status) &&
           Array.isArray(r.history),
       )

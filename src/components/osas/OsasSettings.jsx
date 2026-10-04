@@ -31,8 +31,8 @@ const descriptions = [
   "updates to policies and procedures",
 ];
 export const defaultSettings = {
-  contact: "0912 345 6789",
-  alternate: "maria.santos@carsu.edu.ph",
+  contact: "",
+  alternate: "",
   language: "en-PH",
   timezone: "Asia/Manila",
   dateFormat: "long",
@@ -148,13 +148,13 @@ export default function OsasSettings({ settings, onSave }) {
             1. OSAS Profile Information
           </h2>
           <div className="os-profile">
-            <span className="os-profile-avatar">MS</span>
-            {locked("Full Name", "Maria Santos")}
-            {locked("University Email", "maria.santos@carsu.edu.ph")}
+            <span className="os-profile-avatar">OS</span>
+            {locked("Full Name", "OSAS Officer")}
+            {locked("University Email", "")}
           </div>
           <div className="os-fields">
             {locked("Position / Role", "OSAS Case Officer")}
-            {locked("Employee / Staff ID", "OSAS-2026-002")}
+            {locked("Employee / Staff ID", "")}
             {locked(
               "Office / Department",
               "Office of Student Affairs and Services",

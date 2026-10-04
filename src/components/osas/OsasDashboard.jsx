@@ -56,81 +56,7 @@ const statuses = [
   "On Hold",
   "Requires Resolution",
 ];
-const initial = [
-  [
-    "2021-00123",
-    "Juan Dela Cruz",
-    "CCIS — BS Information Technology",
-    "CASE-2026-017",
-    "Under Review",
-    "Pending Review",
-    "2026-09-14",
-    "",
-  ],
-  [
-    "2022-00345",
-    "Maria Angelica Reyes",
-    "CEd — BSEd English",
-    "None",
-    "No Active Case",
-    "Cleared",
-    "2026-09-13",
-    "2026-09-14",
-  ],
-  [
-    "2021-00111",
-    "Karl Jhon Dimaano",
-    "CCIS — BS Information Technology",
-    "CASE-2026-016",
-    "Awaiting Evidence",
-    "Pending Review",
-    "2026-09-13",
-    "",
-  ],
-  [
-    "2020-00055",
-    "Mark Joseph Paloma",
-    "CEGS — BS Civil Engineering",
-    "CASE-2026-014",
-    "Resolved — Conditions Pending",
-    "Requires Resolution",
-    "2026-09-10",
-    "2026-09-12",
-  ],
-  [
-    "2020-00044",
-    "Allen Ezra Mandia",
-    "CCIS — BS Information Technology",
-    "CASE-2026-013",
-    "Authorized Hold Decision",
-    "On Hold",
-    "2026-09-08",
-    "2026-09-11",
-  ],
-  [
-    "2021-00288",
-    "Lyla Shane Balais",
-    "CBA — BS Business Administration",
-    "None",
-    "No Active Case",
-    "Cleared",
-    "2026-09-07",
-    "2026-09-08",
-  ],
-].map(
-  ([id, name, program, caseId, caseStatus, status, requested, reviewed]) => ({
-    id,
-    name,
-    program,
-    caseId,
-    caseStatus,
-    status,
-    requested,
-    reviewed,
-    term,
-    history: [],
-  }),
-);
+const initial = [];
 const navigation = [
   ["Overview", LayoutDashboard],
   ["Case Review", FileText],
@@ -147,10 +73,9 @@ function load() {
     const rows = JSON.parse(localStorage.getItem(storageKey));
     if (
       Array.isArray(rows) &&
-      rows.length &&
       rows.every(
         (r) =>
-          initial.some((s) => s.id === r.id) &&
+          typeof r.id === "string" &&
           statuses.includes(r.status) &&
           Array.isArray(r.history),
       )
@@ -269,7 +194,7 @@ export default function OsasDashboardPage() {
                 basis: basis.trim(),
                 notes: notes.trim(),
                 reviewed,
-                officer: "Maria Santos",
+                officer: "OSAS Officer",
               },
             ],
           }
@@ -436,9 +361,9 @@ export default function OsasDashboardPage() {
             aria-label="Open account menu"
             onClick={() => setModal("Account")}
           >
-            <span className="osas-avatar">MS</span>
+            <span className="osas-avatar">OS</span>
             <span className="hidden sm:block">
-              <b className="block text-xs text-slate-900">Maria Santos</b>
+              <b className="block text-xs text-slate-900">OSAS Officer</b>
               <small>OSAS Case Officer</small>
             </span>
             <ChevronDown size={14} />
@@ -776,7 +701,7 @@ export default function OsasDashboardPage() {
           ) : modal === "Account" || modal === "Settings" ? (
             <div className="space-y-3 text-xs">
               <p>
-                <b>Maria Santos</b> · OSAS Case Officer
+                <b>OSAS Officer</b> · OSAS Case Officer
               </p>
               <p>
                 Demo account. Institutional account settings are not connected
