@@ -25,12 +25,6 @@ function AccountNotice({ message }) {
 export function ProtectedRoute({ role, children }) {
   const auth = useAuth();
   const location = useLocation();
-  if (auth.temporaryLearner)
-    return role === "learner" ? (
-      <div key="temporary-learner">{children}</div>
-    ) : (
-      <Navigate to="/learner-dashboard" replace />
-    );
   if (auth.loading)
     return (
       <p role="status" className="p-6">

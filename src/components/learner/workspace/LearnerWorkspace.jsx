@@ -41,7 +41,7 @@ function load(key) {
 }
 export default function LearnerWorkspace({ children, go }) {
   const auth = useAuth();
-  const storageKey = `${key}:${auth?.temporaryLearner ? "temporary-learner" : auth?.user?.id || "signed-out"}`;
+  const storageKey = `${key}:${auth?.user?.id || "signed-out"}`;
   const [data, setData] = useState(() => ({ ...load(storageKey), profile: { ...load(storageKey).profile, ...workspaceProfile(auth?.profile, auth?.user) } })),
     [dialog, setDialog] = useState(null),
     [error, setError] = useState("");
