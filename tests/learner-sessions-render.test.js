@@ -4,7 +4,7 @@ import { createServer } from 'vite';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-test('learner sessions renders payment filters and current payment badges', async () => {
+test('learner sessions renders an empty state without demo bookings', async () => {
  const server = await createServer({server:{middlewareMode:true},appType:'custom'});
  const previous = globalThis.localStorage;
  try {
@@ -14,12 +14,8 @@ test('learner sessions renders payment filters and current payment badges', asyn
   const render=()=>renderToStaticMarkup(createElement(Interactions,null,createElement(Workspace,{go:()=>{}},createElement(Page))));
   globalThis.localStorage={getItem:()=>null};
   let html=render();
-  assert.match(html, /<option value="Paid">Paid<\/option>/);
-  assert.match(html, /<option value="Pending">Pending<\/option>/);
-  globalThis.localStorage={getItem:()=>JSON.stringify({sessions:[{id:1,paymentStatus:'Refund Under Review'}]})};
-  html=render();
-  assert.match(html, /<option value="Refund Under Review">Refund Under Review<\/option>/);
-  assert.match(html, /<span[^>]*>Refund Under Review<\/span>/);
+  assert.match(html, /No upcoming sessions yet/);
+  assert.doesNotMatch(html, /BK-2026-/);
  } finally {
   if(previous===undefined)delete globalThis.localStorage;else globalThis.localStorage=previous;
   await server.close();

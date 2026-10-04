@@ -9,61 +9,7 @@ import {
 import { button, primary } from "../../tutor/workspace/ui.jsx";
 import "./tutor-profile.css";
 export function tutorProfile(record) {
-  const sample =
-    record.name === "John Michael P."
-      ? {
-          degree: "BS Mathematics, 4th Year",
-          verified: true,
-          online: true,
-          reviews: 128,
-          completed: 212,
-          about:
-            "Graduating Math major and CSU Dean's Lister. I break problems down step by step and give practice sets after every session so you can check your own progress.",
-          expertise: [
-            "Differential Calculus",
-            "Probability & Statistics",
-            "College Algebra",
-            "Exam Review",
-          ],
-          services: [
-            {
-              name: "Calculus",
-              category: "STEM",
-              rate: 350,
-              topics: [
-                "Limits and Continuity",
-                "Derivatives and Applications",
-                "Integration Techniques",
-                "Related Rates",
-              ],
-            },
-            {
-              name: "Algebra",
-              category: "STEM",
-              rate: 350,
-              topics: [
-                "Linear Equations",
-                "Quadratic Functions",
-                "Polynomials",
-              ],
-            },
-            {
-              name: "Statistics",
-              category: "STEM",
-              rate: 350,
-              topics: [
-                "Probability",
-                "Probability Distributions",
-                "Hypothesis Testing",
-              ],
-            },
-          ],
-          types: ["Online", "In-person"],
-          platform: "Google Meet",
-          location: "Main Library, CSU Study Room 2",
-          levels: ["Introductory", "Intermediate", "Advanced"],
-        }
-      : {};
+  const sample = {};
   const tutor = { ...sample, ...profileSamples[record.name], ...record };
   tutor.rate =
     Number(record.rate) ||

@@ -60,16 +60,10 @@ const Edit = ({ section, editing, onEdit, onSave, onCancel }) =>
 export default function LearnerProfile() {
   const work = useLearnerWorkspace();
   const profile = {
-    phone: "0912 345 6789",
+    phone: "",
     bio: "",
-    year: "3rd Year",
-    interests: [
-      "Programming",
-      "Web Development",
-      "Database Systems",
-      "Algorithms",
-      "Data Structures",
-    ],
+    year: "",
+    interests: [],
     ...work.data.profile,
   };
   const [editing, setEditing] = useState(null),
@@ -174,7 +168,7 @@ export default function LearnerProfile() {
               <Camera className="h-4 w-4" />
             </button>
           </div>
-          <h2 className="mt-2 text-base font-bold">Juan Dela Cruz</h2>
+          <h2 className="mt-2 text-base font-bold">Learner</h2>
           <p className="mt-1 text-sm font-semibold text-[#087542]">Learner</p>
           <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#dff8e8] px-3 py-1 text-xs font-semibold text-[#087542]">
             <span className="h-2 w-2 rounded-full bg-[#087542]" />
@@ -185,14 +179,14 @@ export default function LearnerProfile() {
             <p className="flex gap-2">
               <BadgeCheck className="h-4 w-4 shrink-0 text-[#087542]" />
               <span>
-                <b className="block text-[#637191]">Student ID</b>23-IT-10245
+                <b className="block text-[#637191]">Student ID</b>Not provided
               </span>
             </p>
             <p className="flex gap-2">
               <Mail className="h-4 w-4 shrink-0 text-[#087542]" />
               <span>
                 <b className="block text-[#637191]">CSU Email</b>
-                juan.delacruz@carsu.edu.ph
+
               </span>
             </p>
             <p className="flex gap-2">
@@ -225,9 +219,9 @@ export default function LearnerProfile() {
               {controls("personal")}
             </div>
             <div className="mt-2 space-y-2">
-              <Field label="Full Name" value="Juan Dela Cruz" managed />
-              <Field label="Student ID" value="23-IT-10245" managed />
-              <Field label="Email Address" value="juan.delacruz@carsu.edu.ph" />
+              <Field label="Full Name" value="Learner" managed />
+              <Field label="Student ID" value="Not provided" managed />
+              <Field label="Email Address" value="" />
               <p className="text-xs text-slate-500">
                 To update your CSU email or Student ID, contact the support
                 team.
@@ -294,7 +288,7 @@ export default function LearnerProfile() {
             <div className="mt-2 space-y-2">
               <Field
                 label="Course / Program"
-                value="BS Information Technology"
+                value="Not provided"
               />
               <label className="block text-xs font-medium">
                 Year Level

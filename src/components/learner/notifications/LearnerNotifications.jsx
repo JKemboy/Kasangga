@@ -19,74 +19,7 @@ import {
   UserRound,
 } from "lucide-react";
 
-const notifications = [
-  [
-    CalendarCheck,
-    "Booking Confirmed",
-    "Your tutoring session with Maria Angelica R. for Calculus 1 - Derivatives on May 20, 2026 at 2:00 PM has been confirmed.",
-    "10:24 AM",
-    "bg-[#e5f8ec] text-[#087542]",
-    true,
-  ],
-  [
-    MessageCircle,
-    "New Message",
-    "Maria Angelica R. sent you a new message.",
-    "9:15 AM",
-    "bg-[#e7f3ff] text-[#1675df]",
-    true,
-  ],
-  [
-    BriefcaseBusiness,
-    "Payment Successful",
-    "Your payment of ₱400.00 for your session with Maria Angelica R. was successful.",
-    "Yesterday, 8:32 PM",
-    "bg-[#fff1d6] text-[#e99d00]",
-    true,
-  ],
-  [
-    CalendarDays,
-    "Upcoming Session Reminder",
-    "You have an upcoming session with John Michael P. for Statistics - Probability on May 22, 2026 at 10:00 AM.",
-    "May 21, 2026, 7:00 PM",
-    "bg-[#f0eaff] text-[#713de0]",
-  ],
-  [
-    UserRound,
-    "Booking Request Accepted",
-    "John Michael P. accepted your booking request for Statistics - Probability.",
-    "May 21, 2026, 4:18 PM",
-    "bg-[#fff1d6] text-[#e99d00]",
-  ],
-  [
-    Star,
-    "Review Reminder",
-    "Don't forget to leave a review for your completed session with Janine Claire T.",
-    "May 20, 2026, 6:30 PM",
-    "bg-[#fde9f8] text-[#e545bb]",
-  ],
-  [
-    GraduationCap,
-    "Tutor Application Update",
-    "Your tutor application is under review. We'll notify you once there's an update.",
-    "May 18, 2026, 11:12 AM",
-    "bg-[#e5f8ec] text-[#087542]",
-  ],
-  [
-    ShieldCheck,
-    "System Notification",
-    "Scheduled maintenance will occur on May 25, 2026 from 12:00 AM to 2:00 AM.",
-    "May 17, 2026, 9:00 AM",
-    "bg-[#f0f1f3] text-[#64748b]",
-  ],
-  [
-    CircleAlert,
-    "Incident Report Update",
-    "Your report #IR-2026-001 has been received and is now under review by OSAS.",
-    "May 16, 2026, 3:45 PM",
-    "bg-[#ffebeb] text-red-600",
-  ],
-];
+const notifications = [];
 const filters = [
   [Bell, "All Notifications"],
   [Mail, "Unread"],

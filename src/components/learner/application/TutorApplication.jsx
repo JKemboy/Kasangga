@@ -32,12 +32,12 @@ const STEPS = [
 export default function TutorApplication({ onClose }) {
   const work = useLearnerWorkspace();
   const account = {
-    name: "Juan Dela Cruz",
-    studentId: "23-IT-10245",
-    email: "juan.delacruz@carsu.edu.ph",
-    college: "College of Computing & Information Sciences",
-    program: "BS Information Technology",
-    year: work.data.profile.year || "3rd Year",
+    name: work.data.profile.name || "",
+    studentId: work.data.profile.studentId || "",
+    email: work.data.profile.email || "",
+    college: work.data.profile.college || "",
+    program: work.data.profile.program || "",
+    year: work.data.profile.year || "",
   };
   const [draft, setDraft] = useState(() => ({
     subjects: [],

@@ -11,52 +11,7 @@ import {
   Star,
 } from "lucide-react";
 
-const tutors = [
-  [
-    "Maria Angelica R.",
-    "BS Physics",
-    "Calculus, Physics, Mechanics",
-    "4.8",
-    "96 reviews",
-    "₱400",
-    "Available Today",
-    "MA",
-    true,
-  ],
-  [
-    "John Michael P.",
-    "BS Mathematics",
-    "Statistics, Probability, Algebra",
-    "4.9",
-    "128 reviews",
-    "₱350",
-    "Available Tomorrow",
-    "JM",
-    true,
-  ],
-  [
-    "Janine Claire T.",
-    "BS English",
-    "English, Essay Writing, Grammar",
-    "4.7",
-    "82 reviews",
-    "₱300",
-    "Last seen 2 hours ago",
-    "JC",
-    false,
-  ],
-  [
-    "Allen Ezra M.",
-    "BS Information Technology",
-    "Programming (Python), Web Dev.",
-    "4.6",
-    "71 reviews",
-    "₱450",
-    "Available This Week",
-    "AE",
-    true,
-  ],
-];
+const tutors = [];
 
 const subjectOptions = [
   ...new Set(

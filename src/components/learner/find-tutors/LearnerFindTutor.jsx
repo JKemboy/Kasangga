@@ -14,44 +14,7 @@ import {
   Star,
 } from "lucide-react";
 
-const tutors = [
-  [
-    "John Michael P.",
-    "BS Mathematics",
-    "Calculus, Algebra, Statistics",
-    "4.9",
-    "128",
-    "₱350",
-    "JM",
-  ],
-  [
-    "Maria Angelica R.",
-    "BS Physics",
-    "Physics, General Physics",
-    "4.8",
-    "96",
-    "₱400",
-    "MA",
-  ],
-  [
-    "Karl Jhon D.",
-    "BSIT",
-    "Programming, Web Development",
-    "4.9",
-    "154",
-    "₱450",
-    "KJ",
-  ],
-  [
-    "Janine Claire T.",
-    "BS English",
-    "English, Essay Writing",
-    "4.7",
-    "82",
-    "₱300",
-    "JC",
-  ],
-];
+const tutors = [];
 
 const Select = ({ label, value, onChange, options=[] }) => (
   <label className="block text-xs font-semibold">

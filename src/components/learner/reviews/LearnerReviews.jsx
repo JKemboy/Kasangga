@@ -10,41 +10,7 @@ import {
   Star,
 } from "lucide-react";
 
-const reviews = [
-  [
-    "Maria Angelica R.",
-    "BS Physics",
-    "Calculus 1 - Derivatives",
-    "5.0",
-    5,
-    "“Excellent tutor! Explained the concepts clearly and made difficult topics easy to understand. Very patient and professional.”",
-    "May 21, 2026",
-    "May 20, 2026",
-    "MA",
-  ],
-  [
-    "John Michael P.",
-    "BS Mathematics",
-    "Statistics - Probability",
-    "4.0",
-    4,
-    "“Great discussion and very organized session. Helped me a lot with my midterm preparation. Could improve the time management but overall, a great tutor!”",
-    "May 18, 2026",
-    "May 17, 2026",
-    "JM",
-  ],
-  [
-    "Janine Claire T.",
-    "BS English",
-    "English, Essay Writing",
-    "5.0",
-    5,
-    "“Very helpful tips and feedback on my essay. Improved my writing skills a lot! Highly recommended.”",
-    "May 15, 2026",
-    "May 14, 2026",
-    "JC",
-  ],
-];
+const reviews = [];
 
 const Summary = ({ icon: Icon, value, title, detail, color }) => (
   <section className="flex items-center gap-3 rounded-xl border border-[#e1e7ef] bg-white p-3">
