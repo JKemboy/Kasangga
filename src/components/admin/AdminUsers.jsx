@@ -21,98 +21,16 @@ import {
   Avatar,
 } from "../tutor/workspace/ui.jsx";
 const key = "campustutor:admin-users:v1";
-const initial = [
-  [
-    "2021-00123",
-    "Juan Dela Cruz",
-    "juan.delacruz",
-    "CCIS",
-    "BS Information Technology",
-    false,
-    "Active",
-    "2021-08-20",
-  ],
-  [
-    "2022-00456",
-    "Maria Angelica Reyes",
-    "maria.reyes",
-    "CSM",
-    "BS Mathematics",
-    true,
-    "Active",
-    "2022-09-10",
-  ],
-  [
-    "2021-00198",
-    "Karl Jhon Dimaano",
-    "karl.dimaano",
-    "CCIS",
-    "BS Information Technology",
-    false,
-    "Active",
-    "2021-08-25",
-  ],
-  [
-    "2022-00321",
-    "Ella Mae Santos",
-    "ella.santos",
-    "CCIS",
-    "BS Computer Science",
-    true,
-    "Active",
-    "2022-05-12",
-  ],
-  [
-    "2020-00077",
-    "John Michael Perez",
-    "john.perez",
-    "CCIS",
-    "BS Information Technology",
-    false,
-    "Suspended",
-    "2021-01-15",
-  ],
-  [
-    "2021-00245",
-    "Renalyn Laurente",
-    "renalyn.laurente",
-    "CCIS",
-    "BS Information Technology",
-    true,
-    "Active",
-    "2021-09-02",
-  ],
-  [
-    "2023-00678",
-    "Mark Joseph Paloma",
-    "mark.paloma",
-    "CCIS",
-    "BS Information Technology",
-    false,
-    "Restricted",
-    "2023-10-05",
-  ],
-].map(([id, name, email, college, program, tutor, status, registered]) => ({
-  id,
-  name,
-  email: email + "@carsu.edu.ph",
-  college,
-  program,
-  tutor,
-  status,
-  registered,
-  history: [],
-}));
+const initial = [];
 export function loadAdminUsers() {
   try {
     const data = JSON.parse(localStorage.getItem(key));
     if (
       Array.isArray(data) &&
-      data.length === initial.length &&
-      new Set(data.map((r) => r.id)).size === initial.length &&
+      new Set(data.map((r) => r.id)).size === data.length &&
       data.every(
         (r) =>
-          initial.some((v) => v.id === r.id) &&
+          typeof r.id === "string" &&
           ["Active", "Suspended", "Restricted"].includes(r.status) &&
           Array.isArray(r.history),
       )

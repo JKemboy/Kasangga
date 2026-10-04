@@ -28,76 +28,7 @@ import {
 import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./adminData.js";
 
-const initialTransactions = [
-  [
-    "0917",
-    "1842",
-    "Juan Dela Cruz",
-    "Maria Angelica Reyes",
-    350,
-    "Paid",
-    "08:42",
-  ],
-  ["0917", "1839", "Renalyn Laurente", "Ella Mae Santos", 600, "Paid", "00:34"],
-  [
-    "0916",
-    "1835",
-    "Karl Jhon Dimaano",
-    "Maria Angelica Reyes",
-    350,
-    "Paid",
-    "14:15",
-  ],
-  [
-    "0916",
-    "1831",
-    "Mark Joseph Paloma",
-    "Kristine Joy Lagmay",
-    350,
-    "Refund Review",
-    "09:22",
-  ],
-  [
-    "0915",
-    "1827",
-    "Ella Mae Santos",
-    "Adrian Paul Flores",
-    562.5,
-    "Paid",
-    "13:18",
-  ],
-  [
-    "0915",
-    "1824",
-    "John Michael Perez",
-    "Mark Joseph Paloma",
-    400,
-    "Paid",
-    "10:08",
-  ],
-  [
-    "0914",
-    "1819",
-    "Adrian Paul Flores",
-    "Ella Mae Santos",
-    500,
-    "Paid",
-    "15:40",
-  ],
-].map(([day, id, learner, tutor, amount, payment, time]) => ({
-  id: `TXN-2026-${day}-${id}`,
-  booking: `BK-2026-${id}`,
-  learner,
-  tutor,
-  amount,
-  payment,
-  date: `2026-${day.slice(0, 2)}-${day.slice(2)}`,
-  time,
-  status: "Completed",
-  method: "GCash via PayMongo",
-  refundRequestedAt: id === "1831" ? "Sep 16, 2026 ? 9:41 AM by Mark Joseph Paloma" : undefined,
-  refundReason: id === "1831" ? "Cancelled 20 minutes before the session because of a class schedule conflict." : undefined,
-}));
+const initialTransactions = [];
 // Refund-review rows retain the original paid allocation, but are excluded from
 // settled earnings until the review is resolved. This is reference data only.
 const originalAllocation = (r) => sessionAllocation({ ...r, payment: "Paid" });
