@@ -272,7 +272,7 @@ export default function AdminDashboardPage() {
                   Leave the Admin portal? Saved demo changes remain on this
                   browser.
                 </p>
-                <button className={primary} onClick={() => navigate("/")}>
+                <button className={primary} onClick={requestLogout}>
                   Logout
                 </button>
               </>

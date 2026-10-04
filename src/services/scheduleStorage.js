@@ -6,7 +6,7 @@ export async function requireScheduleUser(client = getSupabaseClient()) {
   const { data, error } = await client.auth.getUser();
   if (error || !data?.user)
     throw new Error(
-      "Sign in with Supabase before uploading a schedule. The demo login does not create a Supabase session.",
+      "Sign in before uploading a schedule. Your Supabase session is missing or expired.",
     );
   return data.user;
 }

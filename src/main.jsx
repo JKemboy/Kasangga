@@ -1,3 +1,4 @@
+import AuthProvider from "./auth/AuthProvider.jsx";
 import "./resetDemoData.js";
 import InteractionProvider from "./components/shared/InteractionProvider.jsx";
 import LogoutProvider from "./components/shared/LogoutProvider.jsx";
@@ -12,6 +13,12 @@ import "./components/osas/modal-density.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <InteractionProvider><LogoutProvider><RouterProvider router={router} /></LogoutProvider></InteractionProvider>
+    <AuthProvider>
+      <InteractionProvider>
+        <LogoutProvider>
+          <RouterProvider router={router} />
+        </LogoutProvider>
+      </InteractionProvider>
+    </AuthProvider>
   </StrictMode>,
 );
