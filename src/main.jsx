@@ -1,3 +1,4 @@
+import "./resetDemoData.js";
 import InteractionProvider from "./components/shared/InteractionProvider.jsx";
 import LogoutProvider from "./components/shared/LogoutProvider.jsx";
 import { StrictMode } from "react";
