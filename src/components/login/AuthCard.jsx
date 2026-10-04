@@ -120,6 +120,40 @@ export default function AuthCard() {
     }
   }
   const isLogin = active === "Login";
+  if (auth?.temporaryLoginEnabled && isLogin)
+    return (
+      <div className="mt-6 w-full max-w-[390px] rounded-xl border bg-white p-5 shadow-sm">
+        <h2 className="text-center text-xl font-bold">Welcome back!</h2>
+        <div className="my-3">
+          <AuthTabs active={active} onChange={setActive} />
+        </div>
+        <p className="mb-4 text-center text-sm text-slate-500">
+          Temporary Learner access. No verification required.
+        </p>
+        <button
+          disabled={busy}
+          className="h-10 w-full rounded-md bg-[#006b3c] text-sm font-semibold text-white"
+          onClick={async () => {
+            setBusy(true);
+            setMessage("");
+            try {
+              await auth.startTemporaryLearner();
+            } catch (e) {
+              setMessage(e.message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? "Opening..." : "Login as Learner"}
+        </button>
+        {message && (
+          <p role="alert" className="mt-2 text-xs text-red-700">
+            {message}
+          </p>
+        )}
+      </div>
+    );
   return (
     <div className="mt-6 w-full max-w-[390px] overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-[0_6px_15px_rgba(0,0,0,.07)]">
       <div className="px-3 pb-2.5 pt-3 sm:px-4 sm:pb-3 sm:pt-3.5 lg:px-5 lg:pb-3.5 lg:pt-3">

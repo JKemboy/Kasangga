@@ -2,9 +2,21 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { getSupabaseClient } from "../services/supabaseClient.js";
 import { loadAuthAccount, isCsuEmail } from "../services/authAccount.js";
 
+const temporaryLoginEnabled =
+  import.meta.env.DEV && import.meta.env.VITE_TEMP_LEARNER_LOGIN === "true";
 const Context = createContext(null);
 export const useAuth = () => useContext(Context);
 export default function AuthProvider({ children }) {
+  const [temporaryLearner, setTemporaryLearner] = useState(() => {
+    try {
+      return (
+        temporaryLoginEnabled &&
+        sessionStorage.getItem("campustutor:temporary-learner") === "true"
+      );
+    } catch {
+      return false;
+    }
+  });
   const [session, setSession] = useState(null);
   const [initializing, setInitializing] = useState(true);
   const [account, setAccount] = useState(null);
@@ -79,6 +91,24 @@ export default function AuthProvider({ children }) {
   return (
     <Context.Provider
       value={{
+        temporaryLoginEnabled,
+        temporaryLearner,
+        startTemporaryLearner: async () => {
+          if (!temporaryLoginEnabled) return;
+          if (session) {
+            const { error } = await getSupabaseClient().auth.signOut({
+              scope: "local",
+            });
+            if (error) throw error;
+          }
+          try {
+            sessionStorage.setItem("campustutor:temporary-learner", "true");
+          } catch {}
+          setSession(null);
+          setAccount(null);
+          setError("");
+          setTemporaryLearner(true);
+        },
         session,
         user: session?.user || null,
         profile: ready?.profile,
@@ -87,6 +117,13 @@ export default function AuthProvider({ children }) {
         error,
         retry: () => setRevision((v) => v + 1),
         signOut: async () => {
+          if (temporaryLearner) {
+            try {
+              sessionStorage.removeItem("campustutor:temporary-learner");
+            } catch {}
+            setTemporaryLearner(false);
+            return;
+          }
           const { error } = await getSupabaseClient().auth.signOut({
             scope: "local",
           });
