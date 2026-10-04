@@ -1,3 +1,5 @@
+import { useAuth } from "../../../auth/AuthProvider.jsx";
+import { workspaceProfile } from "../../../services/authAccount.js";
 import AccountAction from "./AccountAction.jsx";
 import ReviewDialog from "./ReviewDialog.jsx";
 import LearnerReport from "./LearnerReport.jsx";
@@ -29,7 +31,7 @@ const empty = {
   profile: {},
   application: null,
 };
-function load() {
+function load(key) {
   try {
     const value = JSON.parse(localStorage.getItem(key));
     return { ...empty, ...value };
@@ -38,14 +40,16 @@ function load() {
   }
 }
 export default function LearnerWorkspace({ children, go }) {
-  const [data, setData] = useState(load),
+  const auth = useAuth();
+  const storageKey = `${key}:${auth?.user?.id || "signed-out"}`;
+  const [data, setData] = useState(() => ({ ...load(storageKey), profile: { ...load(storageKey).profile, ...workspaceProfile(auth?.profile, auth?.user) } })),
     [dialog, setDialog] = useState(null),
     [error, setError] = useState("");
   const { toast, confirm } = useInteractions();
   function commit(change) {
     try {
       const next = change(data);
-      localStorage.setItem(key, JSON.stringify(next));
+      localStorage.setItem(storageKey, JSON.stringify(next));
       setData(next);
       return true;
     } catch {
