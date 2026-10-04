@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  isCsuEmail,
   loadAuthAccount,
   accountHome,
   workspaceProfile,
@@ -62,4 +63,18 @@ test("role routing and display identity use loaded account data", () => {
     ).name,
     "Test User",
   );
+});
+
+test("only the exact CSU domain is accepted", () => {
+  for (const email of ["student@carsu.edu.ph", " Student@CARSU.EDU.PH "])
+    assert.equal(isCsuEmail(email), true);
+  for (const email of [
+    "student@gmail.com",
+    "student@csu.edu.ph",
+    "student@carsu.edu.ph.evil.com",
+    "student@sub.carsu.edu.ph",
+    "a@b@carsu.edu.ph",
+    "",
+  ])
+    assert.equal(isCsuEmail(email), false);
 });

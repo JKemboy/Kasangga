@@ -1,6 +1,7 @@
+import { isCsuEmail } from "../../services/authAccount.js";
 import { getSupabaseClient } from "../../services/supabaseClient.js";
 import { useAuth } from "../../auth/AuthProvider.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import AuthTabs from "./AuthTabs.jsx";
 import InputField from "./InputField.jsx";
@@ -25,41 +26,62 @@ function GoogleMark() {
 
 export default function AuthCard() {
   const [active, setActive] = useState("Login");
-  const [showPassword, setShowPassword] = useState(false);
+
   const auth = useAuth();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [code, setCode] = useState("");
+  const [sentTo, setSentTo] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  useEffect(() => {
+    if (!cooldown) return;
+    const timer = setTimeout(() => setCooldown((v) => v - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  async function sendCode() {
+    const address = email.trim().toLowerCase();
+    if (!isCsuEmail(address))
+      throw Error("Use your @carsu.edu.ph email address.");
+    const { error } = await getSupabaseClient().auth.signInWithOtp({
+      email: address,
+      options: { shouldCreateUser: active === "Register" },
+    });
+    if (error) throw error;
+    setSentTo(address);
+    setCode("");
+    setCooldown(60);
+    setMessage("Check your CSU inbox for your verification code.");
+  }
   async function submit(e) {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
     setMessage("");
     try {
-      const client = getSupabaseClient();
-      const credentials = { email: email.trim(), password };
-      if (!isLogin && (!firstName.trim() || !lastName.trim()))
-        throw Error("Enter your first and last name.");
-      if (!isLogin && !/@(carsu|csu)\.edu\.ph$/i.test(credentials.email))
-        throw Error("Use your CSU email address.");
-      const { data, error } = isLogin
-        ? await client.auth.signInWithPassword(credentials)
-        : await client.auth.signUp({
-            ...credentials,
-            options: {
-              emailRedirectTo: window.location.origin + "/login",
-              data: {
-                first_name: firstName.trim(),
-                last_name: lastName.trim(),
-              },
-            },
-          });
-      if (error) throw error;
-      if (!data.session)
-        setMessage("Check your email to confirm your account, then sign in.");
+      if (!sentTo) await sendCode();
+      else {
+        if (!/^\d{6,8}$/.test(code.trim()))
+          throw Error("Enter the code from your email.");
+        const { error } = await getSupabaseClient().auth.verifyOtp({
+          email: sentTo,
+          token: code.trim(),
+          type: "email",
+        });
+        if (error) throw error;
+      }
+    } catch (e) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function resend() {
+    if (busy || cooldown) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      await sendCode();
     } catch (e) {
       setMessage(e.message);
     } finally {
@@ -72,29 +94,12 @@ export default function AuthCard() {
     try {
       const { error } = await getSupabaseClient().auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: window.location.origin + "/login" },
+        options: {
+          redirectTo: window.location.origin + "/login",
+          queryParams: { hd: "carsu.edu.ph", prompt: "select_account" },
+        },
       });
       if (error) throw error;
-    } catch (e) {
-      setMessage(e.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function forgot(e) {
-    e.preventDefault();
-    setMessage("");
-    if (!email.trim()) return setMessage("Enter your email address first.");
-    setBusy(true);
-    try {
-      const { error } = await getSupabaseClient().auth.resetPasswordForEmail(
-        email.trim(),
-        { redirectTo: window.location.origin + "/reset-password" },
-      );
-      if (error) throw error;
-      setMessage(
-        "If the address has an account, a password reset email will arrive.",
-      );
     } catch (e) {
       setMessage(e.message);
     } finally {
@@ -116,87 +121,79 @@ export default function AuthCard() {
           </p>
         </header>
         <div className="mt-2">
-          <AuthTabs active={active} onChange={setActive} />
+          <AuthTabs
+            active={active}
+            onChange={(value) => {
+              if (busy) return;
+              setActive(value);
+              setSentTo("");
+              setCode("");
+              setMessage("");
+            }}
+          />
         </div>
         <form
           className="mt-2 space-y-1.5 sm:mt-2.5 sm:space-y-2"
           onSubmit={submit}
         >
-          {!isLogin && (
-            <>
-              <InputField
-                icon={Mail}
-                label="First name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-                autoComplete="given-name"
-              />
-              <InputField
-                icon={Mail}
-                label="Last name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-                autoComplete="family-name"
-              />
-            </>
-          )}
           <InputField
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={!!sentTo || busy}
             autoComplete="email"
             icon={Mail}
             label="CSU Email"
             type="email"
             placeholder="name@carsu.edu.ph"
-            aria-label="CSU Email"
           />
-          <InputField
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={isLogin ? undefined : 8}
-            autoComplete={isLogin ? "current-password" : "new-password"}
-            icon={LockKeyhole}
-            label="Password"
-            hint={
-              isLogin && (
-                <a
-                  href="#forgot"
-                  onClick={busy ? (e) => e.preventDefault() : forgot}
-                  className="text-[12px] font-medium text-[#197747]"
-                >
-                  Forgot Password?
-                </a>
-              )
-            }
-            type={showPassword ? "text" : "password"}
-            placeholder="Enter your password"
-            aria-label="Password"
-          />
-          <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-[#44464d]">
-            <input
-              className="h-3 w-3 rounded border-[#d9dadd] accent-[#006b3c]"
-              type="checkbox"
-              checked={showPassword}
-              onChange={(e) => setShowPassword(e.target.checked)}
+          {sentTo && (
+            <InputField
+              value={code}
+              onChange={(e) =>
+                setCode(e.target.value.replace(/\D/g, "").slice(0, 8))
+              }
+              required
+              icon={LockKeyhole}
+              label="Verification code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              minLength={6}
+              maxLength={8}
             />
-            Show password
-          </label>
+          )}
           <button
             type="submit"
             disabled={busy}
             className="h-8 w-full rounded-md bg-[#006b3c] text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#005932] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b3c]"
           >
             {busy
-              ? "Please wait?"
-              : isLogin
-                ? "Continue with CSU Email"
-                : "Register with CSU Email"}
+              ? "Please wait..."
+              : sentTo
+                ? "Verify code"
+                : "Send verification code"}
           </button>
         </form>
+        {sentTo && (
+          <div className="mt-2 flex justify-between text-xs">
+            <button disabled={busy || cooldown > 0} onClick={resend}>
+              {cooldown ? "Resend in " + cooldown + "s" : "Resend code"}
+            </button>
+            <button
+              disabled={busy}
+              onClick={() => {
+                setSentTo("");
+                setCode("");
+                setMessage("");
+              }}
+            >
+              Change email
+            </button>
+          </div>
+        )}
+        <p className="mt-2 text-xs text-slate-500">
+          Exclusive to @carsu.edu.ph accounts. No password required.
+        </p>
         {(message || auth?.error) && (
           <p role="status" className="mt-2 text-xs text-red-700">
             {message || auth.error}

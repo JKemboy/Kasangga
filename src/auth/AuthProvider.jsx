@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getSupabaseClient } from "../services/supabaseClient.js";
-import { loadAuthAccount } from "../services/authAccount.js";
+import { loadAuthAccount, isCsuEmail } from "../services/authAccount.js";
 
 const Context = createContext(null);
 export const useAuth = () => useContext(Context);
@@ -57,6 +57,12 @@ export default function AuthProvider({ children }) {
       previous?.userId === session?.user.id ? previous : null,
     );
     if (!session) return;
+    if (!isCsuEmail(session.user.email)) {
+      setError(
+        "Only @carsu.edu.ph accounts can access CampusTutor. Sign out and choose your CSU Google account.",
+      );
+      return;
+    }
     setError("");
     loadAuthAccount(getSupabaseClient(), session.user.id)
       .then((value) => {

@@ -1,3 +1,5 @@
+export const isCsuEmail = (email) =>
+  /^[^\s@]+@carsu\.edu\.ph$/i.test(String(email || "").trim());
 export async function loadAuthAccount(client, userId) {
   const [profile, roles] = await Promise.all([
     client
