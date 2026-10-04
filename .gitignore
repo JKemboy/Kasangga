@@ -1,2 +1,10 @@
-# Generated Vite dependency caches
-node_modules/.vite/
+# Installed dependencies and generated output
+node_modules/
+dist/
+*.log
+.empty-check/
+
+# Local database credentials
+.env
+.env.*
+!.env.example
