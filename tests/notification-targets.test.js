@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { seed } from "../src/components/tutor/workspace/data.js";
+import { seed } from "./fixtures/tutorData.js";
 import { notificationDestination } from "../src/components/tutor/workspace/notificationTargets.js";
 
 const notification = (title) =>
@@ -36,12 +36,12 @@ test("new notifications preserve explicit record metadata and action labels", ()
   );
 });
 
-test("legacy browser notifications retain their related destinations", () => {
+test("legacy notifications no longer resolve deleted sample record IDs", () => {
   for (const item of seed.notifications) {
     const { target, ...legacy } = item;
     // Older persisted reviews linked to the profile before related service support.
     if (legacy.title === "New Rating/Review") legacy.view = "profile";
-    assert.deepEqual(notificationDestination(legacy), target, item.title);
+    assert.deepEqual(notificationDestination(legacy)?.args, {}, item.title);
   }
 });
 
