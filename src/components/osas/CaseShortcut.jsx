@@ -525,8 +525,7 @@ export default function CaseShortcut({
                     </small>
                   </div>
                   <p className="ocx-warning">
-                    Automated processing (OCR) may help organize evidence but
-                    does not prove authenticity or establish misconduct.
+                    Evidence requires manual review. Submission alone does not establish misconduct.
                   </p>
                 </div>
                 <div>

@@ -239,12 +239,7 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
       )}
       {verification && (
         <p className="ad-banner">
-          Minimum OCR threshold: {config.threshold}% ·{" "}
-          {config.ocr
-            ? "OCR extraction enabled in configuration."
-            : "OCR extraction disabled in configuration."}{" "}
-          Confidence and matching do not verify authenticity. Final approval
-          requires an Admin decision.
+          Documents require manual review and an Admin decision.
         </p>
       )}
       {notice && (
@@ -265,7 +260,6 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
                       "College / Program",
                       "Submitted Date",
                       "Document Status",
-                      "OCR Confidence",
                       "Information Match",
                       "Application Status",
                       "Action",
@@ -307,15 +301,6 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
                       </td>
                       <td>{dateLabel(r.date)}</td>
                       <td>{pill(r.documents)}</td>
-                      <td
-                        className={
-                          r.confidence < config.threshold
-                            ? "text-red-600"
-                            : "text-green-800"
-                        }
-                      >
-                        <b>{r.confidence}%</b>
-                      </td>
                       <td>{pill(r.match)}</td>
                     </>
                   ) : (
@@ -396,7 +381,7 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
       </div>
       <p className="ad-help">
         {verification
-          ? "Demo application metadata. Source documents and actual OCR processing are not attached."
+          ? "Supporting documents require manual review."
           : "Tutor-owned content is read-only. Moderation and change requests are recorded locally; no message is sent."}
       </p>
       {selected && verification && (

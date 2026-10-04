@@ -56,17 +56,14 @@ export default function AdminSettings({ config, onSave }) {
     e.preventDefault();
     setError("");
     if (
-      !draft.name.trim() ||
-      !Number.isFinite(Number(draft.threshold)) ||
-      Number(draft.threshold) < 0 ||
-      Number(draft.threshold) > 100
+      !draft.name.trim()
     ) {
       setError(
-        "Enter an account name and a confidence threshold from 0 to 100.",
+        "Enter an account name.",
       );
       return;
     }
-    const next = { ...draft, threshold: Number(draft.threshold) };
+    const next = { ...draft };
     const fields = Object.keys(next).filter(
       (k) => k !== "auditHistory" && next[k] !== config[k],
     );
@@ -163,29 +160,7 @@ export default function AdminSettings({ config, onSave }) {
                 <ShieldCheck />
                 Tutor Verification Settings
               </h2>
-              {toggle("OCR Extraction", "ocr")}
-              <label className="ad-setting-row">
-                <span>OCR Confidence Threshold</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    aria-label="OCR Confidence Threshold"
-                    className={input}
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    required
-                    value={draft.threshold}
-                    onChange={(e) => change("threshold", e.target.value)}
-                  />
-                  %
-                </div>
-              </label>
-              <p className="ad-help">
-                Flags extraction confidence for Admin review; it does not verify
-                authenticity or automatically approve applications.
-              </p>
-              <hr />
+
               {fixed("Automatic Tutor Approval", "Disabled")}
               {fixed("Manual Admin Decision", "Required")}
               <p className="ad-help">
@@ -252,8 +227,7 @@ export default function AdminSettings({ config, onSave }) {
       )}
       <p className="ad-help flex items-center gap-2">
         <Info size={14} />
-        Demo preferences only. Authentication, maintenance enforcement, OCR
-        processing, and notification delivery need backend integration. No
+        Demo preferences only. Authentication, maintenance enforcement, and notification delivery need backend integration. No
         payment secrets are stored here.
       </p>
       {notice && (

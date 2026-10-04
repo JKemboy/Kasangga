@@ -4,7 +4,7 @@ import { createServer } from 'vite';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-test('application review shows selected record and honest missing OCR data', async () => {
+test('application review shows selected record and manual document review', async () => {
   const server = await createServer({server:{middlewareMode:true},appType:'custom'});
   try {
     const {default:Review} = await server.ssrLoadModule('/src/components/admin/ApplicationReview.jsx');
@@ -14,6 +14,7 @@ test('application review shows selected record and honest missing OCR data', asy
     assert.match(html, /APP-2026-0132/);
     assert.match(html, /John Michael Perez/);
     assert.match(html, /Unavailable/);
+    assert.doesNotMatch(html, /OCR|confidence|Extracted/);
     assert.match(html, /Approve Tutor/);
     assert.match(html, /Request Resubmission/);
     assert.match(html, /Reject Application/);

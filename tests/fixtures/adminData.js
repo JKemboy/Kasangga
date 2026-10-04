@@ -4,8 +4,6 @@ export const configDefaults = {
   contact: "+63 912 345 6789",
   position: "System Administrator",
   department: "Information Technology Services",
-  ocr: true,
-  threshold: 80,
   emailVerification: true,
   twoFactor: true,
   maintenance: false,

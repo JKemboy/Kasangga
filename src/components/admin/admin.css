@@ -1063,19 +1063,6 @@
   font-size: 8px;
   padding: 8px 5px;
 }
-.ao-ocr {
-  display: block;
-  background: #fff7e7;
-  border-radius: 5px;
-  padding: 4px 6px;
-  font-size: 9px;
-  color: #344567;
-}
-.ao-ocr small {
-  display: block;
-  font-size: 8px;
-  color: #7282a0;
-}
 .ao-overview > .ad-panel {
   padding: 10px;
 }

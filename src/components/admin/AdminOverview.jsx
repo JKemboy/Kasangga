@@ -201,7 +201,7 @@ export default function AdminOverview({
                     "Student ID",
                     "College / Program",
                     "Submitted Date",
-                    "OCR / Document Review",
+                    "Document Review",
                     "Application Status",
                   ].map((h) => (
                     <th key={h}>{h}</th>
@@ -228,14 +228,7 @@ export default function AdminOverview({
                     </td>
                     <td>{dateLabel(r.date)}</td>
                     <td>
-                      <span className="ao-ocr">
-                        OCR {r.confidence}%
-                        <small>
-                          {r.confidence < config.threshold
-                            ? "Below configured threshold"
-                            : "Manual review required"}
-                        </small>
-                      </span>
+                      <span>Manual review required</span>
                     </td>
                     <td>{badge(r.referral === "Referred to OSAS" ? r.referral : r.status)}</td>
                   </tr>
@@ -394,12 +387,10 @@ export default function AdminOverview({
                   {detail.record.program}
                 </p>
                 <p>
-                  {detail.record.status} · {detail.record.documents} · OCR{" "}
-                  {detail.record.confidence}%
+                  {detail.record.status} · {detail.record.documents}
                 </p>
                 <p>
-                  Original documents are not attached. OCR does not verify
-                  authenticity.
+                  Original documents are not attached. Manual review is required.
                 </p>
                 <button
                   className={button}
