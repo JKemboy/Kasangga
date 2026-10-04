@@ -48,7 +48,15 @@ export default function ConversationMenu({ work, thread }) {
     <div className="ml-auto flex items-center gap-3">
       <button
         className={button}
-        onClick={() => work.open("profile", { name: thread.name })}
+        disabled={thread.name === "CampusTutor Support"}
+        onClick={() =>
+          work.open(
+            "profile",
+            work.data.saved.find((t) => t.name === thread.name) || {
+              name: thread.name,
+            },
+          )
+        }
       >
         View Profile
       </button>

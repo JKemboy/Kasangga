@@ -1,3 +1,6 @@
+import "./messages.css";
+import { Avatar } from "../../tutor/workspace/ui.jsx";
+import { tutorProfile } from "../workspace/TutorProfile.jsx";
 import ConversationMenu from "./ConversationMenu.jsx";
 import { useState, useRef, useEffect } from "react";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
@@ -21,7 +24,21 @@ export default function LearnerMessages() {
     [draft, setDraft] = useState(""),
     [attachment, setAttachment] = useState(null),
     [error, setError] = useState("");
-  useEffect(()=>{if(work.data.activeThread)setSelected(work.data.activeThread);},[work.data.activeThread]);
+  useEffect(() => {
+    if (work.data.activeThread) setSelected(work.data.activeThread);
+  }, [work.data.activeThread]);
+  const profile = tutorProfile(
+    work.data.saved.find((t) => t.name === selected) || {
+      name: selected || "Tutor",
+    },
+  );
+  const stamp = (m) => {
+    if (!m?.at) return m?.time || "";
+    const d = new Date(m.at);
+    return Number.isNaN(d.getTime())
+      ? m.at
+      : d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  };
   const picker = useRef(null),
     bottom = useRef(null);
   const thread = work.data.threads.find((t) => t.name === selected);
@@ -57,14 +74,14 @@ export default function LearnerMessages() {
     }
   }
   return (
-    <section className="mx-auto flex h-[calc(100dvh-58px)] min-h-[440px] max-w-[1400px] flex-col px-3 py-2 lg:px-3">
+    <section className="learner-messages mx-auto flex h-[calc(100dvh-58px)] min-h-[440px] max-w-[1400px] flex-col px-3 py-2 lg:px-3">
       <h1 className="text-2xl font-bold tracking-[-1px] text-[#101828]">
         Messages
       </h1>
       <p className="mt-1 text-xs font-medium text-[#173a9b]">
         Communicate with your tutors and manage your conversations.
       </p>
-      <div className="mt-3 grid min-h-0 flex-1 grid-rows-[140px_minmax(0,1fr)] overflow-hidden rounded-xl border border-[#e0e7f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,.03)] lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-1">
+      <div className="lm-panels mt-3 grid min-h-0 flex-1 grid-rows-[140px_minmax(0,1fr)] overflow-hidden rounded-xl border border-[#e0e7f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,.03)] lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-1">
         <aside
           className="flex min-h-0 flex-col overflow-y-auto border-b border-[#e5ebf1] lg:border-b-0 lg:border-r"
           aria-label="Conversations"
@@ -100,7 +117,8 @@ export default function LearnerMessages() {
             .map((t) => (
               <button
                 key={t.name}
-                className="border-b p-3 text-left text-xs"
+                className={`lm-thread border-b p-3 text-left text-xs ${selected === t.name ? "is-selected" : ""}`}
+                aria-pressed={selected === t.name}
                 onClick={() => {
                   setSelected(t.name);
                   setDraft("");
@@ -113,18 +131,24 @@ export default function LearnerMessages() {
                   }));
                 }}
               >
-                <b>{t.name}</b>
-                {t.unread > 0 && (
-                  <span
-                    className="float-right rounded-full bg-green-700 px-2 text-white"
-                    aria-label={`${t.unread} unread messages`}
-                  >
-                    {t.unread}
-                  </span>
-                )}
-                <p className="truncate text-slate-500">
-                  {t.messages.at(-1)?.text || "No messages yet"}
-                </p>
+                <Avatar name={t.name} />
+                <div className="lm-thread-copy">
+                  <div className="lm-thread-title">
+                    <b>{t.name}</b>
+                    <small>{stamp(t.messages.at(-1))}</small>
+                  </div>
+                  {t.unread > 0 && (
+                    <span
+                      className="float-right rounded-full bg-green-700 px-2 text-white"
+                      aria-label={`${t.unread} unread messages`}
+                    >
+                      {t.unread}
+                    </span>
+                  )}
+                  <p className="truncate text-slate-500">
+                    {t.messages.at(-1)?.text || "No messages yet"}
+                  </p>
+                </div>
               </button>
             ))}
           {!work.data.threads.length && (
@@ -138,32 +162,51 @@ export default function LearnerMessages() {
           aria-label="Chat conversation"
         >
           <div className="flex min-h-16 shrink-0 items-center border-b border-[#e5ebf1] px-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-300">
-              <MessageCircle className="h-5 w-5" />
-            </div>
-            <div className="ml-3">
+            {thread && <Avatar name={thread.name} />}
+            <div className="ml-3 lm-header-copy">
               <p className="text-sm font-semibold text-slate-900">
                 {thread?.name || "Select a conversation"}
               </p>
-              <p className="mt-1 text-xs text-slate-300">
-                Your messages will appear here.
-              </p>
+              {thread && (
+                <>
+                  <div className="lm-presence">
+                    {typeof profile.online === "boolean" && (
+                      <span>{profile.online ? "Online" : "Offline"}</span>
+                    )}
+                    {profile.verified && (
+                      <span className="lm-verified">Verified Tutor</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-blue-700">
+                    {profile.degree || "Tutor conversation"}
+                    {profile.subjects ? " | " + profile.subjects : ""}
+                  </p>
+                </>
+              )}
             </div>
             {thread && (
               <ConversationMenu key={thread.name} work={work} thread={thread} />
             )}
           </div>
-          <div className="flex min-h-0 flex-1 items-center overflow-y-auto justify-center px-3 text-center text-xs text-slate-400">
+          <div className="lm-history min-h-0 flex-1 overflow-y-auto px-3 text-xs">
             {thread ? (
               <div className="w-full space-y-2 py-3 text-left">
                 {thread.messages.map((m, i) => (
                   <div
                     key={i}
-                    className={`rounded-lg p-3 ${m.mine ? "ml-8 bg-green-50" : "mr-8 bg-slate-100"}`}
+                    className={`lm-message ${m.mine ? "mine" : "received"}`}
                   >
-                    <p className="whitespace-pre-wrap break-words">{m.text}</p>
-                    {m.attachment && <p>Attachment: {m.attachment.name}</p>}
-                    <small>{m.local ? "Saved locally" : m.at}</small>
+                    {!m.mine && <Avatar name={thread.name} />}
+                    <div className="lm-bubble">
+                      <p className="whitespace-pre-wrap break-words">
+                        {m.text}
+                      </p>
+                      {m.attachment && <p>Attachment: {m.attachment.name}</p>}
+                      <small>
+                        {stamp(m)}
+                        {m.local ? " - Saved locally" : ""}
+                      </small>
+                    </div>
                   </div>
                 ))}
                 <div ref={bottom} />
@@ -196,7 +239,7 @@ export default function LearnerMessages() {
                   }}
                   maxLength={3000}
                   placeholder="Type your message..."
-                  className="h-9 w-full rounded-md border border-[#dbe3ed] bg-white px-4 pr-11 text-xs text-slate-400 disabled:cursor-not-allowed"
+                  className="h-9 w-full rounded-md border border-[#dbe3ed] bg-white px-4 pr-11 text-xs text-slate-800 disabled:cursor-not-allowed"
                 />
                 <button
                   aria-label="Add smile emoji"
@@ -211,7 +254,7 @@ export default function LearnerMessages() {
                 disabled={!thread || (!draft.trim() && !attachment)}
                 onClick={send}
                 type="button"
-                className="flex h-9 w-14 shrink-0 items-center justify-center gap-1 rounded-md bg-[#087542] text-xs font-semibold text-white opacity-45"
+                className="flex h-9 w-14 shrink-0 items-center justify-center gap-1 rounded-md bg-[#087542] text-xs font-semibold text-white disabled:opacity-45"
               >
                 <Send className="h-4 w-4" />
                 Send
