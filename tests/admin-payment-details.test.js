@@ -1,6 +1,6 @@
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
-import {refundDecision,paymentBookings} from '../src/components/admin/paymentDetailsData.js';
+import {refundDecision,paymentBookings} from './fixtures/paymentData.js';
 import {createServer} from 'vite';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';

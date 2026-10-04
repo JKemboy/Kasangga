@@ -8,7 +8,7 @@ test('application review shows selected record and honest missing OCR data', asy
   const server = await createServer({server:{middlewareMode:true},appType:'custom'});
   try {
     const {default:Review} = await server.ssrLoadModule('/src/components/admin/ApplicationReview.jsx');
-    const {applications,configDefaults} = await server.ssrLoadModule('/src/components/admin/adminData.js');
+    const {applications,configDefaults} = await server.ssrLoadModule('/tests/fixtures/adminData.js');
     const render = application => renderToStaticMarkup(createElement(Review,{application,config:configDefaults,onSave:()=>true,onClose:()=>{}}));
     const html = render(applications[0]);
     assert.match(html, /APP-2026-0132/);

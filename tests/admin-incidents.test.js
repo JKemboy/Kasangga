@@ -1,6 +1,6 @@
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
-import { initialIncidents, reviewIncident, saveIncidents } from '../src/components/admin/incidentData.js';
+import { initialIncidents, reviewIncident, saveIncidents } from './fixtures/incidentData.js';
 test('technical resolution requires notes and records history without altering booking', () => {
  const r=initialIncidents[0];
  assert.throws(()=>reviewIncident(r,'Resolved by Admin','short'));

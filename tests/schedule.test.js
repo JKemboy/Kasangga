@@ -15,7 +15,7 @@ import {
   classes,
   seed,
   slotError,
-} from "../src/components/tutor/workspace/data.js";
+} from "./fixtures/tutorData.js";
 
 test("calendar dates parse strictly without rolling malformed dates into another month", () => {
   for (const value of ["2024-02-29", "2026-09-14", "0099-01-01"]) {

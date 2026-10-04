@@ -4,7 +4,7 @@ import {
   sessionAllocation,
   summarizeEarnings,
 } from "../src/components/tutor/workspace/earnings.js";
-import { allocation, seed } from "../src/components/tutor/workspace/data.js";
+import { allocation, seed } from "./fixtures/tutorData.js";
 
 const earned = (amount) => ({ status: "Completed", payment: "Paid", amount });
 const cents = (amount) => Math.round(amount * 100);

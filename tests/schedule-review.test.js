@@ -1,6 +1,6 @@
 ﻿import test from "node:test";
 import assert from "node:assert/strict";
-import { seed, slotError } from "../src/components/tutor/workspace/data.js";
+import { seed, slotError } from "./fixtures/tutorData.js";
 import {
   parseScheduleLines,
   rowErrors,

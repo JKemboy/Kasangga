@@ -1,6 +1,6 @@
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
-import { seed, slotError } from '../src/components/tutor/workspace/data.js';
+import { seed, slotError } from './fixtures/tutorData.js';
 import { eventsForDate, parseDate } from '../src/components/tutor/workspace/schedule.js';
 import { respondToReschedule } from '../src/components/tutor/workspace/sessionActions.js';
 const now='2026-09-17T00:00:00Z';

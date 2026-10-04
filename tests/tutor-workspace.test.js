@@ -5,7 +5,7 @@ import {
   allocation,
   slotError,
   overlaps,
-} from "../src/components/tutor/workspace/data.js";
+} from "./fixtures/tutorData.js";
 test("earnings only allocate completed paid sessions with fixed shares", () => {
   assert.deepEqual(allocation(seed.sessions), {
     count: 24,

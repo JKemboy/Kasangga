@@ -6,7 +6,7 @@ import {
   SERVICE_TYPES,
   validateService,
 } from "../src/components/tutor/workspace/serviceRules.js";
-import { services } from "../src/components/tutor/workspace/data.js";
+import { services } from "./fixtures/tutorData.js";
 
 const draft = {
   name: "Discrete Mathematics",
