@@ -1,9 +1,14 @@
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
 import StudentShell from "../components/shared/StudentShell.jsx";
 import { learnerNav } from "../components/learner/learnerNavigation.js";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import {
+  Modal,
+  input,
+  button,
+  primary,
+} from "../components/tutor/workspace/ui.jsx";
 import { useAuth } from "./AuthProvider.jsx";
-import { useLogout } from "../components/shared/LogoutProvider.jsx";
 import { getSupabaseClient } from "../services/supabaseClient.js";
 import {
   needsProfile,
@@ -22,18 +27,12 @@ export default function ProfileSetupGate({ children }) {
 }
 function Setup() {
   const auth = useAuth();
-  const logout = useLogout();
   const [view, setView] = useState("dashboard");
   const [open, setOpen] = useState(true);
   const [values, setValues] = useState(() => profileValues(auth.profile));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const dialog = useRef(null);
   const verified = !!auth.user.email_confirmed_at;
-  useEffect(() => {
-    if (open && !dialog.current.open) dialog.current.showModal();
-    else if (!open && dialog.current.open) dialog.current.close();
-  }, [open]);
   const go = (id) => {
     if (["dashboard", "settings", "help-support"].includes(id)) setView(id);
     else setOpen(true);
@@ -70,7 +69,7 @@ function Setup() {
         maxLength={maxLength}
         value={values[key]}
         onChange={(e) => setValues({ ...values, [key]: e.target.value })}
-        className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm"
+        className={input + " mt-1"}
       />
     </label>
   );
@@ -98,9 +97,7 @@ function Setup() {
           aria-label="Dashboard content"
         >
           <div className="m-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-            <p>
-              Complete your profile to unlock the remaining sections.
-            </p>
+            <p>Complete your profile to unlock the remaining sections.</p>
             <button
               onClick={() => setOpen(true)}
               className="rounded bg-green-800 px-4 py-2 text-white"
@@ -108,128 +105,145 @@ function Setup() {
               Complete Profile
             </button>
           </div>
-          {view === "dashboard" ? <LearnerOverview go={go} /> : view === "settings" ? <LearnerSettings /> : <LearnerHelpSupport />}
+          {view === "dashboard" ? (
+            <LearnerOverview go={go} />
+          ) : view === "settings" ? (
+            <LearnerSettings />
+          ) : (
+            <LearnerHelpSupport />
+          )}
         </main>
       </div>
-      <dialog
-        ref={dialog}
-        onCancel={(e) => {
-          e.preventDefault();
-        }}
-        aria-labelledby="setup-title"
-        className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-24px)] max-w-xl overflow-y-auto rounded-xl border-0 bg-white p-5 shadow-xl backdrop:bg-black/50"
-      >
-        <h1 id="setup-title" className="text-lg font-bold">
-          Complete your learner profile
-        </h1>
-        <p className="mb-4 mt-1 text-xs text-slate-500">
-          All fields are required to unlock the remaining sections.
-        </p>
-        <form onSubmit={save} className="space-y-4">
-          <fieldset disabled={busy} className="space-y-3">
-            <legend className="mb-2 text-sm font-semibold">
-              Personal Information
-            </legend>
-            {field("name", "Full Name")}
-            {field("studentId", "Student ID", 50)}
-            <label className="block text-xs font-medium">
-              Email Address
-              <input
-                readOnly
-                value={auth.user.email || ""}
-                className="mt-1 w-full rounded-md border bg-slate-50 p-2 text-sm"
-              />
-              <span className={verified ? "text-green-700" : "text-red-700"}>
-                {verified ? "Verified" : "Not verified"}
+      {open && (
+        <Modal
+          title="Complete your learner profile"
+          subtitle="Add your details to unlock all learner sections."
+          onClose={() => {
+            if (!busy) setOpen(false);
+          }}
+          footer={
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-[11px] text-slate-500">
+                All fields are required.
               </span>
-            </label>
-            {field("phone", "Phone Number", 20)}
-          </fieldset>
-          <fieldset disabled={busy} className="space-y-3">
-            <legend className="mb-2 text-sm font-semibold">About Me</legend>
-            <label className="block text-xs font-medium">
-              Short Bio *
-              <textarea
-                required
-                maxLength={1000}
-                value={values.bio}
-                onChange={(e) => setValues({ ...values, bio: e.target.value })}
-                rows={3}
-                className="mt-1 w-full rounded-md border p-2 text-sm"
-              />
-            </label>
-            {field(
-              "interests",
-              "Study Interests / Preferred Subjects (comma-separated)",
-              1000,
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  className={button}
+                  onClick={() => {
+                    setView("dashboard");
+                    setOpen(false);
+                  }}
+                >
+                  Back to Dashboard
+                </button>
+                <button
+                  type="submit"
+                  form="learner-profile-setup"
+                  disabled={busy}
+                  className={primary}
+                >
+                  {busy ? "Saving..." : "Save and Continue"}
+                </button>
+              </div>
+            </div>
+          }
+        >
+          <form
+            id="learner-profile-setup"
+            onSubmit={save}
+            className="space-y-4 text-[#27344f]"
+          >
+            <fieldset
+              disabled={busy}
+              className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-2"
+            >
+              <legend className="mb-2 text-sm font-semibold">
+                Personal Information
+              </legend>
+              {field("name", "Full Name")}
+              {field("studentId", "Student ID", 50)}
+              <label className="block text-xs font-medium">
+                Email Address
+                <input
+                  readOnly
+                  value={auth.user.email || ""}
+                  className={input + " mt-1 bg-slate-50"}
+                />
+                <span
+                  className={
+                    "mt-1 inline-flex rounded px-2 py-0.5 text-[10px] font-medium " +
+                    (verified
+                      ? "bg-green-50 text-green-700"
+                      : "bg-amber-50 text-amber-700")
+                  }
+                >
+                  {verified ? "Verified" : "Not verified"}
+                </span>
+              </label>
+              {field("phone", "Phone Number", 20)}
+            </fieldset>
+            <fieldset
+              disabled={busy}
+              className="space-y-3 rounded-lg border border-slate-200 p-3"
+            >
+              <legend className="mb-2 text-sm font-semibold">About Me</legend>
+              <label className="block text-xs font-medium">
+                Short Bio *
+                <textarea
+                  required
+                  maxLength={1000}
+                  value={values.bio}
+                  onChange={(e) =>
+                    setValues({ ...values, bio: e.target.value })
+                  }
+                  rows={3}
+                  className={input + " mt-1"}
+                />
+              </label>
+              {field(
+                "interests",
+                "Study Interests / Preferred Subjects (comma-separated)",
+                1000,
+              )}
+            </fieldset>
+            <fieldset
+              disabled={busy}
+              className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-2"
+            >
+              <legend className="mb-2 text-sm font-semibold">
+                Academic Information
+              </legend>
+              {field("program", "Course / Program")}
+              <label className="text-xs font-medium">
+                Year Level *
+                <select
+                  required
+                  value={values.year}
+                  onChange={(e) =>
+                    setValues({ ...values, year: e.target.value })
+                  }
+                  className="mt-1 w-full rounded-md border p-2 text-sm"
+                >
+                  <option value="">Select year</option>
+                  {[1, 2, 3, 4, 5, 6].map((v) => (
+                    <option key={v} value={v}>
+                      Year {v}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {field("college", "College")}
+            </fieldset>
+            {error && (
+              <p role="alert" className="text-sm text-red-700">
+                {error}
+              </p>
             )}
-          </fieldset>
-          <fieldset disabled={busy} className="grid gap-3 sm:grid-cols-2">
-            <legend className="mb-2 text-sm font-semibold">
-              Academic Information
-            </legend>
-            {field("program", "Course / Program")}
-            <label className="text-xs font-medium">
-              Year Level *
-              <select
-                required
-                value={values.year}
-                onChange={(e) => setValues({ ...values, year: e.target.value })}
-                className="mt-1 w-full rounded-md border p-2 text-sm"
-              >
-                <option value="">Select year</option>
-                {[1, 2, 3, 4, 5, 6].map((v) => (
-                  <option key={v} value={v}>
-                    Year {v}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {field("college", "College")}
-          </fieldset>
-          {error && (
-            <p role="alert" className="text-sm text-red-700">
-              {error}
-            </p>
-          )}
-          <button
-            disabled={busy || !!profileError(values, verified)}
-            className="w-full rounded-md bg-green-800 p-2 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {busy ? "Saving?" : "Save and Continue"}
-          </button>
-        </form>
-        <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs text-green-800">
-          <button disabled={busy} onClick={() => {setView("dashboard");setOpen(false);}}>Dashboard</button>
-          <button
-            disabled={busy}
-            onClick={() => {
-              setView("settings");
-              setOpen(false);
-            }}
-          >
-            Settings
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => {
-              setView("help-support");
-              setOpen(false);
-            }}
-          >
-            Help &amp; Support
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => {
-              setOpen(false);
-              logout();
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </dialog>
+          </form>
+        </Modal>
+      )}
     </LearnerWorkspace>
   );
 }
