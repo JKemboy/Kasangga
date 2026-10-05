@@ -1,3 +1,5 @@
+import { useAuth } from "../../auth/AuthProvider.jsx";
+import { workspaceProfile } from "../../services/authAccount.js";
 import { TutorModalContext } from "./workspace/ui.jsx";
 import StudentShell from "../shared/StudentShell.jsx";
 ﻿import { useState } from "react";
@@ -43,7 +45,7 @@ const nav = [
   ["profile", "Profile", UserRound],
   ["help", "Help & Safety", ShieldQuestion],
 ];
-function load() {
+function load(key) {
   try {
     const d = JSON.parse(localStorage.getItem(key));
     if (
@@ -62,7 +64,9 @@ function load() {
   return structuredClone(seed);
 }
 export default function TutorDashboardPage() {
-  const [data, setData] = useState(load),
+  const auth = useAuth();
+  const storageKey = `${key}:${auth.user.id}`;
+  const [data, setData] = useState(() => ({ ...load(storageKey), profile: { ...load(storageKey).profile, ...workspaceProfile(auth.profile, auth.user) } })),
     [view, setView] = useState("dashboard"),
     [args, setArgs] = useState({}),
     [notice, setNotice] = useState(""),
@@ -72,7 +76,7 @@ export default function TutorDashboardPage() {
   function update(change) {
     const next = change(data);
     try {
-      localStorage.setItem(key, JSON.stringify(next));
+      localStorage.setItem(storageKey, JSON.stringify(next));
       setData(next);
       setNotice("Saved on this browser.");
       return true;
