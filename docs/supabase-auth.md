@@ -119,3 +119,13 @@ revoke execute on function public.require_carsu_signup(jsonb) from public, anon,
 This hook covers new email and OAuth signups. Keep the earlier profile/role provisioning trigger: this restriction hook does not create profiles. Verify OTP delivery and Google login with a real CSU test account after setup.
 
 References: [Email OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless), [Before User Created hook](https://supabase.com/docs/guides/auth/auth-hooks/before-user-created-hook).
+
+## Learner email OTP implementation
+
+The existing shared Login/Register card uses learnerOtp.js for email OTP. Register explicitly sets shouldCreateUser:true; Login explicitly sets false, never retries as signup and offers Register when Supabase reports an unknown account. Supabase may intentionally return generic responses to avoid account enumeration; the frontend does not query public email lists to bypass this.
+
+Only a successful verifyOtp response containing a matching authenticated session is accepted. Email OTP sets a Learner destination before verification; a missing Learner role shows an account-setup message instead of redirecting to a different portal. Tutor route permissions and OAuth behavior remain unchanged.
+
+Registration currently collects only email. Existing profiles are preserved; no client-side insert/upsert modifies profiles or roles. The existing users/user_roles schema and the reviewed provisioning trigger above must already be configured for new users. The trigger creates the profile under the real auth UUID and only the Learner role; OTP verification then permits authenticated profile reads. No duplicate tables or automatic schema changes were made.
+
+Custom Gmail SMTP is configured in Supabase, not React. Check that the Magic Link email template contains {{ .Token }}, SMTP delivery and Auth rate limits. Backend domain restriction still requires the Before User Created hook above; review existing-user/email-change controls and RLS separately. The provider restores Supabase sessions after refresh, learner-dashboard requires an active Learner role, and logout calls Supabase signOut. No mock login flag is used.
