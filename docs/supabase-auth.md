@@ -1,5 +1,11 @@
 # Supabase authentication setup
 
+## Fix missing default Learner roles
+
+If Auth login succeeds but `user_roles` is empty, run [default_learner_role.sql](../supabase/manual/default_learner_role.sql) manually in the Supabase SQL Editor. Review existing provisioning triggers before running; the script replaces only this project's named trigger/function. It creates missing profiles and Learner roles for existing verified active CSU accounts, installs default provisioning for new CSU registrations, and configures self-read policies. Existing inactive roles/accounts and other roles remain unchanged. No client role-write policy is added. A conflicting email assigned to a different profile UUID causes rollback and must be reconciled manually.
+
+After SQL succeeds, click **Retry account lookup** in the app. Learner email OTP already redirects to `/learner-dashboard`, whose initial view is the Learner Overview. The SQL has not been executed automatically; frontend anon credentials cannot install database triggers. Keep the CSU signup hook and other backend authorization policies configured as documented below.
+
 ## Environment
 
 Use `.env.local` (ignored by Git), or your deployment environment:
