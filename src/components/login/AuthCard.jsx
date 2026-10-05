@@ -1,13 +1,4 @@
-import {
-  sendLearnerOtp,
-  verifyLearnerOtp,
-  learnerOtpMessage,
-  otpRateLimited,
-} from "../../services/learnerOtp.js";
-import { useNavigate } from "react-router-dom";
-import { getSupabaseClient } from "../../services/supabaseClient.js";
-import { useAuth } from "../../auth/AuthProvider.jsx";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import AuthTabs from "./AuthTabs.jsx";
 import InputField from "./InputField.jsx";
@@ -32,91 +23,7 @@ function GoogleMark() {
 
 export default function AuthCard() {
   const [active, setActive] = useState("Login");
-
-  const auth = useAuth();
-  const navigate = useNavigate();
-  function showError(error) {
-    if (import.meta.env.DEV)
-      console.warn("Learner auth request failed", {
-        code: error?.code,
-        status: error?.status,
-      });
-    if (otpRateLimited(error)) setCooldown(60);
-    setMessage(learnerOtpMessage(error));
-  }
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [sentTo, setSentTo] = useState("");
-  const [cooldown, setCooldown] = useState(0);
-  useEffect(() => {
-    if (!cooldown) return;
-    const timer = setTimeout(() => setCooldown((v) => v - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [cooldown]);
-  const [busy, setBusy] = useState(false);
-  const [operation, setOperation] = useState("send");
-  const [message, setMessage] = useState("");
-  async function sendCode() {
-    if (cooldown > 0) return;
-    const address = await sendLearnerOtp(email, active === "Register");
-    setSentTo(address);
-    setCode("");
-    setCooldown(60);
-    setMessage("Check your CSU inbox for your verification code.");
-  }
-  async function submit(e) {
-    e.preventDefault();
-    if (busy || (!sentTo && cooldown > 0)) return;
-    setOperation(sentTo ? "verify" : "send");
-    setBusy(true);
-    setMessage("");
-    try {
-      if (!sentTo) await sendCode();
-      else {
-        navigate("/login", {
-          replace: true,
-          state: { from: "/learner-dashboard" },
-        });
-        await verifyLearnerOtp(sentTo, code);
-      }
-    } catch (e) {
-      showError(e);
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function resend() {
-    if (busy || cooldown) return;
-    setOperation("send");
-    setBusy(true);
-    setMessage("");
-    try {
-      await sendCode();
-    } catch (e) {
-      showError(e);
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function oauth() {
-    setOperation("google");
-    setBusy(true);
-    setMessage("");
-    try {
-      const { error } = await getSupabaseClient().auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin + "/login",
-          queryParams: { hd: "carsu.edu.ph", prompt: "select_account" },
-        },
-      });
-      if (error) throw error;
-    } catch (e) {
-      showError(e);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const [showPassword, setShowPassword] = useState(false);
   const isLogin = active === "Login";
   return (
     <div className="mt-6 w-full max-w-[390px] overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-[0_6px_15px_rgba(0,0,0,.07)]">
@@ -132,90 +39,50 @@ export default function AuthCard() {
           </p>
         </header>
         <div className="mt-2">
-          <AuthTabs
-            active={active}
-            onChange={(value) => {
-              if (busy) return;
-              setActive(value);
-              setSentTo("");
-              setCode("");
-              setMessage("");
-            }}
-          />
+          <AuthTabs active={active} onChange={setActive} />
         </div>
         <form
           className="mt-2 space-y-1.5 sm:mt-2.5 sm:space-y-2"
-          onSubmit={submit}
+          onSubmit={(e) => e.preventDefault()}
         >
           <InputField
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={!!sentTo || busy}
-            autoComplete="email"
             icon={Mail}
             label="CSU Email"
             type="email"
-            placeholder="name@carsu.edu.ph"
+            placeholder="name@csu.edu.ph"
+            aria-label="CSU Email"
           />
-          {sentTo && (
-            <InputField
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.replace(/\D/g, "").slice(0, 8))
-              }
-              required
-              icon={LockKeyhole}
-              label="Verification code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              minLength={6}
-              maxLength={8}
+          <InputField
+            icon={LockKeyhole}
+            label="Password"
+            hint={
+              isLogin && (
+                <a
+                  href="#forgot"
+                  className="text-[12px] font-medium text-[#197747]"
+                >
+                  Forgot Password?
+                </a>
+              )
+            }
+            type={showPassword ? "text" : "password"}
+            placeholder="Enter your password"
+            aria-label="Password"
+          />
+          <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-[#44464d]">
+            <input
+              className="h-3 w-3 rounded border-[#d9dadd] accent-[#006b3c]"
+              type="checkbox"
             />
-          )}
+            Remember me
+          </label>
           <button
             type="submit"
-            disabled={busy || (!sentTo && cooldown > 0)}
             className="h-8 w-full rounded-md bg-[#006b3c] text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#005932] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b3c]"
           >
-            {busy
-              ? operation === "verify"
-                ? "Verifying code..."
-                : operation === "google"
-                  ? "Opening Google..."
-                  : "Sending code..."
-              : sentTo
-                ? "Verify OTP"
-                : cooldown > 0
-                  ? `Try again in ${cooldown}s`
-                  : "Send verification code"}
+            {isLogin ? "Continue with CSU Email" : "Register with CSU Email"}
           </button>
         </form>
-        {sentTo && (
-          <div className="mt-2 flex justify-between text-xs">
-            <button disabled={busy || cooldown > 0} onClick={resend}>
-              {cooldown ? "Resend in " + cooldown + "s" : "Resend code"}
-            </button>
-            <button
-              disabled={busy}
-              onClick={() => {
-                setSentTo("");
-                setCode("");
-                setMessage("");
-              }}
-            >
-              Change email
-            </button>
-          </div>
-        )}
-        <p className="mt-2 text-xs text-slate-500">
-          Exclusive to @carsu.edu.ph accounts. No password required.
-        </p>
-        {(message || auth?.error) && (
-          <p role="status" className="mt-2 text-xs text-red-700">
-            {message || auth.error}
-          </p>
-        )}
         <div className="my-1.5 flex items-center gap-3 text-[10px] text-[#96979e] sm:my-2">
           <span className="h-px flex-1 bg-[#e9e9e9]" />
           or
@@ -223,8 +90,6 @@ export default function AuthCard() {
         </div>
         <button
           type="button"
-          disabled={busy}
-          onClick={oauth}
           className="flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[#a8c7b8] bg-white text-[11px] font-medium text-[#35363b] transition hover:bg-[#f8fbf9]"
         >
           <GoogleMark />

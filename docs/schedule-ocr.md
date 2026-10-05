@@ -6,9 +6,9 @@ After recognition, the original image is uploaded to the existing private `sched
 
 ## Configuration and authentication
 
-This repository previously had no Supabase client. `src/services/supabaseClient.js` is the shared singleton. Copy `.env.example` to `.env.local`, set the project root URL (without `/rest/v1`) and anon public key, then restart Vite. The supplied development configuration has been placed in ignored `.env.local`; production needs these same environment variables configured separately. Never use a service-role key here.
+This repository previously had no Supabase client. `src/services/supabaseClient.js` is the shared singleton. Copy `.env.example` to `.env.local`, set the project root URL (without `/rest/v1`) and publishable key, then restart Vite. The supplied development configuration has been placed in ignored `.env.local`; production needs these same environment variables configured separately. Never use a service-role key here.
 
-Login and registration now use the shared Supabase Auth client. See [supabase-auth.md](./supabase-auth.md) for provisioning, confirmation, and role setup. `auth.getUser()` validates the user before OCR and again before upload; no user IDs are hardcoded.
+The current prototype login does not create a Supabase session. Authentication is intentionally unchanged. The existing/future real login must authenticate through this client before upload works. `auth.getUser()` validates the user before OCR and again before upload; no user IDs are hardcoded.
 
 Only the original image goes to Supabase Storage. Review text, upload references and manual class entries still use the existing local workspace persistence. No writes to `class_schedules` or `class_schedule_entries` are implemented. Those require a separate database integration. Closing/leaving during an in-flight upload may leave a successfully uploaded object in Storage even if its local review was not saved.
 

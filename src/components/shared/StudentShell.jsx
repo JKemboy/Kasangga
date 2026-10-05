@@ -1,4 +1,3 @@
-import { useAuth } from "../../auth/AuthProvider.jsx";
 import { initialNotifications } from '../learner/notifications/LearnerNotifications.jsx';
 import HeaderInbox from './HeaderInbox.jsx';
 import { useLearnerWorkspace } from '../learner/workspace/LearnerWorkspace.jsx';
@@ -14,8 +13,6 @@ export default function StudentShell({role,nav,view,go,name='Account',unread=0,s
    document.body.dataset.workspaceRole = role;
    return () => { if (previous) document.body.dataset.workspaceRole = previous; else delete document.body.dataset.workspaceRole; };
  }, [role]);
- const auth = useAuth();
- name = [auth?.profile?.first_name, auth?.profile?.last_name].filter(Boolean).join(" ") || name;
  const learner = useLearnerWorkspace();
  const inbox = inboxData || learner?.data || {};
  const [sampleRead,setSampleRead]=useState(()=>{try{return JSON.parse(sessionStorage.getItem("campustutor:learner:sample-notification-read-ids")||"[]");}catch{return [];}});
@@ -50,7 +47,7 @@ export default function StudentShell({role,nav,view,go,name='Account',unread=0,s
           >
             Learner
           </button>
-          <button disabled={!auth?.roles.includes("tutor")} title={!auth?.roles.includes("tutor") ? "Tutor approval required" : undefined} aria-pressed={role === "tutor"} onClick={() => navigate("/tutor-dashboard")} className={`flex-1 rounded-lg py-2 ${role === "tutor" ? "bg-amber-400 font-semibold text-black" : ""}`}>Tutor</button>
+          <button aria-pressed={role === "tutor"} onClick={() => navigate("/tutor-dashboard")} className={`flex-1 rounded-lg py-2 ${role === "tutor" ? "bg-amber-400 font-semibold text-black" : ""}`}>Tutor</button>
         </div>
         <nav
           aria-label={`${role === "tutor" ? "Tutor" : "Learner"} navigation`}

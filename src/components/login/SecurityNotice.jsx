@@ -11,7 +11,7 @@ export default function SecurityNotice() {
           Only CSU student email accounts can register.
         </p>
         <p className="mt-px text-[9px] text-[#92949c] sm:text-[10px]">
-          Use your @carsu.edu.ph email to access CampusTutor.
+          Use your @csu.edu.ph email to access CampusTutor.
         </p>
       </div>
     </div>

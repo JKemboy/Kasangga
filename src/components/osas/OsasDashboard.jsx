@@ -694,7 +694,7 @@ export default function OsasDashboardPage() {
                 Leave the OSAS portal? Saved local reviews will remain on this
                 browser.
               </p>
-              <button className={primary} onClick={requestLogout}>
+              <button className={primary} onClick={() => navigate("/")}>
                 Logout
               </button>
             </div>
