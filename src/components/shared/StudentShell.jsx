@@ -8,7 +8,7 @@ import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {GraduationCap,LogOut,Menu,Bell,MessageCircle} from 'lucide-react';
 import {Avatar} from '../tutor/workspace/ui.jsx';
-export default function StudentShell({role,nav,view,go,name='Account',unread=0,searchContent,inboxData,onInboxRead}){
+export default function StudentShell({role,nav,view,go,name='Account',unread=0,searchContent,inboxData,onInboxRead,profileRestricted=false}){
  useEffect(() => {
    const previous = document.body.dataset.workspaceRole;
    document.body.dataset.workspaceRole = role;
@@ -25,6 +25,7 @@ export default function StudentShell({role,nav,view,go,name='Account',unread=0,s
 
  const navigate=useNavigate();const [open,setOpen]=useState(false);
  function select(id){go(id);setOpen(false);}
+ const locked = id => profileRestricted && !["settings", "help-support"].includes(id);
  return <>
       {open && (
         <button
@@ -46,11 +47,11 @@ export default function StudentShell({role,nav,view,go,name='Account',unread=0,s
           <button
             aria-pressed={role === "learner"}
             className={`flex-1 rounded-lg py-2 ${role === "learner" ? "bg-amber-400 font-semibold text-black" : ""}`}
-            onClick={() => navigate("/learner-dashboard")}
+            onClick={() => profileRestricted ? go("dashboard") : navigate("/learner-dashboard")}
           >
             Learner
           </button>
-          <button disabled={!auth?.roles.includes("tutor")} title={!auth?.roles.includes("tutor") ? "Tutor approval required" : undefined} aria-pressed={role === "tutor"} onClick={() => navigate("/tutor-dashboard")} className={`flex-1 rounded-lg py-2 ${role === "tutor" ? "bg-amber-400 font-semibold text-black" : ""}`}>Tutor</button>
+          <button disabled={profileRestricted || !auth?.roles.includes("tutor")} title={!auth?.roles.includes("tutor") ? "Tutor approval required" : undefined} aria-pressed={role === "tutor"} onClick={() => navigate("/tutor-dashboard")} className={`flex-1 rounded-lg py-2 ${role === "tutor" ? "bg-amber-400 font-semibold text-black" : ""}`}>Tutor</button>
         </div>
         <nav
           aria-label={`${role === "tutor" ? "Tutor" : "Learner"} navigation`}
@@ -59,12 +60,15 @@ export default function StudentShell({role,nav,view,go,name='Account',unread=0,s
           {nav.map(([id, label, Icon]) => (
             <button
               key={id}
+              aria-disabled={locked(id)}
+              title={locked(id) ? "Complete your profile to access this section" : undefined}
               aria-current={view === id ? "page" : undefined}
               className={`flex w-full items-center gap-3 border-l-4 px-5 py-[clamp(7px,1.35dvh,12px)] text-left text-xs ${view === id ? "border-amber-400 bg-white/10 font-semibold text-yellow-300" : "border-transparent hover:bg-white/10"}`}
               onClick={() => select(id)}
             >
               <Icon className="h-4 w-4 shrink-0" />
               {label}
+              {locked(id) && <span className="ml-auto text-[10px] text-white/60">Locked</span>}
             </button>
           ))}
           <button
@@ -100,7 +104,7 @@ export default function StudentShell({role,nav,view,go,name='Account',unread=0,s
         </button>
         {searchContent}
         <div className="ml-auto flex items-center gap-3">
-          <HeaderInbox role={role} notifications={alerts} threads={inbox.threads || []} onRead={onInboxRead || (learner ? readLearner : undefined)} onNavigate={select} onNotification={role==='tutor' ? n=>{const target=notificationDestination(n);go(target?.view || 'notifications',target?.args || {notificationId:n.id});} : undefined} onThread={t=>role==='learner' && learner ? learner.message(t) : go('messages',{learner:t.name})}/>
+          {profileRestricted ? <div className="flex items-center gap-3"><button aria-label="Notifications locked until profile is complete" aria-disabled="true" onClick={()=>go("notifications")}><Bell size={18}/></button><button aria-label="Messages locked until profile is complete" aria-disabled="true" onClick={()=>go("messages")}><MessageCircle size={18}/></button></div> : <HeaderInbox role={role} notifications={alerts} threads={inbox.threads || []} onRead={onInboxRead || (learner ? readLearner : undefined)} onNavigate={select} onNotification={role==='tutor' ? n=>{const target=notificationDestination(n);go(target?.view || 'notifications',target?.args || {notificationId:n.id});} : undefined} onThread={t=>role==='learner' && learner ? learner.message(t) : go('messages',{learner:t.name})}/>}
           <button
             className="flex items-center gap-2"
             onClick={() => select("profile")}

@@ -1,3 +1,5 @@
+import StudentShell from "../components/shared/StudentShell.jsx";
+import { learnerNav } from "../components/learner/learnerNavigation.js";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider.jsx";
 import { useLogout } from "../components/shared/LogoutProvider.jsx";
@@ -74,24 +76,39 @@ function Setup() {
   return (
     <LearnerWorkspace go={go}>
       <div className="min-h-screen bg-slate-50">
-        <header className="flex flex-wrap items-center gap-3 border-b bg-white p-4 text-sm">
-          <b className="mr-auto text-green-800">CampusTutor</b>
-          <button onClick={() => go("settings")}>Settings</button>
-          <button onClick={() => go("help-support")}>Help &amp; Support</button>
-          <button onClick={logout}>Logout</button>
-        </header>
-        <div className="m-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-          <p>
-            Complete your profile to access your dashboard and other sections.
-          </p>
-          <button
-            onClick={() => setOpen(true)}
-            className="rounded bg-green-800 px-4 py-2 text-white"
-          >
-            Complete Profile
-          </button>
-        </div>
-        {view === "settings" ? <LearnerSettings /> : <LearnerHelpSupport />}
+        <StudentShell
+          role="learner"
+          nav={learnerNav}
+          view={view}
+          go={go}
+          profileRestricted
+          searchContent={
+            <input
+              aria-label="Search learner sections"
+              placeholder="Search learner sections..."
+              readOnly
+              onClick={() => setOpen(true)}
+              className="h-8 w-full max-w-lg rounded-md border border-slate-200 px-3 text-xs"
+            />
+          }
+        />
+        <main
+          className="min-h-screen bg-[#fbfcfe] pt-[64px] md:ml-[230px]"
+          aria-label="Dashboard content"
+        >
+          <div className="m-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+            <p>
+              Complete your profile to access your dashboard and other sections.
+            </p>
+            <button
+              onClick={() => setOpen(true)}
+              className="rounded bg-green-800 px-4 py-2 text-white"
+            >
+              Complete Profile
+            </button>
+          </div>
+          {view === "settings" ? <LearnerSettings /> : <LearnerHelpSupport />}
+        </main>
       </div>
       <dialog
         ref={dialog}
