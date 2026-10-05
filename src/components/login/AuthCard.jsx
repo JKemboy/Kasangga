@@ -1,4 +1,10 @@
-import { isCsuEmail } from "../../services/authAccount.js";
+import {
+  sendLearnerOtp,
+  verifyLearnerOtp,
+  learnerOtpMessage,
+  otpRateLimited,
+} from "../../services/learnerOtp.js";
+import { useNavigate } from "react-router-dom";
 import { getSupabaseClient } from "../../services/supabaseClient.js";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import { useEffect, useState } from "react";
@@ -28,6 +34,16 @@ export default function AuthCard() {
   const [active, setActive] = useState("Login");
 
   const auth = useAuth();
+  const navigate = useNavigate();
+  function showError(error) {
+    if (import.meta.env.DEV)
+      console.warn("Learner auth request failed", {
+        code: error?.code,
+        status: error?.status,
+      });
+    if (otpRateLimited(error)) setCooldown(60);
+    setMessage(learnerOtpMessage(error));
+  }
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sentTo, setSentTo] = useState("");
@@ -38,29 +54,11 @@ export default function AuthCard() {
     return () => clearTimeout(timer);
   }, [cooldown]);
   const [busy, setBusy] = useState(false);
+  const [operation, setOperation] = useState("send");
   const [message, setMessage] = useState("");
   async function sendCode() {
     if (cooldown > 0) return;
-    const address = email.trim().toLowerCase();
-    if (!isCsuEmail(address))
-      throw Error("Use your @carsu.edu.ph email address.");
-    const { error } = await getSupabaseClient().auth.signInWithOtp({
-      email: address,
-      options: { shouldCreateUser: active === "Register" },
-    });
-    if (error) {
-      if (
-        error.status === 429 ||
-        error.code === "over_email_send_rate_limit" ||
-        error.code === "over_request_rate_limit"
-      ) {
-        setCooldown(60);
-        throw Error(
-          "Email requests are temporarily limited by Supabase. Wait before trying again. If this continues, the administrator must check the email quota and SMTP setup. This retry timer does not indicate when the server quota resets.",
-        );
-      }
-      throw error;
-    }
+    const address = await sendLearnerOtp(email, active === "Register");
     setSentTo(address);
     setCode("");
     setCooldown(60);
@@ -69,39 +67,39 @@ export default function AuthCard() {
   async function submit(e) {
     e.preventDefault();
     if (busy || (!sentTo && cooldown > 0)) return;
+    setOperation(sentTo ? "verify" : "send");
     setBusy(true);
     setMessage("");
     try {
       if (!sentTo) await sendCode();
       else {
-        if (!/^\d{6,8}$/.test(code.trim()))
-          throw Error("Enter the code from your email.");
-        const { error } = await getSupabaseClient().auth.verifyOtp({
-          email: sentTo,
-          token: code.trim(),
-          type: "email",
+        navigate("/login", {
+          replace: true,
+          state: { from: "/learner-dashboard" },
         });
-        if (error) throw error;
+        await verifyLearnerOtp(sentTo, code);
       }
     } catch (e) {
-      setMessage(e.message);
+      showError(e);
     } finally {
       setBusy(false);
     }
   }
   async function resend() {
     if (busy || cooldown) return;
+    setOperation("send");
     setBusy(true);
     setMessage("");
     try {
       await sendCode();
     } catch (e) {
-      setMessage(e.message);
+      showError(e);
     } finally {
       setBusy(false);
     }
   }
   async function oauth() {
+    setOperation("google");
     setBusy(true);
     setMessage("");
     try {
@@ -114,7 +112,7 @@ export default function AuthCard() {
       });
       if (error) throw error;
     } catch (e) {
-      setMessage(e.message);
+      showError(e);
     } finally {
       setBusy(false);
     }
@@ -181,9 +179,13 @@ export default function AuthCard() {
             className="h-8 w-full rounded-md bg-[#006b3c] text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#005932] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b3c]"
           >
             {busy
-              ? "Please wait..."
+              ? operation === "verify"
+                ? "Verifying code..."
+                : operation === "google"
+                  ? "Opening Google..."
+                  : "Sending code..."
               : sentTo
-                ? "Verify code"
+                ? "Verify OTP"
                 : cooldown > 0
                   ? `Try again in ${cooldown}s`
                   : "Send verification code"}

@@ -50,6 +50,10 @@ export function LoginRoute({ children }) {
   if (!auth.session) return children;
   if (auth.error) return <AccountNotice message={auth.error} />;
   const requested = location.state?.from;
+  if (requested === "/learner-dashboard" && !auth.roles.includes("learner"))
+    return (
+      <AccountNotice message="Your account is signed in, but Learner access is not configured. Contact support to complete your account setup." />
+    );
   const allowed = auth.roles.some((r) => requested === `/${r}-dashboard`);
   return (
     <Navigate to={allowed ? requested : accountHome(auth.roles)} replace />
