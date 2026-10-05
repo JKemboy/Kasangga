@@ -25,7 +25,7 @@ export default function StudentShell({role,nav,view,go,name='Account',unread=0,s
 
  const navigate=useNavigate();const [open,setOpen]=useState(false);
  function select(id){go(id);setOpen(false);}
- const locked = id => profileRestricted && !["settings", "help-support"].includes(id);
+ const locked = id => profileRestricted && !["dashboard", "settings", "help-support"].includes(id);
  return <>
       {open && (
         <button

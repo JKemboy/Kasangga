@@ -1,3 +1,4 @@
+import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
 import StudentShell from "../components/shared/StudentShell.jsx";
 import { learnerNav } from "../components/learner/learnerNavigation.js";
 import { useEffect, useRef, useState } from "react";
@@ -22,7 +23,7 @@ export default function ProfileSetupGate({ children }) {
 function Setup() {
   const auth = useAuth();
   const logout = useLogout();
-  const [view, setView] = useState("settings");
+  const [view, setView] = useState("dashboard");
   const [open, setOpen] = useState(true);
   const [values, setValues] = useState(() => profileValues(auth.profile));
   const [busy, setBusy] = useState(false);
@@ -34,7 +35,7 @@ function Setup() {
     else if (!open && dialog.current.open) dialog.current.close();
   }, [open]);
   const go = (id) => {
-    if (["settings", "help-support"].includes(id)) setView(id);
+    if (["dashboard", "settings", "help-support"].includes(id)) setView(id);
     else setOpen(true);
   };
   async function save(e) {
@@ -98,7 +99,7 @@ function Setup() {
         >
           <div className="m-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
             <p>
-              Complete your profile to access your dashboard and other sections.
+              Complete your profile to unlock the remaining sections.
             </p>
             <button
               onClick={() => setOpen(true)}
@@ -107,7 +108,7 @@ function Setup() {
               Complete Profile
             </button>
           </div>
-          {view === "settings" ? <LearnerSettings /> : <LearnerHelpSupport />}
+          {view === "dashboard" ? <LearnerOverview go={go} /> : view === "settings" ? <LearnerSettings /> : <LearnerHelpSupport />}
         </main>
       </div>
       <dialog
@@ -122,7 +123,7 @@ function Setup() {
           Complete your learner profile
         </h1>
         <p className="mb-4 mt-1 text-xs text-slate-500">
-          All fields are required before you can continue to the dashboard.
+          All fields are required to unlock the remaining sections.
         </p>
         <form onSubmit={save} className="space-y-4">
           <fieldset disabled={busy} className="space-y-3">
@@ -199,6 +200,7 @@ function Setup() {
           </button>
         </form>
         <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs text-green-800">
+          <button disabled={busy} onClick={() => {setView("dashboard");setOpen(false);}}>Dashboard</button>
           <button
             disabled={busy}
             onClick={() => {
