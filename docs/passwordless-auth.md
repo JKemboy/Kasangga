@@ -23,3 +23,11 @@ Automated tests cover normalized domain checks, login signup prevention, OTP/ses
 Manual smoke test: Google-register a CARSU account; confirm Auth user, users profile, learner role and Learner Overview. Sign out; request OTP on /login; verify latest code; refresh dashboard; sign out and revisit a protected URL. Reject wrong domains and unknown login addresses without creating accounts. Check a tutor-enabled account still opens Tutor and uses its own schedule uploads.
 
 Reference: https://supabase.com/docs/guides/auth/social-login/auth-google
+
+## Required learner profile setup
+
+Before using the new profile form, review and manually run `supabase/manual/learner_profile_setup.sql`. It adds `short_bio` and `study_interests` to existing `public.users` and a `complete_learner_profile(details jsonb)` RPC. The RPC only updates the authenticated active learner, checks verified CSU email and required fields, and cannot edit email, role, or account status. No SQL was executed automatically.
+
+Incomplete learner accounts (including existing accounts missing these fields) see a required popup. Only Settings, Help & Support, and Logout remain available. The popup can be left for those allowed destinations and reopened with Complete Profile; Escape cannot dismiss it. Successful saving reloads the database profile and unlocks the requested dashboard. Completion is derived from saved fields, not browser storage. Full name is stored using the existing first_name/last_name columns by splitting at the first space.
+
+The gate is an interface restriction. Any future server booking/messaging mutations must enforce profile completeness in their own RPC/RLS policies as well. Existing non-learner staff roles are not subject to learner onboarding.

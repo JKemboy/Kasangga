@@ -2,13 +2,7 @@ export const isCsuEmail = (email) =>
   /^[^\s@]+@carsu\.edu\.ph$/i.test(String(email || "").trim());
 export async function loadAuthAccount(client, userId) {
   const [profile, roles] = await Promise.all([
-    client
-      .from("users")
-      .select(
-        "user_id,first_name,last_name,csu_email,student_id,college,program,year_level,account_status",
-      )
-      .eq("user_id", userId)
-      .maybeSingle(),
+    client.from("users").select("*").eq("user_id", userId).maybeSingle(),
     client
       .from("user_roles")
       .select("role")
@@ -45,6 +39,12 @@ export function workspaceProfile(profile, user) {
     name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" "),
     email: profile?.csu_email || user?.email || "",
     studentId: profile?.student_id || "",
+    phone: profile?.phone_number || "",
+    bio: profile?.short_bio || "",
+    interests: (profile?.study_interests || "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean),
     college: profile?.college || "",
     program: profile?.program || "",
     year: profile?.year_level ? String(profile.year_level) : "",

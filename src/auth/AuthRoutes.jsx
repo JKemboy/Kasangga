@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider.jsx";
 import { accountHome } from "../services/authAccount.js";
+import ProfileSetupGate from "./ProfileSetupGate.jsx";
 import { useState } from "react";
 
 function AccountNotice({ message }) {
@@ -36,7 +37,11 @@ export function ProtectedRoute({ role, children }) {
   if (auth.error) return <AccountNotice message={auth.error} />;
   if (!auth.roles.includes(role))
     return <Navigate to={accountHome(auth.roles)} replace />;
-  return <div key={auth.user.id}>{children}</div>;
+  return (
+    <div key={auth.user.id}>
+      <ProfileSetupGate>{children}</ProfileSetupGate>
+    </div>
+  );
 }
 export function LoginRoute({ children }) {
   const auth = useAuth();
