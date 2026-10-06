@@ -19,6 +19,7 @@ export default function AdminOverview({
   users,
   applications,
   onUpdateApplications,
+  onDocument,
   services,
   config,
   go,
@@ -230,7 +231,13 @@ export default function AdminOverview({
                     <td>
                       <span>Manual review required</span>
                     </td>
-                    <td>{badge(r.referral === "Referred to OSAS" ? r.referral : r.status)}</td>
+                    <td>
+                      {badge(
+                        r.referral === "Referred to OSAS"
+                          ? r.referral
+                          : r.status,
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -243,9 +250,7 @@ export default function AdminOverview({
         <section className="ad-panel">
           <div className="ao-title">
             <h2>Recent Incident Reports</h2>
-            <button onClick={() => go("Incident Reports")}>
-              View All
-            </button>
+            <button onClick={() => go("Incident Reports")}>View All</button>
           </div>
           <div className="ao-table ao-incidents">
             <table>
@@ -299,131 +304,162 @@ export default function AdminOverview({
       </p>
       {detail?.kind === "application" && (
         <ApplicationReview
-          application={applications.find(r => r.id === detail.record.id) || detail.record}
-          account={users.find(u => u.id === detail.record.studentId || u.name === detail.record.name)}
+          application={
+            applications.find((r) => r.id === detail.record.id) || detail.record
+          }
+          account={users.find(
+            (u) =>
+              u.id === detail.record.studentId || u.name === detail.record.name,
+          )}
           config={config}
-          onSave={updated => onUpdateApplications(applications.map(r => r.id === updated.id ? updated : r))}
+          onSave={(updated, status) => onUpdateApplications(updated, status)}
+          onDocument={onDocument}
           onClose={() => setDetail(null)}
         />
       )}
-      {detail?.kind === "incident" && <IncidentDetails record={incidents.find(r => r.id === detail.record.id) || detail.record} onClose={() => setDetail(null)} onSave={updated => { const next = incidents.map(r => r.id === updated.id ? updated : r); if (!saveIncidents(next)) return false; setIncidents(next); return true; }} />}
-      {detail?.kind === "booking" && <BookingDetails record={detail.record} tutor={workspace.profile.name} incidents={incidents} onClose={() => setDetail(null)} onIncident={record => setDetail({kind:"incident",record})} />}
-      {detail && !["application", "incident", "booking"].includes(detail.kind) && (
-        <Modal
-          title={
-            {
-              bookings: "All Bookings",
-              booking: "Booking Details",
-              financial: "Gross Session Payments",
-              incidents: "Incident Reports",
-              incident: "Incident Details",
-              application: "Application Summary",
-            }[detail.kind]
+      {detail?.kind === "incident" && (
+        <IncidentDetails
+          record={
+            incidents.find((r) => r.id === detail.record.id) || detail.record
           }
           onClose={() => setDetail(null)}
-        >
-          <div className="space-y-3 text-xs">
-            {detail.kind === "bookings" ? (
-              bookingTable(bookings)
-            ) : detail.kind === "financial" ? (
-              <>
-                <p>Eligible completed and paid sessions: {totals.count}</p>
-                {[
-                  ["Gross", totals.gross],
-                  ["Tutor share (90%)", totals.tutor],
-                  ["OSAS share (5%)", totals.osas],
-                  ["Platform share (5%)", totals.platform],
-                ].map(([label, value]) => (
-                  <p key={label}>
-                    {label}: <b>{money(value)}</b>
-                  </p>
-                ))}
-                <p>
-                  These totals use the same tutor-workspace records as Admin
-                  Reports.
-                </p>
-                <button
-                  className={button}
-                  onClick={() => go("Reports & Analytics")}
-                >
-                  View Financial Analytics
-                </button>
-              </>
-            ) : detail.kind === "incidents" ? (
-              incidents.map((r) => (
-                <button
-                  className="w-full rounded border p-3 text-left"
-                  key={r.id}
-                  onClick={() => setDetail({ kind: "incident", record: r })}
-                >
-                  {r.id} · {r.type} · {r.status}
-                </button>
-              ))
-            ) : detail.kind === "incident" ? (
-              <>
-                <p>
-                  <b>{detail.record.id}</b> ·{" "}
-                  {detail.record.booking || "No related booking"}
-                </p>
-                <p>Reporter: {detail.record.reporter}</p>
-                <p>Reported student: {detail.record.student}</p>
-                <p>
-                  {detail.record.type} · {detail.record.status}
-                </p>
-                <p>Referral: {detail.record.referral}</p>
-                <p className="ad-help">
-                  Fictional incident reference. A report is not a finding of
-                  misconduct. Official evidence and assessment workflows are not
-                  connected.
-                </p>
-              </>
-            ) : detail.kind === "application" ? (
-              <>
-                <p>
-                  <b>{detail.record.name}</b> · {detail.record.studentId}
-                </p>
-                <p>
-                  {detail.record.id} · {detail.record.college} /{" "}
-                  {detail.record.program}
-                </p>
-                <p>
-                  {detail.record.status} · {detail.record.documents}
-                </p>
-                <p>
-                  Original documents are not attached. Manual review is required.
-                </p>
-                <button
-                  className={button}
-                  onClick={() => go("Tutor Verification")}
-                >
-                  Open Tutor Verification
-                </button>
-              </>
-            ) : (
-              <>
-                <p>
-                  <b>{detail.record.booking || detail.record.id}</b>
-                </p>
-                <p>
-                  {detail.record.learner} · {detail.record.service}
-                </p>
-                <p>Tutor: {workspace.profile.name}</p>
-                <p>
-                  {dateLabel(detail.record.date)} · {detail.record.start}–
-                  {detail.record.end} (Asia/Manila)
-                </p>
-                <p>
-                  {detail.record.status} · {detail.record.payment} ·{" "}
-                  {money(detail.record.amount)}
-                </p>
-                <p>
-                  Read-only booking reference from the local tutor workspace.
-                </p>
-              </>
-            )}
-          </div>
-        </Modal>
+          onSave={(updated) => {
+            const next = incidents.map((r) =>
+              r.id === updated.id ? updated : r,
+            );
+            if (!saveIncidents(next)) return false;
+            setIncidents(next);
+            return true;
+          }}
+        />
       )}
+      {detail?.kind === "booking" && (
+        <BookingDetails
+          record={detail.record}
+          tutor={workspace.profile.name}
+          incidents={incidents}
+          onClose={() => setDetail(null)}
+          onIncident={(record) => setDetail({ kind: "incident", record })}
+        />
+      )}
+      {detail &&
+        !["application", "incident", "booking"].includes(detail.kind) && (
+          <Modal
+            title={
+              {
+                bookings: "All Bookings",
+                booking: "Booking Details",
+                financial: "Gross Session Payments",
+                incidents: "Incident Reports",
+                incident: "Incident Details",
+                application: "Application Summary",
+              }[detail.kind]
+            }
+            onClose={() => setDetail(null)}
+          >
+            <div className="space-y-3 text-xs">
+              {detail.kind === "bookings" ? (
+                bookingTable(bookings)
+              ) : detail.kind === "financial" ? (
+                <>
+                  <p>Eligible completed and paid sessions: {totals.count}</p>
+                  {[
+                    ["Gross", totals.gross],
+                    ["Tutor share (90%)", totals.tutor],
+                    ["OSAS share (5%)", totals.osas],
+                    ["Platform share (5%)", totals.platform],
+                  ].map(([label, value]) => (
+                    <p key={label}>
+                      {label}: <b>{money(value)}</b>
+                    </p>
+                  ))}
+                  <p>
+                    These totals use the same tutor-workspace records as Admin
+                    Reports.
+                  </p>
+                  <button
+                    className={button}
+                    onClick={() => go("Reports & Analytics")}
+                  >
+                    View Financial Analytics
+                  </button>
+                </>
+              ) : detail.kind === "incidents" ? (
+                incidents.map((r) => (
+                  <button
+                    className="w-full rounded border p-3 text-left"
+                    key={r.id}
+                    onClick={() => setDetail({ kind: "incident", record: r })}
+                  >
+                    {r.id} · {r.type} · {r.status}
+                  </button>
+                ))
+              ) : detail.kind === "incident" ? (
+                <>
+                  <p>
+                    <b>{detail.record.id}</b> ·{" "}
+                    {detail.record.booking || "No related booking"}
+                  </p>
+                  <p>Reporter: {detail.record.reporter}</p>
+                  <p>Reported student: {detail.record.student}</p>
+                  <p>
+                    {detail.record.type} · {detail.record.status}
+                  </p>
+                  <p>Referral: {detail.record.referral}</p>
+                  <p className="ad-help">
+                    Fictional incident reference. A report is not a finding of
+                    misconduct. Official evidence and assessment workflows are
+                    not connected.
+                  </p>
+                </>
+              ) : detail.kind === "application" ? (
+                <>
+                  <p>
+                    <b>{detail.record.name}</b> · {detail.record.studentId}
+                  </p>
+                  <p>
+                    {detail.record.id} · {detail.record.college} /{" "}
+                    {detail.record.program}
+                  </p>
+                  <p>
+                    {detail.record.status} · {detail.record.documents}
+                  </p>
+                  <p>
+                    Original documents are not attached. Manual review is
+                    required.
+                  </p>
+                  <button
+                    className={button}
+                    onClick={() => go("Tutor Verification")}
+                  >
+                    Open Tutor Verification
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p>
+                    <b>{detail.record.booking || detail.record.id}</b>
+                  </p>
+                  <p>
+                    {detail.record.learner} · {detail.record.service}
+                  </p>
+                  <p>Tutor: {workspace.profile.name}</p>
+                  <p>
+                    {dateLabel(detail.record.date)} · {detail.record.start}–
+                    {detail.record.end} (Asia/Manila)
+                  </p>
+                  <p>
+                    {detail.record.status} · {detail.record.payment} ·{" "}
+                    {money(detail.record.amount)}
+                  </p>
+                  <p>
+                    Read-only booking reference from the local tutor workspace.
+                  </p>
+                </>
+              )}
+            </div>
+          </Modal>
+        )}
     </section>
   );
 }

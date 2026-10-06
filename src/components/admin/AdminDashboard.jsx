@@ -1,6 +1,6 @@
-import HeaderInbox from '../shared/HeaderInbox.jsx';
-import { adminAlerts, adminThreads } from '../shared/headerInboxData.js';
-import {useLogout} from "../shared/LogoutProvider.jsx";
+import HeaderInbox from "../shared/HeaderInbox.jsx";
+import { adminAlerts, adminThreads } from "../shared/headerInboxData.js";
+import { useLogout } from "../shared/LogoutProvider.jsx";
 import AdminAudit from "./AdminAudit.jsx";
 import AdminBookings from "./AdminBookings.jsx";
 import AdminIncidents from "./AdminIncidents.jsx";
@@ -9,14 +9,15 @@ import AdminPayments from "./AdminPayments.jsx";
 import AdminCatalog from "./AdminCatalog.jsx";
 import AdminSettings from "./AdminSettings.jsx";
 import AdminReports from "./AdminReports.jsx";
-import {
-  applications,
-  adminServices,
-  loadCollection,
-  loadConfig,
-} from "./adminData.js";
-import { useState } from "react";
+import { adminServices, loadCollection, loadConfig } from "./adminData.js";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/AuthProvider.jsx";
+import { downloadTutorApplicationDocument } from "../../services/tutorApplicationStorage.js";
+import {
+  loadTutorApplications,
+  saveTutorApplicationReview,
+} from "../../services/tutorApplications.js";
 import {
   Home,
   Users,
@@ -54,24 +55,60 @@ const navigation = [
   ["Settings", Settings],
 ];
 export default function AdminDashboardPage() {
- const requestLogout = useLogout();
+  const requestLogout = useLogout();
+  const auth = useAuth();
 
   const navigate = useNavigate();
   const [view, setView] = useState("Overview"),
     [config, setConfig] = useState(loadConfig),
-    [apps, setApps] = useState(() =>
-      loadCollection("campustutor:admin-applications:v1", applications),
-    ),
+    [apps, setApps] = useState([]),
     [services, setServices] = useState(() =>
       loadCollection("campustutor:admin-services:v1", adminServices),
-    );
+    ),
+    [verificationChecks, setVerificationChecks] = useState({}),
+    [appsLoading, setAppsLoading] = useState(true),
+    [appsError, setAppsError] = useState("");
+  useEffect(() => {
+    let active = true;
+    let cacheCleanupError = "";
+    try {
+      localStorage.removeItem("campustutor:admin-applications:v1");
+    } catch (error) {
+      cacheCleanupError = `Could not remove the old browser-only application cache: ${error.message}`;
+    }
+    async function refreshApplications() {
+      setAppsLoading(true);
+      try {
+        const records = await loadTutorApplications();
+        if (active) {
+          setApps(records);
+          setAppsError(cacheCleanupError);
+        }
+      } catch (error) {
+        if (active) setAppsError(error.message);
+      } finally {
+        if (active) setAppsLoading(false);
+      }
+    }
+    refreshApplications();
+    return () => {
+      active = false;
+    };
+  }, [auth.user.id]);
+  async function updateApplication(record, status = null) {
+    await saveTutorApplicationReview(record, status);
+    setApps(await loadTutorApplications());
+  }
+  async function loadApplicationDocument(doc) {
+    return downloadTutorApplicationDocument(doc.storagePath, auth.user.id);
+  }
   function persist(kind, next) {
     try {
       localStorage.setItem(
         `campustutor:admin-${kind}:v1`,
         JSON.stringify(next),
       );
-      (kind === "applications" ? setApps : setServices)(next);
+      setServices(next);
       return true;
     } catch {
       return false;
@@ -187,7 +224,12 @@ export default function AdminDashboardPage() {
           </button>
         </form>
         <div className="ml-auto flex items-center gap-4">
-          <HeaderInbox role="admin" notifications={adminAlerts} threads={adminThreads} onNavigate={go}/>
+          <HeaderInbox
+            role="admin"
+            notifications={adminAlerts}
+            threads={adminThreads}
+            onNavigate={go}
+          />
           <button
             className="flex items-center gap-2 text-left"
             aria-label="Admin account"
@@ -203,11 +245,25 @@ export default function AdminDashboardPage() {
         </div>
       </header>
       <main className="osas-main">
+        {appsError && (
+          <p
+            className="m-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+            role="alert"
+          >
+            {appsError}
+          </p>
+        )}
+        {appsLoading && (
+          <p className="m-4 text-sm text-slate-600" role="status">
+            Loading tutor applications…
+          </p>
+        )}
         {view === "Overview" ? (
           <AdminOverview
             users={rows}
             applications={apps}
-            onUpdateApplications={(next) => persist("applications", next)}
+            onUpdateApplications={updateApplication}
+            onDocument={loadApplicationDocument}
             services={services}
             config={config}
             go={go}
@@ -219,7 +275,15 @@ export default function AdminDashboardPage() {
             key="applications"
             kind="applications"
             rows={apps}
-            onUpdate={(next) => persist("applications", next)}
+            onUpdate={updateApplication}
+            onDocument={loadApplicationDocument}
+            verificationChecks={verificationChecks}
+            onVerificationCheckChange={(applicationId, next) =>
+              setVerificationChecks((current) => ({
+                ...current,
+                [applicationId]: next,
+              }))
+            }
             config={config}
           />
         ) : view === "Service Management" ? (
@@ -227,8 +291,23 @@ export default function AdminDashboardPage() {
             key="services"
             users={rows}
             applications={apps}
-            onUserSave={updated => { const next = rows.map(u=>u.id===updated.id?updated:u); try {localStorage.setItem("campustutor:admin-users:v1",JSON.stringify(next));setRows(next);return true;} catch {return false;} }}
-            onApplicationSave={updated=>persist("applications",apps.map(a=>a.id===updated.id?updated:a))}
+            onUserSave={(updated) => {
+              const next = rows.map((u) => (u.id === updated.id ? updated : u));
+              try {
+                localStorage.setItem(
+                  "campustutor:admin-users:v1",
+                  JSON.stringify(next),
+                );
+                setRows(next);
+                return true;
+              } catch {
+                return false;
+              }
+            }}
+            onApplicationSave={(updated, status) =>
+              updateApplication(updated, status)
+            }
+            onDocument={loadApplicationDocument}
             kind="services"
             rows={services}
             onUpdate={(next) => persist("services", next)}
@@ -244,7 +323,35 @@ export default function AdminDashboardPage() {
         ) : view === "Bookings Monitoring" ? (
           <AdminBookings />
         ) : view === "Incident Reports" ? (
-          <AdminIncidents users={rows} applications={apps} services={services} config={config} onUserSave={updated=>{const next=rows.map(u=>u.id===updated.id?updated:u);try{localStorage.setItem('campustutor:admin-users:v1',JSON.stringify(next));setRows(next);return true;}catch{return false;}}} onServiceSave={updated=>persist('services',services.map(s=>s.id===updated.id?updated:s))} onApplicationSave={updated=>persist('applications',apps.map(a=>a.id===updated.id?updated:a))}/>
+          <AdminIncidents
+            users={rows}
+            applications={apps}
+            services={services}
+            config={config}
+            onUserSave={(updated) => {
+              const next = rows.map((u) => (u.id === updated.id ? updated : u));
+              try {
+                localStorage.setItem(
+                  "campustutor:admin-users:v1",
+                  JSON.stringify(next),
+                );
+                setRows(next);
+                return true;
+              } catch {
+                return false;
+              }
+            }}
+            onServiceSave={(updated) =>
+              persist(
+                "services",
+                services.map((s) => (s.id === updated.id ? updated : s)),
+              )
+            }
+            onApplicationSave={(updated, status) =>
+              updateApplication(updated, status)
+            }
+            onDocument={loadApplicationDocument}
+          />
         ) : view === "Payments & Transactions" ? (
           <AdminPayments />
         ) : view === "Reports & Analytics" ? (
@@ -254,8 +361,16 @@ export default function AdminDashboardPage() {
             applications={apps}
             services={services}
             config={config}
-            onServiceSave={updated => persist("services", services.map(s => s.id === updated.id ? updated : s))}
-            onApplicationSave={updated => persist("applications", apps.map(a => a.id === updated.id ? updated : a))}
+            onServiceSave={(updated) =>
+              persist(
+                "services",
+                services.map((s) => (s.id === updated.id ? updated : s)),
+              )
+            }
+            onApplicationSave={(updated, status) =>
+              updateApplication(updated, status)
+            }
+            onDocument={loadApplicationDocument}
             rows={rows}
             onUpdate={setRows}
             query={query}

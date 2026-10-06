@@ -2,9 +2,10 @@ import ServiceDetails from "./ServiceDetails.jsx";
 import ServiceMenu from "./ServiceMenu.jsx";
 import UserDetails from "./UserDetails.jsx";
 import UserExport from "./UserExport.jsx";
-import {serviceCsv} from "./serviceActions.js";
-import {useInteractions} from "../shared/InteractionProvider.jsx";
+import { serviceCsv } from "./serviceActions.js";
+import { useInteractions } from "../shared/InteractionProvider.jsx";
 import ApplicationReview from "./ApplicationReview.jsx";
+import { DOCUMENTS } from "../learner/application/applicationRules.js";
 import { useState } from "react";
 import {
   ShieldCheck,
@@ -23,9 +24,27 @@ import {
   Avatar,
 } from "../tutor/workspace/ui.jsx";
 import { dateLabel, downloadData } from "./adminData.js";
-export default function AdminCatalog({ kind, rows, onUpdate, config, users = [], onUserSave, applications = [], onApplicationSave }) {
-  const [serviceAction,setServiceAction]=useState("");
-  const [userId,setUserId]=useState(null);
+function applicationDocumentKey(application) {
+  return Object.entries(application.documents || {})
+    .map(([kind, document]) => `${kind}:${document.storagePath || ""}`)
+    .sort()
+    .join("|");
+}
+export default function AdminCatalog({
+  kind,
+  rows,
+  onUpdate,
+  config,
+  users = [],
+  onUserSave,
+  applications = [],
+  onApplicationSave,
+  onDocument,
+  verificationChecks = {},
+  onVerificationCheckChange = () => {},
+}) {
+  const [serviceAction, setServiceAction] = useState("");
+  const [userId, setUserId] = useState(null);
 
   const verification = kind === "applications",
     title = verification ? "Tutor Verification" : "Service Management";
@@ -72,17 +91,50 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
     setError("");
   }
   function serviceOption(r, action) {
-    if(action === "account") {const user=users.find(u=>u.name===r.tutor);if(user)setUserId(user.id);else setNotice("No matching tutor account in the available records.");return;}
-    setServiceAction(action);setSelected(r);
+    if (action === "account") {
+      const user = users.find((u) => u.name === r.tutor);
+      if (user) setUserId(user.id);
+      else setNotice("No matching tutor account in the available records.");
+      return;
+    }
+    setServiceAction(action);
+    setSelected(r);
   }
-  function exportServices() {const url=URL.createObjectURL(new Blob(['\uFEFF'+serviceCsv(filtered)],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='admin-services.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice('Exported '+filtered.length+' matching services.');}
+  function exportServices() {
+    const url = URL.createObjectURL(
+      new Blob(["\uFEFF" + serviceCsv(filtered)], {
+        type: "text/csv;charset=utf-8",
+      }),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "admin-services.csv";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setNotice("Exported " + filtered.length + " matching services.");
+  }
   const pill = (v) => (
     <span
-      className={`au-status ${["Active", "Approved", "Complete", "Matched"].includes(v) ? "active" : ["Rejected", "Suspended", "Invalid File", "Incomplete", "Not Matched"].includes(v) ? "suspended" : "restricted"}`}
+      className={`au-status ${["Active", "Approved", "Complete", "Matched", "Confirmed"].includes(v) ? "active" : ["Rejected", "Suspended", "Invalid File", "Incomplete", "Not Matched"].includes(v) ? "suspended" : "restricted"}`}
     >
       {v}
     </span>
   );
+  function applicationDocumentStatus(application) {
+    const savedVerification = verificationChecks[application.id];
+    const verification =
+      savedVerification?.documentsKey === applicationDocumentKey(application)
+        ? savedVerification
+        : null;
+    if (verification?.checksRun) return verification.documentStatus;
+    const required = DOCUMENTS.filter((document) => document.required);
+    const uploaded = required.filter(
+      (document) => application.documents?.[document.id]?.storagePath,
+    ).length;
+    return uploaded === required.length
+      ? "Pending Review"
+      : `${uploaded}/${required.length} Required`;
+  }
   const metrics = verification
     ? statuses.map((s) => [s, rows.filter((r) => r.status === s).length, s])
     : [
@@ -198,7 +250,12 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
           Filter
         </button>
         {!verification && (
-          <UserExport kind="services" rows={filtered} onCsv={exportServices} onNotice={setNotice} />
+          <UserExport
+            kind="services"
+            rows={filtered}
+            onCsv={exportServices}
+            onNotice={setNotice}
+          />
         )}
       </div>
       {filter && (
@@ -239,7 +296,8 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
       )}
       {verification && (
         <p className="ad-banner">
-          Documents require manual review and an Admin decision.
+          Run all document checks, review the original files, then confirm
+          Information Match before approving an application.
         </p>
       )}
       {notice && (
@@ -300,8 +358,25 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
                         {r.program}
                       </td>
                       <td>{dateLabel(r.date)}</td>
-                      <td>{pill(r.documents)}</td>
-                      <td>{pill(r.match)}</td>
+                      <td>{pill(applicationDocumentStatus(r))}</td>
+                      <td>
+                        {verificationChecks[r.id]?.documentsKey ===
+                          applicationDocumentKey(r) &&
+                        verificationChecks[r.id]?.checksRun &&
+                        verificationChecks[r.id]?.documentStatus === "Complete"
+                          ? pill(
+                              verificationChecks[r.id]?.matchConfirmed
+                                ? "Confirmed"
+                                : "Not confirmed",
+                            )
+                          : pill(
+                              verificationChecks[r.id]?.documentsKey ===
+                                applicationDocumentKey(r) &&
+                                verificationChecks[r.id]?.checksRun
+                                ? "Incomplete"
+                                : r.match || "Not checked",
+                            )}
+                      </td>
                     </>
                   ) : (
                     <>
@@ -340,7 +415,10 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
                         )}
                       </button>
                       {!verification && (
-                        <ServiceMenu service={r} onSelect={action=>serviceOption(r,action)} />
+                        <ServiceMenu
+                          service={r}
+                          onSelect={(action) => serviceOption(r, action)}
+                        />
                       )}
                     </div>
                   </td>
@@ -386,14 +464,59 @@ export default function AdminCatalog({ kind, rows, onUpdate, config, users = [],
       </p>
       {selected && verification && (
         <ApplicationReview
-          application={rows.find(r => r.id === selected.id) || selected}
+          application={rows.find((r) => r.id === selected.id) || selected}
           config={config}
-          onSave={updated => onUpdate(rows.map(r => r.id === updated.id ? updated : r))}
+          onSave={(updated, status) => onUpdate(updated, status)}
+          onDocument={onDocument}
+          verificationState={
+            verificationChecks[selected.id]?.documentsKey ===
+            applicationDocumentKey(selected)
+              ? verificationChecks[selected.id]
+              : null
+          }
+          onVerificationUpdate={(next) =>
+            onVerificationCheckChange(selected.id, {
+              ...next,
+              documentsKey: applicationDocumentKey(selected),
+            })
+          }
           onClose={() => setSelected(null)}
         />
       )}
-      {selected && !verification && <ServiceDetails key={selected.id+serviceAction} service={rows.find(r=>r.id===selected.id)||selected} initialAction={['Request Changes','Suspend Service','Lift Suspension'].includes(serviceAction)?serviceAction:''} showBookings={serviceAction==='bookings'} onTutor={()=>serviceOption(selected,'account')} onSave={updated=>onUpdate(rows.map(r=>r.id===updated.id?updated:r))} onClose={()=>setSelected(null)} />}
-      {userId && <UserDetails user={users.find(u=>u.id===userId)} services={rows} applications={applications} config={config} onSave={onUserSave} onApplicationSave={onApplicationSave} onServiceSave={updated=>onUpdate(rows.map(r=>r.id===updated.id?updated:r))} onClose={()=>setUserId(null)} />}
+      {selected && !verification && (
+        <ServiceDetails
+          key={selected.id + serviceAction}
+          service={rows.find((r) => r.id === selected.id) || selected}
+          initialAction={
+            ["Request Changes", "Suspend Service", "Lift Suspension"].includes(
+              serviceAction,
+            )
+              ? serviceAction
+              : ""
+          }
+          showBookings={serviceAction === "bookings"}
+          onTutor={() => serviceOption(selected, "account")}
+          onSave={(updated) =>
+            onUpdate(rows.map((r) => (r.id === updated.id ? updated : r)))
+          }
+          onClose={() => setSelected(null)}
+        />
+      )}
+      {userId && (
+        <UserDetails
+          user={users.find((u) => u.id === userId)}
+          services={rows}
+          applications={applications}
+          config={config}
+          onSave={onUserSave}
+          onApplicationSave={onApplicationSave}
+          onDocument={onDocument}
+          onServiceSave={(updated) =>
+            onUpdate(rows.map((r) => (r.id === updated.id ? updated : r)))
+          }
+          onClose={() => setUserId(null)}
+        />
+      )}
     </section>
   );
 }

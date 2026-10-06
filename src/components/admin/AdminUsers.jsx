@@ -39,7 +39,7 @@ export function loadAdminUsers() {
   } catch {}
   return structuredClone(initial);
 }
-export default function AdminUsers({ rows, onUpdate, query, setQuery, applications, services, config, onServiceSave, onApplicationSave }) {
+export default function AdminUsers({ rows, onUpdate, query, setQuery, applications, services, config, onServiceSave, onApplicationSave, onDocument }) {
   const {confirm}=useInteractions();
 
   const [tab, setTab] = useState("All Users"),
@@ -365,7 +365,7 @@ export default function AdminUsers({ rows, onUpdate, query, setQuery, applicatio
       <p className="text-[9px] text-slate-400">
         Local demo · Account changes do not affect institutional sign-in.
       </p>
-      {selected && <UserDetails user={rows.find(r=>r.id===selected.id) || selected} applications={applications} services={services} config={config} onServiceSave={onServiceSave} onApplicationSave={onApplicationSave} onClose={()=>setSelected(null)} onSave={updated=>{const next=rows.map(r=>r.id===updated.id?updated:r);try{localStorage.setItem(key,JSON.stringify(next));onUpdate(next);return true;}catch{return false;}}} />}
+      {selected && <UserDetails user={rows.find(r=>r.id===selected.id) || selected} applications={applications} services={services} config={config} onServiceSave={onServiceSave} onApplicationSave={onApplicationSave} onDocument={onDocument} onClose={()=>setSelected(null)} onSave={updated=>{const next=rows.map(r=>r.id===updated.id?updated:r);try{localStorage.setItem(key,JSON.stringify(next));onUpdate(next);return true;}catch{return false;}}} />}
     </section>
   );
 }
