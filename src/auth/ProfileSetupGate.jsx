@@ -1,3 +1,4 @@
+import { collegeProgramMap, findCollege } from "../data/collegeProgramMap.js";
 import { applyIdFields } from "../services/studentIdOcr.js";
 import StudentIdUpload from "./StudentIdUpload.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
@@ -46,7 +47,7 @@ function Setup() {
     if (busy || ocrBusy) return;
     if (!idReviewed)
       return setError(
-        "Upload both sides of your ID, extract the details, and confirm your review before saving.",
+        "Review the ID extraction or choose manual entry before saving.",
       );
     const issue = profileError(values, verified);
     if (issue) return setError(issue);
@@ -231,7 +232,50 @@ function Setup() {
               <legend className="mb-2 text-sm font-semibold">
                 Academic Information
               </legend>
-              {field("program", "Course / Program")}
+              <label className="block text-xs font-medium">
+                College *
+                <select
+                  required
+                  value={values.college}
+                  onChange={(e) =>
+                    setValues((previous) => ({
+                      ...previous,
+                      college: e.target.value,
+                      program: "",
+                    }))
+                  }
+                  className={input + " mt-1"}
+                >
+                  <option value="">Select college</option>
+                  {collegeProgramMap.map((c) => (
+                    <option key={c.code} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-xs font-medium">
+                Course / Program *
+                <select
+                  required
+                  disabled={!findCollege(values.college)}
+                  value={values.program}
+                  onChange={(e) =>
+                    setValues((previous) => ({
+                      ...previous,
+                      program: e.target.value,
+                    }))
+                  }
+                  className={input + " mt-1"}
+                >
+                  <option value="">Select program</option>
+                  {(findCollege(values.college)?.programs || []).map((p) => (
+                    <option key={p.code} value={p.name}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="text-xs font-medium">
                 Year Level *
                 <select
@@ -250,7 +294,6 @@ function Setup() {
                   ))}
                 </select>
               </label>
-              {field("college", "College")}
             </fieldset>
             {error && (
               <p role="alert" className="text-sm text-red-700">

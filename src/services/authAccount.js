@@ -1,3 +1,4 @@
+import { findCollege, findProgram } from "../data/collegeProgramMap.js";
 export const isCsuEmail = (email) =>
   /^[^\s@]+@carsu\.edu\.ph$/i.test(String(email || "").trim());
 export async function loadAuthAccount(client, userId) {
@@ -35,6 +36,8 @@ export function accountHome(roles) {
   return role ? `/${role}-dashboard` : "/login";
 }
 export function workspaceProfile(profile, user) {
+  const college = findCollege(profile?.college);
+  const program = findProgram(college, profile?.program);
   return {
     name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" "),
     email: user?.email || profile?.csu_email || "",
@@ -45,8 +48,8 @@ export function workspaceProfile(profile, user) {
       .split(",")
       .map((v) => v.trim())
       .filter(Boolean),
-    college: profile?.college || "",
-    program: profile?.program || "",
+    college: college?.name || profile?.college || "",
+    program: program?.name || profile?.program || "",
     year: profile?.year_level ? String(profile.year_level) : "",
   };
 }

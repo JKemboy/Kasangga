@@ -21,13 +21,13 @@ test("ID upload only accepts nonempty supported images within 10 MiB", () => {
 test("extracts only ID profile fields, never email or manual fields", () => {
   assert.deepEqual(
     parseStudentIdText(
-      "Full Name: Ana Cruz\nStudent ID: 2026-12345\nCourse / Program: BS Mathematics\nCollege: CSM\nEmail: other@example.com\nPhone: 09123456789",
+      "Full Name: Ana Cruz\nStudent ID: 2026-12345\nCourse / Program: Bachelor of Science in Mathematics\nCollege: CMNS\nEmail: other@example.com\nPhone: 09123456789",
     ),
     {
       name: "Ana Cruz",
       studentId: "2026-12345",
-      program: "BS Mathematics",
-      college: "CSM",
+      program: "Bachelor of Science in Mathematics",
+      college: "College of Mathematics and Natural Sciences",
     },
   );
 });
@@ -41,9 +41,9 @@ test("supports separate label lines and leaves ambiguous names for review", () =
   );
   assert.equal(
     parseStudentIdText(
-      "2026-12345\nBachelor of Science in Mathematics\nCollege of Science and Mathematics",
+      "2026-12345\nBachelor of Science in Mathematics\nCollege of Mathematics and Natural Sciences",
     ).college,
-    "College of Science and Mathematics",
+    "College of Mathematics and Natural Sciences",
   );
 });
 test("both images are read sequentially and front fields take precedence", async () => {
@@ -55,11 +55,15 @@ test("both images are read sequentially and front fields take precedence", async
       calls.push(file.side);
       return file.side === "front"
         ? "Name: Ana Cruz"
-        : "Name: Emergency Contact\nCollege: CSM";
+        : "Name: Emergency Contact\nCMNS - BSMath";
     },
   });
   assert.deepEqual(calls, ["front", "back"]);
-  assert.deepEqual(result.fields, { name: "Ana Cruz", college: "CSM" });
+  assert.deepEqual(result.fields, {
+    name: "Ana Cruz",
+    college: "College of Mathematics and Natural Sciences",
+    program: "Bachelor of Science in Mathematics",
+  });
   assert.ok(result.texts.front);
   assert.ok(result.texts.back);
 });
@@ -87,8 +91,8 @@ test("saved profile maps identity and academics consistently for Profile", () =>
     last_name: "Cruz",
     student_id: "2026-12345",
     csu_email: "ana@carsu.edu.ph",
-    program: "BS Mathematics",
-    college: "CSM",
+    program: "Bachelor of Science in Mathematics",
+    college: "College of Mathematics and Natural Sciences",
     year_level: 4,
     short_bio: "About me",
     study_interests: "Math, Physics",
@@ -97,8 +101,8 @@ test("saved profile maps identity and academics consistently for Profile", () =>
   assert.equal(result.name, "Ana Cruz");
   assert.equal(result.studentId, "2026-12345");
   assert.equal(result.email, "ana@carsu.edu.ph");
-  assert.equal(result.program, "BS Mathematics");
-  assert.equal(result.college, "CSM");
+  assert.equal(result.program, "Bachelor of Science in Mathematics");
+  assert.equal(result.college, "College of Mathematics and Natural Sciences");
   assert.equal(result.year, "4");
   assert.deepEqual(result.interests, ["Math", "Physics"]);
 });
@@ -133,11 +137,11 @@ test("ID layout supports unlabelled front name, spaced ID and wrapped college", 
   );
   assert.equal(fields.name, "ANA MARIA CRUZ");
   assert.equal(fields.studentId, "2026-12345");
-  assert.equal(fields.program, "BSIT");
-  assert.equal(fields.college, "College of Computing & Information Sciences");
+  assert.equal(fields.program, "Bachelor of Science in Information Technology");
+  assert.equal(fields.college, "College of Computing and Information Sciences");
 });
 test("separate college label works and emergency contact names are excluded", () => {
-  assert.equal(parseStudentIdText("College\nCSM").college, "CSM");
+  assert.equal(parseStudentIdText("College\nCMNS").college, undefined);
   assert.equal(
     parseStudentIdText("In case of emergency\nName: Parent Name").name,
     undefined,

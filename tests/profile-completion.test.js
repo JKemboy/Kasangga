@@ -10,9 +10,9 @@ const values = {
   phone: "09123456789",
   bio: "Learning mathematics",
   interests: "Calculus",
-  program: "BS Mathematics",
+  program: "Bachelor of Science in Mathematics",
   year: "1",
-  college: "CSM",
+  college: "College of Mathematics and Natural Sciences",
 };
 test("every onboarding field is mandatory, including whitespace-only values", () => {
   assert.equal(profileError(values), "");

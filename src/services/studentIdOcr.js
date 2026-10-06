@@ -1,3 +1,8 @@
+import {
+  detectAcademicPair,
+  findCollege,
+  findProgram,
+} from "../data/collegeProgramMap.js";
 import { extractImageText, scheduleImageError } from "./ocrService.js";
 
 export function idImageError(file) {
@@ -13,13 +18,17 @@ export const ID_FIELDS = {
 export function applyIdFields(previous, fields) {
   const next = { ...previous };
   for (const key of Object.keys(ID_FIELDS)) next[key] = fields[key] || "";
+  const college = findCollege(next.college);
+  const program = findProgram(college, next.program);
+  next.college = college?.name || "";
+  next.program = program?.name || "";
   return next;
 }
 
 export function parseStudentIdText(text, { allowUnlabelledName = false } = {}) {
   const lines = String(text || "")
     .normalize("NFKC")
-    .replace(/[??]/g, "-")
+    .replace(/[\u2013\u2014]/g, "-")
     .split(/\r?\n/)
     .map((v) => v.replace(/\s+/g, " ").trim())
     .filter(Boolean);
@@ -52,7 +61,7 @@ export function parseStudentIdText(text, { allowUnlabelledName = false } = {}) {
   }
   fields.studentId ||= identity
     .join(" ")
-    .match(/\b\d{4}\s*-\s*\d{4,8}\b/)?.[0]
+    .match(/\b\d{3,4}\s*-\s*\d{4,8}\b/)?.[0]
     .replace(/\s/g, "");
   const programIndex = identity.findIndex((line) =>
     /^(?:bachelor\s+of\s+|BS(?:[A-Z]{1,5}\b|\s)|BA\s|B\.S\.\s)/i.test(line),
@@ -84,10 +93,18 @@ export function parseStudentIdText(text, { allowUnlabelledName = false } = {}) {
         !/university|college|bachelor|science|technology|republic|philippines|student|signature|president|valid|address|blood|contact|course|program|caraga|butuan|city|campus|registration/i.test(
           line,
         ) &&
+        !detectAcademicPair(line) &&
         line !== fields.program &&
         !isLabel(line),
     );
     if (candidates.length === 1) fields.name = candidates[0];
+  }
+  const academic = detectAcademicPair(text);
+  delete fields.college;
+  delete fields.program;
+  if (academic) {
+    fields.college = academic.college;
+    fields.program = academic.program;
   }
   return Object.fromEntries(
     Object.entries(fields).filter(([, value]) => value),
@@ -116,11 +133,20 @@ export async function readStudentId(
     });
   }
   signal?.throwIfAborted();
+  const academic = detectAcademicPair(texts.front + "\n" + texts.back);
+  const fields = {
+    ...parseStudentIdText(texts.back),
+    ...parseStudentIdText(texts.front, { allowUnlabelledName: true }),
+  };
+  delete fields.college;
+  delete fields.program;
+  if (academic) {
+    fields.college = academic.college;
+    fields.program = academic.program;
+  }
   return {
     texts,
-    fields: {
-      ...parseStudentIdText(texts.back),
-      ...parseStudentIdText(texts.front, { allowUnlabelledName: true }),
-    },
+    fields,
+    academic,
   };
 }

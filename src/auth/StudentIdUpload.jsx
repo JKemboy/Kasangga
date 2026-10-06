@@ -25,6 +25,7 @@ function Preview({ file, side }) {
 
 export default function StudentIdUpload({ onFields, onReady, onBusy }) {
   const [files, setFiles] = useState({ front: null, back: null });
+  const [manual, setManual] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(null);
   const [result, setResult] = useState(null);
@@ -47,6 +48,7 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
       setError(issue);
       return;
     }
+    setManual(false);
     setFiles((previous) => ({ ...previous, [side]: file }));
     setResult(null);
     setError("");
@@ -56,6 +58,7 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
     if (controller.current) return;
     const abort = new AbortController();
     controller.current = abort;
+    setManual(false);
     setBusy(true);
     onBusy(true);
     onReady(false);
@@ -120,6 +123,18 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
       >
         {busy ? "Reading ID images..." : "Extract ID Details"}
       </button>
+      <label className="flex items-start gap-2 text-xs">
+        <input
+          type="checkbox"
+          disabled={busy}
+          checked={manual}
+          onChange={(e) => {
+            setManual(e.target.checked);
+            onReady(e.target.checked);
+          }}
+        />
+        Enter my details manually instead of OCR.
+      </label>
       {busy && (
         <p role="status" className="text-xs">
           {progress?.side === "back" ? "Back" : "Front"}:{" "}
@@ -132,7 +147,7 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
           {error}
         </p>
       )}
-      {result && (
+      {result && !manual && (
         <div className="space-y-2">
           <p role="status" className="text-xs font-medium text-green-800">
             Extraction complete. The four ID fields below have been updated.
@@ -151,6 +166,12 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
               </div>
             ))}
           </dl>
+          {!result.academic && (
+            <p role="status" className="text-xs text-amber-700">
+              We couldn't confidently detect your college/program. Please verify
+              the information using the dropdowns.
+            </p>
+          )}
           <p className="text-xs text-slate-600">
             Review and correct the suggested fields below. OCR may miss
             unlabelled or unclear text; enter any missing values manually. This
