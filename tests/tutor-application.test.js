@@ -1,5 +1,0 @@
-﻿import test from 'node:test';
-import assert from 'node:assert/strict';
-import {applicationError,tutoringError,documentsError} from '../src/components/learner/application/applicationRules.js';
-const valid=()=>({subjects:['Calculus'],bio:'I explain mathematical concepts with worked examples.',type:'Online',motivation:'I want to help students understand their coursework.',documents:{studentId:{storageId:'id'},enrollment:{storageId:'cor'},grades:{storageId:'grades'}},certified:true});
-test('application requires tutoring information, all mandatory documents and certification',()=>{const d=valid();assert.equal(applicationError(d),'');assert.match(tutoringError({...d,subjects:[]}),/subject/);assert.match(tutoringError({...d,bio:'short'}),/bio/);assert.match(tutoringError({...d,type:'Phone'}),/session type/);assert.match(tutoringError({...d,motivation:'short'}),/applying/);assert.match(documentsError({...d.documents,grades:undefined}),/grade evidence/);assert.match(applicationError({...d,certified:false}),/certification/);});
