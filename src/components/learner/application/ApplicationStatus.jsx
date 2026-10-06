@@ -32,9 +32,46 @@ export default function ApplicationStatus({
   const heading = useRef(null);
   useEffect(() => heading.current?.focus(), []);
   const docs = application.documents || {};
+  const statusKey = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[_\s]+/g, " ");
+  const latestReview = [...(application.history || [])]
+    .reverse()
+    .find((item) =>
+      ["resubmission required", "rejected"].includes(statusKey(item.to)),
+    );
+  const requestedChanges =
+    application.status === "Resubmission Required"
+      ? latestReview?.requestedChanges || []
+      : [];
+  const adminFeedback =
+    latestReview?.reason || application.rejectionReason || "";
+  const hasDecision = [
+    "Approved",
+    "Rejected",
+    "Resubmission Required",
+  ].includes(application.status);
+  const decisionTone =
+    application.status === "Approved"
+      ? "approved"
+      : application.status === "Rejected"
+        ? "rejected"
+        : application.status === "Resubmission Required"
+          ? "resubmission"
+          : "";
+  const decisionRecord = [...(application.history || [])]
+    .reverse()
+    .find((item) => statusKey(item.to) === statusKey(application.status));
+  const decisionDate = date(decisionRecord?.at || application.reviewed_at);
+  const decisionDetail = hasDecision
+    ? `${application.status}${decisionDate !== "Not available" ? ` · ${decisionDate}` : ""}`
+    : application.status === "Under Review"
+      ? "Admin review is in progress."
+      : "Waiting for an Admin decision.";
   const required = DOCUMENTS.filter((d) => d.required);
   const processed = required.every(
-    (d) => docs[d.id]?.storageId && !docs[d.id]?.error && !!docs[d.id]?.text,
+    (d) => docs[d.id]?.storagePath && !docs[d.id]?.error,
   );
   const info = application.account || account;
   return (
@@ -53,14 +90,19 @@ export default function ApplicationStatus({
         <section className="ta-status-card">
           <header>
             <h2>Status</h2>
-            <span className="ta-status-pill">
+            <span
+              className={`ta-status-pill ${decisionTone ? `decision-${decisionTone}` : ""}`}
+            >
               {application.status || "Draft"}
             </span>
           </header>
           <div className="ta-status-facts">
             {[
               ["Application ID", application.id || "Not assigned"],
-              ["Saved Date", date(application.created || application.updated)],
+              [
+                "Submitted Date",
+                date(application.created || application.updated),
+              ],
               ["Current Status", application.status || "Draft"],
               [
                 "Last Updated",
@@ -76,21 +118,37 @@ export default function ApplicationStatus({
           <ol className="ta-timeline">
             {[
               [
-                "Application saved on this browser",
+                "Application submitted for review",
                 date(application.created || application.updated),
                 !!application.id,
               ],
               [
-                "Documents saved for manual review",
+                "Documents received",
                 processed
-                  ? "Text extracted and flagged for manual review"
-                  : "Some documents need manual review or have not been uploaded.",
+                  ? "Supporting documents are available for manual review."
+                  : "Some required documents have not been uploaded.",
                 processed,
               ],
-              ["Admin review", "Not submitted to an Admin", false],
-              ["Decision", "Not available", false],
+              [
+                "Admin review",
+                application.reviewed_at
+                  ? date(application.reviewed_at)
+                  : "Waiting for an Admin decision",
+                !!application.reviewed_at || hasDecision,
+              ],
+              ["Decision", decisionDetail, hasDecision],
             ].map(([title, detail, done]) => (
-              <li key={title} className={done ? "complete" : ""}>
+              <li
+                key={title}
+                className={[
+                  done ? "complete" : "",
+                  title === "Decision" && decisionTone
+                    ? `decision-${decisionTone}`
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
                 <span aria-label={done ? "Complete" : "Pending"}>
                   {done && <Check size={14} />}
                 </span>
@@ -104,12 +162,47 @@ export default function ApplicationStatus({
           <div className="ta-notice blue">
             <Info size={21} />
             <p>
-              Your application is saved locally. Admin submission is not
-              connected yet, so it is not in the review queue. You can keep
-              booking sessions as a Learner.
+              {application.status === "Approved"
+                ? "Your tutor application was approved. You can continue to view this application status from your profile."
+                : application.status === "Rejected"
+                  ? "Your tutor application was rejected. Review the Admin feedback below before starting a new application."
+                  : application.status === "Resubmission Required"
+                    ? "The Admin requested changes. Your current status and application remain available here while you prepare the requested updates."
+                    : "Your application is submitted to CampusTutor for Admin review. You can keep using your Learner account while it is being reviewed."}
             </p>
           </div>
-          <button onClick={onEdit}>Edit saved application</button>
+          {(adminFeedback || requestedChanges.length > 0) && (
+            <div className="ta-notice blue">
+              <Info size={21} />
+              <div>
+                <strong>
+                  {application.status === "Rejected"
+                    ? "Admin feedback"
+                    : "Changes requested"}
+                </strong>
+                {adminFeedback && <p>{adminFeedback}</p>}
+                {!!requestedChanges.length && (
+                  <>
+                    <p>Please resubmit or correct the following:</p>
+                    <ul className="ta-requested-changes">
+                      {requestedChanges.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          {["Resubmission Required", "Rejected"].includes(
+            application.status,
+          ) && (
+            <button onClick={onEdit}>
+              {application.status === "Rejected"
+                ? "Start a new application"
+                : "Update requested items"}
+            </button>
+          )}
         </section>
         <div className="ta-status-column">
           <section className="ta-status-card">
@@ -173,7 +266,7 @@ export default function ApplicationStatus({
                           : "JPG image"}
                     </span>
                     <span className="ta-status-pill warning">
-                      Needs Manual Review
+                      Manual Review by Admin
                     </span>
                     {docs[d.id].error && (
                       <p className="ta-muted">{docs[d.id].error}</p>

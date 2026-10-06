@@ -2,9 +2,10 @@ import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { workspaceProfile } from "../../../services/authAccount.js";
 import { getSupabaseClient } from "../../../services/supabaseClient.js";
 import { profileError } from "../../../services/profileCompletion.js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { button, primary } from "../../tutor/workspace/ui.jsx";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
+import { loadMyTutorApplication } from "../../../services/tutorApplications.js";
 import {
   BadgeCheck,
   BookOpen,
@@ -65,6 +66,9 @@ export default function LearnerProfile() {
   const work = useLearnerWorkspace();
   const auth = useAuth();
   const [saving, setSaving] = useState(false);
+  const [tutorApplication, setTutorApplication] = useState(null);
+  const [applicationLoading, setApplicationLoading] = useState(true);
+  const [applicationError, setApplicationError] = useState("");
   const profile = {
     phone: "",
     bio: "",
@@ -77,6 +81,27 @@ export default function LearnerProfile() {
     [draft, setDraft] = useState({}),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
+  useEffect(() => {
+    let active = true;
+    setApplicationLoading(true);
+    setApplicationError("");
+    loadMyTutorApplication(auth.user.id)
+      .then((application) => {
+        if (active) setTutorApplication(application);
+      })
+      .catch((error) => {
+        if (active)
+          setApplicationError(
+            `Could not load tutor application status: ${error.message}`,
+          );
+      })
+      .finally(() => {
+        if (active) setApplicationLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [auth.user.id]);
   const value = (field) =>
     editing && Object.hasOwn(draft, field) ? draft[field] : profile[field];
   const change = (field, value) => setDraft((d) => ({ ...d, [field]: value }));
@@ -359,15 +384,29 @@ export default function LearnerProfile() {
                 <BookOpen className="h-4 w-4 text-[#d99000]" />
                 Tutor{" "}
                 <span className="ml-auto text-xs text-[#d99000]">
-                  {work.data.application?.status || "Not Applied"}
+                  {applicationLoading
+                    ? "Loading…"
+                    : applicationError
+                      ? "Unavailable"
+                      : auth.roles.includes("tutor")
+                        ? "Active"
+                        : tutorApplication?.status || "Not Applied"}
                 </span>
               </p>
+              {applicationError && (
+                <p className="mt-2 text-xs text-red-700" role="alert">
+                  {applicationError}
+                </p>
+              )}
               <button
                 onClick={() => work.open("application")}
                 type="button"
+                disabled={applicationLoading || !!applicationError}
                 className="mt-2 h-7 rounded-md border border-[#15924f] px-4 text-xs font-semibold text-[#087542]"
               >
-                {work.data.application ? "View Application" : "Apply as Tutor"}
+                {tutorApplication || auth.roles.includes("tutor")
+                  ? "View Application"
+                  : "Apply as Tutor"}
               </button>
             </div>
           </section>

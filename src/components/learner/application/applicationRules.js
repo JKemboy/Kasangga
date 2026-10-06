@@ -52,7 +52,12 @@ export function tutoringError(draft) {
   return "";
 }
 export function documentsError(documents) {
-  return DOCUMENTS.some((d) => d.required && !documents[d.id]?.storageId)
+  return DOCUMENTS.some(
+    (d) =>
+      d.required &&
+      !documents[d.id]?.storagePath &&
+      !documents[d.id]?.storageId,
+  )
     ? "Upload Student ID, enrollment proof and grade evidence."
     : "";
 }

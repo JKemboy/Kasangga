@@ -92,6 +92,22 @@
 .ta-notice.blue {
   background: #eef5ff;
 }
+.ta-resubmission-request {
+  align-items: flex-start;
+  border: 1px solid #f1d28b;
+  background: #fff8e8;
+}
+.ta-resubmission-request svg {
+  color: #946000;
+}
+.ta-requested-changes {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+.ta-requested-changes li {
+  margin-top: 3px;
+}
 .ta-notice.blue svg {
   color: #2563eb;
 }
@@ -196,6 +212,10 @@
   padding: 12px;
   margin: 10px 0;
 }
+.ta-document.uploaded {
+  border: 1px solid #b8e3c6;
+  background: #f3fbf5;
+}
 .ta-document header,
 .ta-review header {
   display: flex;
@@ -231,6 +251,76 @@
   max-width: 100%;
   overflow-wrap: anywhere;
   color: #006335;
+}
+.ta-badge-uploaded {
+  background: #e1f3e7;
+  color: #087542;
+}
+.ta-ocr-result {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #d4e8da;
+}
+.ta-ocr-result > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.ta-ocr-result > header strong {
+  font-size: 12px;
+}
+.ta-ocr-status {
+  color: #087542;
+  font-weight: 600;
+}
+.ta-ocr-result.mismatch .ta-ocr-status,
+.ta-ocr-pill.not-matched {
+  color: #b42318;
+}
+.ta-ocr-table {
+  overflow-x: auto;
+}
+.ta-ocr-table table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  text-align: left;
+}
+.ta-ocr-table th,
+.ta-ocr-table td {
+  padding: 7px 9px;
+  border-bottom: 1px solid #e0ebe3;
+  vertical-align: top;
+}
+.ta-ocr-table th {
+  font-weight: 600;
+}
+.ta-ocr-pill {
+  display: inline-block;
+  border-radius: 14px;
+  padding: 3px 8px;
+  background: #edf1f4;
+  color: #526277;
+  white-space: nowrap;
+}
+.ta-ocr-pill.matched {
+  background: #e1f3e7;
+  color: #087542;
+}
+.ta-ocr-pill.not-matched {
+  background: #fff0ed;
+}
+.ta-ocr-result > p,
+.ta-ocr-error,
+.ta-upload-progress {
+  margin-top: 8px;
+  color: #687789;
+  font-size: 11px;
+}
+.ta-ocr-error {
+  color: #9a3412;
 }
 .ta-table {
   overflow: auto;
@@ -436,6 +526,18 @@
   color: #946000;
   margin: 4px 0 0 6px;
 }
+.ta-status-pill.decision-approved {
+  background: #e1f3e7;
+  color: #087542;
+}
+.ta-status-pill.decision-rejected {
+  background: #fee4e2;
+  color: #b42318;
+}
+.ta-status-pill.decision-resubmission {
+  background: #fff3d7;
+  color: #946000;
+}
 .ta-status-facts {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -487,6 +589,18 @@
   background: #006335;
   border-color: #006335;
   color: white;
+}
+.ta-timeline .decision-rejected > span {
+  background: #b42318;
+  border-color: #b42318;
+}
+.ta-timeline .decision-resubmission > span {
+  background: #d99000;
+  border-color: #d99000;
+}
+.ta-timeline .decision-approved > span {
+  background: #006335;
+  border-color: #006335;
 }
 .ta-timeline p {
   font-size: 11px;

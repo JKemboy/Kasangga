@@ -1,5 +1,6 @@
 import ApplicationStatus from "./ApplicationStatus.jsx";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../../../auth/AuthProvider.jsx";
 import {
   ArrowLeft,
   Check,
@@ -14,12 +15,26 @@ import {
   scheduleFileError,
 } from "../../tutor/workspace/scheduleUploads.js";
 import {
+  loadMyTutorApplication,
+  submitTutorApplication,
+} from "../../../services/tutorApplications.js";
+import {
+  downloadTutorApplicationDocument,
+  removeTutorApplicationDocument,
+  uploadTutorApplicationDocument,
+} from "../../../services/tutorApplicationStorage.js";
+import {
   SUBJECTS,
   DOCUMENTS,
   tutoringError,
   documentsError,
   applicationError,
 } from "./applicationRules.js";
+import {
+  analyzeTutorCredential,
+  extractTutorCredentialFields,
+  readTutorCredential,
+} from "../../../services/tutorCredentialVerification.js";
 import "./tutor-application.css";
 const STEPS = [
   "Verify Student Information",
@@ -27,8 +42,11 @@ const STEPS = [
   "Verification Documents",
   "Review & Submit",
 ];
+const learnerReviewLabel = (status) =>
+  status === "Needs Manual Review" ? "Manual Review by Admin" : status;
 export default function TutorApplication({ onClose }) {
   const work = useLearnerWorkspace();
+  const auth = useAuth();
   const account = {
     name: work.data.profile.name || "",
     studentId: work.data.profile.studentId || "",
@@ -46,15 +64,13 @@ export default function TutorApplication({ onClose }) {
     motivation: "",
     documents: {},
     certified: false,
-    ...(work.data.application?.version === 2 ? work.data.application : {}),
   }));
+  const [applicationId, setApplicationId] = useState(null);
+  const [documentChecks, setDocumentChecks] = useState({});
+  const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0),
-    [complete, setComplete] = useState(
-      work.data.application?.status === "Saved locally",
-    ),
-    [statusView, setStatusView] = useState(
-      work.data.application?.status === "Saved locally",
-    ),
+    [complete, setComplete] = useState(false),
+    [statusView, setStatusView] = useState(false),
     [custom, setCustom] = useState({}),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(""),
@@ -62,7 +78,9 @@ export default function TutorApplication({ onClose }) {
   const controller = useRef(null),
     mounted = useRef(true),
     heading = useRef(null),
-    draftRef = useRef(draft);
+    draftRef = useRef(draft),
+    obsoletePaths = useRef(new Set()),
+    persistedPaths = useRef(new Set());
   draftRef.current = draft;
   useEffect(() => {
     mounted.current = true;
@@ -74,6 +92,61 @@ export default function TutorApplication({ onClose }) {
   useEffect(() => {
     heading.current?.focus();
   }, [step, complete, statusView]);
+  useEffect(() => {
+    let active = true;
+    async function loadApplication() {
+      setLoading(true);
+      try {
+        const legacyApplication = work.data.application;
+        if (legacyApplication) {
+          const cleanupErrors = [];
+          for (const document of Object.values(
+            legacyApplication.documents || {},
+          )) {
+            if (document?.storageId) {
+              try {
+                await scheduleFileStore.remove(document.storageId);
+              } catch (cleanupError) {
+                cleanupErrors.push(cleanupError.message);
+              }
+            }
+          }
+          if (!work.commit((data) => ({ ...data, application: null })))
+            cleanupErrors.push(
+              "Could not remove the old browser-only tutor application draft.",
+            );
+          if (cleanupErrors.length)
+            setError(
+              `The old browser-only tutor application could not be fully removed: ${cleanupErrors.join(" ")}`,
+            );
+        }
+        const application = await loadMyTutorApplication(auth.user.id);
+        if (!active) return;
+        if (application) {
+          const resubmission = application.status === "Resubmission Required";
+          persistedPaths.current = new Set(
+            Object.values(application.documents)
+              .map((document) => document.storagePath)
+              .filter(Boolean),
+          );
+          setApplicationId(application.id);
+          setDraft({ ...application, certified: resubmission });
+          setComplete(true);
+          setStatusView(true);
+          if (resubmission) setStep(2);
+        }
+      } catch (e) {
+        if (active)
+          setError(`Could not load your tutor application: ${e.message}`);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    loadApplication();
+    return () => {
+      active = false;
+    };
+  }, [auth.user.id]);
   function patch(key, value) {
     setError("");
     setDraft((d) => ({ ...d, [key]: value, certified: false }));
@@ -102,19 +175,31 @@ export default function TutorApplication({ onClose }) {
         : [...old, topic],
     });
   }
-  function saveDraft() {
-    if (complete) {
-      onClose();
-      return;
+  async function saveDraft() {
+    if (!complete) {
+      setBusy("cleaning");
+      setError("");
+      try {
+        for (const document of Object.values(draftRef.current.documents)) {
+          if (
+            document.storagePath &&
+            !persistedPaths.current.has(document.storagePath)
+          )
+            await removeTutorApplicationDocument(
+              document.storagePath,
+              auth.user.id,
+            );
+        }
+      } catch (cleanupError) {
+        setError(
+          `Could not remove an unsubmitted application document: ${cleanupError.message}`,
+        );
+        setBusy("");
+        return;
+      } finally {
+        if (mounted.current) setBusy("");
+      }
     }
-    const next = {
-      ...draft,
-      version: 2,
-      status: "Draft",
-      updated: new Date().toISOString(),
-    };
-    if (!work.commit((d) => ({ ...d, application: next })))
-      return setError("Could not save the draft on this browser.");
     onClose();
   }
   async function upload(kind, file) {
@@ -123,20 +208,34 @@ export default function TutorApplication({ onClose }) {
     if (invalid) return setError(invalid.replace("class schedule", "document"));
     setError("");
     setBusy(kind);
-    setProgress("Saving document…");
+    setProgress("Uploading document to secure storage…");
     const abort = new AbortController();
     controller.current = abort;
-    const storageId = "tutor-application:" + crypto.randomUUID();
-    let saved = false;
+    const previous = draftRef.current.documents[kind];
+    let storagePath = "";
+    setDocumentChecks((checks) => {
+      const next = { ...checks };
+      delete next[kind];
+      return next;
+    });
     try {
-      await scheduleFileStore.save(storageId, file);
-      saved = true;
+      if (!auth.user?.id)
+        throw new Error(
+          "Sign in again before uploading application documents.",
+        );
+      storagePath = await uploadTutorApplicationDocument(
+        file,
+        kind,
+        account.name,
+        auth.user.id,
+      );
       if (!mounted.current) {
-        await scheduleFileStore.remove(storageId);
+        if (storagePath !== previous?.storagePath)
+          await removeTutorApplicationDocument(storagePath, auth.user.id);
         return;
       }
       const metadata = {
-        storageId,
+        storagePath,
         name: file.name,
         type: file.type,
         size: file.size,
@@ -146,21 +245,84 @@ export default function TutorApplication({ onClose }) {
         ...draftRef.current,
         documents: { ...draftRef.current.documents, [kind]: metadata },
         certified: false,
-        version: 2,
-        status: "Draft",
       };
-      if (!work.commit((d) => ({ ...d, application: next }))) {
-        await scheduleFileStore.remove(storageId);
-        return setError("Could not save document details. Try again.");
-      }
-      const previous = draftRef.current.documents[kind];
       setDraft(next);
-      if (previous?.storageId)
-        await scheduleFileStore.remove(previous.storageId).catch(() => {});
+      draftRef.current = next;
+      setProgress("Running local OCR and credential checks…");
+      try {
+        const extracted = await readTutorCredential(file, {
+          signal: abort.signal,
+          onProgress: (event) =>
+            mounted.current &&
+            setProgress(
+              `Checking document: ${event.label || "Reading text"}${
+                event.progress ? ` (${Math.round(event.progress * 100)}%)` : ""
+              }`,
+            ),
+        });
+        const applicant = {
+          name: account.name,
+          studentId: account.studentId,
+          program: account.program,
+          year: account.year,
+          subjects: draftRef.current.subjects,
+        };
+        const verification = analyzeTutorCredential(
+          kind,
+          extracted.text,
+          applicant,
+        );
+        if (mounted.current)
+          setDocumentChecks((checks) => ({
+            ...checks,
+            [kind]: {
+              ...verification,
+              fields: extractTutorCredentialFields(
+                kind,
+                extracted.text,
+                applicant,
+              ),
+              confidence: extracted.confidence,
+              truncated: extracted.truncated,
+              pagesRead: extracted.pagesRead,
+              totalPages: extracted.totalPages,
+            },
+          }));
+      } catch (ocrError) {
+        if (mounted.current)
+          setDocumentChecks((checks) => ({
+            ...checks,
+            [kind]: { error: ocrError.message || "Could not read this file." },
+          }));
+      }
+      if (previous?.storagePath && previous.storagePath !== storagePath) {
+        if (applicationId) obsoletePaths.current.add(previous.storagePath);
+        else
+          await removeTutorApplicationDocument(
+            previous.storagePath,
+            auth.user.id,
+          ).catch((cleanupError) => {
+            if (mounted.current)
+              setError(
+                `Document replaced, but its previous cloud copy could not be removed: ${cleanupError.message}`,
+              );
+          });
+      }
     } catch (e) {
-      if (saved) await scheduleFileStore.remove(storageId).catch(() => {});
+      const cleanupErrors = [];
+      if (storagePath && storagePath !== previous?.storagePath) {
+        try {
+          await removeTutorApplicationDocument(storagePath, auth.user.id);
+        } catch (cleanupError) {
+          cleanupErrors.push(cleanupError.message);
+        }
+      }
       if (mounted.current)
-        setError(e.message || "Could not save the document.");
+        setError(
+          [e.message || "Could not save the document.", ...cleanupErrors].join(
+            " ",
+          ),
+        );
     } finally {
       if (mounted.current) {
         setBusy("");
@@ -169,28 +331,50 @@ export default function TutorApplication({ onClose }) {
     }
   }
   async function remove(kind) {
+    if (busy) return;
+    setBusy(kind);
+    setError("");
     const documents = { ...draft.documents },
       previous = documents[kind];
-    delete documents[kind];
-    const next = {
-      ...draft,
-      documents,
-      certified: false,
-      version: 2,
-      status: "Draft",
-    };
-    if (!work.commit((d) => ({ ...d, application: next })))
-      return setError("Could not remove the document.");
-    setDraft(next);
-    await scheduleFileStore.remove(previous.storageId).catch(() => {});
+    try {
+      if (previous?.storagePath) {
+        if (applicationId) obsoletePaths.current.add(previous.storagePath);
+        else
+          await removeTutorApplicationDocument(
+            previous.storagePath,
+            auth.user.id,
+          );
+      }
+      delete documents[kind];
+      const next = {
+        ...draft,
+        documents,
+        certified: false,
+      };
+      setDraft(next);
+      draftRef.current = next;
+      setDocumentChecks((checks) => {
+        const nextChecks = { ...checks };
+        delete nextChecks[kind];
+        return nextChecks;
+      });
+    } catch (e) {
+      setError(e.message || "Could not remove the document.");
+    } finally {
+      setBusy("");
+    }
   }
   async function preview(doc) {
     try {
-      const file = await scheduleFileStore.load(doc.storageId);
+      const blob = await downloadTutorApplicationDocument(
+        doc.storagePath,
+        auth.user.id,
+      );
+      const file = blob
+        ? new File([blob], doc.name, { type: doc.type || blob.type })
+        : null;
       if (!file)
-        throw Error(
-          "Document no longer exists on this browser. Please upload it again.",
-        );
+        throw Error("Document is no longer available. Please upload it again.");
       const url = URL.createObjectURL(file),
         a = document.createElement("a");
       a.href = url;
@@ -215,24 +399,40 @@ export default function TutorApplication({ onClose }) {
     if (invalid) return setError(invalid);
     setBusy("saving");
     try {
-      for (const d of DOCUMENTS.filter((d) => d.required)) {
-        if (!(await scheduleFileStore.load(draft.documents[d.id].storageId)))
-          throw Error(
-            "A required document is missing. Return to Documents and upload it again.",
-          );
-      }
-      const saved = {
-        ...draft,
-        version: 2,
-        id: draft.id || "LOCAL-" + crypto.randomUUID(),
-        status: "Saved locally",
-        created: new Date().toISOString(),
+      const saved = await submitTutorApplication(
+        draft,
         account,
-      };
-      if (!work.commit((d) => ({ ...d, application: saved })))
-        throw Error("Could not save your application. Please try again.");
-      setDraft(saved);
+        auth.user.id,
+        applicationId,
+      );
+      const submitted = await loadMyTutorApplication(auth.user.id);
+      if (!submitted || submitted.id !== saved.id)
+        throw new Error(
+          "The application was submitted, but could not be reloaded from Supabase. Refresh your profile or contact an administrator before submitting again.",
+        );
+      setApplicationId(saved.id);
+      setDraft(submitted);
+      draftRef.current = submitted;
       setComplete(true);
+      setStatusView(true);
+      persistedPaths.current = new Set(
+        Object.values(submitted.documents)
+          .map((document) => document.storagePath)
+          .filter(Boolean),
+      );
+      const cleanupErrors = [];
+      for (const path of obsoletePaths.current) {
+        try {
+          await removeTutorApplicationDocument(path, auth.user.id);
+        } catch (cleanupError) {
+          cleanupErrors.push(cleanupError.message);
+        }
+      }
+      obsoletePaths.current.clear();
+      if (cleanupErrors.length)
+        setError(
+          `Your application was submitted, but some replaced documents could not be removed: ${cleanupErrors.join(" ")}`,
+        );
     } catch (e) {
       setError(e.message);
     } finally {
@@ -259,7 +459,10 @@ export default function TutorApplication({ onClose }) {
   );
   const documents = (review) =>
     DOCUMENTS.map((doc) => (
-      <section className="ta-document" key={doc.id}>
+      <section
+        className={`ta-document ${draft.documents[doc.id] ? "uploaded" : ""}`}
+        key={doc.id}
+      >
         <header>
           <Upload size={18} />
           <div>
@@ -295,7 +498,7 @@ export default function TutorApplication({ onClose }) {
               >
                 {draft.documents[doc.id].name}
               </button>
-              <span className="ta-badge">Needs Manual Review</span>
+              <span className="ta-badge ta-badge-uploaded">Uploaded</span>
               {!review && (
                 <button
                   type="button"
@@ -309,12 +512,140 @@ export default function TutorApplication({ onClose }) {
             {draft.documents[doc.id].error && (
               <p>{draft.documents[doc.id].error}</p>
             )}
-
+            {documentChecks[doc.id]?.error ? (
+              <div className="ta-ocr-result" role="status">
+                <header>
+                  <strong>Document verification</strong>
+                  <span className="ta-ocr-status">Manual Review by Admin</span>
+                </header>
+                <p>
+                  Your document was uploaded. An Admin will review the original
+                  file manually.
+                </p>
+              </div>
+            ) : documentChecks[doc.id] ? (
+              <div
+                className={`ta-ocr-result ${
+                  documentChecks[doc.id].checks.some(
+                    (item) => item.status === "Not Matched",
+                  )
+                    ? "mismatch"
+                    : ""
+                }`}
+              >
+                <header>
+                  <strong>
+                    Extracted information (OCR assist)
+                    {Number.isFinite(documentChecks[doc.id].confidence)
+                      ? ` · ${Math.round(documentChecks[doc.id].confidence)}% confidence`
+                      : ""}
+                  </strong>
+                  <span className="ta-ocr-status">
+                    {documentChecks[doc.id].checks.some(
+                      (item) => item.status === "Not Matched",
+                    )
+                      ? "Potential mismatch — Admin must review"
+                      : documentChecks[doc.id].checks.every(
+                            (item) => item.status === "Matched",
+                          )
+                        ? "Information Match — Admin must review"
+                        : "Manual Review by Admin"}
+                  </span>
+                </header>
+                <div className="ta-ocr-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field</th>
+                        <th>Extracted</th>
+                        <th>Compared with</th>
+                        <th>Result</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {documentChecks[doc.id].fields.map((field) => (
+                        <tr key={field.field}>
+                          <td>{field.field}</td>
+                          <td>{field.extracted}</td>
+                          <td>{field.comparedWith}</td>
+                          <td>
+                            <span
+                              className={`ta-ocr-pill ${
+                                field.status === "Matched"
+                                  ? "matched"
+                                  : field.status === "Not Matched"
+                                    ? "not-matched"
+                                    : ""
+                              }`}
+                            >
+                              {learnerReviewLabel(field.status)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {documentChecks[doc.id].truncated && (
+                  <p role="status">
+                    OCR checked {documentChecks[doc.id].pagesRead} of{" "}
+                    {documentChecks[doc.id].totalPages} PDF pages. Review the
+                    remaining pages manually.
+                  </p>
+                )}
+                <p>
+                  OCR is only an assistant. Review the original document before
+                  submitting.
+                </p>
+              </div>
+            ) : null}
           </>
         )}
-        {busy === doc.id && <p role="status">{progress}</p>}
+        {!draft.documents[doc.id] &&
+          !review &&
+          draft.status === "Resubmission Required" && (
+            <p className="ta-muted">
+              No previously submitted file was found. Upload this document
+              again.
+            </p>
+          )}
+        {busy === doc.id && (
+          <p className="ta-upload-progress" role="status">
+            {progress}
+          </p>
+        )}
       </section>
     ));
+  const resubmissionRequest = [...(draft.history || [])].reverse().find(
+    (item) =>
+      String(item.to || "")
+        .toLowerCase()
+        .replace(/[_\s]+/g, " ") === "resubmission required",
+  );
+  if (loading)
+    return (
+      <p role="status" className="p-6">
+        Loading your tutor application…
+      </p>
+    );
+  if (statusView)
+    if (!draft.id)
+      return (
+        <section className="tutor-application">
+          <h1 ref={heading} tabIndex={-1}>
+            Application status unavailable
+          </h1>
+          <p className="ta-error" role="alert">
+            No saved tutor application record was loaded from Supabase. The
+            displayed draft is not a confirmed submission.
+            {error ? ` ${error}` : ""}
+          </p>
+          <button className="ta-back" onClick={onClose}>
+            <ArrowLeft size={14} />
+            Back to Profile
+          </button>
+        </section>
+      );
   if (statusView)
     return (
       <ApplicationStatus
@@ -324,7 +655,20 @@ export default function TutorApplication({ onClose }) {
         onEdit={() => {
           setStatusView(false);
           setComplete(false);
-          setStep(1);
+          if (draft.status === "Rejected") {
+            setApplicationId(null);
+            setDraft({
+              subjects: [],
+              topics: {},
+              bio: "",
+              experience: "",
+              type: "",
+              motivation: "",
+              documents: {},
+              certified: false,
+            });
+            setStep(0);
+          } else setStep(2);
         }}
         onDocument={preview}
         error={error}
@@ -342,16 +686,16 @@ export default function TutorApplication({ onClose }) {
             <Check size={28} />
           </span>
           <h1 ref={heading} tabIndex={-1}>
-            Tutor application saved
+            Tutor application submitted
           </h1>
           {rows([
             ["Application ID", draft.id],
-            ["Saved date", new Date(draft.created).toLocaleDateString()],
-            ["Current status", "Saved locally"],
+            ["Submitted date", new Date(draft.date).toLocaleDateString()],
+            ["Current status", draft.status],
           ])}
           <p>
-            Your application and documents are saved on this browser. Admin
-            submission is not connected yet; tutor access has not been enabled.
+            Your tutor application and documents have been submitted for Admin
+            review. Tutor access is added after approval.
           </p>
           <footer>
             <button
@@ -394,8 +738,8 @@ export default function TutorApplication({ onClose }) {
               {statusView ? (
                 <>
                   <p className="ta-notice">
-                    Saved locally. Awaiting connection to the application
-                    submission service.
+                    Application submitted to CampusTutor. Your application
+                    status is shown below.
                   </p>
                   {rows([
                     ["Application ID", draft.id],
@@ -592,13 +936,40 @@ export default function TutorApplication({ onClose }) {
                   {step === 2 && (
                     <>
                       <p className="ta-muted">
-                        Upload documents for an authorized Admin to review.
+                        {draft.status === "Resubmission Required"
+                          ? "Your previously submitted documents are listed below. Keep them as-is or replace the files that need correction."
+                          : "Upload documents for an authorized Admin to review. Each file is stored in your private applicant folder."}
                       </p>
+                      {draft.status === "Resubmission Required" &&
+                        (resubmissionRequest?.reason ||
+                          resubmissionRequest?.requestedChanges?.length >
+                            0) && (
+                          <div className="ta-notice ta-resubmission-request">
+                            <Info size={22} />
+                            <div>
+                              <strong>Admin requested these updates</strong>
+                              {resubmissionRequest.reason && (
+                                <p>{resubmissionRequest.reason}</p>
+                              )}
+                              {!!resubmissionRequest.requestedChanges
+                                ?.length && (
+                                <ul className="ta-requested-changes">
+                                  {resubmissionRequest.requestedChanges.map(
+                                    (item) => (
+                                      <li key={item}>{item}</li>
+                                    ),
+                                  )}
+                                </ul>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       {documents(false)}
                       <div className="ta-notice blue">
                         <Info size={22} />
                         <p>
-                          Documents require manual review by an authorized Admin.
+                          Documents require manual review by an authorized
+                          Admin.
                         </p>
                       </div>
                     </>
@@ -656,8 +1027,8 @@ export default function TutorApplication({ onClose }) {
                         are accurate and belong to me.
                       </label>
                       <p className="ta-muted">
-                        This saves your application locally. Admin submission is
-                        not connected yet.
+                        Your application and uploaded documents will be
+                        submitted to CampusTutor for Admin review.
                       </p>
                     </>
                   )}
@@ -678,7 +1049,7 @@ export default function TutorApplication({ onClose }) {
                   {step === 0 ? "Cancel" : "Back"}
                 </button>
                 <button disabled={!!busy} onClick={saveDraft}>
-                  Save for later
+                  Exit
                 </button>
                 <small>
                   {step === 1
