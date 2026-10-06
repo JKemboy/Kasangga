@@ -31,3 +31,11 @@ Before using the new profile form, review and manually run `supabase/manual/lear
 Incomplete learner accounts (including existing accounts missing these fields) see a required popup. Dashboard, Settings, Help & Support, and Logout remain available; other navigation items stay visible and locked. The shared popup can be closed without unlocking restricted sections and reopened with Complete Profile. Successful saving reloads the database profile and unlocks the requested dashboard. Completion is derived from saved fields, not browser storage. Full name is stored using the existing first_name/last_name columns by splitting at the first space.
 
 The gate is an interface restriction. Any future server booking/messaging mutations must enforce profile completeness in their own RPC/RLS policies as well. Existing non-learner staff roles are not subject to learner onboarding.
+
+## Student ID images during initial profile setup
+
+The initial setup form accepts separate front/back JPEG, PNG or WebP images (10 MiB each). Selection shows previews only; Extract ID Details explicitly starts sequential browser-side Tesseract OCR. There is no camera or live scanning. Only name, student ID, program and college are suggested. Raw OCR text for each side remains reviewable. Unknown/unlabelled values must be completed manually; OCR does not verify identity or ID authenticity. Year level, phone, bio and interests stay manual. Email comes from the authenticated CARSU account and cannot be replaced by ID text.
+
+Both images must be processed and the review checkbox confirmed before initial profile submission. Closing the modal discards the images and OCR review state; corrected form values remain while the setup page is mounted. Images and raw text are held only in memory, never uploaded to schedule-uploads, localStorage or a server. Only the reviewed profile fields are saved through the existing complete_learner_profile RPC. No additional schema change or package installation is required. Existing completed profiles do not need to repeat onboarding. The OCR review gate is a UI workflow, not a server identity-verification control.
+
+The Profile screen uses saved account values instead of placeholder identity/academic text. Its editable sections now save through the existing profile RPC and reload the Supabase profile.

@@ -1,3 +1,4 @@
+import StudentIdUpload from "./StudentIdUpload.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
 import StudentShell from "../components/shared/StudentShell.jsx";
 import { learnerNav } from "../components/learner/learnerNavigation.js";
@@ -31,6 +32,8 @@ function Setup() {
   const [open, setOpen] = useState(true);
   const [values, setValues] = useState(() => profileValues(auth.profile));
   const [busy, setBusy] = useState(false);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [idReviewed, setIdReviewed] = useState(false);
   const [error, setError] = useState("");
   const verified = !!auth.user.email_confirmed_at;
   const go = (id) => {
@@ -39,7 +42,11 @@ function Setup() {
   };
   async function save(e) {
     e.preventDefault();
-    if (busy) return;
+    if (busy || ocrBusy) return;
+    if (!idReviewed)
+      return setError(
+        "Upload both sides of your ID, extract the details, and confirm your review before saving.",
+      );
     const issue = profileError(values, verified);
     if (issue) return setError(issue);
     setBusy(true);
@@ -118,8 +125,9 @@ function Setup() {
         <Modal
           title="Complete your learner profile"
           subtitle="Add your details to unlock all learner sections."
-          onClose={() => {
-            if (!busy) setOpen(false);
+          onClose={(event) => {
+            if (busy || ocrBusy) event?.preventDefault();
+            else setOpen(false);
           }}
           footer={
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -129,7 +137,7 @@ function Setup() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || ocrBusy}
                   className={button}
                   onClick={() => {
                     setView("dashboard");
@@ -141,7 +149,7 @@ function Setup() {
                 <button
                   type="submit"
                   form="learner-profile-setup"
-                  disabled={busy}
+                  disabled={busy || ocrBusy}
                   className={primary}
                 >
                   {busy ? "Saving..." : "Save and Continue"}
@@ -155,8 +163,15 @@ function Setup() {
             onSubmit={save}
             className="space-y-4 text-[#27344f]"
           >
+            <StudentIdUpload
+              onReady={setIdReviewed}
+              onBusy={setOcrBusy}
+              onFields={(fields) =>
+                setValues((previous) => ({ ...previous, ...fields }))
+              }
+            />
             <fieldset
-              disabled={busy}
+              disabled={busy || ocrBusy}
               className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-2"
             >
               <legend className="mb-2 text-sm font-semibold">
@@ -185,7 +200,7 @@ function Setup() {
               {field("phone", "Phone Number", 20)}
             </fieldset>
             <fieldset
-              disabled={busy}
+              disabled={busy || ocrBusy}
               className="space-y-3 rounded-lg border border-slate-200 p-3"
             >
               <legend className="mb-2 text-sm font-semibold">About Me</legend>
@@ -209,7 +224,7 @@ function Setup() {
               )}
             </fieldset>
             <fieldset
-              disabled={busy}
+              disabled={busy || ocrBusy}
               className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-2"
             >
               <legend className="mb-2 text-sm font-semibold">

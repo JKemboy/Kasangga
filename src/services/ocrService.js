@@ -14,7 +14,7 @@ export function scheduleImageError(file) {
 }
 
 // Runs in a browser worker. No image is sent to an OCR server.
-export async function extractScheduleText(
+export async function extractImageText(
   file,
   { onProgress = () => {}, signal } = {},
 ) {
@@ -52,3 +52,6 @@ export async function extractScheduleText(
     if (worker) await worker.terminate();
   }
 }
+
+// Backwards-compatible entry point for the existing schedule workflow.
+export const extractScheduleText = extractImageText;
