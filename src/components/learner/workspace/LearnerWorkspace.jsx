@@ -6,7 +6,7 @@ import LearnerReport from "./LearnerReport.jsx";
 import SessionDialog from "./SessionDialog.jsx";
 import TutorProfile from "./TutorProfile.jsx";
 import BookingFlow from "./BookingFlow.jsx";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import {
   Modal,
   Field,
@@ -46,6 +46,10 @@ export default function LearnerWorkspace({ children, go }) {
     [dialog, setDialog] = useState(null),
     [error, setError] = useState("");
   const { toast, confirm } = useInteractions();
+  useEffect(() => {
+    if (!auth?.profile) return;
+    setData(previous => ({ ...previous, profile: { ...previous.profile, ...workspaceProfile(auth.profile, auth.user) } }));
+  }, [auth?.profile, auth?.user]);
   function commit(change) {
     try {
       const next = change(data);

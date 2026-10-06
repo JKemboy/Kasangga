@@ -1,3 +1,7 @@
+import { useAuth } from "../../../auth/AuthProvider.jsx";
+import { workspaceProfile } from "../../../services/authAccount.js";
+import { getSupabaseClient } from "../../../services/supabaseClient.js";
+import { profileError } from "../../../services/profileCompletion.js";
 import { useState } from "react";
 import { button, primary } from "../../tutor/workspace/ui.jsx";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
@@ -59,12 +63,15 @@ const Edit = ({ section, editing, onEdit, onSave, onCancel }) =>
   );
 export default function LearnerProfile() {
   const work = useLearnerWorkspace();
+  const auth = useAuth();
+  const [saving, setSaving] = useState(false);
   const profile = {
     phone: "",
     bio: "",
     year: "",
     interests: [],
     ...work.data.profile,
+    ...workspaceProfile(auth?.profile, auth?.user),
   };
   const [editing, setEditing] = useState(null),
     [draft, setDraft] = useState({}),
@@ -92,13 +99,14 @@ export default function LearnerProfile() {
     setDraft({});
     setError("");
   };
-  function save() {
+  async function save() {
+    if (saving) return;
     let values = { ...draft };
     if (editing === "personal") {
       values.phone = values.phone.replace(/[\s-]/g, "");
       if (values.phone && !/^09\d{9}$/.test(values.phone))
         return setError(
-          "Enter an 11-digit mobile number starting with 09, or leave it blank.",
+          "Enter an 11-digit mobile number starting with 09, and complete this required field.",
         );
     }
     if (editing === "bio") {
@@ -123,17 +131,37 @@ export default function LearnerProfile() {
           "Use up to 15 subjects, with up to 60 characters each.",
         );
     }
-    if (work.commit((d) => ({ ...d, profile: { ...d.profile, ...values } }))) {
+    const next = { ...profile, ...values };
+    const details = { ...next, interests: next.interests.join(", ") };
+    const issue = profileError(details, !!auth.user.email_confirmed_at);
+    if (issue) return setError(issue);
+    setSaving(true);
+    try {
+      const { error } = await getSupabaseClient().rpc(
+        "complete_learner_profile",
+        { details },
+      );
+      if (error) throw error;
+      work.commit((d) => ({ ...d, profile: next }));
+      auth.retry();
       cancel();
-      setNotice("Changes saved on this browser.");
-    } else setError("Could not save your changes. Please try again.");
+      setNotice("Profile saved.");
+    } catch {
+      setError("Could not save your profile. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
   const controls = (section) => (
     <Edit
       section={section}
       editing={editing}
-      onEdit={edit}
-      onCancel={cancel}
+      onEdit={(section) => {
+        if (!saving) edit(section);
+      }}
+      onCancel={() => {
+        if (!saving) cancel();
+      }}
       onSave={save}
     />
   );
@@ -168,7 +196,9 @@ export default function LearnerProfile() {
               <Camera className="h-4 w-4" />
             </button>
           </div>
-          <h2 className="mt-2 text-base font-bold">Learner</h2>
+          <h2 className="mt-2 text-base font-bold">
+            {profile.name || "Learner"}
+          </h2>
           <p className="mt-1 text-sm font-semibold text-[#087542]">Learner</p>
           <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#dff8e8] px-3 py-1 text-xs font-semibold text-[#087542]">
             <span className="h-2 w-2 rounded-full bg-[#087542]" />
@@ -179,21 +209,22 @@ export default function LearnerProfile() {
             <p className="flex gap-2">
               <BadgeCheck className="h-4 w-4 shrink-0 text-[#087542]" />
               <span>
-                <b className="block text-[#637191]">Student ID</b>Not provided
+                <b className="block text-[#637191]">Student ID</b>
+                {profile.studentId || "Not provided"}
               </span>
             </p>
             <p className="flex gap-2">
               <Mail className="h-4 w-4 shrink-0 text-[#087542]" />
               <span>
                 <b className="block text-[#637191]">CSU Email</b>
-
+                {profile.email}
               </span>
             </p>
             <p className="flex gap-2">
               <GraduationCap className="h-4 w-4 shrink-0 text-[#087542]" />
               <span>
-                <b className="block text-[#637191]">Course / Program</b>BS
-                Information Technology
+                <b className="block text-[#637191]">Course / Program</b>
+                {profile.program || "Not provided"}
               </span>
             </p>
             <p className="flex gap-2">
@@ -206,8 +237,8 @@ export default function LearnerProfile() {
             <p className="flex gap-2">
               <Building2 className="h-4 w-4 shrink-0 text-[#087542]" />
               <span>
-                <b className="block text-[#637191]">College</b>College of
-                Computing &amp; Information Sciences
+                <b className="block text-[#637191]">College</b>
+                {profile.college || "Not provided"}
               </span>
             </p>
           </div>
@@ -219,15 +250,18 @@ export default function LearnerProfile() {
               {controls("personal")}
             </div>
             <div className="mt-2 space-y-2">
-              <Field label="Full Name" value="Learner" managed />
-              <Field label="Student ID" value="Not provided" managed />
-              <Field label="Email Address" value="" />
+              <Field label="Full Name" value={profile.name || ""} />
+              <Field label="Student ID" value={profile.studentId || ""} />
+              <Field label="Email Address" value={profile.email} />
+              <p className="text-xs text-green-700">
+                {auth.user.email_confirmed_at ? "Verified" : "Not verified"}
+              </p>
               <p className="text-xs text-slate-500">
                 To update your CSU email or Student ID, contact the support
                 team.
               </p>
               <Field
-                label="Phone Number (optional)"
+                label="Phone Number"
                 value={value("phone")}
                 editable={editing === "personal"}
                 onChange={(e) => change("phone", e.target.value)}
@@ -286,10 +320,7 @@ export default function LearnerProfile() {
               {controls("academic")}
             </div>
             <div className="mt-2 space-y-2">
-              <Field
-                label="Course / Program"
-                value="Not provided"
-              />
+              <Field label="Course / Program" value={profile.program || ""} />
               <label className="block text-xs font-medium">
                 Year Level
                 <select
@@ -298,21 +329,14 @@ export default function LearnerProfile() {
                   onChange={(e) => change("year", e.target.value)}
                   className="mt-1 h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-xs"
                 >
-                  {[
-                    "1st Year",
-                    "2nd Year",
-                    "3rd Year",
-                    "4th Year",
-                    "5th Year",
-                  ].map((y) => (
-                    <option key={y}>{y}</option>
+                  {[1, 2, 3, 4, 5, 6].map((y) => (
+                    <option key={y} value={String(y)}>
+                      Year {y}
+                    </option>
                   ))}
                 </select>
               </label>
-              <Field
-                label="College"
-                value="College of Computing & Information Sciences"
-              />
+              <Field label="College" value={profile.college || ""} />
             </div>
           </section>
           <section className="rounded-xl border border-[#e1e7ef] bg-white p-3">

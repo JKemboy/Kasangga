@@ -37,7 +37,7 @@ export function accountHome(roles) {
 export function workspaceProfile(profile, user) {
   return {
     name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" "),
-    email: profile?.csu_email || user?.email || "",
+    email: user?.email || profile?.csu_email || "",
     studentId: profile?.student_id || "",
     phone: profile?.phone_number || "",
     bio: profile?.short_bio || "",
