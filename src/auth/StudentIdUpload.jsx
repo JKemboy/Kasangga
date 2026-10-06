@@ -1,3 +1,4 @@
+import { ID_FIELDS } from "../services/studentIdOcr.js";
 import { useEffect, useRef, useState } from "react";
 import { primary } from "../components/tutor/workspace/ui.jsx";
 import { idImageError, readStudentId } from "../services/studentIdOcr.js";
@@ -133,6 +134,23 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
       )}
       {result && (
         <div className="space-y-2">
+          <p role="status" className="text-xs font-medium text-green-800">
+            Extraction complete. The four ID fields below have been updated.
+          </p>
+          <dl className="grid gap-2 rounded border bg-white p-2 text-xs sm:grid-cols-2">
+            {Object.entries(ID_FIELDS).map(([key, label]) => (
+              <div key={key}>
+                <dt className="font-semibold">{label}</dt>
+                <dd
+                  className={
+                    result.fields[key] ? "text-slate-600" : "text-amber-700"
+                  }
+                >
+                  {result.fields[key] || "Not detected - enter manually below"}
+                </dd>
+              </div>
+            ))}
+          </dl>
           <p className="text-xs text-slate-600">
             Review and correct the suggested fields below. OCR may miss
             unlabelled or unclear text; enter any missing values manually. This

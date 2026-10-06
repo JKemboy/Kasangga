@@ -102,3 +102,44 @@ test("saved profile maps identity and academics consistently for Profile", () =>
   assert.equal(result.year, "4");
   assert.deepEqual(result.interests, ["Math", "Physics"]);
 });
+
+test("ID auto-fill only replaces four fields and clears undetected stale values", async () => {
+  const { applyIdFields } = await import("../src/services/studentIdOcr.js");
+  const manual = {
+    phone: "09123456789",
+    bio: "My bio",
+    interests: "Math",
+    year: "4",
+    email: "me@carsu.edu.ph",
+  };
+  assert.deepEqual(
+    applyIdFields(
+      { ...manual, name: "Old Name", college: "Old College" },
+      { name: "New Name", studentId: "2026-12345", phone: "wrong" },
+    ),
+    {
+      ...manual,
+      name: "New Name",
+      studentId: "2026-12345",
+      program: "",
+      college: "",
+    },
+  );
+});
+test("ID layout supports unlabelled front name, spaced ID and wrapped college", () => {
+  const fields = parseStudentIdText(
+    "CARAGA STATE UNIVERSITY\nANA MARIA CRUZ\n2026 - 12345\nBSIT\nCollege of Computing &\nInformation Sciences",
+    { allowUnlabelledName: true },
+  );
+  assert.equal(fields.name, "ANA MARIA CRUZ");
+  assert.equal(fields.studentId, "2026-12345");
+  assert.equal(fields.program, "BSIT");
+  assert.equal(fields.college, "College of Computing & Information Sciences");
+});
+test("separate college label works and emergency contact names are excluded", () => {
+  assert.equal(parseStudentIdText("College\nCSM").college, "CSM");
+  assert.equal(
+    parseStudentIdText("In case of emergency\nName: Parent Name").name,
+    undefined,
+  );
+});

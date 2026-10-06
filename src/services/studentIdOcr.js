@@ -4,37 +4,91 @@ export function idImageError(file) {
   return file ? scheduleImageError(file) : "Choose an ID image first.";
 }
 
-// Only labelled values and distinctive academic/ID patterns are suggested.
-// Uncertain names are left blank for review rather than guessed from signatures.
-export function parseStudentIdText(text) {
+export const ID_FIELDS = {
+  name: "Full Name",
+  studentId: "Student ID",
+  program: "Course / Program",
+  college: "College",
+};
+export function applyIdFields(previous, fields) {
+  const next = { ...previous };
+  for (const key of Object.keys(ID_FIELDS)) next[key] = fields[key] || "";
+  return next;
+}
+
+export function parseStudentIdText(text, { allowUnlabelledName = false } = {}) {
   const lines = String(text || "")
+    .normalize("NFKC")
+    .replace(/[??]/g, "-")
     .split(/\r?\n/)
-    .map((v) => v.trim())
+    .map((v) => v.replace(/\s+/g, " ").trim())
     .filter(Boolean);
-  const labels = {
-    name: /^(?:full\s*name|student\s*name|name)\s*[:.\-]?\s*(.*)$/i,
+  const patterns = {
+    name: /^(?:full\s*name|student\s*name|name)(?:\s*[:.\-]\s*|\s+|$)(.*)$/i,
     studentId:
-      /^(?:student\s*(?:id|number|no\.?)|id\s*(?:number|no\.?)?)\s*[:.\-]?\s*(.*)$/i,
+      /^(?:student\s*(?:id(?:\s*(?:number|no\.?))?|number|no\.?)|id(?:\s*(?:number|no\.?))?)(?:\s*[:.\-]\s*|\s+|$)(.*)$/i,
     program:
-      /^(?:course\s*\/\s*program|course|program|degree)\s*[:.\-]?\s*(.*)$/i,
-    college: /^college\s*[:\-]\s*(.*)$/i,
+      /^(?:course\s*\/\s*program|course|program|degree)(?:\s*[:.\-]\s*|\s+|$)(.*)$/i,
+    college: /^college(?:\s*[:\-]\s*|$)(.*)$/i,
   };
   const fields = {};
-  for (const [key, pattern] of Object.entries(labels)) {
-    for (let i = 0; i < lines.length; i++) {
-      const match = lines[i].match(pattern);
+  const isLabel = (line) => Object.values(patterns).some((p) => p.test(line));
+  const stop = lines.findIndex((line) =>
+    /emergency|in case of|parent|guardian/i.test(line),
+  );
+  const identity = stop < 0 ? lines : lines.slice(0, stop);
+  for (const [key, pattern] of Object.entries(patterns)) {
+    const source = ["program", "college"].includes(key) ? lines : identity;
+    for (let i = 0; i < source.length; i++) {
+      const match = source[i].match(pattern);
       if (!match) continue;
-      const value = match[1] || lines[i + 1] || "";
-      if (!value || Object.values(labels).some((p) => p.test(value))) continue;
+      let value = match[1] || source[i + 1] || "";
+      if (!value || isLabel(value)) continue;
+      if (key === "studentId") value = value.replace(/\s*-\s*/g, "-");
+      if (key === "name" && /\d|signature|president/i.test(value)) continue;
       fields[key] = value;
       break;
     }
   }
-  fields.studentId ||= lines.join(" ").match(/\b\d{4}-\d{4,8}\b/)?.[0];
-  fields.program ||= lines.find((line) =>
-    /^(?:bachelor\s+of\s+|BS\s|BA\s|B\.S\.\s)/i.test(line),
+  fields.studentId ||= identity
+    .join(" ")
+    .match(/\b\d{4}\s*-\s*\d{4,8}\b/)?.[0]
+    .replace(/\s/g, "");
+  const programIndex = identity.findIndex((line) =>
+    /^(?:bachelor\s+of\s+|BS(?:[A-Z]{1,5}\b|\s)|BA\s|B\.S\.\s)/i.test(line),
   );
-  fields.college ||= lines.find((line) => /^college\s+of\s+/i.test(line));
+  const collegeIndex = identity.findIndex((line) =>
+    /^college\s+of\s+/i.test(line),
+  );
+  fields.program ||= identity[programIndex];
+  fields.college ||= identity[collegeIndex];
+  // Join clear wrapped academic phrases; never append labels or identity lines.
+  for (const key of ["program", "college"]) {
+    const index = identity.indexOf(fields[key]);
+    const following = identity[index + 1];
+    if (
+      index >= 0 &&
+      /(?:of|in|and|&)$/i.test(fields[key]) &&
+      following &&
+      !isLabel(following) &&
+      !/\d|university|signature/i.test(following)
+    )
+      fields[key] += " " + following;
+  }
+  if (!fields.name && allowUnlabelledName) {
+    const candidates = identity.filter(
+      (line) =>
+        /^[\p{L}][\p{L} .,'?-]+$/u.test(line) &&
+        line.split(/\s+/).length >= 2 &&
+        line.split(/\s+/).length <= 7 &&
+        !/university|college|bachelor|science|technology|republic|philippines|student|signature|president|valid|address|blood|contact|course|program|caraga|butuan|city|campus|registration/i.test(
+          line,
+        ) &&
+        line !== fields.program &&
+        !isLabel(line),
+    );
+    if (candidates.length === 1) fields.name = candidates[0];
+  }
   return Object.fromEntries(
     Object.entries(fields).filter(([, value]) => value),
   );
@@ -57,6 +111,7 @@ export async function readStudentId(
     signal?.throwIfAborted();
     texts[side] = await recognize(file, {
       signal,
+      parameters: { tessedit_pageseg_mode: "11" },
       onProgress: (event) => onProgress({ ...event, side }),
     });
   }
@@ -65,7 +120,7 @@ export async function readStudentId(
     texts,
     fields: {
       ...parseStudentIdText(texts.back),
-      ...parseStudentIdText(texts.front),
+      ...parseStudentIdText(texts.front, { allowUnlabelledName: true }),
     },
   };
 }

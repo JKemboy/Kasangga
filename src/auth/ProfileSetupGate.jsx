@@ -1,3 +1,4 @@
+import { applyIdFields } from "../services/studentIdOcr.js";
 import StudentIdUpload from "./StudentIdUpload.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
 import StudentShell from "../components/shared/StudentShell.jsx";
@@ -167,7 +168,7 @@ function Setup() {
               onReady={setIdReviewed}
               onBusy={setOcrBusy}
               onFields={(fields) =>
-                setValues((previous) => ({ ...previous, ...fields }))
+                setValues((previous) => applyIdFields(previous, fields))
               }
             />
             <fieldset

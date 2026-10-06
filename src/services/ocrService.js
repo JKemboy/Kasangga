@@ -16,7 +16,7 @@ export function scheduleImageError(file) {
 // Runs in a browser worker. No image is sent to an OCR server.
 export async function extractImageText(
   file,
-  { onProgress = () => {}, signal } = {},
+  { onProgress = () => {}, signal, parameters } = {},
 ) {
   const error = scheduleImageError(file);
   if (error) throw new Error(error);
@@ -41,6 +41,7 @@ export async function extractImageText(
       await worker.terminate();
       signal.throwIfAborted();
     }
+    if (parameters) await worker.setParameters(parameters);
     const result = await worker.recognize(file);
     return result.data.text.trim();
   })();
