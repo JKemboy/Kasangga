@@ -41,6 +41,30 @@ export async function verifyLearnerOtp(
     throw inputError("missing_otp_session");
   return data.session;
 }
+export async function signInWithPortalPassword(
+  email,
+  password,
+  client = getSupabaseClient(),
+) {
+  const address = String(email || "")
+    .trim()
+    .toLowerCase();
+  if (!["admin@carsu.edu.ph", "osas@carsu.edu.ph"].includes(address))
+    throw inputError("password_login_not_available");
+  if (!String(password || "")) throw inputError("missing_password");
+  const { data, error } = await client.auth.signInWithPassword({
+    email: address,
+    password,
+  });
+  if (error) throw error;
+  if (
+    !data?.session?.access_token ||
+    !data.session.user?.id ||
+    data.session.user.email?.toLowerCase() !== address
+  )
+    throw inputError("missing_password_session");
+  return data.session;
+}
 export function otpRateLimited(error) {
   return (
     error?.status === 429 ||
@@ -57,6 +81,12 @@ export function learnerOtpMessage(error) {
       return "Use your @carsu.edu.ph email address.";
     case "invalid_otp_input":
       return "Enter the verification code from your email.";
+    case "password_login_not_available":
+      return "Password login is only available for the configured Admin and OSAS accounts.";
+    case "missing_password":
+      return "Enter your account password.";
+    case "missing_password_session":
+      return "Sign-in did not complete. Please try again.";
     case "otp_expired":
       return "This code is invalid or has expired. Use the latest email or request a new code.";
     case "otp_disabled":
@@ -64,7 +94,7 @@ export function learnerOtpMessage(error) {
     case "signup_disabled":
       return "We could not sign in with this email. If you have not registered yet, choose Register.";
     case "invalid_credentials":
-      return "The code could not be verified. Check the latest code and try again.";
+      return "The password or verification code is incorrect. Check it and try again.";
     case "missing_otp_session":
       return "Verification did not complete. Please request a new code and try again.";
     default:

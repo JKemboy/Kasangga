@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, ShieldCheck } from "lucide-react";
+import { KeyRound, Mail, ShieldCheck } from "lucide-react";
 import InputField from "./InputField.jsx";
 import SecurityNotice from "./SecurityNotice.jsx";
 import {
   sendLearnerOtp,
   verifyLearnerOtp,
+  signInWithPortalPassword,
   learnerOtpMessage,
   otpRateLimited,
 } from "../../services/learnerOtp.js";
@@ -14,9 +15,14 @@ export default function AuthCard() {
   const [email, setEmail] = useState("");
   const [sentTo, setSentTo] = useState("");
   const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const portalPasswordLogin = [
+    "admin@carsu.edu.ph",
+    "osas@carsu.edu.ph",
+  ].includes(email.trim().toLowerCase());
   useEffect(() => {
     if (!cooldown) return;
     const timer = setTimeout(
@@ -42,6 +48,19 @@ export default function AuthCard() {
   }
   async function submit(e) {
     e.preventDefault();
+    if (!sentTo && portalPasswordLogin) {
+      if (busy) return;
+      setBusy(true);
+      setError("");
+      try {
+        await signInWithPortalPassword(email, password);
+      } catch (e) {
+        setError(learnerOtpMessage(e));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     if (!sentTo) return send();
     if (busy) return;
     setBusy(true);
@@ -64,7 +83,9 @@ export default function AuthCard() {
           <p className="mt-1 text-xs text-slate-500">
             {sentTo
               ? "Enter the verification code sent to " + sentTo
-              : "Log in with your registered CSU email. No password needed."}
+              : portalPasswordLogin
+                ? "Enter your account password to sign in without an email code."
+                : "Log in with your registered CSU email. We will email you a verification code."}
           </p>
         </header>
         <form onSubmit={submit} className="space-y-3">
@@ -95,22 +116,36 @@ export default function AuthCard() {
               required
             />
           )}
+          {!sentTo && portalPasswordLogin && (
+            <InputField
+              icon={KeyRound}
+              label="Account password"
+              aria-label="Account password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          )}
           {error && (
             <p role="alert" className="text-sm text-red-700">
               {error}
             </p>
           )}
           <button
-            disabled={busy || (!sentTo && cooldown > 0)}
+            disabled={busy || (!sentTo && !portalPasswordLogin && cooldown > 0)}
             className="w-full rounded-md bg-[#006b3c] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
             {busy
-              ? "Please wait?"
+              ? "Signing in…"
               : sentTo
                 ? "Verify and log in"
-                : cooldown
-                  ? "Try again in " + cooldown + "s"
-                  : "Send OTP"}
+                : portalPasswordLogin
+                  ? "Log in"
+                  : cooldown
+                    ? "Try again in " + cooldown + "s"
+                    : "Send OTP"}
           </button>
         </form>
         {sentTo && (

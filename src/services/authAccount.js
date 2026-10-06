@@ -29,11 +29,18 @@ export async function loadAuthAccount(client, userId) {
     );
   return { profile: profile.data, roles: allowed };
 }
+export function privilegedAccountRole(roles) {
+  return ["admin", "osas"].find((role) => roles.includes(role)) || null;
+}
 export function accountHome(roles) {
-  const role = ["learner", "tutor", "admin", "osas"].find((r) =>
-    roles.includes(r),
-  );
+  const role =
+    privilegedAccountRole(roles) ||
+    ["learner", "tutor"].find((value) => roles.includes(value));
   return role ? `/${role}-dashboard` : "/login";
+}
+export function privilegedAccountHome(roles) {
+  const role = privilegedAccountRole(roles);
+  return role ? `/${role}-dashboard` : null;
 }
 export function workspaceProfile(profile, user) {
   const college = findCollege(profile?.college);
