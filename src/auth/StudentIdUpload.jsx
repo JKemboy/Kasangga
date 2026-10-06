@@ -23,9 +23,16 @@ function Preview({ file, side }) {
   ) : null;
 }
 
-export default function StudentIdUpload({ onFields, onReady, onBusy }) {
+export default function StudentIdUpload({
+  onFields,
+  onReady,
+  onBusy,
+  onAttempted,
+  onImage,
+  allowEdit,
+  onAllowEdit,
+}) {
   const [files, setFiles] = useState({ front: null, back: null });
-  const [manual, setManual] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(null);
   const [result, setResult] = useState(null);
@@ -36,8 +43,11 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
       controller.current?.abort();
       onReady(false);
       onBusy(false);
+      onAttempted(false);
+      onImage(null);
+      onAllowEdit(false);
     },
-    [onReady, onBusy],
+    [onReady, onBusy, onAttempted, onImage, onAllowEdit],
   );
   function select(side, e) {
     const file = e.target.files?.[0];
@@ -48,20 +58,25 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
       setError(issue);
       return;
     }
-    setManual(false);
     setFiles((previous) => ({ ...previous, [side]: file }));
+    if (side === "front") onImage(file);
     setResult(null);
+    setProgress(null);
     setError("");
     onReady(false);
+    onAttempted(false);
+    onAllowEdit(false);
+    onFields({});
   }
   async function extract() {
     if (controller.current) return;
     const abort = new AbortController();
     controller.current = abort;
-    setManual(false);
     setBusy(true);
     onBusy(true);
     onReady(false);
+    onAttempted(false);
+    onAllowEdit(false);
     setError("");
     setResult(null);
     try {
@@ -74,11 +89,10 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
       onFields(next.fields);
     } catch (e) {
       if (!abort.signal.aborted)
-        setError(
-          "Could not read the ID images. Try clearer photos, then extract again.",
-        );
+        setError(`Could not read the ID images: ${e.message}`);
     } finally {
       if (!abort.signal.aborted) {
+        onAttempted(true);
         setBusy(false);
         onBusy(false);
       }
@@ -90,8 +104,9 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
       <h3 className="text-sm font-semibold">Student ID · Front and Back</h3>
       <p className="text-xs text-slate-600">
         Upload both sides separately, then select Extract ID Details. JPEG, PNG
-        or WebP, up to 10 MB per image. Images are read in your browser and are
-        not stored on the server.
+        or WebP, up to 10 MB per image. OCR runs in your browser. The front
+        image used for extraction is uploaded to your private account folder
+        only when you save your profile.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         {["front", "back"].map((side) => (
@@ -123,18 +138,6 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
       >
         {busy ? "Reading ID images..." : "Extract ID Details"}
       </button>
-      <label className="flex items-start gap-2 text-xs">
-        <input
-          type="checkbox"
-          disabled={busy}
-          checked={manual}
-          onChange={(e) => {
-            setManual(e.target.checked);
-            onReady(e.target.checked);
-          }}
-        />
-        Enter my details manually instead of OCR.
-      </label>
       {busy && (
         <p role="status" className="text-xs">
           {progress?.side === "back" ? "Back" : "Front"}:{" "}
@@ -147,10 +150,11 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
           {error}
         </p>
       )}
-      {result && !manual && (
+      {result && (
         <div className="space-y-2">
           <p role="status" className="text-xs font-medium text-green-800">
-            Extraction complete. The four ID fields below have been updated.
+            Extraction complete. The details below are read-only until you
+            choose to edit them.
           </p>
           <dl className="grid gap-2 rounded border bg-white p-2 text-xs sm:grid-cols-2">
             {Object.entries(ID_FIELDS).map(([key, label]) => (
@@ -161,43 +165,57 @@ export default function StudentIdUpload({ onFields, onReady, onBusy }) {
                     result.fields[key] ? "text-slate-600" : "text-amber-700"
                   }
                 >
-                  {result.fields[key] || "Not detected - enter manually below"}
+                  {result.fields[key] || "Not detected"}
                 </dd>
               </div>
             ))}
           </dl>
           {!result.academic && (
             <p role="status" className="text-xs text-amber-700">
-              We couldn't confidently detect your college/program. Please verify
-              the information using the dropdowns.
+              We couldn't confidently detect your college/program. Choose Allow
+              Edit Details to select them from the dropdowns.
             </p>
           )}
           <p className="text-xs text-slate-600">
-            Review and correct the suggested fields below. OCR may miss
-            unlabelled or unclear text; enter any missing values manually. This
-            does not verify the authenticity of your ID.
+            OCR may miss unlabelled or unclear text. You can review and correct
+            any mistakes after allowing edits. This does not verify the
+            authenticity of your ID.
           </p>
-          {["front", "back"].map((side) => (
-            <details key={side} className="rounded border bg-white p-2 text-xs">
-              <summary className="cursor-pointer capitalize">
-                Extracted text · {side}
-              </summary>
-              <pre className="mt-2 whitespace-pre-wrap break-words font-sans">
-                {result.texts[side] ||
-                  "No readable text found. Try a clearer image or fill the fields manually."}
-              </pre>
-            </details>
-          ))}
-          <label className="flex items-start gap-2 text-xs">
-            <input
-              type="checkbox"
-              className="accent-green-800"
-              onChange={(e) => onReady(e.target.checked)}
-            />
-            I have reviewed the extracted details and will correct any missing
-            or inaccurate information before saving.
-          </label>
+          <button
+            type="button"
+            className={primary}
+            disabled={allowEdit}
+            onClick={() => onAllowEdit(true)}
+          >
+            {allowEdit ? "Editing Enabled" : "Allow Edit Details"}
+          </button>
+          {allowEdit && (
+            <p role="status" className="text-xs text-green-800">
+              You can now edit the extracted details in the fields below.
+            </p>
+          )}
         </div>
+      )}
+      {!result && !busy && error && (
+        <>
+          <p className="text-xs text-slate-600">
+            You may correct or enter the ID details after this extraction
+            attempt. You do not have to scan again if only a field was missed.
+          </p>
+          <button
+            type="button"
+            className={primary}
+            disabled={allowEdit}
+            onClick={() => onAllowEdit(true)}
+          >
+            {allowEdit ? "Editing Enabled" : "Allow Edit Details"}
+          </button>
+          {allowEdit && (
+            <p role="status" className="text-xs text-green-800">
+              You can now enter or correct your details in the fields below.
+            </p>
+          )}
+        </>
       )}
     </section>
   );

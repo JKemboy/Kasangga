@@ -4,9 +4,10 @@ import {
   findProgram,
 } from "../data/collegeProgramMap.js";
 import { extractImageText, scheduleImageError } from "./ocrService.js";
+import { prepareStudentIdRegions } from "./studentIdRegions.js";
 
 export function idImageError(file) {
-  return file ? scheduleImageError(file) : "Choose an ID image first.";
+  return file ? scheduleImageError(file) : "Choose a student ID image first.";
 }
 
 export const ID_FIELDS = {
@@ -114,7 +115,8 @@ export function parseStudentIdText(text, { allowUnlabelledName = false } = {}) {
 export async function readStudentId(
   front,
   back,
-  { signal, onProgress = () => {}, recognize = extractImageText } = {},
+  { signal, onProgress = () => {}, recognize = extractImageText,
+    prepareRegions = recognize === extractImageText ? prepareStudentIdRegions : null } = {},
 ) {
   for (const file of [front, back]) {
     const error = idImageError(file);
@@ -133,11 +135,35 @@ export async function readStudentId(
     });
   }
   signal?.throwIfAborted();
-  const academic = detectAcademicPair(texts.front + "\n" + texts.back);
+  let regionName;
+  if (prepareRegions) {
+    try {
+      onProgress({side:"front", label:"Preparing name and college/program strips", progress:0});
+      const regions = await prepareRegions(front);
+      signal?.throwIfAborted();
+      if (regions) {
+        for (const [key, mode] of [["name", "13"], ["academic", "7"]]) {
+          texts[key + "Strip"] = await recognize(regions[key], {
+            signal, parameters: {tessedit_pageseg_mode:mode},
+            onProgress: event => onProgress({...event, side:"front", label:`${key === "name" ? "Name strip" : "College/program strip"}: ${event.label}`}),
+          });
+        }
+        const name = texts.nameStrip.replace(/\s+/g," ").trim();
+        if (/^[\p{L}][\p{L} .,'\u2019-]+$/u.test(name) && name.split(" ").length >= 2 && name.split(" ").length <= 8 && !/university|college|student|signature/i.test(name)) regionName = name;
+      }
+    } catch (error) {
+      if (signal?.aborted || error.name === "AbortError") throw error;
+      // Keep whole-image results available if region preparation is unsupported.
+      texts.regionWarning = "Could not read the ID strips separately. Review the whole-image results or enter missing fields manually.";
+    }
+  }
+  signal?.throwIfAborted();
+  const academic = detectAcademicPair(texts.front + "\n" + texts.back + "\n" + (texts.academicStrip || ""));
   const fields = {
     ...parseStudentIdText(texts.back),
     ...parseStudentIdText(texts.front, { allowUnlabelledName: true }),
   };
+  if (regionName) fields.name = regionName;
   delete fields.college;
   delete fields.program;
   if (academic) {

@@ -11,8 +11,9 @@ const pairs = collegeProgramMap.flatMap((c) =>
   c.programs.map((p) => [c.name, p.name]),
 );
 const block = `  -- BEGIN GENERATED ACADEMIC VALIDATION (scripts/generate-academic-validation.mjs)
+  catalogue := $catalogue$${JSON.stringify(pairs)}$catalogue$::jsonb;
   if not exists (
-    select 1 from jsonb_array_elements($catalogue$${JSON.stringify(pairs)}$catalogue$::jsonb) as pair
+    select 1 from jsonb_array_elements(catalogue) as pair
     where pair->>0 = details->>'college' and pair->>1 = details->>'program'
   ) then raise exception 'Select a valid college and its corresponding program'; end if;
   -- END GENERATED ACADEMIC VALIDATION
