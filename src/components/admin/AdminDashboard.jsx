@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import HeaderInbox from "../shared/HeaderInbox.jsx";
 import { adminAlerts, adminThreads } from "../shared/headerInboxData.js";
 import { useLogout } from "../shared/LogoutProvider.jsx";
@@ -54,6 +55,8 @@ const navigation = [
   ["Audit Logs", ClipboardList],
   ["Settings", Settings],
 ];
+const VERIFICATION_CHECKS_STORAGE_KEY =
+  "campustutor:admin-verification-checks:v1";
 export default function AdminDashboardPage() {
   const requestLogout = useLogout();
   const auth = useAuth();
@@ -67,22 +70,17 @@ export default function AdminDashboardPage() {
     ),
     [verificationChecks, setVerificationChecks] = useState({}),
     [appsLoading, setAppsLoading] = useState(true),
-    [appsError, setAppsError] = useState("");
+    [appsError, setAppsError] = useState(""),
+    [verificationError, setVerificationError] = useState("");
   useEffect(() => {
     let active = true;
-    let cacheCleanupError = "";
-    try {
-      localStorage.removeItem("campustutor:admin-applications:v1");
-    } catch (error) {
-      cacheCleanupError = `Could not remove the old browser-only application cache: ${error.message}`;
-    }
     async function refreshApplications() {
       setAppsLoading(true);
       try {
         const records = await loadTutorApplications();
         if (active) {
           setApps(records);
-          setAppsError(cacheCleanupError);
+          setAppsError("");
         }
       } catch (error) {
         if (active) setAppsError(error.message);
@@ -99,17 +97,17 @@ export default function AdminDashboardPage() {
     await saveTutorApplicationReview(record, status);
     setApps(await loadTutorApplications());
   }
+  function updateVerificationCheck(applicationId, next) {
+    const updated = { ...verificationChecks, [applicationId]: next };
+    setVerificationError("");
+    setVerificationChecks(updated);
+  }
   async function loadApplicationDocument(doc) {
     return downloadTutorApplicationDocument(doc.storagePath, auth.user.id);
   }
   function persist(kind, next) {
     try {
-      localStorage.setItem(
-        `campustutor:admin-${kind}:v1`,
-        JSON.stringify(next),
-      );
-      setServices(next);
-      return true;
+      requireBackendPersistence();
     } catch {
       return false;
     }
@@ -253,6 +251,14 @@ export default function AdminDashboardPage() {
             {appsError}
           </p>
         )}
+        {verificationError && (
+          <p
+            className="m-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+            role="alert"
+          >
+            {verificationError}
+          </p>
+        )}
         {appsLoading && (
           <p className="m-4 text-sm text-slate-600" role="status">
             Loading tutor applications…
@@ -278,12 +284,7 @@ export default function AdminDashboardPage() {
             onUpdate={updateApplication}
             onDocument={loadApplicationDocument}
             verificationChecks={verificationChecks}
-            onVerificationCheckChange={(applicationId, next) =>
-              setVerificationChecks((current) => ({
-                ...current,
-                [applicationId]: next,
-              }))
-            }
+            onVerificationCheckChange={updateVerificationCheck}
             config={config}
           />
         ) : view === "Service Management" ? (
@@ -294,12 +295,7 @@ export default function AdminDashboardPage() {
             onUserSave={(updated) => {
               const next = rows.map((u) => (u.id === updated.id ? updated : u));
               try {
-                localStorage.setItem(
-                  "campustutor:admin-users:v1",
-                  JSON.stringify(next),
-                );
-                setRows(next);
-                return true;
+                requireBackendPersistence();
               } catch {
                 return false;
               }
@@ -331,12 +327,7 @@ export default function AdminDashboardPage() {
             onUserSave={(updated) => {
               const next = rows.map((u) => (u.id === updated.id ? updated : u));
               try {
-                localStorage.setItem(
-                  "campustutor:admin-users:v1",
-                  JSON.stringify(next),
-                );
-                setRows(next);
-                return true;
+                requireBackendPersistence();
               } catch {
                 return false;
               }
@@ -423,7 +414,7 @@ export default function AdminDashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <p>No admin changes recorded on this browser.</p>
+                  <p>No admin changes available.</p>
                 )}
               </>
             ) : modal === "Overview" || modal === "Reports & Analytics" ? (

@@ -31,7 +31,7 @@ import {
 import { dateLabel, loadCollection } from "./adminData.js";
 export default function AdminIncidents({users=[],applications=[],services=[],config,onUserSave,onServiceSave,onApplicationSave,onDocument}) {
  const [linked,setLinked]=useState(null);
- const [workspace]=useState(()=>{try{const d=JSON.parse(localStorage.getItem("campustutor:tutor-workspace:v2"));if(Array.isArray(d?.sessions))return d;}catch{}return seed;});
+ const [workspace]=useState(()=>{return seed;});
  function related(r,kind){if(kind==="booking"){const b=workspace.sessions.find(b=>b.booking===r.booking)||paymentBookings[r.booking];if(b)setLinked({kind,record:b});else setNotice("No related booking in the available records.");}else if(kind==="account"){const u=users.find(u=>u.name===r.reporter);if(u)setLinked({kind,id:u.id});else setNotice("Reporter account is not available.");}else setLinked({kind,record:r});}
 
 

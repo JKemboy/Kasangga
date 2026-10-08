@@ -1,6 +1,7 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import UserExport from "./UserExport.jsx";
 import UserDetails from "./UserDetails.jsx";
-import {useInteractions} from "../shared/InteractionProvider.jsx";
+import { useInteractions } from "../shared/InteractionProvider.jsx";
 import { useState } from "react";
 import {
   Users,
@@ -23,24 +24,21 @@ import {
 const key = "campustutor:admin-users:v1";
 const initial = [];
 export function loadAdminUsers() {
-  try {
-    const data = JSON.parse(localStorage.getItem(key));
-    if (
-      Array.isArray(data) &&
-      new Set(data.map((r) => r.id)).size === data.length &&
-      data.every(
-        (r) =>
-          typeof r.id === "string" &&
-          ["Active", "Suspended", "Restricted"].includes(r.status) &&
-          Array.isArray(r.history),
-      )
-    )
-      return data;
-  } catch {}
   return structuredClone(initial);
 }
-export default function AdminUsers({ rows, onUpdate, query, setQuery, applications, services, config, onServiceSave, onApplicationSave, onDocument }) {
-  const {confirm}=useInteractions();
+export default function AdminUsers({
+  rows,
+  onUpdate,
+  query,
+  setQuery,
+  applications,
+  services,
+  config,
+  onServiceSave,
+  onApplicationSave,
+  onDocument,
+}) {
+  const { confirm } = useInteractions();
 
   const [tab, setTab] = useState("All Users"),
     [college, setCollege] = useState(""),
@@ -365,7 +363,26 @@ export default function AdminUsers({ rows, onUpdate, query, setQuery, applicatio
       <p className="text-[9px] text-slate-400">
         Local demo · Account changes do not affect institutional sign-in.
       </p>
-      {selected && <UserDetails user={rows.find(r=>r.id===selected.id) || selected} applications={applications} services={services} config={config} onServiceSave={onServiceSave} onApplicationSave={onApplicationSave} onDocument={onDocument} onClose={()=>setSelected(null)} onSave={updated=>{const next=rows.map(r=>r.id===updated.id?updated:r);try{localStorage.setItem(key,JSON.stringify(next));onUpdate(next);return true;}catch{return false;}}} />}
+      {selected && (
+        <UserDetails
+          user={rows.find((r) => r.id === selected.id) || selected}
+          applications={applications}
+          services={services}
+          config={config}
+          onServiceSave={onServiceSave}
+          onApplicationSave={onApplicationSave}
+          onDocument={onDocument}
+          onClose={() => setSelected(null)}
+          onSave={(updated) => {
+            const next = rows.map((r) => (r.id === updated.id ? updated : r));
+            try {
+              requireBackendPersistence();
+            } catch {
+              return false;
+            }
+          }}
+        />
+      )}
     </section>
   );
 }

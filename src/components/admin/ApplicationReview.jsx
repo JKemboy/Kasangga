@@ -331,44 +331,46 @@ export default function ApplicationReview({
             <h3>Documents</h3>
             {!!docs.length && (
               <div className="aar-ocr-batch">
-                <div className="aar-ocr-batch-actions">
-                  <button
-                    className={primary}
-                    disabled={!!ocrBusy}
-                    onClick={verifyAllDocuments}
-                  >
-                    {ocrBusy ? (
-                      <LoaderCircle
-                        className="aar-spin"
-                        size={14}
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <ScanLine size={14} />
-                    )}
-                    {ocrBusy
-                      ? "Checking documents…"
-                      : "Run All Document Checks"}
-                  </button>
-                  <button
-                    className={button}
-                    disabled={
-                      !!ocrBusy ||
-                      !verificationComplete ||
-                      !!currentVerificationState?.matchConfirmed
-                    }
-                    title={
-                      currentVerificationState?.matchConfirmed
-                        ? "Information match confirmed"
-                        : "Run all document checks before confirming"
-                    }
-                    onClick={confirmInformationMatch}
-                  >
-                    {currentVerificationState?.matchConfirmed
-                      ? "Information Match Confirmed"
-                      : "Confirm Information Match"}
-                  </button>
-                </div>
+                {r.status !== "Approved" && (
+                  <div className="aar-ocr-batch-actions">
+                    <button
+                      className={primary}
+                      disabled={!!ocrBusy}
+                      onClick={verifyAllDocuments}
+                    >
+                      {ocrBusy ? (
+                        <LoaderCircle
+                          className="aar-spin"
+                          size={14}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <ScanLine size={14} />
+                      )}
+                      {ocrBusy
+                        ? "Checking documents…"
+                        : "Run All Document Checks"}
+                    </button>
+                    <button
+                      className={button}
+                      disabled={
+                        !!ocrBusy ||
+                        !verificationComplete ||
+                        !!currentVerificationState?.matchConfirmed
+                      }
+                      title={
+                        currentVerificationState?.matchConfirmed
+                          ? "Information match confirmed"
+                          : "Run all document checks before confirming"
+                      }
+                      onClick={confirmInformationMatch}
+                    >
+                      {currentVerificationState?.matchConfirmed
+                        ? "Information Match Confirmed"
+                        : "Confirm Information Match"}
+                    </button>
+                  </div>
+                )}
                 {ocrBusy && ocrProgress && (
                   <p role="status">
                     Document {ocrProgress.current} of {ocrProgress.total}:{" "}

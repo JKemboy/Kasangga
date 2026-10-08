@@ -67,12 +67,7 @@ export default function AdminReports({ users, services, go }) {
     [status, setStatus] = useState(""),
     [detail, setDetail] = useState(null);
   const [sessions] = useState(() => {
-    try {
-      const d = JSON.parse(
-        localStorage.getItem("campustutor:tutor-workspace:v2"),
-      );
-      if (Array.isArray(d?.sessions)) return d.sessions;
-    } catch {}
+
     return seed.sessions;
   });
   const invalid = start && end && start > end,

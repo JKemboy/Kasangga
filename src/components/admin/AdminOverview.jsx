@@ -27,12 +27,7 @@ export default function AdminOverview({
   const [detail, setDetail] = useState(null);
   const [incidents, setIncidents] = useState(loadIncidents);
   const [workspace] = useState(() => {
-    try {
-      const d = JSON.parse(
-        localStorage.getItem("campustutor:tutor-workspace:v2"),
-      );
-      if (Array.isArray(d?.sessions) && d.profile) return d;
-    } catch {}
+
     return seed;
   });
   const bookings = [...workspace.sessions].sort((a, b) =>

@@ -1,9 +1,11 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import { loadCollection } from "./adminData.js";
 export const incidentKey = "campustutor:admin-incidents:v1";
 export const initialIncidents = [];
 
 export function loadIncidents() { return loadCollection(incidentKey, initialIncidents); }
-export function saveIncidents(rows) { try { localStorage.setItem(incidentKey, JSON.stringify(rows)); return true; } catch { return false; } }
+export function saveIncidents(rows) { try { requireBackendPersistence();
+} catch { return false; } }
 export function reviewIncident(record, action, notes) {
  if (['Admin Screening Complete', 'Resolved by Admin'].includes(record.status)) throw new Error('This review is complete.');
  if (!['Resolved by Admin', 'Referred to OSAS'].includes(action) || (action === 'Resolved by Admin' && record.type !== 'Platform / Technical')) throw new Error('Choose an action appropriate for this report.');

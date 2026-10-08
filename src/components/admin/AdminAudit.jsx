@@ -30,12 +30,7 @@ function readLocal(users, apps, services, config) {
     ["Tutor Verification", apps],
     ["Service Management", services],
   ];
-  try {
-    const incidents = JSON.parse(
-      localStorage.getItem("campustutor:admin-incidents:v1"),
-    );
-    if (Array.isArray(incidents)) sources.push(["Incident Reports", incidents]);
-  } catch {}
+
   const logs = sources.flatMap(([module, records]) =>
     records.flatMap((r) =>
       (r.history || [])

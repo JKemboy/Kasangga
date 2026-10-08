@@ -23,8 +23,8 @@ export default function IncidentDetails({ record: r, onClose, onSave, onBooking,
     try {
       const next = reviewIncident(r, action, notes);
       if(action==='Referred to OSAS'&&!confirmReferral){setConfirmReferral(true);return;}
-      if (!onSave(next)) throw new Error('Could not save. Browser storage is unavailable or full.');
-      setAction(''); setNotice('Review saved locally. No external notification was sent.');
+      if (!onSave(next)) throw new Error('This action is not connected to the database yet. Nothing was saved.');
+      setAction(''); setNotice('Review not connected to the database. No external notification was sent.');
     } catch (err) { setError(err.message); }
   }
   const pill = value => <span className={`ai-pill ${value === 'High' ? 'red' : ['Resolved by Admin','Admin Screening Complete'].includes(value) ? 'green' : value === 'Referred to OSAS' ? 'purple' : value === 'Not Required' ? 'gray' : 'gold'}`}>{value}</span>;
@@ -44,7 +44,7 @@ export default function IncidentDetails({ record: r, onClose, onSave, onBooking,
       <form className="aid-action" onSubmit={submit}><div className="aid-info"><Info size={21}/><p>{action === 'Resolved by Admin' ? 'Resolve only platform or technical issues. Conduct concerns go to OSAS. Participants arrange any session rescheduling.' : 'A referral does not establish misconduct. OSAS assesses whether a formal case is needed. This records a local referral only.'}</p></div>
         <label htmlFor="incident-resolution">{action === 'Resolved by Admin' ? 'What was done (required)' : 'Referral note for OSAS (required)'}</label><textarea id="incident-resolution" className={input} rows={4} maxLength={2000} required value={notes} onChange={e => {setNotes(e.target.value);setConfirmReferral(false);}} placeholder={action === 'Resolved by Admin' ? 'Describe the steps taken to resolve this issue.' : 'Describe the concern requiring institutional review.'}/>
         {confirmReferral&&<p className="aid-info">Confirm this local referral to OSAS. No external notification will be sent.</p>}
-        <small>{notes.trim().length}/15 characters minimum · saved locally</small>
+        <small>{notes.trim().length}/15 characters minimum · not connected to the database</small>
         {error && <p role="alert" className="text-red-600">{error}</p>}
         <div className="aid-action-footer"><button type="button" className={button} onClick={() => setAction('')}>Cancel</button><button className={primary} disabled={notes.trim().length < 15}>{action === 'Resolved by Admin' ? 'Mark Resolved' : confirmReferral ? 'Confirm Referral' : 'Continue'}</button></div>
       </form>

@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import PaymentDetails from "./PaymentDetails.jsx";
 import UserExport from "./UserExport.jsx";
 import { useState } from "react";
@@ -33,8 +34,9 @@ const initialTransactions = [];
 // settled earnings until the review is resolved. This is reference data only.
 const originalAllocation = (r) => sessionAllocation({ ...r, payment: "Paid" });
 export default function AdminPayments() {
-  const [transactions,setTransactions]=useState(()=>{try{const saved=JSON.parse(localStorage.getItem('campustutor:admin-refund-reviews:v1'))||{};return initialTransactions.map(r=>({...r,...(saved[r.id]?{refundDecision:saved[r.id].refundDecision,history:saved[r.id].history}: {})}));}catch{return initialTransactions;}});
-  function saveReview(updated){const next=transactions.map(r=>r.id===updated.id?updated:r);try{localStorage.setItem('campustutor:admin-refund-reviews:v1',JSON.stringify(Object.fromEntries(next.filter(r=>r.refundDecision).map(r=>[r.id,{refundDecision:r.refundDecision,history:r.history}]))));setTransactions(next);return true;}catch{return false;}}
+  const [transactions,setTransactions]=useState(()=>{return initialTransactions;});
+  function saveReview(updated){const next=transactions.map(r=>r.id===updated.id?updated:r);try{requireBackendPersistence();
+}catch{return false;}}
 
   const [status, setStatus] = useState(""),
     [query, setQuery] = useState(""),

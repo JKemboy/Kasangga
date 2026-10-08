@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import {useInteractions} from "../shared/InteractionProvider.jsx";
 import { useState } from "react";
 import {
@@ -82,11 +83,9 @@ export default function AdminSettings({ config, onSave }) {
         : []),
     ];
     try {
-      localStorage.setItem("campustutor:admin-config:v1", JSON.stringify(next));
-      onSave(next);
-      setNotice("Settings saved on this browser.");
-    } catch {
-      setError("Could not save. Browser storage is unavailable or full.");
+      requireBackendPersistence();
+} catch {
+      setError("This action is not connected to the database yet. Nothing was saved.");
     }
   }
   return (
@@ -244,7 +243,7 @@ export default function AdminSettings({ config, onSave }) {
         <Modal title="Change Password" onClose={() => setSecurity(false)}>
           <p className="text-xs">
             Use your institutional account service to change your password.
-            Authentication is not connected to this local demo.
+            Security settings management is not connected yet.
           </p>
         </Modal>
       )}
