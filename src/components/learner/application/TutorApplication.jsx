@@ -10,10 +10,7 @@ import {
   Info,
 } from "lucide-react";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
-import {
-  scheduleFileStore,
-  scheduleFileError,
-} from "../../tutor/workspace/scheduleUploads.js";
+import { scheduleFileError } from "../../tutor/workspace/scheduleUploads.js";
 import {
   loadMyTutorApplication,
   submitTutorApplication,
@@ -97,29 +94,6 @@ export default function TutorApplication({ onClose }) {
     async function loadApplication() {
       setLoading(true);
       try {
-        const legacyApplication = work.data.application;
-        if (legacyApplication) {
-          const cleanupErrors = [];
-          for (const document of Object.values(
-            legacyApplication.documents || {},
-          )) {
-            if (document?.storageId) {
-              try {
-                await scheduleFileStore.remove(document.storageId);
-              } catch (cleanupError) {
-                cleanupErrors.push(cleanupError.message);
-              }
-            }
-          }
-          if (!work.commit((data) => ({ ...data, application: null })))
-            cleanupErrors.push(
-              "Could not remove the old browser-only tutor application draft.",
-            );
-          if (cleanupErrors.length)
-            setError(
-              `The old browser-only tutor application could not be fully removed: ${cleanupErrors.join(" ")}`,
-            );
-        }
         const application = await loadMyTutorApplication(auth.user.id);
         if (!active) return;
         if (application) {

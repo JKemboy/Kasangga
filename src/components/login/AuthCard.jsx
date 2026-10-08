@@ -9,6 +9,7 @@ import {
   signInWithPortalPassword,
   learnerOtpMessage,
   otpRateLimited,
+  PASSWORD_LOGIN_EMAILS,
 } from "../../services/learnerOtp.js";
 
 export default function AuthCard() {
@@ -19,10 +20,9 @@ export default function AuthCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
-  const portalPasswordLogin = [
-    "admin@carsu.edu.ph",
-    "osas@carsu.edu.ph",
-  ].includes(email.trim().toLowerCase());
+  const portalPasswordLogin = PASSWORD_LOGIN_EMAILS.includes(
+    email.trim().toLowerCase(),
+  );
   useEffect(() => {
     if (!cooldown) return;
     const timer = setTimeout(

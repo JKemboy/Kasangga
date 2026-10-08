@@ -1,6 +1,12 @@
 import { isCsuEmail } from "./authAccount.js";
 import { getSupabaseClient } from "./supabaseClient.js";
 
+export const PASSWORD_LOGIN_EMAILS = [
+  "admin@carsu.edu.ph",
+  "osas@carsu.edu.ph",
+  "learner@carsu.edu.ph",
+];
+
 function inputError(code) {
   return Object.assign(new Error(code), { code });
 }
@@ -49,7 +55,7 @@ export async function signInWithPortalPassword(
   const address = String(email || "")
     .trim()
     .toLowerCase();
-  if (!["admin@carsu.edu.ph", "osas@carsu.edu.ph"].includes(address))
+  if (!PASSWORD_LOGIN_EMAILS.includes(address))
     throw inputError("password_login_not_available");
   if (!String(password || "")) throw inputError("missing_password");
   const { data, error } = await client.auth.signInWithPassword({
@@ -82,7 +88,7 @@ export function learnerOtpMessage(error) {
     case "invalid_otp_input":
       return "Enter the verification code from your email.";
     case "password_login_not_available":
-      return "Password login is only available for the configured Admin and OSAS accounts.";
+      return "Password login is only available for configured accounts.";
     case "missing_password":
       return "Enter your account password.";
     case "missing_password_session":
