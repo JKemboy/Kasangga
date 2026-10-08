@@ -1,4 +1,3 @@
-import "./resetDemoData.js";
 import AuthProvider from "./auth/AuthProvider.jsx";
 import InteractionProvider from "./components/shared/InteractionProvider.jsx";
 import LogoutProvider from "./components/shared/LogoutProvider.jsx";
