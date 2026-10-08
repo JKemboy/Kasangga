@@ -1,3 +1,4 @@
+import { savedService } from "../../../services/savedTutors.js";
 import { profileSamples } from "./profileSamples.js";
 import {
   Bookmark,
@@ -32,6 +33,9 @@ export function tutorProfile(record) {
 export default function TutorProfile({
   record,
   saved,
+  savedFor = () => false,
+  savingFor = () => false,
+  saving = false,
   onSave,
   onMessage,
   onBook,
@@ -100,14 +104,6 @@ export default function TutorProfile({
             <button className={button} onClick={() => onMessage(t)}>
               <MessageCircle size={15} /> Message Tutor
             </button>
-            <button
-              className={button}
-              aria-pressed={saved}
-              onClick={() => onSave(t)}
-            >
-              <Bookmark size={15} fill={saved ? "currentColor" : "none"} />
-              {saved ? "Saved" : "Save Tutor"}
-            </button>
           </div>
         </div>
       </header>
@@ -146,6 +142,24 @@ export default function TutorProfile({
                 >
                   Book this service
                 </button>
+                {service.id && (
+                  <button
+                    className={button}
+                    disabled={saving || savingFor(savedService(t, service))}
+                    aria-pressed={savedFor(savedService(t, service))}
+                    onClick={() => onSave(savedService(t, service))}
+                  >
+                    <Bookmark
+                      size={15}
+                      fill={
+                        savedFor(savedService(t, service)) ? "#087542" : "none"
+                      }
+                    />
+                    {savedFor(savedService(t, service))
+                      ? "Saved"
+                      : "Save service"}
+                  </button>
+                )}
               </div>
               <div className="ltp-topics">
                 {chips(service.topics).map((topic) => (

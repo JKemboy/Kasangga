@@ -1,3 +1,8 @@
+import {
+  listSavedTutors,
+  persistSavedTutor,
+  serviceKey,
+} from "../../../services/savedTutors.js";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { workspaceProfile } from "../../../services/authAccount.js";
 import AccountAction from "./AccountAction.jsx";
@@ -6,7 +11,14 @@ import LearnerReport from "./LearnerReport.jsx";
 import SessionDialog from "./SessionDialog.jsx";
 import TutorProfile from "./TutorProfile.jsx";
 import BookingFlow from "./BookingFlow.jsx";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 import {
   Modal,
   Field,
@@ -19,7 +31,6 @@ import { meetingUrl } from "../../tutor/workspace/sessionActions.js";
 
 const Context = createContext(null);
 export const useLearnerWorkspace = () => useContext(Context);
-const key = "campustutor:learner-workspace:v1";
 const empty = {
   saved: [],
   sessions: [],
@@ -31,35 +42,84 @@ const empty = {
   profile: {},
   application: null,
 };
-function load(key) {
-  try {
-    const value = JSON.parse(localStorage.getItem(key));
-    return { ...empty, ...value };
-  } catch {
-    return empty;
-  }
-}
 export default function LearnerWorkspace({ children, go }) {
   const auth = useAuth();
-  const storageKey = `${key}:${auth?.user?.id || "signed-out"}`;
-  const [data, setData] = useState(() => ({ ...load(storageKey), profile: { ...load(storageKey).profile, ...workspaceProfile(auth?.profile, auth?.user) } })),
+  const [workspaceData, setData] = useState(() => ({
+      ...structuredClone(empty),
+      profile: {
+        ...workspaceProfile(auth?.profile, auth?.user),
+      },
+    })),
     [dialog, setDialog] = useState(null),
     [error, setError] = useState("");
   const { toast, confirm } = useInteractions();
+  const uid = auth?.user?.id;
+  function closeDialog() {
+    setDialog(null);
+  }
+  const [savedState, setSavedState] = useState({ uid: null, items: [] });
+  const [savedLoading, setSavedLoading] = useState(true);
+  const [savedError, setSavedError] = useState("");
+  const [savingIds, setSavingIds] = useState([]);
+  const pending = useRef(new Set());
+  const generation = useRef(0);
+  const account = useRef(uid);
+  const data = {
+    ...workspaceData,
+    saved: savedState.uid === uid ? savedState.items : [],
+  };
+  const refreshSaved = useCallback(async () => {
+    const current = ++generation.current;
+    if (!uid) {
+      setSavedLoading(false);
+      return;
+    }
+    setSavedLoading(true);
+    setSavedError("");
+    try {
+      const items = await listSavedTutors();
+      if (current === generation.current) setSavedState({ uid, items });
+    } catch (err) {
+      if (current === generation.current) setSavedError(err.message);
+    } finally {
+      if (current === generation.current) setSavedLoading(false);
+    }
+  }, [uid]);
+  useEffect(() => {
+    account.current = uid;
+    pending.current.clear();
+    setSavingIds([]);
+    refreshSaved();
+    window.addEventListener("focus", refreshSaved);
+    return () => {
+      account.current = null;
+      generation.current++;
+      window.removeEventListener("focus", refreshSaved);
+    };
+  }, [refreshSaved, uid]);
+  const isSaved = (tutor) =>
+    !!serviceKey(tutor) &&
+    data.saved.some((t) => serviceKey(t) === serviceKey(tutor));
+  const isSaving = (tutor) => savingIds.includes(serviceKey(tutor));
+
   useEffect(() => {
     if (!auth?.profile) return;
-    setData(previous => ({ ...previous, profile: { ...previous.profile, ...workspaceProfile(auth.profile, auth.user) } }));
+    setData((previous) => ({
+      ...previous,
+      profile: {
+        ...previous.profile,
+        ...workspaceProfile(auth.profile, auth.user),
+      },
+    }));
   }, [auth?.profile, auth?.user]);
-  function commit(change) {
-    try {
-      const next = change(data);
-      localStorage.setItem(storageKey, JSON.stringify(next));
-      setData(next);
-      return true;
-    } catch {
-      setError("Could not save. Browser storage is unavailable or full.");
-      return false;
-    }
+  function commit() {
+    setError(
+      "This action is not connected to the database yet. Nothing was saved.",
+    );
+    toast(
+      "This action is not connected to the database yet. Nothing was saved.",
+    );
+    return false;
   }
   function open(kind, record = {}) {
     setError("");
@@ -70,17 +130,40 @@ export default function LearnerWorkspace({ children, go }) {
     }
     setDialog({ kind, record, step: 0 });
   }
-  function toggleSave(tutor) {
-    const exists = data.saved.some((t) => t.name === tutor.name);
-    if (
-      commit((d) => ({
-        ...d,
-        saved: exists
-          ? d.saved.filter((t) => t.name !== tutor.name)
-          : [tutor, ...d.saved],
-      }))
-    )
-      toast(exists ? "Tutor removed from Saved Tutors." : "Tutor saved.");
+  async function toggleSave(tutor) {
+    const key = serviceKey(tutor);
+    if (pending.current.has(key) || savedLoading) return;
+    if (savedError) {
+      toast("Reload Saved Tutors before changing your saves.");
+      return;
+    }
+    const exists = isSaved(tutor);
+    pending.current.add(key);
+    setSavingIds([...pending.current]);
+    try {
+      await persistSavedTutor(tutor, !exists);
+      if (account.current !== uid) return;
+      generation.current++;
+      setSavedLoading(false);
+      setSavedState((previous) => ({
+        uid,
+        items: exists
+          ? previous.items.filter((t) => serviceKey(t) !== key)
+          : [tutor, ...previous.items.filter((t) => serviceKey(t) !== key)],
+      }));
+      toast(
+        exists
+          ? "Tutor removed from Saved Tutors."
+          : "Tutor saved to your account.",
+      );
+    } catch (err) {
+      if (account.current === uid) toast(err.message);
+    } finally {
+      if (account.current === uid) {
+        pending.current.delete(key);
+        setSavingIds([...pending.current]);
+      }
+    }
   }
   function message(tutor) {
     if (
@@ -106,12 +189,38 @@ export default function LearnerWorkspace({ children, go }) {
     };
     if (!commit((d) => ({ ...d, requests: [...d.requests, record] }))) return;
     setDialog(null);
-    toast("Request saved locally. Server delivery is not connected.");
+    toast(
+      "Request not connected to the database. Server delivery is not connected.",
+    );
   }
-  const api = { data, commit, open, toggleSave, message, go, request };
+  const api = {
+    data,
+    commit,
+    open,
+    toggleSave,
+    message,
+    go,
+    request,
+    isSaved,
+    isSaving,
+    savedLoading,
+    savedError,
+    refreshSaved,
+  };
   const r = dialog?.record;
   return (
     <Context.Provider value={api}>
+      {savedError && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-4 right-4 z-40 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 shadow-lg sm:left-auto sm:max-w-sm"
+        >
+          {savedError}{" "}
+          <button onClick={refreshSaved} className="underline">
+            Retry Saved Tutors
+          </button>
+        </div>
+      )}
       {children}
       {dialog && dialog.kind !== "application" && (
         <Modal
@@ -150,31 +259,22 @@ export default function LearnerWorkspace({ children, go }) {
               article: r?.title,
             }[dialog.kind] || dialog.kind
           }
-          onClose={() => setDialog(null)}
+          onClose={closeDialog}
         >
           {dialog.kind === "profile" && (
             <TutorProfile
               record={r}
-              saved={data.saved.some((t) => t.name === r.name)}
+              saved={isSaved(r)}
+              saving={savedLoading || isSaving(r)}
               onSave={toggleSave}
+              savedFor={isSaved}
+              savingFor={isSaving}
               onMessage={message}
               onBook={(t) => open("book", t)}
             />
           )}
           {dialog.kind === "book" && (
-            <BookingFlow
-              tutor={r}
-              onClose={() => setDialog(null)}
-              onComplete={(booking) =>
-                commit((d) => ({
-                  ...d,
-                  sessions: [
-                    ...d.sessions.filter((s) => s.id !== booking.bookingId),
-                    { ...booking, id: booking.bookingId },
-                  ],
-                }))
-              }
-            />
+            <BookingFlow tutor={r} onClose={closeDialog} />
           )}
           {["details", "cancel", "reschedule"].includes(dialog.kind) && (
             <SessionDialog
@@ -185,7 +285,7 @@ export default function LearnerWorkspace({ children, go }) {
                 review:
                   data.reviews.find((x) => x.sessionId === r.id) || r.review,
               }}
-              onClose={() => setDialog(null)}
+              onClose={closeDialog}
               onOpen={open}
               onMessage={message}
               onRequest={(values) =>
@@ -240,7 +340,7 @@ export default function LearnerWorkspace({ children, go }) {
           {dialog.kind === "report" && (
             <LearnerReport
               record={r}
-              onClose={() => setDialog(null)}
+              onClose={closeDialog}
               onSubmit={(values) => request("report", values)}
             />
           )}
@@ -250,7 +350,7 @@ export default function LearnerWorkspace({ children, go }) {
               review={
                 data.reviews.find((x) => x.sessionId === r.id) || r.review
               }
-              onClose={() => setDialog(null)}
+              onClose={closeDialog}
               onSave={(values) => {
                 if (r.lifecycle !== "Completed") return;
                 if (
@@ -269,7 +369,7 @@ export default function LearnerWorkspace({ children, go }) {
                   }))
                 ) {
                   setDialog(null);
-                  toast("Review saved locally.");
+                  toast("Review not connected to the database.");
                 }
               }}
             />
@@ -333,7 +433,7 @@ export default function LearnerWorkspace({ children, go }) {
               key={dialog.kind}
               kind={dialog.kind}
               email={data.profile.email || "juan.delacruz@carsu.edu.ph"}
-              onClose={() => setDialog(null)}
+              onClose={closeDialog}
               onRequest={request}
             />
           )}

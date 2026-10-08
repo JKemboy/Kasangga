@@ -1,4 +1,4 @@
-import {useLearnerWorkspace} from "../workspace/LearnerWorkspace.jsx";
+import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { useState } from "react";
 import { filterSavedTutors } from "./savedTutorFilters.js";
 import {
@@ -11,20 +11,37 @@ import {
   Star,
 } from "lucide-react";
 
-const tutors = [];
-
-const subjectOptions = [
-  ...new Set(
-    tutors.flatMap((tutor) =>
-      tutor[2].split(",").map((subject) => subject.trim()),
-    ),
-  ),
-].sort();
-const availabilityOptions = [...new Set(tutors.map((tutor) => tutor[6]))];
-
 export default function LearnerSavedTutors() {
-  const work=useLearnerWorkspace();
-  const tutors=work.data.saved.map(t=>[t.name,t.degree||"",t.subjects||"",t.rating||0,"",t.price||t.rate||"","Availability not connected",t.name.split(" ").map(n=>n[0]).slice(0,2).join(""),false]);
+  const work = useLearnerWorkspace();
+  const tutors = work.data.saved.map((t) => [
+    t.name,
+    t.degree || "",
+    t.subjects || "",
+    t.rating || 0,
+    "",
+    String(t.price || t.rate || ""),
+    t.unavailable ? "Currently unavailable" : (t.types || []).join(" / "),
+    t.name
+      .split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join(""),
+    null,
+    t,
+  ]);
+  const subjectOptions = [
+    ...new Set(
+      tutors.flatMap((t) =>
+        t[2]
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean),
+      ),
+    ),
+  ].sort();
+  const availabilityOptions = [
+    ...new Set(tutors.map((t) => t[6]).filter(Boolean)),
+  ];
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState("all");
   const [availability, setAvailability] = useState("all");
@@ -99,8 +116,7 @@ export default function LearnerSavedTutors() {
             className="h-9 w-full rounded-md border border-[#dfe5ed] bg-white px-3 text-xs"
           >
             <option value="all">All Availability</option>
-            <option value="online">Online Now</option>
-            <option value="offline">Offline</option>
+
             {availabilityOptions.map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -137,7 +153,12 @@ export default function LearnerSavedTutors() {
           </button>
         )}
       </div>
-      {visibleTutors.length === 0 && (
+      {work.savedLoading && (
+        <p role="status" className="mt-3 text-sm">
+          Loading saved tutors?
+        </p>
+      )}
+      {!work.savedLoading && !work.savedError && visibleTutors.length === 0 && (
         <p
           role="status"
           className="mt-3 rounded-xl border border-[#e0e7f0] bg-white p-6 text-center text-sm text-[#637191]"
@@ -158,9 +179,10 @@ export default function LearnerSavedTutors() {
             available,
             initials,
             online,
+            tutor,
           ]) => (
             <article
-              key={name}
+              key={tutor.serviceId}
               className="relative rounded-xl border border-[#e0e7f0] bg-white px-3 pb-3 pt-8 text-center"
             >
               <span
@@ -170,7 +192,9 @@ export default function LearnerSavedTutors() {
               </span>
               <button
                 type="button"
-                aria-label={`Remove ${name} from saved tutors`} onClick={()=>work.toggleSave({name})}
+                aria-label={`Remove ${name} from saved tutors`}
+                disabled={work.savedLoading || work.isSaving(tutor)}
+                onClick={() => work.toggleSave(tutor)}
                 className="absolute right-2 top-2 text-[#087542]"
               >
                 <BookMarked className="h-5 w-5 fill-[#087542]" />
@@ -178,11 +202,14 @@ export default function LearnerSavedTutors() {
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[linear-gradient(145deg,#e5e7eb,#cbd5e1)] text-xl font-bold text-[#405276]">
                 {initials}
               </div>
-              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#dff8e8] px-2 py-0.5 text-xs font-semibold text-[#087542]">
-                <BadgeCheck className="h-4 w-4" />
-                Verified
-              </span>
-              <h2 className="mt-2 text-base font-bold">{name}</h2>
+              {tutor.verified && (
+                <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#dff8e8] px-2 py-0.5 text-xs font-semibold text-[#087542]">
+                  <BadgeCheck className="h-4 w-4" />
+                  Verified
+                </span>
+              )}
+              <h2 className="mt-2 text-base font-bold">{tutor.serviceName}</h2>
+              <p className="text-sm font-semibold">{name}</p>
               <p className="text-xs text-[#637191]">{degree}</p>
               <p className="mt-1 min-h-8 text-xs leading-4 text-[#405276]">
                 <BookOpen className="mr-2 inline h-4 w-4 text-blue-600" />
@@ -190,7 +217,7 @@ export default function LearnerSavedTutors() {
               </p>
               <p className="mt-1.5 text-xs text-[#637191]">
                 <Star className="mr-1 inline h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
-                {rating} ({reviews})
+                {rating || "No ratings available"}
               </p>
               <p className="mt-1.5 text-base font-bold text-[#087542]">
                 {price}
@@ -205,10 +232,18 @@ export default function LearnerSavedTutors() {
                 {available}
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <button onClick={()=>work.open("profile",{name,degree,subjects,rating,price})} className="h-8 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]">
+                <button
+                  disabled={tutor.unavailable}
+                  onClick={() => work.open("profile", tutor)}
+                  className="h-8 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
+                >
                   View Profile
                 </button>
-                <button onClick={()=>work.open("book",{name,degree,subjects,rating,price})} className="h-8 rounded-md bg-[#087542] text-xs font-semibold text-white">
+                <button
+                  disabled={tutor.unavailable}
+                  onClick={() => work.open("book", tutor)}
+                  className="h-8 rounded-md bg-[#087542] text-xs font-semibold text-white"
+                >
                   Book Now
                 </button>
               </div>
@@ -228,7 +263,10 @@ export default function LearnerSavedTutors() {
             Explore more tutors and save them for easy access later.
           </p>
         </div>
-        <button onClick={()=>work.go("find-tutor")} className="h-8 shrink-0 rounded-md border border-[#15924f] px-3 text-xs font-semibold text-[#087542]">
+        <button
+          onClick={() => work.go("find-tutor")}
+          className="h-8 shrink-0 rounded-md border border-[#15924f] px-3 text-xs font-semibold text-[#087542]"
+        >
           Find a Tutor
         </button>
       </section>
