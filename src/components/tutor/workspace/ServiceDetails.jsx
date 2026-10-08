@@ -11,6 +11,8 @@ const dateLabel = (value) =>
   });
 export default function ServiceDetails({
   service,
+  error,
+  changing = false,
   data,
   update,
   go,
@@ -55,7 +57,7 @@ export default function ServiceDetails({
             </button>
             <button
               className={button}
-              disabled={suspended}
+              disabled={suspended || changing}
               onClick={() => onToggle(service)}
             >
               {service.status === "Active" ? "Deactivate" : "Reactivate"}{" "}
@@ -63,7 +65,7 @@ export default function ServiceDetails({
             </button>
             <button
               className={primary}
-              disabled={suspended}
+              disabled={suspended || changing}
               onClick={() => onEdit(service)}
             >
               Edit Service
@@ -71,6 +73,11 @@ export default function ServiceDetails({
           </>
         }
       >
+        {error && (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
+        )}
         <div className="mb-3 flex justify-end">
           <Badge>{service.status}</Badge>
         </div>
@@ -120,7 +127,12 @@ export default function ServiceDetails({
                 "No ratings yet"
               ),
             ],
-            ["Completed Sessions", `${service.completed || 0} all time`],
+            [
+              "Completed Sessions",
+              service.completed == null
+                ? "Not available"
+                : `${service.completed} all time`,
+            ],
           ].map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>

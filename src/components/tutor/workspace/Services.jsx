@@ -16,19 +16,13 @@ import {
   Monitor,
   Plus,
   Search,
-  ShieldAlert,
   Sigma,
   Star,
   X,
 } from "lucide-react";
 import { money } from "./data.js";
-import { Modal, button, primary } from "./ui.jsx";
-import {
-  SERVICE_CATEGORIES,
-  SERVICE_LEVELS,
-  SERVICE_TYPES,
-  validateService,
-} from "./serviceRules.js";
+import { button } from "./ui.jsx";
+import { SERVICE_CATEGORIES } from "./serviceRules.js";
 
 const control =
   "h-9 w-full rounded-md border border-[#dce4ef] bg-white px-3 text-xs text-[#18233d] outline-none focus:border-green-700 focus:ring-1 focus:ring-green-700";
@@ -124,17 +118,10 @@ function Select({ label, children, ...props }) {
   );
 }
 
-function FormField({ label, children }) {
-  return (
-    <label className="block min-w-0 space-y-1 text-xs font-medium text-[#344675]">
-      <span>{label}</span>
-      {children}
-    </label>
-  );
-}
-
 export default function Services({
   data,
+  saveService,
+  changeServiceStatus,
   update,
   go,
   openCreate = false,
@@ -154,6 +141,7 @@ export default function Services({
   const [edit, setEdit] = useState(openCreate ? {} : null);
   const [detailId, setDetailId] = useState(args.serviceId || null);
   const [error, setError] = useState("");
+  const [changing, setChanging] = useState(false);
   const tableHeadRef = useRef(null);
   const detail = data.services.find((s) => s.id === detailId);
   const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
@@ -216,40 +204,8 @@ export default function Services({
     setPage(1);
   }
 
-  function save(e) {
-    e.preventDefault();
-    const result = validateService(
-      Object.fromEntries(new FormData(e.currentTarget)),
-      data.services,
-      edit.id,
-    );
-    if (result.error) return setError(result.error);
-    const values = result.values;
-    const saved = update((d) => ({
-      ...d,
-      services: edit.id
-        ? d.services.map((s) => (s.id === edit.id ? { ...s, ...values } : s))
-        : [
-            {
-              ...values,
-              id: crypto.randomUUID(),
-              status: "Active",
-              rating: 0,
-              completed: 0,
-            },
-            ...d.services,
-          ],
-    }));
-    if (saved === false)
-      return setError(
-        "Could not save this service. Please try again when browser storage is available.",
-      );
-    if (!edit.id) clearFilters();
-    close();
-  }
-
   async function toggleService(service) {
-    if (service.status === "Suspended") return;
+    if (service.status === "Suspended" || changing) return;
     if (
       !(await confirm({
         presentation: "service",
@@ -266,14 +222,18 @@ export default function Services({
       }))
     )
       return;
-    update((d) => ({
-      ...d,
-      services: d.services.map((s) =>
-        s.id === service.id && s.status !== "Suspended"
-          ? { ...s, status: s.status === "Active" ? "Inactive" : "Active" }
-          : s,
-      ),
-    }));
+    setChanging(true);
+    try {
+      await changeServiceStatus(
+        service.id,
+        service.status === "Active" ? "Inactive" : "Active",
+      );
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setChanging(false);
+    }
   }
 
   function actions(service) {
@@ -294,7 +254,7 @@ export default function Services({
         <button
           type="button"
           className={actionButton}
-          disabled={suspended}
+          disabled={suspended || changing}
           title={
             suspended
               ? "Suspended by Admin — editing is unavailable."
@@ -310,7 +270,7 @@ export default function Services({
         <button
           type="button"
           className={`${actionButton} ${!suspended && service.status === "Active" ? "border-red-400 text-red-600 hover:bg-red-50 focus-visible:outline-red-600" : ""}`}
-          disabled={suspended}
+          disabled={suspended || changing}
           title={
             suspended
               ? "Only an administrator can change a suspended service."
@@ -331,6 +291,11 @@ export default function Services({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
+          {error && (
+            <p role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
+          )}
           <h1
             id="services-heading"
             className="text-2xl font-bold tracking-tight"
@@ -519,7 +484,7 @@ export default function Services({
                   </span>
                 </td>
                 <td className="px-1.5 py-2 text-center font-medium">
-                  {s.completed}
+                  {s.completed ?? "?"}
                 </td>
                 <td className="px-1.5 py-2">{actions(s)}</td>
               </tr>
@@ -633,6 +598,8 @@ export default function Services({
 
       {detail && (
         <ServiceDetails
+          error={error}
+          changing={changing}
           service={detail}
           data={data}
           update={update}
@@ -649,10 +616,10 @@ export default function Services({
 
       {edit && (
         <CreateService
+          saveService={saveService}
           key={edit.id || "new"}
           service={edit.id ? edit : null}
           data={data}
-          update={update}
           onClose={close}
         />
       )}

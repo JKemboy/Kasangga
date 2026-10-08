@@ -60,7 +60,7 @@ function Initials({ name }) {
     </span>
   );
 }
-export default function Overview({ data, go, update }) {
+export default function Overview({ data, go, update, saveService }) {
   const [creating, setCreating] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [transactionId, setTransactionId] = useState(null);
@@ -508,7 +508,7 @@ export default function Overview({ data, go, update }) {
       {creating && (
         <CreateService
           data={data}
-          update={update}
+          saveService={saveService}
           onClose={() => setCreating(false)}
         />
       )}
