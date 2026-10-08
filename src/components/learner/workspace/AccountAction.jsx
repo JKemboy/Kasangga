@@ -42,8 +42,8 @@ export default function AccountAction({ kind, email, onClose, onRequest }) {
       )}
       <p className="account-action-note">
         {deleting
-          ? "This saves a deletion request on this browser. Account deletion is not connected yet."
-          : "This saves your request on this browser. Email delivery and data export are not connected yet."}
+          ? "Account deletion requests are not connected to the database yet."
+          : "Data requests and email delivery are not connected to the database yet."}
       </p>
       <footer>
         <button type="button" onClick={onClose}>

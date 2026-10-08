@@ -151,7 +151,7 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
         <div className="ls-alert mt-4">
           <ShieldCheck size={23} />
           <p>
-            Reports are saved on this browser; admin delivery is not connected
+            Report saving and admin delivery are not connected
             yet. For emergencies, contact campus security right away.
           </p>
         </div>
