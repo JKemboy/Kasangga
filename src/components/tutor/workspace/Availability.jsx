@@ -333,7 +333,7 @@ export default function Availability({ data, update, go, args = {} }) {
                     className="mt-1 max-w-full break-words text-left font-medium underline underline-offset-2"
                     onClick={() => setUpload(true)}
                   >
-                    Latest draft: {lastUpload.name} · Saved on this browser
+                    Latest draft: {lastUpload.name} · Not connected to the database
                   </button>
                 )}
               </div>

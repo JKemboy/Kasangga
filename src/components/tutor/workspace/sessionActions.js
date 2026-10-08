@@ -92,7 +92,7 @@ export function sessionAction(
       description: reason,
       files: values.files || [],
       created: now,
-      status: "Submitted locally",
+      status: "Not submitted",
     };
     reports = [...reports, report];
     changed.report = report;

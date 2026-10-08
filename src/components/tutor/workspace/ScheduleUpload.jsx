@@ -1,7 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { Upload, ShieldCheck, Plus, Trash2 } from "lucide-react";
 import { Modal, button, primary, input } from "./ui.jsx";
-import { scheduleFileStore } from "./scheduleUploads.js";
 import {
   scheduleImageError,
   extractScheduleText,
@@ -88,7 +87,9 @@ export default function ScheduleUpload({
       scheduleReview: value,
     }));
     if (saved === false)
-      throw new Error("Could not save the review on this browser.");
+      throw new Error(
+        "Schedule review persistence is not connected to the database yet.",
+      );
   }
   function saveLater() {
     try {
@@ -140,7 +141,7 @@ export default function ScheduleUpload({
         label: "Uploading original image to private storage",
         progress: 1,
       });
-      // Keep successful metadata for retry if local draft saving fails.
+      // Keep upload metadata in the current form for retries.
       result.metadata ||= await uploadScheduleImage(selected, user.id);
       abort.signal.throwIfAborted();
       const next = { ...result.metadata, rows: [], text: result.text };
@@ -156,7 +157,7 @@ export default function ScheduleUpload({
       setStage("review");
       if (saved === false)
         setError(
-          "Image uploaded successfully, but the local review could not be saved. Keep this page open and try Save for later.",
+          "Image uploaded to Supabase. Schedule review saving is not connected yet; edits remain unsaved.",
         );
     } catch (e) {
       if (!abort.signal.aborted) {
@@ -188,10 +189,7 @@ export default function ScheduleUpload({
   async function openSource() {
     try {
       const saved =
-        file ||
-        (draft.storagePath
-          ? await downloadScheduleImage(draft)
-          : await scheduleFileStore.load(draft.id));
+        file || (draft.storagePath ? await downloadScheduleImage(draft) : null);
       if (!saved)
         throw new Error(
           "Original file is unavailable. Please choose it again.",
@@ -205,9 +203,9 @@ export default function ScheduleUpload({
     try {
       const saved = upload.storagePath
         ? await downloadScheduleImage(upload)
-        : await scheduleFileStore.load(upload.id);
+        : null;
       if (!saved)
-        throw new Error("File unavailable on this browser. Choose it again.");
+        throw new Error("Original file unavailable. Choose it again.");
       setFile(saved);
       process(saved);
     } catch (e) {

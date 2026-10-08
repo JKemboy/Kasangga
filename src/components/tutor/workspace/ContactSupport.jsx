@@ -101,12 +101,12 @@ export default function ContactSupport({ update, onClose }) {
           can review it and refer conduct concerns to OSAS.
         </p>
         <p className="text-[11px] text-slate-500">
-          Support delivery is not connected. Requests are saved on this browser
+          Support delivery is not connected. Request saving is not connected
           only.
         </p>
         {saved && (
           <p role="status" className="text-xs text-green-800">
-            Draft saved locally. It has not been sent.
+            Draft not connected to the database. It has not been sent.
           </p>
         )}
         {error && (

@@ -162,7 +162,7 @@ function GuideCard({ guide, index, go, onContact }) {
             {expanded && (
               <p className="help-extra">
                 Prepare a support request using the contact form. Requests are
-                saved locally until delivery services are connected.
+                not connected to the database until delivery services are connected.
               </p>
             )}
           </>
