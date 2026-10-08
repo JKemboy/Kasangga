@@ -1,4 +1,4 @@
-import {useLearnerWorkspace} from "../workspace/LearnerWorkspace.jsx";
+import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { useEffect, useState } from "react";
 import {
   filterNotifications,
@@ -55,34 +55,12 @@ export const initialNotifications = notifications.map(
 const storageKey = "campustutor:learner:sample-notification-read-ids";
 
 export default function LearnerNotifications({ onOpenSettings }) {
- const work=useLearnerWorkspace();
+  const work = useLearnerWorkspace();
   const [items, setItems] = useState(() => {
-    try {
-      const readIds = JSON.parse(sessionStorage.getItem(storageKey) || "[]");
-      return Array.isArray(readIds)
-        ? initialNotifications.map((item) =>
-            readIds.includes(item.id) ? { ...item, unread: false } : item,
-          )
-        : initialNotifications;
-    } catch {
-      return initialNotifications;
-    }
+    return initialNotifications;
   });
   const [activeFilter, setActiveFilter] = useState("All Notifications");
   const [expandedId, setExpandedId] = useState(null);
-  useEffect(()=>{const sync=()=>{try{const ids=JSON.parse(sessionStorage.getItem(storageKey)||"[]");setItems(current=>current.map(n=>ids.includes(n.id)?{...n,unread:false}:n));}catch{}};window.addEventListener("learner-notification-read",sync);return()=>window.removeEventListener("learner-notification-read",sync);},[]);
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(
-        storageKey,
-        JSON.stringify(
-          items.filter((item) => !item.unread).map((item) => item.id),
-        ),
-      );
-    } catch {
-      /* Keep in-memory state when storage is unavailable. */
-    }
-  }, [items]);
   const visibleItems = filterNotifications(items, activeFilter);
   const unreadCount = filterNotifications(items, "Unread").length;
   return (
@@ -133,11 +111,18 @@ export default function LearnerNotifications({ onOpenSettings }) {
                   onClick={() => {
                     setItems((current) => markNotificationsRead(current, id));
                     setExpandedId((current) => (current === id ? null : id));
-                    if(title==="New Message")work.message({name:"Maria Angelica R."});
-                    else if(title.includes("Application"))work.open("application");
-                    else if(title.includes("Review"))work.go("reviews");
-                    else if(title.includes("Booking")||title.includes("Session")||title.includes("Payment"))work.go("sessions");
-                    else work.open("article",{title,body:text});
+                    if (title === "New Message")
+                      work.message({ name: "Maria Angelica R." });
+                    else if (title.includes("Application"))
+                      work.open("application");
+                    else if (title.includes("Review")) work.go("reviews");
+                    else if (
+                      title.includes("Booking") ||
+                      title.includes("Session") ||
+                      title.includes("Payment")
+                    )
+                      work.go("sessions");
+                    else work.open("article", { title, body: text });
                   }}
                   className={`flex w-full items-center gap-2 border-b border-[#e7edf3] px-3 py-2 text-left last:border-b-0 ${unread ? "bg-[#f3fbf6]" : ""}`}
                 >
