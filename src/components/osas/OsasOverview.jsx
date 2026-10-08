@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import { loadOsasEvidence } from "./OsasEvidence.jsx";
 import OverviewMonth from "./OverviewMonth.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
@@ -41,13 +42,8 @@ export default function OsasOverview({
       const next = caseRows.map((r) =>
         r.caseId === updated.caseId ? updated : r,
       );
-      localStorage.setItem(
-        "campustutor:osas-case-reviews:v1",
-        JSON.stringify(next),
-      );
-      setCaseRows(next);
-      return true;
-    } catch {
+      requireBackendPersistence();
+} catch {
       return false;
     }
   };

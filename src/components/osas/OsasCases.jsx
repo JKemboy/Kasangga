@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 import { loadAssessments } from "./incidentAssessment.js";
 import CaseShortcut from "./CaseShortcut.jsx";
@@ -84,19 +85,7 @@ export function loadOsasCases() {
       ...extra.filter((r) => !records.some((c) => c.caseId === r.caseId)),
     ];
   };
-  try {
-    const saved = JSON.parse(localStorage.getItem(key));
-    if (
-      Array.isArray(saved) &&
-      saved.every(
-        (r) =>
-          typeof r.caseId === "string" &&
-          statuses.includes(r.status) &&
-          Array.isArray(r.history),
-      )
-    )
-      return merge(saved);
-  } catch {}
+
   return merge(structuredClone(initial));
 }
 export default function OsasCases({ settings }) {
@@ -165,10 +154,7 @@ export default function OsasCases({ settings }) {
   function persistCase(record) {
     try {
       const next = rows.map((r) => (r.caseId === record.caseId ? record : r));
-      localStorage.setItem(key, JSON.stringify(next));
-      setRows(next);
-      setSelected(record);
-      return true;
+      requireBackendPersistence();
     } catch {
       setError("Could not save case.");
       return false;
@@ -231,12 +217,11 @@ export default function OsasCases({ settings }) {
         : r,
     );
     try {
-      localStorage.setItem(key, JSON.stringify(next));
-      setRows(next);
-      setSelected(null);
-      setNotice("Case review saved on this browser.");
+      requireBackendPersistence();
     } catch {
-      setError("Could not save. Browser storage is unavailable or full.");
+      setError(
+        "This action is not connected to the database yet. Nothing was saved.",
+      );
     }
   }
   const badge = (value) => (

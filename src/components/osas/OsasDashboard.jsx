@@ -1,8 +1,9 @@
-import ClearanceReview from './ClearanceReview.jsx';
-import UserExport from '../admin/UserExport.jsx';
-import {reportHtml} from '../admin/reportExport.js';
-import HeaderInbox from '../shared/HeaderInbox.jsx';
-import {useLogout} from "../shared/LogoutProvider.jsx";
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
+import ClearanceReview from "./ClearanceReview.jsx";
+import UserExport from "../admin/UserExport.jsx";
+import { reportHtml } from "../admin/reportExport.js";
+import HeaderInbox from "../shared/HeaderInbox.jsx";
+import { useLogout } from "../shared/LogoutProvider.jsx";
 import OsasEvidence from "./OsasEvidence.jsx";
 import OsasArchive from "./OsasArchive.jsx";
 import OsasCases from "./OsasCases.jsx";
@@ -69,19 +70,6 @@ const navigation = [
   ["Settings", Settings],
 ];
 function load() {
-  try {
-    const rows = JSON.parse(localStorage.getItem(storageKey));
-    if (
-      Array.isArray(rows) &&
-      rows.every(
-        (r) =>
-          typeof r.id === "string" &&
-          statuses.includes(r.status) &&
-          Array.isArray(r.history),
-      )
-    )
-      return rows;
-  } catch {}
   return structuredClone(initial);
 }
 const dateLabel = (v) =>
@@ -110,7 +98,7 @@ function csvCell(v) {
 }
 
 export default function OsasDashboardPage() {
- const requestLogout = useLogout();
+  const requestLogout = useLogout();
 
   const navigate = useNavigate();
   const [view, setView] = useState("Overview");
@@ -201,10 +189,7 @@ export default function OsasDashboardPage() {
         : r,
     );
     try {
-      localStorage.setItem(storageKey, JSON.stringify(next));
-      setRows(next);
-      setModal(null);
-      setNotice("Review saved on this browser.");
+      requireBackendPersistence();
     } catch {
       setError(
         "Could not save the review. Browser storage is unavailable or full.",
@@ -355,7 +340,21 @@ export default function OsasDashboardPage() {
           </button>
         </form>
         <div className="ml-auto flex items-center gap-4">
-          <HeaderInbox role="osas" notifications={rows.map(r=>({id:r.id,title:"Case record update",text:`${r.name || r.id}: ${r.status}`,kind:"incident",time:r.updatedAt || r.date || "",record:r}))} onNotification={n=>{setSelected(n.record);setModal("Case Record");}}/>
+          <HeaderInbox
+            role="osas"
+            notifications={rows.map((r) => ({
+              id: r.id,
+              title: "Case record update",
+              text: `${r.name || r.id}: ${r.status}`,
+              kind: "incident",
+              time: r.updatedAt || r.date || "",
+              record: r,
+            }))}
+            onNotification={(n) => {
+              setSelected(n.record);
+              setModal("Case Record");
+            }}
+          />
           <button
             className="flex items-center gap-2 text-left"
             aria-label="Open account menu"
@@ -375,7 +374,7 @@ export default function OsasDashboardPage() {
       >
         {view === "Overview" ? (
           <OsasOverview
-            onReports={()=>setView("Reports & Analytics")}
+            onReports={() => setView("Reports & Analytics")}
             rows={rows}
             settings={settings}
             onCase={(r) => {
@@ -542,7 +541,41 @@ export default function OsasDashboardPage() {
                   onChange={(e) => change(setQuery, e.target.value)}
                 />
               </label>
-              <UserExport rows={filtered} onCsv={exportCsv} onNotice={setNotice} renderSummary={rows=>reportHtml([['Student ID','Field','Value'],...rows.flatMap(r=>[['Student',r.name],['Program',r.program],['Status',r.status],['Requested',r.requested],['Reviewed',r.reviewed]].map(([label,value])=>[r.id,label,value||'Not recorded']))]).replace(/<p>Local demo records[\s\S]*?<\/p>/, '<p>Filtered local student clearance records.</p>').replaceAll('Reports &amp; Analytics','Student Clearance Review').replaceAll('Reports & Analytics','Student Clearance Review')}/>
+              <UserExport
+                rows={filtered}
+                onCsv={exportCsv}
+                onNotice={setNotice}
+                renderSummary={(rows) =>
+                  reportHtml([
+                    ["Student ID", "Field", "Value"],
+                    ...rows.flatMap((r) =>
+                      [
+                        ["Student", r.name],
+                        ["Program", r.program],
+                        ["Status", r.status],
+                        ["Requested", r.requested],
+                        ["Reviewed", r.reviewed],
+                      ].map(([label, value]) => [
+                        r.id,
+                        label,
+                        value || "Not recorded",
+                      ]),
+                    ),
+                  ])
+                    .replace(
+                      /<p>Local demo records[\s\S]*?<\/p>/,
+                      "<p>Filtered local student clearance records.</p>",
+                    )
+                    .replaceAll(
+                      "Reports &amp; Analytics",
+                      "Student Clearance Review",
+                    )
+                    .replaceAll(
+                      "Reports & Analytics",
+                      "Student Clearance Review",
+                    )
+                }
+              />
             </div>
             {notice && (
               <p role="status" className="text-xs text-green-800">
@@ -670,7 +703,20 @@ export default function OsasDashboardPage() {
           </>
         )}
       </main>
-      {modal === "Review Clearance" && <ClearanceReview record={rows.find(r=>r.id===selected.id)||selected} onClose={()=>setModal(null)} onSave={updated=>{try{const next=rows.map(r=>r.id===updated.id?updated:r);localStorage.setItem(storageKey,JSON.stringify(next));setRows(next);return true;}catch{return false;}}}/>}
+      {modal === "Review Clearance" && (
+        <ClearanceReview
+          record={rows.find((r) => r.id === selected.id) || selected}
+          onClose={() => setModal(null)}
+          onSave={(updated) => {
+            try {
+              const next = rows.map((r) => (r.id === updated.id ? updated : r));
+              requireBackendPersistence();
+            } catch {
+              return false;
+            }
+          }}
+        />
+      )}
       {modal && modal !== "Review Clearance" && (
         <Modal title={modal} onClose={() => setModal(null)}>
           {modal === "Case Record" ? (

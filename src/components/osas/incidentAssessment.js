@@ -1,10 +1,6 @@
-﻿export const assessmentKey = "campustutor:osas-incident-assessments:v1";
+export const assessmentKey = "campustutor:osas-incident-assessments:v1";
 export function loadAssessments() {
-  try {
-    return JSON.parse(localStorage.getItem(assessmentKey)) || {};
-  } catch {
-    return {};
-  }
+  return {};
 }
 export function assessIncident(record, action, notes, cases) {
   if (

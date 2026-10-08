@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import IncidentAssessment from "./IncidentAssessment.jsx";
 import UserExport from "../admin/UserExport.jsx";
 import {
@@ -70,11 +71,8 @@ export default function OsasIncidents({ settings }) {
   function saveAssessment(updated) {
     try {
       const next = { ...loadAssessments(), [updated.id]: updated };
-      localStorage.setItem(assessmentKey, JSON.stringify(next));
-      setAssessments(next);
-      setSelected(updated);
-      return true;
-    } catch {
+      requireBackendPersistence();
+} catch {
       return false;
     }
   }

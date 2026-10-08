@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import CaseShortcut from "./CaseShortcut.jsx";
 import { loadOsasCases } from "./OsasCases.jsx";
 import ServiceMenu from "../admin/ServiceMenu.jsx";
@@ -61,20 +62,6 @@ const initial = incidents
     history: [],
   }));
 export function loadOsasEvidence() {
-  try {
-    const rows = JSON.parse(localStorage.getItem(storageKey));
-    if (
-      Array.isArray(rows) &&
-      new Set(rows.map((r) => r.id)).size ===
-      rows.every(
-        (r) =>
-          typeof r.id === "string" &&
-          statuses.includes(r.status) &&
-          Array.isArray(r.history),
-      )
-    )
-      return rows;
-  } catch {}
   return structuredClone(initial);
 }
 export default function OsasEvidence({ settings }) {
@@ -148,12 +135,7 @@ export default function OsasEvidence({ settings }) {
       const next = caseRows.map((c) =>
         c.caseId === record.caseId ? record : c,
       );
-      localStorage.setItem(
-        "campustutor:osas-case-reviews:v1",
-        JSON.stringify(next),
-      );
-      setCaseRows(next);
-      return true;
+      requireBackendPersistence();
     } catch {
       return false;
     }

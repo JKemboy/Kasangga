@@ -217,7 +217,7 @@ export default function CaseWorkflow({ record: r, evidence, onSave }) {
                   />
                 </label>
                 <small>
-                  Saved locally. External delivery is not connected.
+                  Saving and external delivery are not connected yet.
                 </small>
               </>
             )}

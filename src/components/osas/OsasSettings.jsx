@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import SecurityFlow from "../shared/SecurityFlow.jsx";
 import { useState } from "react";
 import {
@@ -44,22 +45,6 @@ export const defaultSettings = {
   notifications: notificationTypes.map(() => ({ email: true, app: true })),
 };
 export function loadSettings() {
-  try {
-    const s = JSON.parse(localStorage.getItem(settingsKey));
-    if (
-      s &&
-      typeof s.contact === "string" &&
-      typeof s.alternate === "string" &&
-      ["6", "10", "20"].includes(s.pageSize) &&
-      ["long", "iso", "short"].includes(s.dateFormat) &&
-      Array.isArray(s.notifications) &&
-      s.notifications.length === 6 &&
-      s.notifications.every(
-        (n) => typeof n.email === "boolean" && typeof n.app === "boolean",
-      )
-    )
-      return { ...defaultSettings, ...s };
-  } catch {}
   return structuredClone(defaultSettings);
 }
 
@@ -104,12 +89,11 @@ export default function OsasSettings({ settings, onSave }) {
       alternate: draft.alternate.trim(),
     };
     try {
-      localStorage.setItem(settingsKey, JSON.stringify(next));
-      onSave(next);
-      setDraft(next);
-      setNotice("Changes saved on this browser.");
+      requireBackendPersistence();
     } catch {
-      setError("Could not save. Browser storage is unavailable or full.");
+      setError(
+        "This action is not connected to the database yet. Nothing was saved.",
+      );
     }
   }
   function locked(label, value) {
@@ -229,8 +213,8 @@ export default function OsasSettings({ settings, onSave }) {
             </tbody>
           </table>
           <p className="os-help">
-            Preferences are saved locally; notification delivery is not
-            connected yet.
+            Preferences are not connected to the database; notification delivery
+            is not connected yet.
           </p>
         </section>
         <section className="os-card">

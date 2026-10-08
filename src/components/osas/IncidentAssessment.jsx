@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 ﻿import { useState, useRef, useEffect } from "react";
 import { X } from "lucide-react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
@@ -44,13 +45,8 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
             const next = loadOsasCases().map((c) =>
               c.caseId === updated.caseId ? updated : c,
             );
-            localStorage.setItem(
-              "campustutor:osas-case-reviews:v1",
-              JSON.stringify(next),
-            );
-            setCases(next);
-            return true;
-          } catch {
+            requireBackendPersistence();
+} catch {
             return false;
           }
         }}
@@ -188,7 +184,7 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
                   placeholder="Record why this referral does not need a formal case."
                 />
                 <small>
-                  {notes.trim().length}/10 characters minimum · saved locally
+                  {notes.trim().length}/10 characters minimum · not connected to the database
                 </small>
               </label>
             )}

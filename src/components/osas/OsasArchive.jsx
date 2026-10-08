@@ -16,22 +16,7 @@ import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 export const initialRecords = [];
 export default function OsasArchive({ settings }) {
   const [records] = useState(() => {
-    try {
-      const cases =
-        JSON.parse(localStorage.getItem("campustutor:osas-case-reviews:v1")) ||
-        [];
-      const added = cases
-        .filter((c) => c.archived && c.archiveRecord)
-        .map((c) => c.archiveRecord);
-      return [
-        ...added,
-        ...initialRecords.filter(
-          (r) => !added.some((a) => a.caseId === r.caseId),
-        ),
-      ];
-    } catch {
-      return initialRecords;
-    }
+    return initialRecords;
   });
   const [query, setQuery] = useState(""),
     [year, setYear] = useState("2026–2027"),

@@ -66,12 +66,6 @@ const group = (records, key) =>
     records: records.filter((r) => (r[key] || "Not recorded") === label),
   }));
 function loadSessions() {
-  try {
-    const d = JSON.parse(
-      localStorage.getItem("campustutor:tutor-workspace:v2"),
-    );
-    if (Array.isArray(d?.sessions)) return d.sessions;
-  } catch {}
   return seed.sessions;
 }
 

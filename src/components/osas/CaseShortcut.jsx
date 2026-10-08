@@ -1,3 +1,4 @@
+import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import CaseWorkflow from "./CaseWorkflow.jsx";
 import { caseDescriptions, evidenceSamples } from "./casePreviewData.js";
 import { useEffect, useRef, useState } from "react";
@@ -138,14 +139,8 @@ export default function CaseShortcut({
     try {
       const updated = validateEvidence(ev, result, checks, notes);
       const next = evidence.map((e) => (e.id === ev.id ? updated : e));
-      localStorage.setItem(
-        "campustutor:osas-evidence:v1",
-        JSON.stringify(next),
-      );
-      setEvidence(next);
-      onEvidenceSave?.(next);
-      open("case");
-    } catch (e) {
+      requireBackendPersistence();
+} catch (e) {
       setError(e.message);
     }
   }
@@ -393,7 +388,7 @@ export default function CaseShortcut({
               />
             </label>
             <small>
-              {notes.trim().length}/10 characters minimum · saved locally to the
+              {notes.trim().length}/10 characters minimum · not connected to the database to the
               case record
             </small>
           </form>
