@@ -1,3 +1,5 @@
+import { getSupabaseClient } from "./supabaseClient.js";
+
 // Replace these adapters when connecting the database/auth/payment services.
 // Never manufacture provider confirmations, password changes, or OTPs.
 const adapters = new Map();
@@ -13,4 +15,29 @@ export async function portalApi(name, payload, options) {
   const handler = adapters.get(name);
   if (!handler) throw new Error(`${name} is not connected yet. No server-side change was made.`);
   return handler(payload, options);
+}
+
+export function connectBookingApi() {
+  return configurePortalApi({
+    async createBooking(payload) {
+      const supabase = getSupabaseClient();
+
+      const { data, error } = await supabase.functions.invoke(
+        "create-payment",
+        {
+          body: payload,
+        },
+      );
+
+      if (error) {
+        throw new Error(error.message || "Unable to start payment.");
+      }
+
+      if (!data?.checkoutUrl) {
+        throw new Error("Payment checkout URL was not returned.");
+      }
+
+      return data;
+    },
+  });
 }

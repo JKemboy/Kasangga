@@ -113,28 +113,25 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
     try {
       const confirmed = await portalApi("createBooking", {
         ...draft,
+        serviceId: selected.id,
         tutorId: tutor.id,
         tutor: tutor.name,
         idempotencyKey: requestId.current,
       });
-      if (!confirmed?.bookingId || confirmed.paymentStatus !== "Paid")
-        throw new Error(
-          "Payment is not confirmed. Your booking is not complete.",
-        );
-      setResult(confirmed);
+      if (!confirmed?.checkoutUrl) {
+        throw new Error("PayMongo checkout URL was not returned.");
+      }
+
+      const checkoutUrl = new URL(confirmed.checkoutUrl);
       if (
-        onComplete({
-          ...draft,
-          ...confirmed,
-          name: tutor.name,
-          lifecycle: "Upcoming",
-          paymentStatus: "Paid",
-        }) === false
-      )
-        throw new Error(
-          `Booking ${confirmed.bookingId} is confirmed, but could not be saved on this browser. Retry saving below.`,
-        );
-      setStep(7);
+        checkoutUrl.protocol !== "https:" ||
+        checkoutUrl.hostname !== "checkout.paymongo.com"
+      ) {
+        throw new Error("PayMongo returned an invalid checkout URL.");
+      }
+
+      window.location.assign(checkoutUrl.href);
+      return;
     } catch (e) {
       setError(e.message);
     } finally {

@@ -4,11 +4,14 @@ import LogoutProvider from "./components/shared/LogoutProvider.jsx";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
+import { connectBookingApi } from "./services/portalApi.js";
 import router from "./router/index.jsx";
 import "./index.css";
 import "./components/shared/modal-density.css";
 import "./components/admin/modal-density.css";
 import "./components/osas/modal-density.css";
+
+connectBookingApi();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
