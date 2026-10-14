@@ -1,13 +1,8 @@
-import AuditDetails, { auditSummary } from './AuditDetails.jsx';
-import UserExport from './UserExport.jsx';
+import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
+import AuditDetails, { auditSummary } from "./AuditDetails.jsx";
+import UserExport from "./UserExport.jsx";
 import { useState } from "react";
-import {
-  ClipboardList,
-  Info,
-  Search,
-  Eye,
-  CalendarDays,
-} from "lucide-react";
+import { ClipboardList, Info, Search, Eye, CalendarDays } from "lucide-react";
 import {
   Modal,
   button,
@@ -15,7 +10,6 @@ import {
   input,
   Avatar,
 } from "../tutor/workspace/ui.jsx";
-const examples = [];
 function dateKey(value) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Manila",
@@ -24,62 +18,8 @@ function dateKey(value) {
     day: "2-digit",
   }).format(new Date(value));
 }
-function readLocal(users, apps, services, config) {
-  const sources = [
-    ["User Management", users],
-    ["Tutor Verification", apps],
-    ["Service Management", services],
-  ];
-
-  const logs = sources.flatMap(([module, records]) =>
-    records.flatMap((r) =>
-      (r.history || [])
-        .filter((h) => Number.isFinite(Date.parse(h.at)))
-        .map((h, i) => ({
-          id: `LOCAL-${r.id}-${i + 1}`,
-          actor: h.by || "Admin User",
-          email: "Not recorded",
-          action:
-            module === "Incident Reports"
-              ? h.action
-              : `${module === "User Management" ? "User" : module === "Tutor Verification" ? "Application" : "Service"}: ${h.to}`,
-          module,
-          target: `${r.id} · ${r.name || r.title || r.issue || ""}`,
-          at: h.at,
-          result: "Success",
-          ip: "Not collected",
-          source: "Local history",
-          notes: h.reason || h.notes || "",
-          before: h.from || null,
-          after: h.to || h.action || null,
-        })),
-    ),
-  );
-  (config.auditHistory || [])
-    .filter((h) => Number.isFinite(Date.parse(h.at)))
-    .forEach((h, i) =>
-      logs.push({
-        id: `LOCAL-SETTINGS-${i + 1}`,
-        actor: h.by,
-        action: "Settings Updated",
-        module: "Settings",
-        target: "Admin configuration",
-        at: h.at,
-        result: "Success",
-        ip: "Not collected",
-        email: "Not recorded",
-        source: "Local history",
-        notes: `Changed fields: ${h.fields.join(", ")}`,
-      }),
-    );
-  return [...logs, ...examples].sort(
-    (a, b) => Date.parse(b.at) - Date.parse(a.at),
-  );
-}
 export default function AdminAudit({ users, applications, services, config }) {
-  const [records] = useState(() =>
-    readLocal(users, applications, services, config),
-  );
+  const records = useAdminDatabase().database?.audit || [];
   const [query, setQuery] = useState(""),
     [actor, setActor] = useState(""),
     [module, setModule] = useState(""),
@@ -193,7 +133,7 @@ export default function AdminAudit({ users, applications, services, config }) {
       </div>
       <p className="aa-readonly">
         <Info size={14} />
-        Read-only records · Local history and clearly marked samples
+        Database audit records · Recorded workflow events
       </p>
       <div className="aa-filters">
         <button
@@ -208,7 +148,13 @@ export default function AdminAudit({ users, applications, services, config }) {
         {select("All Modules", module, setModule, "module")}
         {select("All Actions", action, setAction, "action")}
         {select("All Results", result, setResult, "result")}
-        <UserExport rows={filtered} onCsv={exportCsv} onNotice={setNotice} renderSummary={auditSummary} disabled={!!invalid} />
+        <UserExport
+          rows={filtered}
+          onCsv={exportCsv}
+          onNotice={setNotice}
+          renderSummary={auditSummary}
+          disabled={!!invalid}
+        />
       </div>
       <div className="ad-toolbar">
         <label className="osas-search">
@@ -260,7 +206,6 @@ export default function AdminAudit({ users, applications, services, config }) {
                   "Module",
                   "Target Record",
                   "Date / Time",
-                  "IP Address",
                   "Result / Status",
                   "Action",
                 ].map((h, i) => (
@@ -278,17 +223,16 @@ export default function AdminAudit({ users, applications, services, config }) {
                   <td>
                     <div className="au-person">
                       <Avatar name={r.actor} />
-                      <span>
+                      <div className="aa-person-details">
                         {r.actor}
                         <small>{r.email}</small>
-                      </span>
+                      </div>
                     </div>
                   </td>
                   <td>{r.action}</td>
                   <td>{r.module}</td>
                   <td>{r.target}</td>
                   <td>{timestamp(r.at)}</td>
-                  <td>{r.ip}</td>
                   <td>
                     <span
                       className={`au-status ${r.result === "Failed" ? "suspended" : r.result === "Completed" ? "restricted" : "active"}`}
@@ -387,7 +331,9 @@ export default function AdminAudit({ users, applications, services, config }) {
           </div>
         </Modal>
       )}
-      {selected && <AuditDetails record={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <AuditDetails record={selected} onClose={() => setSelected(null)} />
+      )}
     </section>
   );
 }

@@ -1,13 +1,12 @@
+import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import UserExport from "./UserExport.jsx";
 import ServiceMenu from "./ServiceMenu.jsx";
 import EvidencePreview from "./EvidencePreview.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import UserDetails from "./UserDetails.jsx";
-import {paymentBookings} from "./paymentDetailsData.js";
-import {seed} from "../tutor/workspace/data.js";
-import {CalendarDays,UserRound,Image} from "lucide-react";
+import { paymentBookings } from "./paymentDetailsData.js";
+import { CalendarDays, UserRound, Image } from "lucide-react";
 import IncidentDetails from "./IncidentDetails.jsx";
-import { loadIncidents, saveIncidents } from "./incidentData.js";
 import { useState } from "react";
 import {
   ShieldCheck,
@@ -28,22 +27,45 @@ import {
   input,
   Avatar,
 } from "../tutor/workspace/ui.jsx";
-import { dateLabel, loadCollection } from "./adminData.js";
-export default function AdminIncidents({users=[],applications=[],services=[],config,onUserSave,onServiceSave,onApplicationSave,onDocument}) {
- const [linked,setLinked]=useState(null);
- const [workspace]=useState(()=>{return seed;});
- function related(r,kind){if(kind==="booking"){const b=workspace.sessions.find(b=>b.booking===r.booking)||paymentBookings[r.booking];if(b)setLinked({kind,record:b});else setNotice("No related booking in the available records.");}else if(kind==="account"){const u=users.find(u=>u.name===r.reporter);if(u)setLinked({kind,id:u.id});else setNotice("Reporter account is not available.");}else setLinked({kind,record:r});}
+import { dateLabel } from "./adminData.js";
+export default function AdminIncidents({
+  users = [],
+  applications = [],
+  services = [],
+  config,
+  onUserSave,
+  onServiceSave,
+  onApplicationSave,
+  onDocument,
+}) {
+  const [linked, setLinked] = useState(null);
+  const { database, saveRecord } = useAdminDatabase();
+  const workspace = {
+    sessions: database?.sessions || [],
+    profile: { name: "" },
+  };
+  function related(r, kind) {
+    if (kind === "booking") {
+      const b =
+        workspace.sessions.find((b) => b.booking === r.booking) ||
+        paymentBookings[r.booking];
+      if (b) setLinked({ kind, record: b });
+      else setNotice("No related booking in the available records.");
+    } else if (kind === "account") {
+      const u = users.find((u) => u.userId === r.reporterId);
+      if (u) setLinked({ kind, id: u.id });
+      else setNotice("Reporter account is not available.");
+    } else setLinked({ kind, record: r });
+  }
 
-
-
-  const [rows, setRows] = useState(loadIncidents),
-    [query, setQuery] = useState(""),
+  const rows = database?.incidents || [];
+  const [query, setQuery] = useState(""),
     [type, setType] = useState(""),
     [status, setStatus] = useState(""),
     [referral, setReferral] = useState(""),
     [priority, setPriority] = useState(""),
-    [start, setStart] = useState("2026-05-01"),
-    [end, setEnd] = useState("2026-09-30"),
+    [start, setStart] = useState(""),
+    [end, setEnd] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
     [notice, setNotice] = useState("");
@@ -82,7 +104,9 @@ export default function AdminIncidents({users=[],applications=[],services=[],con
     setQuery("");
     setPage(1);
   }
-  function open(r) { setSelected(r); }
+  function open(r) {
+    setSelected(r);
+  }
   function exportCsv() {
     const fields = [
       "id",
@@ -128,7 +152,9 @@ export default function AdminIncidents({users=[],applications=[],services=[],con
       >
         <option value="">{label}</option>
         {options.map((v) => (
-          <option key={v} value={v}>{v === "pendingGroup" ? "Pending / Under Review" : v}</option>
+          <option key={v} value={v}>
+            {v === "pendingGroup" ? "Pending / Under Review" : v}
+          </option>
         ))}
       </select>
     );
@@ -266,7 +292,12 @@ export default function AdminIncidents({users=[],applications=[],services=[],con
         >
           Reset filters
         </button>
-        <UserExport kind="incidents" rows={filtered} onCsv={exportCsv} onNotice={setNotice} />
+        <UserExport
+          kind="incidents"
+          rows={filtered}
+          onCsv={exportCsv}
+          onNotice={setNotice}
+        />
       </div>
       {invalid && (
         <p role="alert" className="text-xs text-red-600">
@@ -345,7 +376,15 @@ export default function AdminIncidents({users=[],applications=[],services=[],con
                           ? "View Report"
                           : "Review Report"}
                       </button>
-                      <ServiceMenu service={{title:r.id}} options={[[CalendarDays,"View booking","booking"],[UserRound,"View reporter account","account"],[Image,"Preview evidence","evidence"]]} onSelect={kind=>related(r,kind)} />
+                      <ServiceMenu
+                        service={{ title: r.id }}
+                        options={[
+                          [CalendarDays, "View booking", "booking"],
+                          [UserRound, "View reporter account", "account"],
+                          [Image, "Preview evidence", "evidence"],
+                        ]}
+                        onSelect={(kind) => related(r, kind)}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -383,10 +422,45 @@ export default function AdminIncidents({users=[],applications=[],services=[],con
           </div>
         </div>
       </div>
-      {selected && <IncidentDetails onBooking={r=>related(r,"booking")} onAccount={r=>related(r,"account")} record={rows.find(r => r.id === selected.id) || selected} onClose={() => setSelected(null)} onSave={updated => { const next = rows.map(r => r.id === updated.id ? updated : r); if (!saveIncidents(next)) return false; setRows(next); return true; }} />}
-      {linked?.kind==='evidence'&&<EvidencePreview record={linked.record} onClose={()=>setLinked(null)}/>}
-      {linked?.kind==='booking'&&<BookingDetails record={linked.record} tutor={linked.record.tutor||workspace.profile?.name} incidents={rows} onClose={()=>setLinked(null)}/>}
-      {linked?.kind==='account'&&<UserDetails user={users.find(u=>u.id===linked.id)} applications={applications} services={services} config={config} onSave={onUserSave} onServiceSave={onServiceSave} onApplicationSave={onApplicationSave} onDocument={onDocument} onClose={()=>setLinked(null)}/>}
+      {selected && (
+        <IncidentDetails
+          onBooking={(r) => related(r, "booking")}
+          onAccount={(r) => related(r, "account")}
+          record={rows.find((r) => r.id === selected.id) || selected}
+          onClose={() => setSelected(null)}
+          onSave={async (updated) => {
+            if (!(await saveRecord("incident_reports", updated))) return false;
+            return true;
+          }}
+        />
+      )}
+      {linked?.kind === "evidence" && (
+        <EvidencePreview
+          record={linked.record}
+          onClose={() => setLinked(null)}
+        />
+      )}
+      {linked?.kind === "booking" && (
+        <BookingDetails
+          record={linked.record}
+          tutor={linked.record.tutor || workspace.profile?.name}
+          incidents={rows}
+          onClose={() => setLinked(null)}
+        />
+      )}
+      {linked?.kind === "account" && (
+        <UserDetails
+          user={users.find((u) => u.id === linked.id)}
+          applications={applications}
+          services={services}
+          config={config}
+          onSave={onUserSave}
+          onServiceSave={onServiceSave}
+          onApplicationSave={onApplicationSave}
+          onDocument={onDocument}
+          onClose={() => setLinked(null)}
+        />
+      )}
     </section>
   );
 }

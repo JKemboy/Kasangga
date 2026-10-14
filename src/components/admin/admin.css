@@ -1512,19 +1512,19 @@
   overflow-wrap: anywhere;
 }
 .aa-table th:first-child {
-  width: 13%;
+  width: 7%;
 }
 .aa-table th:nth-child(2) {
-  width: 15%;
+  width: 18%;
 }
 .aa-table th:nth-child(3) {
   width: 15%;
 }
 .aa-table th:nth-child(4) {
-  width: 13%;
+  width: 12%;
 }
 .aa-table th:nth-child(5) {
-  width: 16%;
+  width: 17%;
 }
 .aa-table th:nth-child(6) {
   width: 15%;
@@ -1532,11 +1532,8 @@
 .aa-table th:nth-child(7) {
   width: 9%;
 }
-.aa-table th:nth-child(8) {
-  width: 9%;
-}
 .aa-table th:last-child {
-  width: 11%;
+  width: 7%;
 }
 .aa-table small {
   display: block;
@@ -1546,11 +1543,23 @@
 .aa-table .au-person {
   gap: 6px;
   font-size: 9px;
+  align-items: flex-start;
 }
 .aa-table .au-person > span:first-child {
   width: 25px;
   height: 25px;
   font-size: 8px;
+  flex-shrink: 0;
+}
+.aa-table .aa-person-details {
+  flex: 1;
+  min-width: 0;
+  line-height: 14px;
+  overflow-wrap: anywhere;
+}
+.aa-table .aa-person-details small {
+  margin-top: 2px;
+  line-height: 12px;
 }
 .aa-table button {
   display: flex;
