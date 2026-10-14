@@ -1,8 +1,8 @@
-# Schedule image OCR and private storage
+# Schedule PDF/image OCR and private storage
 
-The existing Tutor Availability & Schedule modal now accepts JPEG, PNG and WebP images up to 10 MiB. OCR runs in a browser Tesseract worker (English), with progress and a local image preview. Engine/language downloads require internet access on the first run. No OCR server or Edge Function is used.
+The existing Tutor Availability & Schedule modal now accepts PDF, JPEG, PNG and WebP files up to 10 MiB. PDFs may contain up to 10 pages; longer PDFs are rejected rather than partially read. PDF.js renders each page to an image and Tesseract reads the pages sequentially, including scanned PDFs. OCR runs in a browser Tesseract worker (English), with progress and a local image preview. Engine/language downloads require internet access on the first run. No OCR server or Edge Function is used.
 
-After recognition, the original image is uploaded to the existing private `schedule-uploads` bucket at `<auth.users.id>/<random UUID>.<extension>`. Extracted text remains visible if upload fails; retry reuses it. Successful uploads use `upsert: false`. Previous cloud images are downloaded with the authenticated client into temporary blob URLs; there are no public URLs. OCR does not automatically create class entries. The existing manual class review remains available.
+After recognition, the original file is uploaded to the existing private `schedule-uploads` bucket at `<profile-name>--<auth.users.id>/<random UUID>-<filename>.<extension>`. OCR parses course number, descriptive title, time, day(s), and room into editable review rows. The full recognized text is not displayed or stored in the schedule tables; personal and financial details elsewhere on the COR are ignored. The tutor must review and confirm every row before any class schedule records are written. Successful file uploads use `upsert: false`. Previous cloud files are downloaded with the authenticated client into temporary blob URLs; there are no public URLs.
 
 ## Configuration and authentication
 
@@ -10,30 +10,22 @@ This repository previously had no Supabase client. `src/services/supabaseClient.
 
 Google registration and email OTP login use this shared client to create real Supabase sessions. See passwordless-auth.md for required dashboard configuration. `auth.getUser()` validates the user before OCR and again before upload; no user IDs are hardcoded.
 
-Only the original image goes to Supabase Storage. Review text, upload references and manual class entries still use the existing local workspace persistence. No writes to `class_schedules` or `class_schedule_entries` are implemented. Those require a separate database integration. Closing/leaving during an in-flight upload may leave a successfully uploaded object in Storage even if its local review was not saved.
+Only the original file goes to Supabase Storage. On confirmation, the app inserts a `class_schedules` header and its confirmed `class_schedule_entries`, then marks the header confirmed. Partial writes are cleaned up and a failed save leaves the existing confirmed schedule unchanged. The dashboard loads the latest confirmed schedule from Supabase and uses its class times both in the Class Schedule table and as blocked times in Tutoring Availability. Learner booking-time choices exclude those blocks, and the payment handler checks for class conflicts again before creating a booking. Unconfirmed review rows remain in memory only; closing or leaving before confirmation discards them. Unreferenced images from discarded reviews may remain in private storage.
 
-## Manual Storage policies (not executed)
+## Class schedule table policies (not executed)
 
-The supplied table schema does not describe Storage policies, and the publishable key cannot inspect policy definitions. Check existing policies first. Keep the bucket private. If equivalent owner-scoped policies do not exist, apply these in the Supabase SQL editor:
+The client-side writes require owner-scoped RLS on `class_schedules` and `class_schedule_entries`. The learner booking flow also calls the restricted `get_tutor_class_blocks` function, which returns only weekly time blocks for a verified tutor's latest confirmed schedule. The corresponding policies and function are included at the end of `supabase/manual/availability_slots_policies.sql`. Review the SQL and existing policies, then apply it in the Supabase SQL editor if equivalent policies are not already configured. The app does not execute SQL against the hosted project.
 
-```sql
-create policy "Schedule images: insert own folder"
-on storage.objects for insert to authenticated
-with check (
-  bucket_id = 'schedule-uploads'
-  and (storage.foldername(name))[1] = (select auth.uid())::text
-);
+## Storage setup (run manually)
 
-create policy "Schedule images: read own folder"
-on storage.objects for select to authenticated
-using (
-  bucket_id = 'schedule-uploads'
-  and (storage.foldername(name))[1] = (select auth.uid())::text
-);
-```
+Run `supabase/manual/schedule_uploads_storage.sql` in Supabase SQL Editor. This fixes the missing Storage INSERT policy reported by the upload error. It keeps `schedule-uploads` private, allows PDF/JPEG/PNG/WebP up to 10 MiB, and provides a server-generated name folder based on the authenticated user's existing profile. Also run the class-table policies in `supabase/manual/availability_slots_policies.sql` if not already applied.
 
-INSERT is needed for uploads; SELECT is needed to reopen previous private images. No UPDATE, DELETE or anonymous policies are required by this flow. These policies isolate authenticated users by folder; they do not enforce a Tutor role. If your backend requires Tutor-only access, add your existing authorized role predicate to both policies. Review existing permissive policies, which can otherwise grant broader access. Configure the bucket's allowed MIME types to `image/jpeg`, `image/png`, `image/webp` and maximum file size to 10 MiB as server-side validation.
+Example: `schedule-uploads/john-kirk-emboy--<user-uuid>/<file-uuid>-class-schedule.pdf`.
 
-No policies, bucket visibility, or database schema were changed automatically. Live upload and cross-account access testing requires real authenticated test users and configured policies.
+The user ID prevents collisions between people with the same name. Owner-only reads continue to support older UUID-only folders, including after a name change. Restrictive ownership guards prevent broad permissive policies from granting cross-user access. No public URLs, service-role credentials, local-save fallback, or OCR JSON files are used. Only the original schedule document is uploaded; reviewed rows and the exact source path are stored in class_schedules/class_schedule_entries. Saving verifies the private source object exists first.
 
-References: [Tesseract.js](https://github.com/naptha/tesseract.js), [Supabase Storage access control](https://supabase.com/docs/guides/storage/security/access-control).
+The latest confirmed schedule and its source file reload from Supabase. Unconfirmed review rows are temporary React state, not browser persistence. Opening the tutor dashboard removes retired schedule-named CampusTutor storage keys and the old schedule-upload IndexedDB database; Supabase login sessions remain untouched. Existing cloud objects are not moved or deleted automatically.
+
+The SQL is not automatically applied to the hosted project. The RLS error will remain until the Storage policies are installed. Live verification requires an authenticated tutor and these policies.
+
+Reference: [Supabase Storage access control](https://supabase.com/docs/guides/storage/security/access-control).

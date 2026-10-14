@@ -2,7 +2,7 @@
 import { Upload, ShieldCheck, Plus, Trash2 } from "lucide-react";
 import { Modal, button, primary, input } from "./ui.jsx";
 import {
-  scheduleImageError,
+  scheduleFileError,
   extractScheduleText,
 } from "../../../services/ocrService.js";
 import {
@@ -18,6 +18,7 @@ import {
   scheduleImpact,
   confirmSchedule,
 } from "./scheduleReview.js";
+import { parseScheduleRows } from "../../../services/scheduleOcr.js";
 import { time } from "./data.js";
 import "./schedule-review.css";
 const blank = () => ({
@@ -32,7 +33,7 @@ const blank = () => ({
 });
 export default function ScheduleUpload({
   data,
-  update,
+  saveClassSchedule,
   onClose,
   visible = true,
   onReviewAvailability,
@@ -47,12 +48,13 @@ export default function ScheduleUpload({
     }),
     [checked, setChecked] = useState(false),
     [confirming, setConfirming] = useState(false),
+    [saving, setSaving] = useState(false),
     [preview, setPreview] = useState("");
   const extracted = useRef(null),
     busy = useRef(false),
     controller = useRef(null),
-    latest = useRef({ data, update });
-  latest.current = { data, update };
+    latest = useRef({ data, saveClassSchedule });
+  latest.current = { data, saveClassSchedule };
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => {
     if (!file) {
@@ -66,6 +68,15 @@ export default function ScheduleUpload({
   const rows = draft?.rows || [],
     errors = rowErrors(rows),
     invalid = errors.filter((e) => Object.keys(e).length).length;
+  const uploads = data.classSchedule?.source
+    ? [
+        {
+          id: data.classSchedule.id,
+          storagePath: data.classSchedule.source,
+          name: data.classSchedule.source.split("/").at(-1),
+        },
+      ]
+    : [];
   const impact = scheduleImpact(
     data,
     rowsToClasses(rows.filter((r, i) => !Object.keys(errors[i]).length)),
@@ -81,39 +92,37 @@ export default function ScheduleUpload({
   const added = proposed.filter(
     (c) => !current.some((v) => signature(c) === signature(v)),
   );
-  function persist(value) {
-    const saved = latest.current.update((d) => ({
-      ...d,
-      scheduleReview: value,
-    }));
-    if (saved === false)
-      throw new Error(
-        "Schedule review persistence is not connected to the database yet.",
-      );
-  }
-  function saveLater() {
-    try {
-      persist(draft);
-      onClose();
-    } catch (e) {
-      setError(e.message);
-    }
-  }
   function close() {
-    if (stage === "review") saveLater();
-    else {
-      if (stage === "done") {
-        setDraft(null);
-        setStage("upload");
-        setFile(null);
-        setPreview("");
-      }
+    if (stage === "review") {
+      setError(
+        "Confirm the reviewed classes to save them, or discard this review.",
+      );
+      return;
+    }
+    if (stage === "done") {
+      setDraft(null);
+      setStage("upload");
+      setFile(null);
+      setPreview("");
       onClose();
     }
+    onClose();
+  }
+  function selectFile(event) {
+    const chosen = event.target.files?.[0];
+    if (!chosen) return;
+    const validation = scheduleFileError(chosen);
+    setError(validation);
+    if (validation) {
+      event.target.value = "";
+      return;
+    }
+    extracted.current = null;
+    setFile(chosen);
   }
   async function process(selected = file) {
     if (busy.current) return;
-    const validation = scheduleImageError(selected);
+    const validation = scheduleFileError(selected);
     if (validation) return setError(validation);
     busy.current = true;
     const abort = new AbortController();
@@ -129,41 +138,42 @@ export default function ScheduleUpload({
         extracted.current?.file !== selected ||
         extracted.current.userId !== user.id
       ) {
+        let confidence = null;
         const text = await extractScheduleText(selected, {
           onProgress: setProgress,
+          onConfidence: (value) => {
+            confidence = value;
+          },
           signal: abort.signal,
         });
-        extracted.current = { file: selected, userId: user.id, text };
+        extracted.current = {
+          file: selected,
+          userId: user.id,
+          text,
+          confidence,
+        };
       }
       abort.signal.throwIfAborted();
       const result = extracted.current;
       setProgress({
-        label: "Uploading original image to private storage",
+        label: "Uploading original file to private storage",
         progress: 1,
       });
       // Keep upload metadata in the current form for retries.
       result.metadata ||= await uploadScheduleImage(selected, user.id);
       abort.signal.throwIfAborted();
-      const next = { ...result.metadata, rows: [], text: result.text };
-      const saved = latest.current.update((d) => ({
-        ...d,
-        scheduleReview: next,
-        uploads: [
-          ...d.uploads.filter((u) => u.id !== next.id),
-          result.metadata,
-        ],
-      }));
+      const next = {
+        ...result.metadata,
+        confidence: result.confidence,
+        rows: parseScheduleRows(result.text),
+      };
       setDraft(next);
       setStage("review");
-      if (saved === false)
-        setError(
-          "Image uploaded to Supabase. Schedule review saving is not connected yet; edits remain unsaved.",
-        );
     } catch (e) {
       if (!abort.signal.aborted) {
         setError(
           e.message ||
-            "Could not process the image. Try a clearer image or check your connection.",
+            "Could not process the schedule. Try a clearer PDF or image, or check your connection.",
         );
         setStage("upload");
       }
@@ -212,16 +222,19 @@ export default function ScheduleUpload({
       setError(e.message);
     }
   }
-  function finish() {
+  async function finish() {
+    if (saving) return;
+    setSaving(true);
     try {
-      const next = confirmSchedule(latest.current.data, draft, checked);
-      if (latest.current.update(() => next) === false)
-        throw new Error("Could not save the confirmed schedule.");
+      confirmSchedule(latest.current.data, draft, checked);
+      await latest.current.saveClassSchedule(draft);
       setConfirming(false);
       setStage("done");
     } catch (e) {
       setError(e.message);
       setConfirming(false);
+    } finally {
+      setSaving(false);
     }
   }
   if (!visible) return null;
@@ -255,10 +268,10 @@ export default function ScheduleUpload({
               </button>
               <button
                 className={primary}
-                disabled={!file || !!scheduleImageError(file)}
+                disabled={!file || !!scheduleFileError(file)}
                 onClick={() => process()}
               >
-                Read image and upload
+                Read schedule and upload
               </button>
             </>
           ) : stage === "processing" ? (
@@ -267,12 +280,21 @@ export default function ScheduleUpload({
             </button>
           ) : stage === "review" ? (
             <>
-              <button className={button} onClick={saveLater}>
-                Save for later
+              <button
+                className={button}
+                onClick={() => {
+                  setDraft(null);
+                  setStage("upload");
+                  setFile(null);
+                  setPreview("");
+                  onClose();
+                }}
+              >
+                Discard review
               </button>
               <button
                 className={primary}
-                disabled={!rows.length || !!invalid || !checked}
+                disabled={!rows.length || !!invalid || !checked || saving}
                 onClick={() => setConfirming(true)}
               >
                 Confirm Class Schedule
@@ -320,59 +342,67 @@ export default function ScheduleUpload({
               Your current confirmed schedule stays active while the new one is
               processed and reviewed. Nothing changes until you confirm.
             </p>
-            <label className="schedule-upload">
-              <Upload size={30} />
-              <strong>Choose your class schedule file</strong>
-              <span>
-                Certificate of Registration or official schedule · PDF, JPG, or
-                PNG up to 10 MB
-              </span>
-              <input
-                aria-label="Class schedule file"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => {
-                  const chosen = e.target.files[0];
-                  extracted.current = null;
-                  setFile(
-                    chosen && !scheduleImageError(chosen) ? chosen : null,
-                  );
-                  setError(chosen ? scheduleImageError(chosen) : "");
-                }}
-              />
-              {file && <b>{file.name}</b>}
-            </label>
+            <section className={file ? "schedule-selected-file" : ""}>
+              {file && (
+                <div className="schedule-file-heading">
+                  <strong title={file.name}>{file.name}</strong>
+                  <label className={button}>
+                    Change file
+                    <input
+                      aria-label="Change class schedule file"
+                      type="file"
+                      className="sr-only"
+                      accept="application/pdf,image/jpeg,image/png,image/webp"
+                      onChange={selectFile}
+                    />
+                  </label>
+                </div>
+              )}
+              {!file ? (
+                <label className="schedule-upload">
+                  <Upload size={30} />
+                  <strong>Choose your class schedule file</strong>
+                  <span>
+                    PDF, JPG, PNG, or WebP up to 10 MB. PDFs: up to 10 pages.
+                  </span>
+                  <input
+                    aria-label="Class schedule file"
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png,image/webp"
+                    onChange={selectFile}
+                  />
+                </label>
+              ) : preview ? (
+                file.type === "application/pdf" ? (
+                  <iframe
+                    src={preview}
+                    title="Selected schedule PDF"
+                    className="schedule-selected-preview"
+                  />
+                ) : (
+                  <img
+                    src={preview}
+                    alt="Selected schedule image"
+                    className="schedule-selected-preview"
+                  />
+                )
+              ) : (
+                <p role="status">Preparing preview...</p>
+              )}
+            </section>
             <p className="session-muted">
-              OCR runs in this browser. The first run downloads the recognition
-              engine and English language data. Review the text, then enter
-              class rows manually.
+              OCR runs in this browser. Review the recognized classes before
+              confirming.
             </p>
-            {preview && (
-              <img
-                src={preview}
-                alt="Selected schedule image"
-                className="schedule-preview"
-              />
-            )}
-            {extracted.current?.file === file && (
-              <section>
-                <h3>Extracted text</h3>
-                <pre className="schedule-raw">
-                  {extracted.current.text ||
-                    "No text detected. Try a clearer image."}
-                </pre>
-                <p>Text is kept here so you can retry a failed upload.</p>
-              </section>
-            )}
             {draft && (
               <button className={button} onClick={() => setStage("review")}>
                 Continue saved review: {draft.name}
               </button>
             )}
-            {data.uploads.length > 0 && (
+            {uploads.length > 0 && (
               <details>
-                <summary>Previous uploads</summary>
-                {[...data.uploads].reverse().map((u, i) => (
+                <summary>Saved schedule from database</summary>
+                {uploads.map((u, i) => (
                   <div
                     key={u.id || i}
                     className="flex justify-between gap-2 py-2"
@@ -408,17 +438,13 @@ export default function ScheduleUpload({
         {stage === "review" && (
           <div className="space-y-3">
             <section aria-label="OCR result">
-              <h3>Extracted text</h3>
-              <pre className="schedule-raw">
-                {draft.text ||
-                  "No readable text detected. Review the image and enter classes manually."}
-              </pre>
               <p className="session-muted">
                 {draft.storagePath
-                  ? "Original image saved in private schedule storage."
-                  : "Legacy local draft."}{" "}
-                Text recognition does not automatically change your class
-                schedule.
+                  ? "Original file saved in private schedule storage."
+                  : "Upload the original file before confirming."}{" "}
+                Confirmed class rows are saved to your database. Check and edit
+                the recognized course number, descriptive title, time, days, and
+                room before confirming.
               </p>
             </section>
             <div className="schedule-summary">
@@ -427,6 +453,12 @@ export default function ScheduleUpload({
                 {invalid ? `${invalid} rows need fixing` : "No errors"}
               </span>
             </div>
+            <p className="session-muted">
+              M = Monday · T = Tuesday · W = Wednesday · Th = Thursday · F =
+              Friday. MTh means Monday and Thursday; TF means Tuesday and
+              Friday. Each meeting day has its own row. Repeated identical
+              meetings are removed.
+            </p>
             <p className="session-muted">
               Compare every row with your official file. Highlighted fields need
               checking. Edit a highlighted field to clear its flag.
@@ -480,73 +512,104 @@ export default function ScheduleUpload({
                 <thead>
                   <tr>
                     {[
-                      "Course Code",
-                      "Course Name",
-                      "Day",
-                      "Start Time",
-                      "End Time",
+                      "Course No / Subject",
+                      "Descriptive Title",
+                      "Days",
+                      "Time",
                       "Room",
                       "",
-                    ].map((v, i) => (
-                      <th key={i}>{v}</th>
+                    ].map((v) => (
+                      <th key={v}>{v}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r, i) => (
                     <tr key={r.id}>
-                      {["code", "name", "day", "start", "end", "room"].map(
-                        (key) => (
-                          <td key={key}>
-                            <div
-                              className={
-                                errors[i][key]
-                                  ? "schedule-field-error"
-                                  : r.uncertain?.includes(key)
-                                    ? "schedule-field-uncertain"
-                                    : ""
-                              }
-                            >
-                              {key === "day" ? (
-                                <select
-                                  aria-label={`Day row ${i + 1}`}
-                                  className={input}
-                                  value={r.day}
-                                  onChange={(e) =>
-                                    patch(r.id, key, e.target.value)
-                                  }
-                                >
-                                  <option value="">Day</option>
-                                  {DAYS.map((d, index) => (
-                                    <option key={d} value={index}>
-                                      {d}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
+                      {["code", "name", "day", "time", "room"].map((key) => (
+                        <td key={key}>
+                          <div
+                            className={
+                              errors[i][key === "time" ? "start" : key] ||
+                              (key === "time" && errors[i].end)
+                                ? "schedule-field-error"
+                                : r.uncertain?.includes(key)
+                                  ? "schedule-field-uncertain"
+                                  : ""
+                            }
+                          >
+                            {key === "day" ? (
+                              <select
+                                aria-label={`Days row ${i + 1}`}
+                                className={input}
+                                value={r.day}
+                                onChange={(e) =>
+                                  patch(r.id, key, e.target.value)
+                                }
+                              >
+                                <option value="">Day</option>
+                                {DAYS.map((d, index) => (
+                                  <option key={d} value={index}>
+                                    {d}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : key === "time" ? (
+                              <div className="flex min-w-52 items-center gap-1">
                                 <input
-                                  aria-label={`${key} row ${i + 1}`}
+                                  aria-label={`Start time row ${i + 1}`}
                                   className={input}
-                                  type={
-                                    ["start", "end"].includes(key)
-                                      ? "time"
-                                      : "text"
-                                  }
-                                  value={r[key]}
+                                  type="time"
+                                  value={r.start}
                                   onChange={(e) =>
-                                    patch(r.id, key, e.target.value)
+                                    patch(r.id, "start", e.target.value)
                                   }
                                 />
+                                <span>–</span>
+                                <input
+                                  aria-label={`End time row ${i + 1}`}
+                                  className={input}
+                                  type="time"
+                                  value={r.end}
+                                  onChange={(e) =>
+                                    patch(r.id, "end", e.target.value)
+                                  }
+                                />
+                              </div>
+                            ) : (
+                              <input
+                                aria-label={`${key} row ${i + 1}`}
+                                className={input}
+                                type="text"
+                                value={r[key]}
+                                onChange={(e) =>
+                                  patch(r.id, key, e.target.value)
+                                }
+                              />
+                            )}
+                          </div>
+                          {key === "time" ? (
+                            <>
+                              {errors[i].start && (
+                                <small className="text-red-600">
+                                  {errors[i].start}
+                                </small>
                               )}
-                            </div>
-                            {errors[i][key] && (
+                              {errors[i].end && (
+                                <small className="text-red-600">
+                                  {errors[i].end}
+                                </small>
+                              )}
+                            </>
+                          ) : (
+                            errors[i][key] && (
                               <small className="text-red-600">
                                 {errors[i][key]}
                               </small>
-                            )}
-                          </td>
-                        ),
-                      )}
+                            )
+                          )}
+                        </td>
+                      ))}
                       <td>
                         <button
                           aria-label={`Remove class row ${i + 1}`}
@@ -657,8 +720,8 @@ export default function ScheduleUpload({
               <button className={button} onClick={() => setConfirming(false)}>
                 Back to review
               </button>
-              <button className={primary} onClick={finish}>
-                Confirm Class Schedule
+              <button className={primary} disabled={saving} onClick={finish}>
+                {saving ? "Saving..." : "Confirm Class Schedule"}
               </button>
             </>
           }

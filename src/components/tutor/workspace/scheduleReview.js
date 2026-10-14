@@ -1,7 +1,25 @@
-﻿import { classes as defaults, hour, overlaps } from "./data.js";
+import { hour, overlaps } from "./data.js";
 export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-export const confirmedClasses = (data) =>
-  data.classSchedule?.classes ?? defaults;
+export const confirmedClasses = (data) => data.classSchedule?.classes ?? [];
+export function groupedClassRows(classes) {
+  const grouped = new Map();
+  for (const [day, start, end, code, name, room] of classes) {
+    const key = JSON.stringify([start, end, code, name, room]);
+    const row = grouped.get(key) || {
+      start,
+      end,
+      code,
+      name,
+      room,
+      days: [],
+    };
+    if (!row.days.includes(day)) row.days.push(day);
+    grouped.set(key, row);
+  }
+  return [...grouped.values()].sort(
+    (a, b) => a.days[0] - b.days[0] || a.start - b.start,
+  );
+}
 export function classRows(classes) {
   return classes.map(([day, start, end, code, name, room], i) => ({
     id: `class-${i}`,

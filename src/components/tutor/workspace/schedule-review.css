@@ -134,6 +134,43 @@
   border: 1px solid #e1e5eb;
   margin-top: 10px;
 }
+.schedule-selected-file {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e1e5eb;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.schedule-file-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e1e5eb;
+}
+.schedule-file-heading strong {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.schedule-file-heading label {
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.schedule-file-heading label:focus-within {
+  outline: 2px solid #087542;
+  outline-offset: 2px;
+}
+.schedule-selected-preview {
+  display: block;
+  width: 100%;
+  height: min(360px, 40dvh);
+  border: 0;
+  object-fit: contain;
+}
 .schedule-event-conflict {
   background: repeating-linear-gradient(
     135deg,

@@ -4,6 +4,20 @@ export const imageExtensions = {
   "image/png": "png",
   "image/webp": "webp",
 };
+export const scheduleExtensions = {
+  ...imageExtensions,
+  "application/pdf": "pdf",
+};
+export function scheduleFileError(file) {
+  if (!file) return "Choose a PDF or schedule image first.";
+  if (!scheduleExtensions[file.type])
+    return "Choose a PDF, JPEG, PNG, or WebP file.";
+  if (!Number.isFinite(file.size) || file.size <= 0)
+    return "The schedule file is empty.";
+  if (file.size > MAX_IMAGE_SIZE)
+    return "Choose a schedule file of 10 MB or less.";
+  return "";
+}
 export function scheduleImageError(file) {
   if (!file) return "Choose a schedule image first.";
   if (!imageExtensions[file.type]) return "Choose a JPEG, PNG, or WebP image.";
@@ -62,5 +76,14 @@ export async function extractImageText(
   }
 }
 
-// Backwards-compatible entry point for the existing schedule workflow.
-export const extractScheduleText = extractImageText;
+export async function extractScheduleText(file, options = {}) {
+  const error = scheduleFileError(file);
+  if (error) throw new Error(error);
+  options.signal?.throwIfAborted();
+  if (file.type !== "application/pdf") return extractImageText(file, options);
+  const { extractPdfScheduleText } = await import("./schedulePdfOcr.js");
+  return extractPdfScheduleText(file, {
+    ...options,
+    recognize: extractImageText,
+  });
+}
