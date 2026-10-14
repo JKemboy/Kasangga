@@ -1,13 +1,10 @@
-﻿import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ExternalLink, MessageCircle, Video, Paperclip } from "lucide-react";
 import { Modal, Avatar, Badge, Field, button, primary, input } from "./ui.jsx";
 import { money, hour, time } from "./data.js";
-import {
-  sessionAction,
-  meetingUrl,
-  rescheduleOptions,
-  respondToReschedule,
-} from "./sessionActions.js";
+import { meetingUrl } from "./sessionActions.js";
+import { chatRequest } from "../../../services/bookingMessages.js";
+import { completeTutorSession } from "../../../services/tutorSessionCompletion.js";
 
 const dateLabel = (value) =>
   new Date(`${value}T12:00:00`).toLocaleDateString("en-US", {
@@ -95,27 +92,27 @@ export function TransactionDetails({ session: s, onClose, onSession }) {
 }
 export default function SessionDetails({
   data,
-  update,
   go,
   sessionId,
   onClose,
   initialAction = "",
+  refreshSessions,
 }) {
   const s = data.sessions.find((s) => s.id === sessionId);
   const [action, setAction] = useState(initialAction),
     [feedback, setFeedback] = useState(""),
     [transaction, setTransaction] = useState(false);
+  const [actionOptions] = useState([]),
+    [actionLoading, setActionLoading] = useState(false),
+    [actionError, setActionError] = useState("");
   const [reason, setReason] = useState(""),
     [kind, setKind] = useState(""),
     [slot, setSlot] = useState(""),
     [files, setFiles] = useState([]);
-  const options = useMemo(
-    () => (action === "reschedule" ? rescheduleOptions(data, sessionId) : []),
-    [action, data, sessionId],
-  );
   if (!s) return null;
   const active = ["Confirmed", "Pending"].includes(s.status),
-    url = meetingUrl(s.meetingUrl || s.link);
+    url = meetingUrl(s.meetingUrl || s.link),
+    options = actionOptions;
 
   const changeAction = (value) => {
     setAction(value);
@@ -125,44 +122,57 @@ export default function SessionDetails({
     setFiles([]);
     setFeedback("");
   };
-  function respond(accept) {
+  async function completeNow() {
+    setActionLoading(true);
+    setActionError("");
     try {
-      const next = respondToReschedule(data, s.id, accept);
-      if (update(() => next) === false)
-        throw new Error("Could not save. Please try again.");
+      await completeTutorSession(s.id);
+      changeAction("");
+      window.dispatchEvent(new Event("campustutor:sessions-changed"));
+      await refreshSessions?.();
       setFeedback(
-        accept
-          ? "New schedule accepted."
-          : "Request declined. The original time is unchanged.",
+        "Session marked as completed and kept in My Sessions history.",
       );
-    } catch (e) {
-      setFeedback(e.message);
+    } catch (error) {
+      setActionError(error.message);
+    } finally {
+      setActionLoading(false);
     }
   }
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
+    setActionLoading(true);
+    setActionError("");
     try {
       const chosen = options.find((o) => o.key === slot);
-      const next = sessionAction(data, s.id, action, {
-        reason: action === "cancel" ? `${kind}: ${reason}` : reason,
-        incidentType: kind,
-        acknowledged: true,
-        date: chosen?.date,
-        time: chosen?.time,
-        files,
-      });
-      if (update(() => next) === false)
-        throw new Error("Could not save. Please try again.");
+      if (action === "cancel") {
+        await chatRequest("cancel_chat_session", {
+          p_booking_id: Number(s.id),
+          p_reason: `${kind}: ${reason.trim()}`,
+          p_acknowledged: true,
+        });
+      } else if (action === "reschedule") {
+        if (!chosen) throw new Error("Select an available time.");
+        await chatRequest("request_chat_reschedule", {
+          p_booking_id: Number(s.id),
+          p_date: chosen.date,
+          p_start: chosen.time,
+          p_reason: reason.trim(),
+        });
+      } else {
+        throw new Error("This action is not available here.");
+      }
       changeAction("");
+      await refreshSessions?.();
       setFeedback(
         action === "cancel"
-          ? "Session cancelled."
-          : action === "reschedule"
-            ? "Reschedule request saved. The original time remains until accepted."
-            : "Report saved for review.",
+          ? "Session cancelled. Refund eligibility will be reviewed separately."
+          : "Reschedule request sent. The current schedule remains until the learner approves.",
       );
     } catch (error) {
       setFeedback(error.message);
+    } finally {
+      setActionLoading(false);
     }
   }
   return (
@@ -174,26 +184,9 @@ export default function SessionDetails({
         onClose={onClose}
         footer={
           <>
-            {active && (
-              <button
-                className="tutor-danger-button"
-                onClick={() => changeAction("cancel")}
-              >
-                Cancel Session
-              </button>
-            )}
             <button className={button} onClick={() => changeAction("incident")}>
               Report an Issue
             </button>
-            {active && (
-              <button
-                className={button}
-                disabled={s.reschedule?.status === "Pending"}
-                onClick={() => changeAction("reschedule")}
-              >
-                Request Reschedule
-              </button>
-            )}
             {s.type === "Online" && active && (
               <button
                 className={primary}
@@ -211,39 +204,16 @@ export default function SessionDetails({
             <strong>{s.learner}</strong>
             {s.program && <p>{s.program}</p>}
           </div>
-          <button
-            className={button}
-            onClick={() => go("messages", { learner: s.learner })}
-          >
-            <MessageCircle size={16} /> Message Learner
-          </button>
-        </div>
-        {s.reschedule?.status === "Pending" && (
-          <div className="session-warning mt-3">
-            <strong>
-              {s.reschedule.by === "Learner"
-                ? s.learner + " requested a new schedule"
-                : "Pending reschedule request"}
-            </strong>
-            <p className="mt-1">
-              From {dateLabel(s.date)}, {range(s)} to {s.reschedule.date},{" "}
-              {s.reschedule.start}.
-            </p>
-            <p>Reason: {s.reschedule.reason}</p>
-            {s.reschedule.by === "Learner" ? (
-              <div className="flex gap-2 mt-3">
-                <button className={primary} onClick={() => respond(true)}>
-                  Accept New Schedule
-                </button>
-                <button className={button} onClick={() => respond(false)}>
-                  Decline
-                </button>
-              </div>
-            ) : (
-              <p>Awaiting learner acceptance.</p>
+          {s.status === "Confirmed" &&
+            ["Paid", "Partially Refunded"].includes(s.payment) && (
+              <button
+                className={button}
+                onClick={() => go("messages", { learner: s.learner })}
+              >
+                <MessageCircle size={16} /> Message Learner
+              </button>
             )}
-          </div>
-        )}
+        </div>
         <Details
           rows={[
             ["Booking ID", s.booking || s.id],
@@ -323,13 +293,11 @@ export default function SessionDetails({
         <Modal
           size={action === "reschedule" ? "large" : "default"}
           title={
-            action === "cancel"
-              ? "Cancel Session"
+            action === "complete"
+              ? "Mark Session Completed"
               : action === "incident"
                 ? "Report an Issue"
-                : action === "reschedule"
-                  ? "Request Reschedule"
-                  : `Open ${s.provider}?`
+                : `Open ${s.provider}?`
           }
           subtitle={`${s.booking || s.id} · ${s.service} · ${s.learner}`}
           onClose={() => changeAction("")}
@@ -337,36 +305,28 @@ export default function SessionDetails({
             action !== "meeting" ? (
               <>
                 <button className={button} onClick={() => changeAction("")}>
-                  {action === "cancel" ? "Keep Session" : "Cancel"}
+                  Cancel
                 </button>
-                {action === "cancel" && (
-                  <button
-                    className={button}
-                    disabled={s.reschedule?.status === "Pending"}
-                    onClick={() => changeAction("reschedule")}
-                  >
-                    Request Reschedule
-                  </button>
-                )}
                 <button
-                  form="session-action-form"
-                  type="submit"
-                  className={
-                    action === "cancel" ? "tutor-danger-button" : primary
+                  form={
+                    action === "complete" ? undefined : "session-action-form"
                   }
+                  type={action === "complete" ? "button" : "submit"}
+                  onClick={action === "complete" ? completeNow : undefined}
+                  className={primary}
                   disabled={
-                    action === "incident"
-                      ? !kind || reason.trim().length < 20
-                      : action === "reschedule"
-                        ? !slot || reason.trim().length < 10
-                        : !kind || !reason.trim()
+                    actionLoading ||
+                    (action === "incident" &&
+                      (!kind || reason.trim().length < 20))
                   }
                 >
-                  {action === "cancel"
-                    ? "Cancel Session"
-                    : action === "incident"
-                      ? "Submit Report"
-                      : "Send Reschedule Request"}
+                  {actionLoading
+                    ? "Saving..."
+                    : action === "complete"
+                      ? "Done Session"
+                      : action === "incident"
+                        ? "Submit Report"
+                        : "Submit Report"}
                 </button>
               </>
             ) : null
@@ -404,6 +364,19 @@ export default function SessionDetails({
               <button className={button} onClick={() => changeAction("")}>
                 Cancel
               </button>
+            </div>
+          ) : action === "complete" ? (
+            <div className="space-y-3">
+              <p>
+                Mark this paid session with {s.learner} as completed? It will
+                leave the active message list and remain visible under the
+                Completed tab in My Sessions.
+              </p>
+              {actionError && (
+                <p role="alert" className="text-red-700">
+                  {actionError}
+                </p>
+              )}
             </div>
           ) : (
             <form
@@ -450,13 +423,21 @@ export default function SessionDetails({
                       </button>
                     ))}
                   </div>
-                  {!options.length && (
+                  {actionLoading && (
+                    <p role="status">Loading available times...</p>
+                  )}
+                  {!actionLoading && !options.length && (
                     <p role="status">
                       No valid slots in the next 30 days. Add availability
                       before requesting a reschedule.
                     </p>
                   )}
                 </>
+              )}
+              {actionError && (
+                <p role="alert" className="text-red-700">
+                  {actionError}
+                </p>
               )}
               {action === "incident" && (
                 <>

@@ -57,16 +57,25 @@ export function SessionTable({ rows, actions }) {
     </Table>
   );
 }
-export function Sessions({ data, update, go, args = {} }) {
+export function Sessions({
+  data,
+  update,
+  go,
+  args = {},
+  sessionsLoading,
+  sessionsError,
+  refreshSessions,
+}) {
   const initialSession = data.sessions.find((s) => s.id === args.sessionId);
   const [query, setQuery] = useState(args.query || ""),
     [type, setType] = useState("All"),
     [tab, setTab] = useState(
-      initialSession &&
-        ["Completed", "Cancelled"].includes(initialSession.status)
-        ? initialSession.status
-        : ["Upcoming", "Completed", "Cancelled"].includes(args.tab)
-          ? args.tab
+      initialSession?.lifecycle === "Completed"
+        ? "Done"
+        : ["Upcoming", "Ongoing", "Completed", "Done"].includes(args.tab)
+          ? args.tab === "Completed"
+            ? "Done"
+            : args.tab
           : "Upcoming",
     ),
     [page, setPage] = useState(1),
@@ -74,9 +83,9 @@ export function Sessions({ data, update, go, args = {} }) {
     [action, setAction] = useState("");
   const rows = data.sessions.filter(
     (s) =>
-      (tab === "Upcoming"
-        ? ["Confirmed", "Pending"].includes(s.status)
-        : s.status === tab) &&
+      (!args.serviceId || s.serviceId === String(args.serviceId)) &&
+      s.payment === "Paid" &&
+      s.lifecycle === (tab === "Done" ? "Completed" : tab) &&
       (type === "All" || s.type === type) &&
       matches(s, query),
   );
@@ -87,6 +96,13 @@ export function Sessions({ data, update, go, args = {} }) {
         subtitle="View and manage your tutoring sessions."
       />
       <div className="session-search-row">
+        <button
+          type="button"
+          onClick={refreshSessions}
+          disabled={sessionsLoading}
+        >
+          Refresh sessions
+        </button>
         <label className="session-search-box">
           <Search size={17} />
           <input
@@ -119,7 +135,7 @@ export function Sessions({ data, update, go, args = {} }) {
         </label>
       </div>
       <nav className="session-tabs" aria-label="Session status">
-        {["Upcoming", "Completed", "Cancelled"].map((t) => (
+        {["Upcoming", "Ongoing", "Done"].map((t) => (
           <button
             key={t}
             aria-pressed={tab === t}
@@ -143,26 +159,26 @@ export function Sessions({ data, update, go, args = {} }) {
           setSelected(s);
           setAction("meeting");
         }}
+        onAction={(s, nextAction) => {
+          setSelected(s);
+          setAction(nextAction);
+        }}
       />
-      <Empty show={!rows.length} />
+      <Empty show={!sessionsLoading && !sessionsError && !rows.length} />
       {rows.length > 5 && (
         <Pager count={rows.length} page={page} setPage={setPage} />
       )}
       <div className="session-footer-note">
         <Info size={19} />
         <span>All times use Asia/Manila (GMT+08:00).</span>
-        <span>
-          Cancellation does not automatically guarantee a refund. Refund
-          eligibility is reviewed separately under CampusTutor policy.
-        </span>
       </div>
       {selected && (
         <SessionDetails
           data={data}
-          update={update}
           go={go}
           sessionId={selected.id}
           initialAction={action}
+          refreshSessions={refreshSessions}
           onClose={() => {
             setSelected(null);
             setAction("");

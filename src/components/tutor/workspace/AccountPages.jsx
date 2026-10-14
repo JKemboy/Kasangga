@@ -1,3 +1,4 @@
+import BookingMessages from "../../shared/BookingMessages.jsx";
 import SessionDetails from "./SessionDetails.jsx";
 import { time, hour } from "./data.js";
 import { useInteractions } from "../../shared/InteractionProvider.jsx";
@@ -27,218 +28,44 @@ import {
   matches,
   Empty,
 } from "./ui.jsx";
-export function Messages({ data, update, args = {} }) {
-  const [selected, setSelected] = useState(
-      args.learner || data.threads[0]?.name || "",
-    ),
-    [query, setQuery] = useState(""),
-    [draft, setDraft] = useState(""),
-    [info, setInfo] = useState(false);
-  const bottom = useRef(null);
-  const thread =
-    data.threads.find((t) => t.name === selected) || data.threads[0];
-  const related = data.sessions.filter((s) => s.learner === thread?.name);
-  const session =
-    related.find((s) => s.id === thread?.sessionId) ||
-    related
-      .filter((s) => ["Confirmed", "Pending"].includes(s.status))
-      .sort((a, b) => a.date.localeCompare(b.date))[0] ||
-    related[0];
-  useEffect(() => {
-    bottom.current?.scrollIntoView({ block: "nearest" });
-  }, [selected, thread?.messages.length]);
-  if (!thread)
-    return (
-      <>
-        <Heading
-          title="Messages"
-          subtitle="Chat with learners about your sessions."
-        />
-        <Empty show={true} />
-      </>
-    );
+export function Messages({ args = {} }) {
   return (
-    <div className="grid gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
-      <div>
-        <Heading
-          title="Messages"
-          subtitle="Chat with learners about your tutoring services and sessions."
-        />
-        <Panel title="Conversations">
-          <input
-            className={input}
-            aria-label="Search conversations"
-            placeholder="Search conversations..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {data.threads
-            .filter((t) => matches(t, query))
-            .map((t) => (
-              <button
-                key={t.name}
-                className={`mt-2 flex w-full gap-3 rounded p-3 text-left ${selected === t.name ? "bg-green-50" : ""}`}
-                onClick={() => {
-                  setSelected(t.name);
-                  setDraft("");
-                  setInfo(false);
-                }}
-              >
-                <Avatar name={t.name} />
-                <div className="min-w-0">
-                  <b className="text-xs">{t.name}</b>
-                  <p className="text-[11px] text-slate-600">
-                    {data.sessions.find((s) => s.learner === t.name)?.service}
-                  </p>
-                  <p className="mt-1 truncate text-[10px] text-slate-500">
-                    {t.messages.at(-1)?.text}
-                  </p>
-                </div>
-              </button>
-            ))}
-          <Empty show={!data.threads.some((t) => matches(t, query))} />
-        </Panel>
-      </div>
-      <section className="flex h-[calc(100dvh-155px)] min-h-[420px] flex-col rounded-lg border border-slate-200 bg-white">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-3">
-          <div className="flex gap-3">
-            <Avatar name={thread.name} />
-            <div>
-              <b>{thread.name}</b>
-              <p className="text-xs text-green-800">● Online</p>
-              <p className="text-xs">
-                {session?.service} · {session?.topic}
-              </p>
-              {session && (
-                <p className="text-[11px] text-slate-500">
-                  {session.date} &middot; {time(hour(session.start))} &ndash;{" "}
-                  {time(hour(session.end))} &middot; {session.type}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {session?.type === "Online" && (
-              <button
-                className={button + " text-blue-700"}
-                onClick={() => setInfo("meeting")}
-              >
-                <ExternalLink size={15} />
-                {session.provider || "Meeting"} &middot; External Link
-              </button>
-            )}
-            <button
-              className={button}
-              aria-label="Session details"
-              disabled={!session}
-              onClick={() => setInfo("details")}
-            >
-              <Info size={18} />
-            </button>
-          </div>
-        </header>
-        <div className="min-h-0 flex-1 overflow-y-auto p-3">
-          <p className="mb-2 text-center text-xs text-slate-500">
-            September 17, 2026
-          </p>
-          {thread.messages.map((m, i) => (
-            <div
-              key={i}
-              className={`mb-3 gap-2 flex ${m.mine ? "justify-end" : ""}`}
-            >
-              {!m.mine && <Avatar name={thread.name} />}
-              <div
-                className={`max-w-[80%] rounded-xl p-3 text-sm ${m.mine ? "bg-green-50" : "bg-slate-100"}`}
-              >
-                <p className="whitespace-pre-wrap break-words">{m.text}</p>
-                <p className="mt-1 text-right text-[10px] text-slate-500">
-                  {m.time}
-                  {m.local ? " · Local draft" : ""}
-                </p>
-              </div>
-            </div>
-          ))}
-          <div ref={bottom} />
-        </div>
-        <form
-          className="border-t border-slate-200 p-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!draft.trim()) return;
-            const saved = update((d) => ({
-              ...d,
-              threads: d.threads.map((t) =>
-                t.name === selected
-                  ? {
-                      ...t,
-                      messages: [
-                        ...t.messages,
-                        {
-                          mine: true,
-                          text: draft.trim(),
-                          time: new Date().toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          }),
-                          local: true,
-                        },
-                      ],
-                    }
-                  : t,
-              ),
-            }));
-            if (saved !== false) setDraft("");
-          }}
-        >
-          <div className="flex gap-2">
-            <input
-              aria-label="Message"
-              placeholder="Type your message..."
-              className={input}
-              value={draft}
-              maxLength={3000}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-            <button
-              className={primary}
-              aria-label="Send message"
-              disabled={!draft.trim()}
-            >
-              <Send size={18} />
-            </button>
-          </div>
-          <p className="mt-2 text-[10px] text-slate-500">
-            Internal text messaging only. Local demo: messages stay on this
-            browser and are not delivered.
-          </p>
-        </form>
-      </section>
-      {info && session && (
-        <SessionDetails
-          key={session.id + info}
-          data={data}
-          update={update}
-          sessionId={session.id}
-          initialAction={info === "meeting" ? "meeting" : ""}
-          onClose={() => setInfo(false)}
-          go={(view, args) => {
-            if (view === "messages") {
-              setInfo(false);
-              setSelected(args.learner);
-            }
-          }}
-        />
-      )}
-    </div>
+    <BookingMessages
+      role="tutor"
+      initialName={args.learner || ""}
+      initialBookingId={args.bookingId || ""}
+    />
   );
 }
 export { default as Notifications } from "./Notifications.jsx";
-export function Profile({ data, update }) {
+export function Profile({
+  data,
+  saveTutorInformation,
+  profileLoading,
+  tutorProfileError,
+  refreshTutorInformation,
+}) {
   const [editing, setEditing] = useState(false);
-  const [profileError,setProfileError]=useState("");
-  const {confirm}=useInteractions();
-  const dirty=useRef(false);
-  async function closeProfile(){if(!dirty.current||await confirm({title:"Discard your changes?",message:"Your bio, expertise and topics return to the saved version.",accept:"Discard Changes",cancel:"Keep Editing",danger:true})){setEditing(false);dirty.current=false;}}
+  const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const { confirm } = useInteractions();
+  const dirty = useRef(false);
+  async function closeProfile() {
+    if (profileSaving) return;
+    if (
+      !dirty.current ||
+      (await confirm({
+        title: "Discard your changes?",
+        message: "Your bio, expertise and topics return to the saved version.",
+        accept: "Discard Changes",
+        cancel: "Keep Editing",
+        danger: true,
+      }))
+    ) {
+      setEditing(false);
+      dirty.current = false;
+    }
+  }
   const p = data.profile;
   const fields = [
     ["name", "Full Name"],
@@ -262,7 +89,11 @@ export function Profile({ data, update }) {
           </div>
           <button
             className="inline-flex items-center gap-2 rounded-md border border-green-700 bg-white px-3 py-2 text-xs font-semibold text-green-800 hover:bg-green-50"
-            onClick={() => setEditing(true)}
+            disabled={profileLoading || !!tutorProfileError}
+            onClick={() => {
+              setProfileError("");
+              setEditing(true);
+            }}
           >
             <Pencil className="h-4 w-4" />
             Edit Profile
@@ -316,6 +147,19 @@ export function Profile({ data, update }) {
             </div>
           </div>
         </section>
+        {profileLoading && <p role="status">Loading tutor information...</p>}
+        {tutorProfileError && (
+          <p role="alert" className="text-red-700">
+            {tutorProfileError}{" "}
+            <button
+              type="button"
+              className="underline"
+              onClick={refreshTutorInformation}
+            >
+              Retry
+            </button>
+          </p>
+        )}
         <div className="grid items-stretch gap-2.5 lg:grid-cols-2">
           <section className="min-w-0 rounded-lg border border-[#e0e7f0] bg-white p-3">
             <h2 className="mb-2 text-sm font-bold tracking-tight text-black">
@@ -420,15 +264,39 @@ export function Profile({ data, update }) {
         <Modal title="Edit Profile" onClose={closeProfile}>
           <form
             className="space-y-3"
-            onChange={()=>{dirty.current=true;}}
-            onSubmit={(e) => {
+            onChange={() => {
+              dirty.current = true;
+            }}
+            onSubmit={async (e) => {
+              if (profileSaving) {
+                e.preventDefault();
+                return;
+              }
               e.preventDefault();
               const values = Object.fromEntries(new FormData(e.currentTarget));
-              if(values.bio.trim().length<30)return setProfileError("Write at least 30 characters in your bio.");
-              if(values.expertise.trim().length<5)return setProfileError("Add an expertise summary of at least 5 characters.");
-              if(!values.skills.trim())return setProfileError("Add at least one topic or skill.");
-              if(update((d) => ({ ...d, profile: { ...d.profile, ...values } }))===false)return setProfileError("Could not save profile. Please try again.");
-              dirty.current=false;setProfileError("");setEditing(false);
+              if (values.bio.trim().length < 30)
+                return setProfileError(
+                  "Write at least 30 characters in your bio.",
+                );
+              if (values.expertise.trim().length < 5)
+                return setProfileError(
+                  "Add an expertise summary of at least 5 characters.",
+                );
+              if (!values.skills.trim())
+                return setProfileError("Add at least one topic or skill.");
+              setProfileSaving(true);
+              setProfileError("");
+              try {
+                await saveTutorInformation(values);
+              } catch (error) {
+                setProfileError(error.message);
+                return;
+              } finally {
+                setProfileSaving(false);
+              }
+              dirty.current = false;
+              setProfileError("");
+              setEditing(false);
             }}
           >
             {[
@@ -444,15 +312,23 @@ export function Profile({ data, update }) {
                 name={key}
                 type={key === "email" ? "email" : "text"}
                 required
+                disabled={profileSaving}
                 maxLength={key === "bio" ? 1000 : 300}
                 defaultValue={p[key]}
               />
             ))}
-            {profileError&&<p role="alert" className="text-xs text-red-600">{profileError}</p>}
-            <button className={primary}>Save Profile</button>
+            {profileError && (
+              <p role="alert" className="text-xs text-red-600">
+                {profileError}
+              </p>
+            )}
+            <button className={primary} disabled={profileSaving}>
+              {profileSaving ? "Saving..." : "Save Profile"}
+            </button>
             <button
               type="button"
               className={button}
+              disabled={profileSaving}
               onClick={closeProfile}
             >
               Cancel

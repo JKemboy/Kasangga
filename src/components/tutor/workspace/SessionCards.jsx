@@ -31,6 +31,7 @@ export default function SessionCards({
   onDetails,
   onMessage,
   onMeeting,
+  onAction,
 }) {
   return (
     <div className="session-table-scroll">
@@ -55,6 +56,9 @@ export default function SessionCards({
         {rows.map((s) => {
           const date = new Date(s.date + "T12:00:00");
           const duration = (hour(s.end) - hour(s.start)) * 60;
+          const sessionEnded =
+            new Date(`${s.date}T${String(s.end).slice(0, 8)}+08:00`) <=
+            new Date();
           return (
             <article className="session-card-row" key={s.id}>
               <div className="session-learner">
@@ -121,7 +125,7 @@ export default function SessionCards({
               <span
                 className={`session-status ${s.status === "Pending" ? "pending" : ""}`}
               >
-                {s.status}
+                {s.lifecycle === "Completed" ? "Done" : s.lifecycle || s.status}
               </span>
               <span
                 className={`session-status ${s.payment === "Unpaid" ? "unpaid" : ""}`}
@@ -131,7 +135,25 @@ export default function SessionCards({
               <div className="session-actions">
                 <div>
                   <button onClick={() => onDetails(s)}>View Details</button>
-                  <button onClick={() => onMessage(s)}>Message Learner</button>
+                  {s.status === "Confirmed" &&
+                    ["Paid", "Partially Refunded"].includes(s.payment) && (
+                      <button onClick={() => onMessage(s)}>
+                        Message Learner
+                      </button>
+                    )}
+                  {s.status === "Confirmed" && s.payment === "Paid" && (
+                    <button
+                      onClick={() => onAction(s, "complete")}
+                      disabled={!sessionEnded}
+                      title={
+                        sessionEnded
+                          ? "Mark this session as completed"
+                          : "Available after the scheduled session end"
+                      }
+                    >
+                      Done Session
+                    </button>
+                  )}
                 </div>
                 {s.type === "Online" && s.status === "Confirmed" && (
                   <button
