@@ -107,6 +107,24 @@ Deno.serve(async (req: Request) => {
     }
   }
   if (Array.isArray(payload.sessions)) {
+    try {
+      await discardUnpaidCheckouts(
+        adminSupabase,
+        studentId,
+        paymongoSecretKey,
+        payload.idempotencyKey,
+      );
+    } catch (error) {
+      return jsonResponse(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unable to clear previous checkout.",
+        },
+        409,
+      );
+    }
     return createBatchPayment(
       adminSupabase,
       studentId,

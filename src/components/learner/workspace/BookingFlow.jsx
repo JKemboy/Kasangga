@@ -345,7 +345,8 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
               : consent && rate > 0 && portalApiAvailable("createBooking");
   async function next(e) {
     e.preventDefault();
-    if (!valid || busy || checkoutCleaning || checkoutError) return;
+    if (!valid || busy || (step === 6 && (checkoutCleaning || checkoutError)))
+      return;
     setError("");
     if (
       step >= 3 &&
@@ -427,10 +428,10 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
         ))}
       </ol>
       <div className="booking-content">
-        {checkoutCleaning && (
+        {step === 6 && checkoutCleaning && (
           <p role="status">Checking previous unpaid checkout...</p>
         )}
-        {checkoutError && (
+        {step === 6 && checkoutError && (
           <p role="alert" className="booking-warning">
             {checkoutError}{" "}
             <button
@@ -1009,7 +1010,11 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
               </button>
             ) : (
               <button
-                disabled={!valid || busy || checkoutCleaning || !!checkoutError}
+                disabled={
+                  !valid ||
+                  busy ||
+                  (step === 6 && (checkoutCleaning || !!checkoutError))
+                }
                 className={primary}
               >
                 {busy

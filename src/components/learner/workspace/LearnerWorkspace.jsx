@@ -59,21 +59,6 @@ export default function LearnerWorkspace({ children, go }) {
     [error, setError] = useState("");
   const { toast, confirm } = useInteractions();
   const uid = auth?.user?.id;
-  useEffect(() => {
-    for (const storageName of ["localStorage", "sessionStorage"]) {
-      try {
-        const storage = window[storageName];
-        const keys = Array.from({ length: storage.length }, (_, i) =>
-          storage.key(i),
-        );
-        for (const key of keys)
-          if (/learner.*settings|settings.*learner/i.test(key || ""))
-            storage.removeItem(key);
-      } catch {
-        /* Browser storage may be unavailable. */
-      }
-    }
-  }, []);
 
   function closeDialog() {
     setDialog(null);
