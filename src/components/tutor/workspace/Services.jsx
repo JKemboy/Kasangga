@@ -212,7 +212,7 @@ export default function Services({
         title: `${service.status === "Active" ? "Deactivate" : "Reactivate"} ${service.name}?`,
         message:
           service.status === "Active"
-            ? `Learners will no longer be able to find or book ${service.name}. Your ${data.sessions.filter((s) => (s.serviceId === service.id || s.service === service.name) && ["Confirmed", "Pending"].includes(s.status)).length} existing upcoming bookings stay scheduled. You can reactivate it anytime.`
+            ? `Learners will no longer be able to find or book ${service.name}. All existing bookings keep their original topic, amount, and schedule. You must still attend scheduled sessions. You can reactivate this service anytime.`
             : "This service becomes visible to learners again and uses your current availability.",
         accept:
           service.status === "Active"

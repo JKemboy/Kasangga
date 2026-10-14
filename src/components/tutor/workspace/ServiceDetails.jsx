@@ -26,8 +26,7 @@ export default function ServiceDetails({
       (s) =>
         (s.serviceId
           ? s.serviceId === service.id
-          : s.service === service.name) &&
-        ["Confirmed", "Pending"].includes(s.status),
+          : s.service === service.name) && s.status === "Confirmed",
     )
     .sort((a, b) =>
       `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`),
@@ -140,6 +139,34 @@ export default function ServiceDetails({
             </div>
           ))}
         </dl>
+        {service.topicDetails?.length > 0 && (
+          <>
+            <h3 className="session-section-title">
+              Topic rates and meeting details
+            </h3>
+            <ul className="divide-y divide-slate-100">
+              {service.topicDetails.map((topic) => (
+                <li key={topic.id} className="py-2 text-sm">
+                  <strong>
+                    {topic.name} · {money(topic.rate)}/hour
+                  </strong>
+                  <p>{topic.types.join(" / ")}</p>
+                  {topic.meetingLink && (
+                    <a
+                      className="text-green-800 underline break-all"
+                      href={topic.meetingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {topic.meetingLink}
+                    </a>
+                  )}
+                  {topic.location && <p>{topic.location}</p>}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
         <h3 className="session-section-title">
           Availability for this service ({slots.length})
         </h3>
@@ -155,7 +182,9 @@ export default function ServiceDetails({
                   {slot.repeat ? " · Repeats weekly" : ""}
                 </span>
                 <span>
-                  {time(slot.start)} – {time(slot.end)} · {slot.type}
+                  {time(slot.start)} – {time(slot.end)}
+                  {slot.topicId &&
+                    ` · ${service.topicDetails?.find((topic) => topic.id === slot.topicId)?.name || "Topic"}`}
                 </span>
               </li>
             ))}
@@ -173,6 +202,13 @@ export default function ServiceDetails({
         <h3 className="session-section-title">
           Upcoming bookings ({bookings.length})
         </h3>
+        <button
+          type="button"
+          className={button}
+          onClick={() => go("sessions", { serviceId: service.id })}
+        >
+          View sessions for this service
+        </button>
         {bookings.length ? (
           <ul className="divide-y divide-slate-100">
             {bookings.map((s) => (

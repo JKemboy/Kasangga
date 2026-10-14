@@ -8,7 +8,6 @@ export default function AvailabilityPopover({
   onClose,
   onEdit,
   onDelete,
-  onClassSchedule,
 }) {
   const ref = useRef(null),
     [position, setPosition] = useState({ left: 16, top: 100 });
@@ -82,7 +81,7 @@ export default function AvailabilityPopover({
         ) : event.kind === "available" ? (
           "Available for Tutoring"
         ) : (
-          "Unavailable"
+          "Protected Time"
         )}
       </span>
       <strong>
@@ -97,7 +96,9 @@ export default function AvailabilityPopover({
       </strong>
       <p>
         {time(event.start)} – {time(event.end)}
-        {event.kind === "available" ? ` · ${event.slot.type}` : ""}
+        {event.kind === "available" && event.slot.serviceName
+          ? ` · ${event.slot.serviceName}`
+          : ""}
       </p>
       {event.room && <p className="session-muted">{event.room}</p>}
       {event.conflict && (
@@ -124,14 +125,6 @@ export default function AvailabilityPopover({
               ? "Class blocks are read-only here. Changes go through Upload Updated Class Schedule."
               : "This protected time is locked."}
           </p>
-          {event.kind === "class" && (
-            <button
-              className={button + " w-full mt-3"}
-              onClick={onClassSchedule}
-            >
-              View Class Schedule
-            </button>
-          )}
         </>
       )}
     </section>,

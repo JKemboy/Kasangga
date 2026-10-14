@@ -104,7 +104,7 @@ export function eventsForDate(
       kind: "protected",
       start: 17,
       end: 19,
-      title: "Unavailable",
+      title: "Protected time",
       detail: "Protected unavailable time",
     });
   }
@@ -113,22 +113,16 @@ export function eventsForDate(
       if (slot.day !== day || (!slot.repeat && slot.date !== iso)) return;
       events.push({
         id: `slot:${slot.id ?? index}:${iso}`,
-        kind: slot.kind === "unavailable" ? "protected" : "available",
-        conflict:
-          slot.kind !== "unavailable" &&
-          classes.some(
-            (c) => c[0] === day && slot.start < c[2] && c[1] < slot.end,
-          ),
+        kind: "available",
+        conflict: classes.some(
+          (c) => c[0] === day && slot.start < c[2] && c[1] < slot.end,
+        ),
         start: slot.start,
         end: slot.end,
-        title:
-          (slot.kind === "unavailable" ? "Unavailable" : slot.serviceName) ||
-          `Available · ${slot.type === "Both" ? "Online / In-person" : slot.type}`,
-        detail: slot.serviceId
-          ? "Reserved for this service"
-          : slot.repeat
-            ? "Repeats weekly"
-            : "One-time availability",
+        title: slot.serviceName
+          ? `Available · ${slot.serviceName}`
+          : "Available for tutoring",
+        detail: `${slot.repeat ? "Repeats weekly" : "Only on this date"}${slot.serviceId ? " · For this service" : " · All services"}`,
         slot,
       });
     });

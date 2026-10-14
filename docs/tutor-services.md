@@ -8,13 +8,13 @@ Supabase Row Level Security must permit the signed-in tutor to read their own ac
 
 My Services and the dashboard's Create Service action save to Supabase and wait for the database response. Services are excluded from browser workspace persistence; old local demo services are ignored, not automatically imported. Find a Tutor loads database services and refreshes on mount/window focus.
 
-The supplied `availability_slots` table contains recurring weekdays/times, not dated slots. The old service form's local-only date editor has been removed to avoid silently saving schedules only in the browser or converting individual dates into recurring availability. This change connects service details/topics/discovery only; the separate scheduling and booking flows are not migrated here.
+The supplied `availability_slots` table contains recurring weekdays/times, not dated slots. Tutor availability is saved as weekly blocks, optionally linked to one active service. Learner booking choices are limited to active slots for the selected service and weekday, and the checkout function validates the slot again before creating a booking. Class-schedule OCR/review remains a separate workflow.
 
 Verify in Supabase:
 
-1. Run `supabase/manual/find_tutor_services.sql` in Supabase SQL Editor.
-2. Sign in as an active tutor with a profile. Create a service and check `services` and `service_topics`.
-3. Reload My Services; edit its title/rate/topics and reload again.
-4. With a verified tutor profile, open the learner Find a Tutor page and check its card/profile/services.
-5. Deactivate the service; revisit/focus Find a Tutor and verify it disappears. Reactivate and verify it returns.
-6. Confirm a different tutor cannot edit it and suspended services cannot be reactivated.
+1. Run `supabase/manual/availability_slots_policies.sql` in Supabase SQL Editor to enable safe tutor writes and learner reads for public active tutor availability.
+2. Sign in as an active tutor with a profile. Add a weekly availability block and check `availability_slots`.
+3. Edit and remove the block; confirm edits persist after reload and removed blocks have `is_active = false`.
+4. With a verified tutor profile, choose an active service and a day with an availability block in learner booking; confirm only matching time ranges are selectable.
+5. Attempt to submit a time outside the selected slot; the Edge Function must reject it before checkout.
+6. Confirm another tutor cannot view or edit private/inactive availability and a learner cannot change any slot.

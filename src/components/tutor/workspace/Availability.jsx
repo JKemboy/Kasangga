@@ -47,12 +47,6 @@ const fullDate = (date) =>
     day: "numeric",
     year: "numeric",
   });
-const eventLabels = {
-  class: "Confirmed class",
-  available: "Available for tutoring",
-  session: "Confirmed tutoring session",
-  protected: "Protected time",
-};
 const swatches = {
   class: "bg-rose-400",
   available: "bg-green-400",
@@ -76,7 +70,21 @@ function rangeLabel(anchor, mode) {
   return `${first.toLocaleDateString("en-US", { month: "long", day: "numeric" })} – ${last.getDate()}, ${last.getFullYear()}`;
 }
 
-export default function Availability({ data, update, go, args = {} }) {
+export default function Availability({
+  data,
+  update,
+  go,
+  args = {},
+  availabilityLoading,
+  availabilityError,
+  refreshAvailability,
+  saveAvailability,
+  removeAvailability,
+  classScheduleLoading,
+  classScheduleError,
+  refreshClassSchedule,
+  saveClassSchedule,
+}) {
   const [tab, setTab] = useState(tabs.includes(args.tab) ? args.tab : tabs[0]);
   const [anchor, setAnchor] = useState(
     () => parseDate(args.date) || todayInManila(),
@@ -91,7 +99,7 @@ export default function Availability({ data, update, go, args = {} }) {
   const [calendarHeight, setCalendarHeight] = useState(380);
   const calendarRef = useRef(null);
   const classOnly = tab === "Class Schedule";
-  const lastUpload = data.uploads.at(-1);
+  const classes = confirmedClasses(data);
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -126,9 +134,9 @@ export default function Availability({ data, update, go, args = {} }) {
       day: (date.getDay() + 6) % 7,
       start: 7,
       end: 8,
-      repeat: false,
+      repeat: true,
       kind: "available",
-      type: "Online",
+      serviceId: null,
     };
     for (let start = 7; start <= 20; start += 0.5) {
       candidate.start = start;
@@ -165,16 +173,16 @@ export default function Availability({ data, update, go, args = {} }) {
       }))
     )
       return;
-    if (
-      update((d) => ({
-        ...d,
-        slots: d.slots.filter((s) => s.id !== slot.id),
-      })) === false
-    ) {
-      setError("Could not remove this block. Please try again.");
+    if (!slot.id) {
+      setError("This availability slot is not saved in the database.");
       return;
     }
-    closeEdit();
+    try {
+      await removeAvailability(slot);
+      closeEdit();
+    } catch (removeError) {
+      setError(removeError.message || "Could not remove this block.");
+    }
   }
   const classConflicts = data.slots.filter(
     (s) =>
@@ -216,6 +224,26 @@ export default function Availability({ data, update, go, args = {} }) {
           Manage your confirmed class schedule and valid tutoring availability.
         </p>
       </div>
+      {availabilityLoading && (
+        <p role="status" className="rounded border bg-white p-2">
+          Loading tutoring availability from Supabase...
+        </p>
+      )}
+      {availabilityError && (
+        <p
+          role="alert"
+          className="rounded border border-red-200 bg-red-50 p-2 text-red-700"
+        >
+          {availabilityError}{" "}
+          <button
+            type="button"
+            className="underline"
+            onClick={refreshAvailability}
+          >
+            Retry
+          </button>
+        </p>
+      )}
 
       <div
         role="tablist"
@@ -260,46 +288,22 @@ export default function Availability({ data, update, go, args = {} }) {
       >
         {classOnly ? (
           <>
-            <div className="grid items-center gap-3 rounded-lg border border-[#e0e7f0] bg-white p-3 sm:grid-cols-3 lg:grid-cols-[1.4fr_.75fr_.75fr_1fr_auto]">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#e0e7f0] bg-white p-3">
               <div className="flex min-w-0 items-center gap-2">
                 <ShieldCheck
                   className="h-9 w-9 shrink-0 fill-green-800 text-white"
                   strokeWidth={1.5}
                 />
                 <div>
-                  <h2 className="text-xs font-bold">
-                    Class Schedule Confirmed
-                  </h2>
-                  <span className="mt-1 inline-flex items-center gap-1 rounded bg-[#dff3e5] px-2 py-0.5 text-[10px] text-green-900">
-                    <Check className="h-3 w-3" />
-                    Confirmed · Read-Only
-                  </span>
+                  <h2 className="text-xs font-bold">Class Schedule</h2>
+                  {data.classSchedule && (
+                    <span className="mt-1 inline-flex items-center gap-1 rounded bg-[#dff3e5] px-2 py-0.5 text-[10px] text-green-900">
+                      <Check className="h-3 w-3" />
+                      Confirmed · Read-Only
+                    </span>
+                  )}
                 </div>
               </div>
-              {[
-                ["Academic Year", "2026 – 2027"],
-                ["Semester", "First Semester"],
-                [
-                  "Last Updated",
-                  data.classSchedule?.confirmedAt
-                    ? new Date(
-                        data.classSchedule.confirmedAt,
-                      ).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "September 10, 2026",
-                ],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="min-w-0 lg:border-l lg:border-[#e0e7f0] lg:pl-3"
-                >
-                  <p className="text-[10px] text-[#455780]">{label}</p>
-                  <p className="mt-1 text-[11px] font-medium">{value}</p>
-                </div>
-              ))}
               <button
                 type="button"
                 className={`${primary} inline-flex items-center justify-center gap-2 py-2`}
@@ -319,25 +323,40 @@ export default function Availability({ data, update, go, args = {} }) {
               </span>
               <div>
                 <p>
-                  Your confirmed class schedule is read-only and is used to
-                  prevent tutoring schedule conflicts. To make changes, upload
-                  your updated class schedule.
+                  Confirmed class times block tutoring availability. To make
+                  changes, upload your updated class schedule.
                 </p>
                 <p className="mt-1 text-[#455780]">
-                  Your existing schedule remains active until the updated
-                  schedule has been processed, reviewed, and confirmed.
+                  Your current schedule remains active until the updated
+                  schedule is reviewed and confirmed.
                 </p>
-                {lastUpload && (
-                  <button
-                    type="button"
-                    className="mt-1 max-w-full break-words text-left font-medium underline underline-offset-2"
-                    onClick={() => setUpload(true)}
-                  >
-                    Latest draft: {lastUpload.name} · Not connected to the database
-                  </button>
-                )}
               </div>
             </div>
+            {classScheduleLoading && (
+              <p role="status" className="text-sm text-[#455780]">
+                Loading confirmed class schedule...
+              </p>
+            )}
+            {classScheduleError && (
+              <p role="alert" className="text-sm text-red-700">
+                {classScheduleError}{" "}
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={refreshClassSchedule}
+                >
+                  Retry
+                </button>
+              </p>
+            )}
+            {!classScheduleLoading &&
+              !classScheduleError &&
+              !classes.length && (
+                <p className="rounded-lg border border-dashed border-[#cbd5e1] bg-white p-4 text-sm text-[#455780]">
+                  No confirmed class schedule yet. Upload your Certificate of
+                  Registration to add classes.
+                </p>
+              )}
           </>
         ) : (
           <>
@@ -408,6 +427,7 @@ export default function Availability({ data, update, go, args = {} }) {
                 <button
                   type="button"
                   className={`${primary} inline-flex items-center gap-1.5 py-2`}
+                  disabled={availabilityLoading || !!availabilityError}
                   onClick={() => addAvailability()}
                 >
                   <Plus className="h-4 w-4" />
@@ -453,7 +473,7 @@ export default function Availability({ data, update, go, args = {} }) {
                 ["class", "Class Schedule — Blocked"],
                 ["available", "Available for Tutoring"],
                 ["session", "Confirmed Tutoring Session — Occupied"],
-                ["protected", "Unavailable"],
+                ["protected", "Protected Time"],
               ]
           ).map(([kind, label]) => (
             <span key={kind} className="inline-flex items-center gap-1.5">
@@ -479,7 +499,7 @@ export default function Availability({ data, update, go, args = {} }) {
         <AvailabilityEditor
           slot={edit}
           data={data}
-          update={update}
+          saveAvailability={saveAvailability}
           onClose={closeEdit}
           onSaved={(date) => {
             setAnchor(date);
@@ -497,10 +517,6 @@ export default function Availability({ data, update, go, args = {} }) {
             setSelected(null);
           }}
           onDelete={deleteSlot}
-          onClassSchedule={() => {
-            setSelected(null);
-            setTab("Class Schedule");
-          }}
         />
       )}
       {sessionId && (
@@ -556,6 +572,7 @@ export default function Availability({ data, update, go, args = {} }) {
                 <button
                   type="button"
                   className={primary}
+                  disabled={availabilityLoading || !!availabilityError}
                   onClick={() => addAvailability(day.date)}
                 >
                   Add Availability
@@ -567,7 +584,7 @@ export default function Availability({ data, update, go, args = {} }) {
       )}
       <ScheduleUpload
         data={data}
-        update={update}
+        saveClassSchedule={saveClassSchedule}
         visible={upload}
         onClose={() => setUpload(false)}
         onReviewAvailability={() => {
