@@ -1,6 +1,5 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
-import {useInteractions} from "../shared/InteractionProvider.jsx";
-import { useState } from "react";
+import { useInteractions } from "../shared/InteractionProvider.jsx";
+import { useEffect, useState } from "react";
 import {
   Settings,
   ShieldCheck,
@@ -10,20 +9,18 @@ import {
   UserRound,
   Info,
 } from "lucide-react";
-import {
-  Modal,
-  button,
-  primary,
-  input,
-} from "../tutor/workspace/ui.jsx";
+import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 export default function AdminSettings({ config, onSave }) {
-  const {confirm}=useInteractions();
+  const { confirm } = useInteractions();
 
   const [draft, setDraft] = useState({ ...config }),
     [tab, setTab] = useState("System Settings"),
     [notice, setNotice] = useState(""),
     [error, setError] = useState(""),
     [security, setSecurity] = useState(false);
+  useEffect(() => {
+    setDraft({ ...config });
+  }, [config]);
   const change = (k, v) => {
     setDraft((d) => ({ ...d, [k]: v }));
     setNotice("");
@@ -56,20 +53,26 @@ export default function AdminSettings({ config, onSave }) {
   async function save(e) {
     e.preventDefault();
     setError("");
-    if (
-      !draft.name.trim()
-    ) {
-      setError(
-        "Enter an account name.",
-      );
+    if (!draft.name.trim()) {
+      setError("Enter an account name.");
       return;
     }
     const next = { ...draft };
     const fields = Object.keys(next).filter(
       (k) => k !== "auditHistory" && next[k] !== config[k],
     );
-    if(!fields.length){setNotice("No changes to save.");return;}
-    if(!await confirm({title:"Save Settings?",message:`Changes: ${fields.join(", ")}. These updates will be recorded in audit history.`,accept:"Save Settings"}))return;
+    if (!fields.length) {
+      setNotice("No changes to save.");
+      return;
+    }
+    if (
+      !(await confirm({
+        title: "Save Settings?",
+        message: `Changes: ${fields.join(", ")}. These updates will be recorded in audit history.`,
+        accept: "Save Settings",
+      }))
+    )
+      return;
     next.auditHistory = [
       ...(config.auditHistory || []),
       ...(fields.length
@@ -83,9 +86,10 @@ export default function AdminSettings({ config, onSave }) {
         : []),
     ];
     try {
-      requireBackendPersistence();
-} catch {
-      setError("This action is not connected to the database yet. Nothing was saved.");
+      await onSave(next);
+      setNotice("Settings saved to the database.");
+    } catch (error) {
+      setError(error.message);
     }
   }
   return (
@@ -147,8 +151,8 @@ export default function AdminSettings({ config, onSave }) {
             Change Password
           </button>
           <p className="ad-help">
-            Account details are local preferences. Institutional identity is not
-            modified.
+            Account details are saved administrator preferences. Institutional
+            identity is not modified.
           </p>
         </section>
       ) : (
@@ -185,8 +189,8 @@ export default function AdminSettings({ config, onSave }) {
               </div>
               <p className="ad-equation">90% + 5% + 5% = 100%</p>
               <p className="ad-help">
-                Fixed allocation matches the transaction and financial reporting
-                calculations.
+                Default estimates use this split. Recorded transaction
+                allocations take precedence in reports.
               </p>
             </section>
           </div>
@@ -201,8 +205,8 @@ export default function AdminSettings({ config, onSave }) {
               {fixed("Payment Confirmation", "PayMongo webhook")}
               {fixed("Currency", "Philippine Peso (PHP)")}
               <p className="ad-help">
-                Configuration reference only. Live payment webhooks are not
-                connected in this demo.
+                Payment records reflect the existing verified PayMongo webhook
+                workflow.
               </p>
             </section>
             <section className="ad-panel">
@@ -226,7 +230,8 @@ export default function AdminSettings({ config, onSave }) {
       )}
       <p className="ad-help flex items-center gap-2">
         <Info size={14} />
-        Demo preferences only. Authentication, maintenance enforcement, and notification delivery need backend integration. No
+        Preferences are saved in the database. Authentication, maintenance
+        enforcement, and notification delivery need backend integration. No
         payment secrets are stored here.
       </p>
       {notice && (

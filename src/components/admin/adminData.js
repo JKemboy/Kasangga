@@ -12,11 +12,6 @@ export const configDefaults = {
   incidentAlerts: true,
   maintenanceAlerts: true,
 };
-export const applications = [];
-export const adminServices = [];
-export function loadCollection(key, fallback) {
-  return structuredClone(fallback);
-}
 export function loadConfig() {
   return { ...configDefaults };
 }

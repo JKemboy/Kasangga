@@ -1,3 +1,4 @@
+import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import { useState } from "react";
 import ApplicationReview from "./ApplicationReview.jsx";
@@ -10,10 +11,9 @@ import {
   PhilippinePeso,
 } from "lucide-react";
 import { Modal, button, Avatar } from "../tutor/workspace/ui.jsx";
-import { seed, money } from "../tutor/workspace/data.js";
-import { summarizeEarnings } from "../tutor/workspace/earnings.js";
+import { money } from "../tutor/workspace/data.js";
+import { summarizePayments } from "../../services/adminRecords.js";
 import IncidentDetails from "./IncidentDetails.jsx";
-import { loadIncidents, saveIncidents } from "./incidentData.js";
 import { dateLabel } from "./adminData.js";
 export default function AdminOverview({
   users,
@@ -25,11 +25,12 @@ export default function AdminOverview({
   go,
 }) {
   const [detail, setDetail] = useState(null);
-  const [incidents, setIncidents] = useState(loadIncidents);
-  const [workspace] = useState(() => {
-
-    return seed;
-  });
+  const { database, saveRecord } = useAdminDatabase();
+  const incidents = database?.incidents || [];
+  const workspace = {
+    sessions: database?.sessions || [],
+    profile: { name: "" },
+  };
   const bookings = [...workspace.sessions].sort((a, b) =>
     b.date.localeCompare(a.date),
   );
@@ -38,7 +39,7 @@ export default function AdminOverview({
       ["Pending", "Under Review", "Resubmission Required"].includes(r.status),
     )
     .sort((a, b) => b.date.localeCompare(a.date));
-  const totals = summarizeEarnings(bookings);
+  const totals = summarizePayments(database?.payments || []);
   const badge = (v) => (
     <span
       className={`au-status ${["Paid", "Completed", "Approved", "Resolved"].includes(v) ? "active" : ["Cancelled", "Rejected", "Failed"].includes(v) ? "suspended" : "restricted"}`}
@@ -83,8 +84,8 @@ export default function AdminOverview({
                 </td>
                 <td>
                   <div className="au-person">
-                    <Avatar name={workspace.profile.name} />
-                    {workspace.profile.name}
+                    <Avatar name={r.tutor} />
+                    {r.tutor}
                   </div>
                 </td>
                 <td>{r.service}</td>
@@ -141,14 +142,14 @@ export default function AdminOverview({
             CalendarDays,
             bookings.length,
             "Total Bookings",
-            "Available demo bookings",
+            "All database bookings",
             null,
           ],
           [
             PhilippinePeso,
             money(totals.gross),
             "Gross Session Payments",
-            "Completed and paid sessions",
+            "Verified paid transactions",
             null,
           ],
         ].map(([Icon, value, label, hint, view], i) => (
@@ -293,9 +294,8 @@ export default function AdminOverview({
         {bookingTable(bookings.slice(0, 4))}
       </section>
       <p className="ad-help">
-        Local demo sources: user accounts, applications, moderated services,
-        tutor-workspace bookings, and incident references. Totals reflect these
-        records, not live platform activity.
+        Database totals reflect current user roles, applications, services,
+        bookings, payments and incident reports.
       </p>
       {detail?.kind === "application" && (
         <ApplicationReview
@@ -318,12 +318,8 @@ export default function AdminOverview({
             incidents.find((r) => r.id === detail.record.id) || detail.record
           }
           onClose={() => setDetail(null)}
-          onSave={(updated) => {
-            const next = incidents.map((r) =>
-              r.id === updated.id ? updated : r,
-            );
-            if (!saveIncidents(next)) return false;
-            setIncidents(next);
+          onSave={async (updated) => {
+            if (!(await saveRecord("incident_reports", updated))) return false;
             return true;
           }}
         />
@@ -331,7 +327,7 @@ export default function AdminOverview({
       {detail?.kind === "booking" && (
         <BookingDetails
           record={detail.record}
-          tutor={workspace.profile.name}
+          tutor={detail.record.tutor}
           incidents={incidents}
           onClose={() => setDetail(null)}
           onIncident={(record) => setDetail({ kind: "incident", record })}
@@ -341,118 +337,40 @@ export default function AdminOverview({
         !["application", "incident", "booking"].includes(detail.kind) && (
           <Modal
             title={
-              {
-                bookings: "All Bookings",
-                booking: "Booking Details",
-                financial: "Gross Session Payments",
-                incidents: "Incident Reports",
-                incident: "Incident Details",
-                application: "Application Summary",
-              }[detail.kind]
+              detail.kind === "bookings"
+                ? "All Bookings"
+                : "Gross Session Payments"
             }
             onClose={() => setDetail(null)}
           >
-            <div className="space-y-3 text-xs">
-              {detail.kind === "bookings" ? (
-                bookingTable(bookings)
-              ) : detail.kind === "financial" ? (
-                <>
-                  <p>Eligible completed and paid sessions: {totals.count}</p>
-                  {[
-                    ["Gross", totals.gross],
-                    ["Tutor share (90%)", totals.tutor],
-                    ["OSAS share (5%)", totals.osas],
-                    ["Platform share (5%)", totals.platform],
-                  ].map(([label, value]) => (
-                    <p key={label}>
-                      {label}: <b>{money(value)}</b>
-                    </p>
-                  ))}
-                  <p>
-                    These totals use the same tutor-workspace records as Admin
-                    Reports.
+            {detail.kind === "bookings" ? (
+              bookingTable(bookings)
+            ) : (
+              <div className="space-y-2 text-xs">
+                <p>Eligible paid transactions: {totals.count}</p>
+                {[
+                  ["Gross", totals.gross],
+                  ["Tutor share", totals.tutor],
+                  ["OSAS share", totals.osas],
+                  ["Platform share", totals.platform],
+                ].map(([label, value]) => (
+                  <p key={label}>
+                    {label}: <b>{money(value)}</b>
                   </p>
-                  <button
-                    className={button}
-                    onClick={() => go("Reports & Analytics")}
-                  >
-                    View Financial Analytics
-                  </button>
-                </>
-              ) : detail.kind === "incidents" ? (
-                incidents.map((r) => (
-                  <button
-                    className="w-full rounded border p-3 text-left"
-                    key={r.id}
-                    onClick={() => setDetail({ kind: "incident", record: r })}
-                  >
-                    {r.id} · {r.type} · {r.status}
-                  </button>
-                ))
-              ) : detail.kind === "incident" ? (
-                <>
-                  <p>
-                    <b>{detail.record.id}</b> ·{" "}
-                    {detail.record.booking || "No related booking"}
-                  </p>
-                  <p>Reporter: {detail.record.reporter}</p>
-                  <p>Reported student: {detail.record.student}</p>
-                  <p>
-                    {detail.record.type} · {detail.record.status}
-                  </p>
-                  <p>Referral: {detail.record.referral}</p>
-                  <p className="ad-help">
-                    Fictional incident reference. A report is not a finding of
-                    misconduct. Official evidence and assessment workflows are
-                    not connected.
-                  </p>
-                </>
-              ) : detail.kind === "application" ? (
-                <>
-                  <p>
-                    <b>{detail.record.name}</b> · {detail.record.studentId}
-                  </p>
-                  <p>
-                    {detail.record.id} · {detail.record.college} /{" "}
-                    {detail.record.program}
-                  </p>
-                  <p>
-                    {detail.record.status} · {detail.record.documents}
-                  </p>
-                  <p>
-                    Original documents are not attached. Manual review is
-                    required.
-                  </p>
-                  <button
-                    className={button}
-                    onClick={() => go("Tutor Verification")}
-                  >
-                    Open Tutor Verification
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p>
-                    <b>{detail.record.booking || detail.record.id}</b>
-                  </p>
-                  <p>
-                    {detail.record.learner} · {detail.record.service}
-                  </p>
-                  <p>Tutor: {workspace.profile.name}</p>
-                  <p>
-                    {dateLabel(detail.record.date)} · {detail.record.start}–
-                    {detail.record.end} (Asia/Manila)
-                  </p>
-                  <p>
-                    {detail.record.status} · {detail.record.payment} ·{" "}
-                    {money(detail.record.amount)}
-                  </p>
-                  <p>
-                    Read-only booking reference from the local tutor workspace.
-                  </p>
-                </>
-              )}
-            </div>
+                ))}
+                <p>
+                  {totals.estimated
+                    ? "Some shares use the estimated 90/5/5 split."
+                    : "Shares use recorded allocations."}
+                </p>
+                <button
+                  className={button}
+                  onClick={() => go("Payments & Transactions")}
+                >
+                  View Transactions
+                </button>
+              </div>
+            )}
           </Modal>
         )}
     </section>
