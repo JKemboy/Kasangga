@@ -1,7 +1,13 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
+import { markPaymentTransferred } from "../../services/adminDatabase.js";
+import {
+  paymentAllocation,
+  summarizePayments,
+  timestampLabel,
+} from "../../services/adminRecords.js";
+import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import PaymentDetails from "./PaymentDetails.jsx";
 import UserExport from "./UserExport.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CreditCard,
   PhilippinePeso,
@@ -22,26 +28,54 @@ import {
   input,
   Avatar,
 } from "../tutor/workspace/ui.jsx";
-import {
-  sessionAllocation,
-  summarizeEarnings,
-} from "../tutor/workspace/earnings.js";
 import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./adminData.js";
 
 const initialTransactions = [];
 // Refund-review rows retain the original paid allocation, but are excluded from
 // settled earnings until the review is resolved. This is reference data only.
-const originalAllocation = (r) => sessionAllocation({ ...r, payment: "Paid" });
+const originalAllocation = paymentAllocation;
 export default function AdminPayments() {
-  const [transactions,setTransactions]=useState(()=>{return initialTransactions;});
-  function saveReview(updated){const next=transactions.map(r=>r.id===updated.id?updated:r);try{requireBackendPersistence();
-}catch{return false;}}
-
+  const { database, saveRecord, refresh } = useAdminDatabase();
+  const transactions = database?.payments || [];
+  const [transferring, setTransferring] = useState(null),
+    [transferred, setTransferred] = useState([]),
+    [transferMessage, setTransferMessage] = useState(""),
+    [transferError, setTransferError] = useState("");
+  useEffect(() => {
+    if (!transferMessage) return;
+    const timer = setTimeout(() => setTransferMessage(""), 4500);
+    return () => clearTimeout(timer);
+  }, [transferMessage]);
+  async function recordTransfer(record) {
+    if (transferring || record.transferredAt || transferred.includes(record.id))
+      return;
+    setTransferring(record.id);
+    setTransferError("");
+    try {
+      await markPaymentTransferred(record.id, null, true);
+      setTransferred((current) => [...current, record.id]);
+      setTransferMessage(
+        "Payout of " +
+          money(originalAllocation(record).tutor) +
+          " to " +
+          record.tutor +
+          " marked as transferred.",
+      );
+      await refresh();
+    } catch (error) {
+      setTransferError(error.message);
+    } finally {
+      setTransferring(null);
+    }
+  }
+  async function saveReview(updated) {
+    return saveRecord("refunds", updated);
+  }
   const [status, setStatus] = useState(""),
     [query, setQuery] = useState(""),
-    [start, setStart] = useState("2026-09-01"),
-    [end, setEnd] = useState("2026-09-30"),
+    [start, setStart] = useState(""),
+    [end, setEnd] = useState(""),
     [dateOpen, setDateOpen] = useState(false),
     [filters, setFilters] = useState(false),
     [tutor, setTutor] = useState(""),
@@ -54,10 +88,13 @@ export default function AdminPayments() {
     : transactions.filter(
         (r) => (!start || r.date >= start) && (!end || r.date <= end),
       );
-  const totals = summarizeEarnings(period);
+  const totals = summarizePayments(period);
   const filtered = period.filter(
     (r) =>
-      (!status || r.payment === status) &&
+      (!status ||
+        (status === "Transferred"
+          ? !!r.transferredAt || transferred.includes(r.id)
+          : r.payment === status)) &&
       (!tutor || r.tutor === tutor) &&
       `${r.id} ${r.booking} ${r.learner} ${r.tutor}`
         .toLowerCase()
@@ -66,8 +103,7 @@ export default function AdminPayments() {
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),
     visible = filtered.slice((current - 1) * 7, current * 7);
-  const paidDate = (r) =>
-    `${dateLabel(r.date)} · ${new Date(`${r.date}T${r.time}:00+08:00`).toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit", hour12: true })}`;
+  const paidDate = (r) => timestampLabel(r.paidAt);
   function change(setter, value) {
     setter(value);
     setPage(1);
@@ -114,13 +150,27 @@ export default function AdminPayments() {
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "admin-transactions-demo.csv";
+    a.download = "admin-transactions.csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(`Exported ${filtered.length} matching transactions.`);
   }
   return (
     <section className="ad-page ap-payments">
+      {transferMessage && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-[100] flex max-w-[calc(100vw-3rem)] items-center gap-3 rounded-lg bg-[#102d1e] px-4 py-3 text-sm font-semibold text-white shadow-lg"
+        >
+          <Check size={16} className="shrink-0 text-yellow-400" />
+          <span>{transferMessage}</span>
+        </div>
+      )}
+      {transferError && (
+        <p role="alert" className="text-sm text-red-700">
+          {transferError}
+        </p>
+      )}
       <div className="osas-heading">
         <div>
           <h1>
@@ -137,23 +187,23 @@ export default function AdminPayments() {
             PhilippinePeso,
             "Gross Session Payments",
             money(totals.gross),
-            "Completed and paid sessions",
+            "Verified paid transactions",
           ],
           [
             UserRound,
-            "Tutor Share (90%)",
+            "Tutor Share",
             money(totals.tutor),
             "Allocated to tutors",
           ],
           [
             Landmark,
-            "OSAS Share (5%)",
+            "OSAS Share",
             money(totals.osas),
             "Institutional allocation",
           ],
           [
             PieChart,
-            "Platform Revenue (5%)",
+            "Platform Revenue",
             money(totals.platform),
             "Platform allocation",
           ],
@@ -188,7 +238,15 @@ export default function AdminPayments() {
       </div>
       <div className="ad-toolbar">
         <div className="au-tabs">
-          {["", "Paid", "Processing", "Failed", "Refund Review"].map((s) => (
+          {[
+            "",
+            "Paid",
+            "Transferred",
+            "Processing",
+            "Failed",
+            "Refund Review",
+            "Refunded",
+          ].map((s) => (
             <button
               key={s}
               aria-pressed={status === s}
@@ -216,7 +274,12 @@ export default function AdminPayments() {
           <Filter size={14} />
           Filter
         </button>
-        <UserExport kind="payments" rows={filtered} onCsv={exportCsv} onNotice={setNotice} />
+        <UserExport
+          kind="payments"
+          rows={filtered}
+          onCsv={exportCsv}
+          onNotice={setNotice}
+        />
       </div>
       <div className="ap-search">
         <label className="osas-search">
@@ -247,8 +310,8 @@ export default function AdminPayments() {
                 setStatus("");
                 setTutor("");
                 setQuery("");
-                setStart("2026-09-01");
-                setEnd("2026-09-30");
+                setStart("");
+                setEnd("");
                 setPage(1);
               }}
             >
@@ -278,12 +341,11 @@ export default function AdminPayments() {
                   "Learner",
                   "Tutor",
                   "Gross Amount",
-                  "Tutor Share (90%)",
-                  "OSAS Share (5%)",
-                  "Platform Share (5%)",
+                  "Tutor Share",
+                  "OSAS Share",
+                  "Platform Share",
                   "Payment Method",
                   "Payment Status",
-                  "Paid Date",
                   "Action",
                 ].map((h) => (
                   <th key={h}>{h}</th>
@@ -323,7 +385,6 @@ export default function AdminPayments() {
                         {r.payment}
                       </span>
                     </td>
-                    <td>{paidDate(r)}</td>
                     <td>
                       <button
                         className={button}
@@ -331,6 +392,23 @@ export default function AdminPayments() {
                         onClick={() => setSelected(r)}
                       >
                         View Transaction
+                      </button>
+                      <button
+                        className={button + " ml-2"}
+                        disabled={
+                          !!r.transferredAt ||
+                          transferred.includes(r.id) ||
+                          !!transferring ||
+                          r.paymentStatus !== "paid" ||
+                          ["pending", "approved"].includes(r.refundStatus)
+                        }
+                        onClick={() => recordTransfer(r)}
+                      >
+                        {r.transferredAt || transferred.includes(r.id)
+                          ? "Transferred"
+                          : transferring === r.id
+                            ? "Saving..."
+                            : "Mark as Transferred"}
                       </button>
                     </td>
                   </tr>
@@ -374,10 +452,9 @@ export default function AdminPayments() {
       </div>
       <p className="ad-banner flex items-start gap-2">
         <Info size={16} className="shrink-0" />
-        Demo transaction references; live payment confirmations are not
-        connected. Refund-review rows show original allocations and are excluded
-        from settled summary totals. Cancellation does not automatically
-        guarantee a refund.
+        Database payment records. Paid totals include confirmed and completed
+        sessions; pending refund reviews are excluded. Shares without a stored
+        allocation are marked as estimates.
       </p>
       {dateOpen && (
         <Modal
@@ -420,7 +497,13 @@ export default function AdminPayments() {
           </div>
         </Modal>
       )}
-      {selected && <PaymentDetails record={transactions.find(r=>r.id===selected.id)||selected} onSave={saveReview} onClose={()=>setSelected(null)} />}
+      {selected && (
+        <PaymentDetails
+          record={transactions.find((r) => r.id === selected.id) || selected}
+          onSave={saveReview}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </section>
   );
 }

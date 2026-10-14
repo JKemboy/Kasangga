@@ -1,6 +1,6 @@
+import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import IncidentDetails from "./IncidentDetails.jsx";
-import {loadIncidents,saveIncidents} from "./incidentData.js";
 import UserExport from "./UserExport.jsx";
 import { useState } from "react";
 import {
@@ -19,21 +19,22 @@ import {
   input,
   Avatar,
 } from "../tutor/workspace/ui.jsx";
-import { seed, money } from "../tutor/workspace/data.js";
+import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./adminData.js";
 export default function AdminBookings() {
-  const [incidents,setIncidents]=useState(loadIncidents);
-  const [incident,setIncident]=useState(null);
-  const [workspace] = useState(() => {
-
-    return seed;
-  });
+  const { database, saveRecord } = useAdminDatabase();
+  const incidents = database?.incidents || [];
+  const [incident, setIncident] = useState(null);
+  const workspace = {
+    sessions: database?.sessions || [],
+    profile: { name: "" },
+  };
   const [status, setStatus] = useState(""),
     [type, setType] = useState(""),
     [payment, setPayment] = useState(""),
     [query, setQuery] = useState(""),
-    [start, setStart] = useState("2026-01-01"),
-    [end, setEnd] = useState("2026-12-31"),
+    [start, setStart] = useState(""),
+    [end, setEnd] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
     [dates, setDates] = useState(false),
@@ -54,13 +55,7 @@ export default function AdminBookings() {
               : r.status === status)) &&
           (!type || r.type === type) &&
           (!payment || r.payment === payment) &&
-          [
-            r.booking || r.id,
-            r.learner,
-            workspace.profile.name,
-            r.service,
-            r.topic,
-          ]
+          [r.booking || r.id, r.learner, r.tutor, r.subject, r.service, r.topic]
             .join(" ")
             .toLowerCase()
             .includes(query.trim().toLowerCase()),
@@ -102,7 +97,7 @@ export default function AdminBookings() {
       ...filtered.map((r) => [
         r.booking || r.id,
         r.learner,
-        workspace.profile.name,
+        r.tutor,
         r.service,
         r.topic,
         r.date,
@@ -260,15 +255,23 @@ export default function AdminBookings() {
             setType("");
             setPayment("");
             setQuery("");
-            setStart("2026-01-01");
-            setEnd("2026-12-31");
+            setStart("");
+            setEnd("");
             setPage(1);
             setNotice("");
           }}
         >
           Reset filters
         </button>
-        <UserExport kind="bookings" rows={filtered.map(r=>({...r,tutor:r.tutor||workspace.profile.name}))} onCsv={exportCsv} onNotice={setNotice} />
+        <UserExport
+          kind="bookings"
+          rows={filtered.map((r) => ({
+            ...r,
+            tutor: r.tutor,
+          }))}
+          onCsv={exportCsv}
+          onNotice={setNotice}
+        />
       </div>
       {notice && (
         <p role="status" className="text-xs text-green-800">
@@ -316,8 +319,8 @@ export default function AdminBookings() {
                 </td>
                 <td>
                   <div className="au-person">
-                    <Avatar name={workspace.profile.name} />
-                    {workspace.profile.name}
+                    <Avatar name={r.tutor} />
+                    {r.tutor}
                   </div>
                 </td>
                 <td>{r.service}</td>
@@ -380,8 +383,8 @@ export default function AdminBookings() {
       </div>
       <p className="ad-help flex items-center gap-2">
         <Info size={15} />
-        Read-only monitoring of local tutor-workspace bookings. Admin monitoring
-        does not alter Tutor or Learner schedules.
+        Booking and payment statuses come from the database. Monitoring does not
+        change Tutor or Learner schedules.
       </p>
       {dates && (
         <Modal title="Booking Date Range" onClose={() => setDates(false)}>
@@ -421,8 +424,25 @@ export default function AdminBookings() {
           </div>
         </Modal>
       )}
-      {selected && <BookingDetails record={selected} tutor={workspace.profile.name} incidents={incidents} onIncident={setIncident} onClose={()=>setSelected(null)} />}
-      {incident && <IncidentDetails record={incidents.find(r=>r.id===incident.id)||incident} onClose={()=>setIncident(null)} onSave={updated=>{const next=incidents.map(r=>r.id===updated.id?updated:r);if(!saveIncidents(next))return false;setIncidents(next);return true;}} />}
+      {selected && (
+        <BookingDetails
+          record={rows.find((r) => r.id === selected.id) || selected}
+          tutor={selected.tutor}
+          incidents={incidents}
+          onIncident={setIncident}
+          onClose={() => setSelected(null)}
+        />
+      )}
+      {incident && (
+        <IncidentDetails
+          record={incidents.find((r) => r.id === incident.id) || incident}
+          onClose={() => setIncident(null)}
+          onSave={async (updated) => {
+            if (!(await saveRecord("incident_reports", updated))) return false;
+            return true;
+          }}
+        />
+      )}
     </section>
   );
 }
