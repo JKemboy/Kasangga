@@ -1,18 +1,16 @@
-﻿
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { createBatchPayment } from "./batch.ts";
+import { discardUnpaidCheckouts } from "./discard.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "http://localhost:5173",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function jsonResponse(
-  body: Record<string, unknown>,
-  status = 200,
-) {
+function jsonResponse(body: Record<string, unknown>, status = 200) {
   return Response.json(body, {
     status,
     headers: corsHeaders,
@@ -37,46 +35,33 @@ Deno.serve(async (req: Request) => {
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-const paymongoSecretKey = Deno.env.get("PAYMONGO_SECRET_KEY");
-const appUrl = Deno.env.get("APP_URL");
+  const paymongoSecretKey = Deno.env.get("PAYMONGO_SECRET_KEY");
+  const appUrl = Deno.env.get("APP_URL");
 
   if (
-  !supabaseUrl ||
-  !supabaseAnonKey ||
-  !serviceRoleKey ||
-  !paymongoSecretKey ||
-  !appUrl
-) {
-    return jsonResponse(
-      { error: "Server configuration is missing." },
-      500,
-    );
+    !supabaseUrl ||
+    !supabaseAnonKey ||
+    !serviceRoleKey ||
+    !paymongoSecretKey ||
+    !appUrl
+  ) {
+    return jsonResponse({ error: "Server configuration is missing." }, 500);
   }
 
-  const supabase = createClient(
-    supabaseUrl,
-    supabaseAnonKey,
-  );
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  const adminSupabase = createClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+  const adminSupabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
-  );
+  });
 
   // 3. Authenticate student
   const authHeader = req.headers.get("Authorization");
 
   if (!authHeader?.startsWith("Bearer ")) {
-    return jsonResponse(
-      { error: "Authentication required" },
-      401,
-    );
+    return jsonResponse({ error: "Authentication required" }, 401);
   }
 
   const token = authHeader.slice(7);
@@ -85,10 +70,7 @@ const appUrl = Deno.env.get("APP_URL");
     await supabase.auth.getUser(token);
 
   if (authError || !authData.user) {
-    return jsonResponse(
-      { error: "Invalid or expired session" },
-      401,
-    );
+    return jsonResponse({ error: "Invalid or expired session" }, 401);
   }
 
   const studentId = authData.user.id;
@@ -99,34 +81,44 @@ const appUrl = Deno.env.get("APP_URL");
   try {
     const parsed = await req.json();
 
-    if (
-      !parsed ||
-      typeof parsed !== "object" ||
-      Array.isArray(parsed)
-    ) {
-      return jsonResponse(
-        { error: "Booking details are required" },
-        400,
-      );
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return jsonResponse({ error: "Booking details are required" }, 400);
     }
 
     payload = parsed;
   } catch {
-    return jsonResponse(
-      { error: "Invalid JSON request body" },
-      400,
+    return jsonResponse({ error: "Invalid JSON request body" }, 400);
+  }
+
+  if (payload.action === "discardUnpaidCheckout") {
+    try {
+      await discardUnpaidCheckouts(adminSupabase, studentId, paymongoSecretKey);
+      return jsonResponse({ discarded: true });
+    } catch (error) {
+      return jsonResponse(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unable to clear previous checkout.",
+        },
+        409,
+      );
+    }
+  }
+  if (Array.isArray(payload.sessions)) {
+    return createBatchPayment(
+      adminSupabase,
+      studentId,
+      payload,
+      paymongoSecretKey,
+      appUrl,
+      jsonResponse,
     );
   }
 
-  const {
-    serviceId,
-    topic,
-    date,
-    time,
-    duration,
-    type,
-    idempotencyKey,
-  } = payload;
+  const { serviceId, topic, date, time, duration, type, idempotencyKey } =
+    payload;
 
   // 5. Validate booking fields
   const serviceIdNumber = Number(serviceId);
@@ -136,13 +128,10 @@ const appUrl = Deno.env.get("APP_URL");
     typeof date === "string" &&
     /^\d{4}-\d{2}-\d{2}$/.test(date) &&
     !Number.isNaN(Date.parse(`${date}T00:00:00Z`)) &&
-    new Date(`${date}T00:00:00Z`)
-      .toISOString()
-      .slice(0, 10) === date;
+    new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date;
 
   const validTime =
-    typeof time === "string" &&
-    /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+    typeof time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
 
   const validBooking =
     Number.isSafeInteger(serviceIdNumber) &&
@@ -162,27 +151,22 @@ const appUrl = Deno.env.get("APP_URL");
   if (!validBooking) {
     return jsonResponse(
       {
-        error:
-          "Invalid booking details. Please review your selections.",
+        error: "Invalid booking details. Please review your selections.",
       },
       400,
     );
   }
 
   // 6. Check duplicate request before creating a booking
-  const { data: existingBooking, error: existingError } =
-    await adminSupabase
-      .from("bookings")
-      .select("booking_id")
-      .eq("learner_id", studentId)
-      .eq("idempotency_key", idempotencyKey)
-      .maybeSingle();
+  const { data: existingBooking, error: existingError } = await adminSupabase
+    .from("bookings")
+    .select("booking_id")
+    .eq("learner_id", studentId)
+    .eq("idempotency_key", idempotencyKey)
+    .maybeSingle();
 
   if (existingError) {
-    return jsonResponse(
-      { error: "Unable to verify booking request." },
-      500,
-    );
+    return jsonResponse({ error: "Unable to verify booking request." }, 500);
   }
 
   if (existingBooking) {
@@ -197,15 +181,14 @@ const appUrl = Deno.env.get("APP_URL");
   }
 
   // 7. Verify service and retrieve database price
-  const { data: service, error: serviceError } =
-    await adminSupabase
-      .from("services")
-      .select(
-        "service_id,tutor_profile_id,title,rate_per_hour,service_status,session_type",
-      )
-      .eq("service_id", serviceIdNumber)
-      .eq("service_status", "active")
-      .maybeSingle();
+  const { data: service, error: serviceError } = await adminSupabase
+    .from("services")
+    .select(
+      "service_id,tutor_profile_id,title,rate_per_hour,service_status,session_type",
+    )
+    .eq("service_id", serviceIdNumber)
+    .eq("service_status", "active")
+    .maybeSingle();
 
   if (serviceError) {
     return jsonResponse(
@@ -217,8 +200,7 @@ const appUrl = Deno.env.get("APP_URL");
   if (!service) {
     return jsonResponse(
       {
-        error:
-          "The selected tutoring service is no longer available.",
+        error: "The selected tutoring service is no longer available.",
       },
       404,
     );
@@ -226,36 +208,30 @@ const appUrl = Deno.env.get("APP_URL");
 
   // 8. Validate session type
   const normalizeSessionType = (value: string) =>
-    value.trim().toLowerCase().replace(/[\s_-]/g, "");
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_-]/g, "");
 
-  const selectedType = normalizeSessionType(
-    String(type),
-  );
+  const selectedType = normalizeSessionType(String(type));
 
-  const serviceType = normalizeSessionType(
-    String(service.session_type ?? ""),
-  );
+  const serviceType = normalizeSessionType(String(service.session_type ?? ""));
 
   const allowsSelectedType =
     serviceType === selectedType ||
-    ["both", "hybrid", "onlineandinperson"].includes(
-      serviceType,
-    );
+    ["both", "hybrid", "onlineandinperson"].includes(serviceType);
 
   if (!allowsSelectedType) {
     return jsonResponse(
       {
-        error:
-          "The selected session type is not available for this service.",
+        error: "The selected session type is not available for this service.",
       },
       400,
     );
   }
 
   // 9. Validate date and time using Philippine Time
-  const bookingStart = new Date(
-    `${date}T${time}:00+08:00`,
-  );
+  const bookingStart = new Date(`${date}T${time}:00+08:00`);
 
   if (
     Number.isNaN(bookingStart.getTime()) ||
@@ -263,28 +239,21 @@ const appUrl = Deno.env.get("APP_URL");
   ) {
     return jsonResponse(
       {
-        error:
-          "Please select a future booking date and time.",
+        error: "Please select a future booking date and time.",
       },
       400,
     );
   }
 
-  const [startHour, startMinute] =
-    String(time).split(":").map(Number);
+  const [startHour, startMinute] = String(time).split(":").map(Number);
 
   const startMinutes = startHour * 60 + startMinute;
-  const endMinutes =
-    startMinutes + durationNumber * 60;
+  const endMinutes = startMinutes + durationNumber * 60;
 
-  if (
-    startMinutes < 7 * 60 ||
-    endMinutes > 21 * 60
-  ) {
+  if (startMinutes < 7 * 60 || endMinutes > 21 * 60) {
     return jsonResponse(
       {
-        error:
-          "Sessions must be scheduled between 7:00 AM and 9:00 PM.",
+        error: "Sessions must be scheduled between 7:00 AM and 9:00 PM.",
       },
       400,
     );
@@ -300,31 +269,19 @@ const appUrl = Deno.env.get("APP_URL");
     `${String(endMinute).padStart(2, "0")}:00`;
 
   // 10. Find all services belonging to the tutor
-  const { data: tutorServices, error: tutorServicesError } =
-    await adminSupabase
-      .from("services")
-      .select("service_id")
-      .eq(
-        "tutor_profile_id",
-        service.tutor_profile_id,
-      );
+  const { data: tutorServices, error: tutorServicesError } = await adminSupabase
+    .from("services")
+    .select("service_id")
+    .eq("tutor_profile_id", service.tutor_profile_id);
 
   if (tutorServicesError) {
-    return jsonResponse(
-      { error: "Unable to check tutor availability." },
-      500,
-    );
+    return jsonResponse({ error: "Unable to check tutor availability." }, 500);
   }
 
-  const tutorServiceIds = (tutorServices ?? []).map(
-    (item) => item.service_id,
-  );
+  const tutorServiceIds = (tutorServices ?? []).map((item) => item.service_id);
 
   if (tutorServiceIds.length === 0) {
-    return jsonResponse(
-      { error: "No services found for this tutor." },
-      404,
-    );
+    return jsonResponse({ error: "No services found for this tutor." }, 404);
   }
 
   // 11. Check overlapping bookings
@@ -336,47 +293,29 @@ const appUrl = Deno.env.get("APP_URL");
       .eq("session_date", date)
       .lt("start_time", bookingEndTime)
       .gt("end_time", bookingStartTime)
-      .in("booking_status", [
-        "pending",
-        "confirmed",
-      ])
+      .in("booking_status", ["pending", "confirmed"])
       .limit(1);
 
   if (conflictError) {
-    return jsonResponse(
-      { error: "Unable to check booking conflicts." },
-      500,
-    );
+    return jsonResponse({ error: "Unable to check booking conflicts." }, 500);
   }
 
   if (conflictingBookings?.length) {
     return jsonResponse(
       {
-        error:
-          "This tutor already has a booking at the selected time.",
+        error: "This tutor already has a booking at the selected time.",
       },
       409,
     );
   }
 
   // 12. Calculate amount from database rate
-  const hourlyRate = Number(
-    service.rate_per_hour,
-  );
+  const hourlyRate = Number(service.rate_per_hour);
 
-  const bookingAmount =
-    Math.round(
-      hourlyRate * durationNumber * 100,
-    ) / 100;
+  const bookingAmount = Math.round(hourlyRate * durationNumber * 100) / 100;
 
-  if (
-    !Number.isFinite(bookingAmount) ||
-    bookingAmount <= 0
-  ) {
-    return jsonResponse(
-      { error: "Invalid service price." },
-      400,
-    );
+  if (!Number.isFinite(bookingAmount) || bookingAmount <= 0) {
+    return jsonResponse({ error: "Invalid service price." }, 400);
   }
 
   // 13. Prepare pending booking
@@ -396,12 +335,11 @@ const appUrl = Deno.env.get("APP_URL");
   };
 
   // 14. Save pending booking to database
-  const { data: savedBooking, error: bookingError } =
-    await adminSupabase
-      .from("bookings")
-      .insert(pendingBooking)
-      .select("booking_id")
-      .single();
+  const { data: savedBooking, error: bookingError } = await adminSupabase
+    .from("bookings")
+    .insert(pendingBooking)
+    .select("booking_id")
+    .single();
 
   if (bookingError || !savedBooking) {
     return jsonResponse(
@@ -416,67 +354,66 @@ const appUrl = Deno.env.get("APP_URL");
   // 15. Temporary response
   // PayMongo checkout will be added in the next step.
   // 15. Create PayMongo GCash checkout session
-const amountInCentavos = Math.round(bookingAmount * 100);
+  const amountInCentavos = Math.round(bookingAmount * 100);
 
-const checkoutResponse = await fetch(
-  "https://api.paymongo.com/v1/checkout_sessions",
-  {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${btoa(`${paymongoSecretKey}:`)}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      data: {
-        attributes: {
-          payment_method_types: ["gcash"],
-          line_items: [
-            {
-              currency: "PHP",
-              amount: amountInCentavos,
-              name: String(service.title),
-              quantity: 1,
-            },
-          ],
-          description: `CampusTutor Booking #${savedBooking.booking_id}`,
-          success_url: `${appUrl}/?payment=success`,
-          cancel_url: `${appUrl}/?payment=cancelled`,
-        },
+  const checkoutResponse = await fetch(
+    "https://api.paymongo.com/v1/checkout_sessions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${paymongoSecretKey}:`)}`,
+        "Content-Type": "application/json",
       },
-    }),
-  },
-);
-
-const checkoutResult = await checkoutResponse.json();
-
-if (!checkoutResponse.ok) {
-  return jsonResponse(
-    {
-      error: "Unable to create PayMongo checkout session.",
-      bookingId: savedBooking.booking_id,
+      body: JSON.stringify({
+        data: {
+          attributes: {
+            payment_method_types: ["gcash"],
+            line_items: [
+              {
+                currency: "PHP",
+                amount: amountInCentavos,
+                name: String(service.title),
+                quantity: 1,
+              },
+            ],
+            description: `CampusTutor Booking #${savedBooking.booking_id}`,
+            success_url: `${appUrl}/?payment=success`,
+            cancel_url: `${appUrl}/?payment=cancelled`,
+          },
+        },
+      }),
     },
-    502,
   );
-}
 
-const checkoutUrl =
-  checkoutResult?.data?.attributes?.checkout_url;
+  const checkoutResult = await checkoutResponse.json();
 
-const checkoutSessionId = checkoutResult?.data?.id;
+  if (!checkoutResponse.ok) {
+    return jsonResponse(
+      {
+        error: "Unable to create PayMongo checkout session.",
+        bookingId: savedBooking.booking_id,
+      },
+      502,
+    );
+  }
 
-if (!checkoutUrl || !checkoutSessionId) {
-  return jsonResponse(
-    {
-      error: "PayMongo did not return a valid checkout session.",
-      bookingId: savedBooking.booking_id,
-    },
-    502,
-  );
-}
+  const checkoutUrl = checkoutResult?.data?.attributes?.checkout_url;
 
-const { error: paymentError } = await adminSupabase
-  .from("payments")
-  .insert({
+  const checkoutSessionId = checkoutResult?.data?.id;
+
+  if (!checkoutUrl || !checkoutSessionId) {
+    return jsonResponse(
+      {
+        error: "PayMongo did not return a valid checkout session.",
+        bookingId: savedBooking.booking_id,
+      },
+      502,
+    );
+  }
+
+  // 16. Save the PayMongo checkout session
+  // before returning the checkout URL.
+  const { error: paymentError } = await adminSupabase.from("payments").insert({
     booking_id: savedBooking.booking_id,
     transaction_reference: `CT-${savedBooking.booking_id}`,
     paymongo_checkout_session_id: checkoutSessionId,
@@ -485,24 +422,29 @@ const { error: paymentError } = await adminSupabase
     payment_status: "pending",
   });
 
-if (paymentError) {
-  console.error("Payment record error:", paymentError.code);
+  if (paymentError) {
+    console.error(
+      "Failed to save payment record:",
+      paymentError.code,
+      paymentError.message,
+    );
 
-  return jsonResponse(
-    {
-      error: "Unable to save payment record.",
-      bookingId: savedBooking.booking_id,
-    },
-    500,
-  );
-}
+    return jsonResponse(
+      {
+        error: "Checkout created but payment record could not be saved.",
+        bookingId: savedBooking.booking_id,
+      },
+      500,
+    );
+  }
 
-return jsonResponse({
-  checkoutUrl,
-  checkoutSessionId,
-  bookingId: savedBooking.booking_id,
-  amount: bookingAmount,
-  bookingStatus: "pending",
-  paymentStatus: "unpaid",
-});
+  // 17. Return checkout details to the frontend
+  return jsonResponse({
+    checkoutUrl,
+    checkoutSessionId,
+    bookingId: savedBooking.booking_id,
+    amount: bookingAmount,
+    bookingStatus: "pending",
+    paymentStatus: "unpaid",
+  });
 });

@@ -5,20 +5,50 @@ import { getSupabaseClient } from "./supabaseClient.js";
 const adapters = new Map();
 export function configurePortalApi(services) {
   for (const [name, fn] of Object.entries(services)) {
-    if (typeof fn !== 'function') throw new TypeError(`${name} must be a function`);
+    if (typeof fn !== "function")
+      throw new TypeError(`${name} must be a function`);
     adapters.set(name, fn);
   }
-  return () => { for (const name of Object.keys(services)) adapters.delete(name); };
+  return () => {
+    for (const name of Object.keys(services)) adapters.delete(name);
+  };
 }
-export function portalApiAvailable(name) { return adapters.has(name); }
+export function portalApiAvailable(name) {
+  return adapters.has(name);
+}
 export async function portalApi(name, payload, options) {
   const handler = adapters.get(name);
-  if (!handler) throw new Error(`${name} is not connected yet. No server-side change was made.`);
+  if (!handler)
+    throw new Error(
+      `${name} is not connected yet. No server-side change was made.`,
+    );
   return handler(payload, options);
+}
+
+async function functionErrorMessage(error) {
+  const fallback = error?.message || "Unable to start payment.";
+  const response = error?.context;
+  if (!response || typeof response.clone !== "function") return fallback;
+
+  try {
+    const body = await response.clone().json();
+    if (typeof body?.error === "string" && body.error.trim()) return body.error;
+  } catch {
+    return fallback;
+  }
+  return fallback;
 }
 
 export function connectBookingApi() {
   return configurePortalApi({
+    async discardUnpaidCheckout() {
+      const { data, error } = await getSupabaseClient().functions.invoke(
+        "create-payment",
+        { body: { action: "discardUnpaidCheckout" } },
+      );
+      if (error) throw new Error(await functionErrorMessage(error));
+      return data;
+    },
     async createBooking(payload) {
       const supabase = getSupabaseClient();
 
@@ -30,7 +60,7 @@ export function connectBookingApi() {
       );
 
       if (error) {
-        throw new Error(error.message || "Unable to start payment.");
+        throw new Error(await functionErrorMessage(error));
       }
 
       if (!data?.checkoutUrl) {
