@@ -1,16 +1,132 @@
-﻿import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Download } from 'lucide-react';
-import { primary } from '../tutor/workspace/ui.jsx';
+﻿import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Download } from "lucide-react";
+import { primary } from "../tutor/workspace/ui.jsx";
 
 export function summaryHtml(rows, kind = "users") {
- const services = kind === "services", bookings = kind === "bookings", payments = kind === "payments", incidents = kind === "incidents";
- const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const counts = (incidents ? ['Pending Review','Under Admin Review','Admin Screening Complete','Resolved by Admin'] : payments ? ['Paid','Refund Review','Refunded'] : bookings ? ['Confirmed','Upcoming','Pending','Completed','Cancelled'] : services ? ['Active','Inactive','Suspended','Archived'] : ['Active','Restricted','Suspended']).map(status => `${status}: ${rows.filter(r=>(payments?r.payment:r.status)===status).length}`).join(' | ');
- return `<!doctype html><html><head><meta charset="utf-8"><title>CampusTutor - ${incidents ? "Incident" : payments ? "Transaction" : bookings ? "Booking" : services ? "Service" : "User"} Summary</title><style>@page{size:A4 landscape;margin:12mm}body{font:11px Arial,sans-serif;color:#17212b}h1{font-size:22px;color:#00542f}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{padding:8px;border:1px solid #dce3df;text-align:left;overflow-wrap:anywhere}th{background:#edf6f0}thead{display:table-header-group}tr{break-inside:avoid}p{line-height:1.5}.actions{margin:20px 0}@media print{.actions{display:none}}</style></head><body><h1>CampusTutor ${incidents ? "Incident" : payments ? "Transaction" : bookings ? "Booking" : services ? "Service" : "User"} Summary</h1><p>Filtered ${kind}: ${rows.length} | ${counts}<br>Local demo records · Generated ${escape(new Date().toLocaleString('en-PH'))}</p><div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div><table><thead><tr>${(incidents ? ['Report ID','Booking ID','Reporter','Reported User','Issue','Priority','Admin Status','OSAS Referral'] : payments ? ['Transaction ID','Booking ID','Learner','Tutor','Amount (PHP)','Payment method','Payment Status','Paid Date'] : bookings ? ['Booking ID','Learner','Tutor','Service','Date / Time','Amount (PHP)','Booking Status','Payment Status'] : services ? ['Service ID','Tutor','Service','Subject','Rate (PHP/hr)','Session type','Status'] : ['Student ID','Name','CSU Email','College / Program','Roles','Account Status','Registered']).map(v=>`<th>${v}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${(incidents ? [r.id,r.booking,r.reporter,r.reported,r.issue,r.priority,r.status,r.referral] : payments ? [r.id,r.booking,r.learner,r.tutor,r.amount,r.method,r.payment,`${r.date} ${r.time}`] : bookings ? [r.booking||r.id,r.learner,r.tutor,r.service,`${r.date} ${r.start || ""} - ${r.end || ""}`,r.amount,r.status,r.payment] : services ? [r.id,r.tutor,r.title,r.subject,r.rate,r.type,r.status] : [r.id,r.name,r.email,`${r.college} / ${r.program}`,r.tutor?'Learner + Tutor':'Learner',r.status,r.registered]).map(v=>`<td>${escape(v)}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${bookings || payments || incidents ? 8 : 7}">No matching records.</td></tr>`}</tbody></table></body></html>`;
+  const services = kind === "services",
+    bookings = kind === "bookings",
+    payments = kind === "payments",
+    incidents = kind === "incidents";
+  const escape = (value) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
+  const counts = (
+    incidents
+      ? [
+          "Pending Review",
+          "Under Admin Review",
+          "Admin Screening Complete",
+          "Resolved by Admin",
+        ]
+      : payments
+        ? ["Paid", "Refund Review", "Refunded"]
+        : bookings
+          ? ["Confirmed", "Upcoming", "Pending", "Completed", "Cancelled"]
+          : services
+            ? ["Active", "Inactive", "Suspended", "Archived"]
+            : ["Active", "Restricted", "Suspended"]
+  )
+    .map(
+      (status) =>
+        `${status}: ${rows.filter((r) => (payments ? r.payment : r.status) === status).length}`,
+    )
+    .join(" | ");
+  return `<!doctype html><html><head><meta charset="utf-8"><title>CampusTutor - ${incidents ? "Incident" : payments ? "Transaction" : bookings ? "Booking" : services ? "Service" : "User"} Summary</title><style>@page{size:A4 landscape;margin:12mm}body{font:11px Arial,sans-serif;color:#17212b}h1{font-size:22px;color:#00542f}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{padding:8px;border:1px solid #dce3df;text-align:left;overflow-wrap:anywhere}th{background:#edf6f0}thead{display:table-header-group}tr{break-inside:avoid}p{line-height:1.5}.actions{margin:20px 0}@media print{.actions{display:none}}</style></head><body><h1>CampusTutor ${incidents ? "Incident" : payments ? "Transaction" : bookings ? "Booking" : services ? "Service" : "User"} Summary</h1><p>Filtered ${kind}: ${rows.length} | ${counts}<br>Database records · Generated ${escape(new Date().toLocaleString("en-PH"))}</p><div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div><table><thead><tr>${(incidents ? ["Report ID", "Booking ID", "Reporter", "Reported User", "Issue", "Priority", "Admin Status", "OSAS Referral"] : payments ? ["Transaction ID", "Booking ID", "Learner", "Tutor", "Amount (PHP)", "Payment method", "Payment Status", "Paid Date"] : bookings ? ["Booking ID", "Learner", "Tutor", "Service", "Date / Time", "Amount (PHP)", "Booking Status", "Payment Status"] : services ? ["Service ID", "Tutor", "Service title / Subject", "Topics", "Topic rates (PHP/hr)", "Session type", "Status"] : ["Student ID", "Name", "CSU Email", "College / Program", "Roles", "Account Status", "Registered"]).map((v) => `<th>${v}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${(incidents ? [r.id, r.booking, r.reporter, r.reported, r.issue, r.priority, r.status, r.referral] : payments ? [r.id, r.booking, r.learner, r.tutor, r.amount, r.method, r.payment, `${r.date} ${r.time}`] : bookings ? [r.booking || r.id, r.learner, r.tutor, r.service, `${r.date} ${r.start || ""} - ${r.end || ""}`, r.amount, r.status, r.payment] : services ? [r.id, r.tutor, r.title, r.topics.join("; "), r.topicDetails.map((t) => `${t.name}: ${t.rate}`).join("; "), r.type, r.status] : [r.id, r.name, r.email, `${r.college} / ${r.program}`, r.tutor ? "Learner + Tutor" : "Learner", r.status, r.registered]).map((v) => `<td>${escape(v)}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${bookings || payments || incidents ? 8 : 7}">No matching records.</td></tr>`}</tbody></table></body></html>`;
 }
-export default function UserExport({rows,onCsv,onNotice,kind="users",label="Export",renderSummary,disabled=false}) {
- const [open,setOpen]=useState(false);const ref=useRef(null);const trigger=useRef(null);
- useEffect(()=>{if(!open)return;const close=e=>{if(!ref.current?.contains(e.target))setOpen(false);};const key=e=>{if(e.key==='Escape'){setOpen(false);trigger.current?.focus();}};document.addEventListener('pointerdown',close);document.addEventListener('keydown',key);return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',key);};},[open]);
- function pdf(){setOpen(false);const popup=window.open('','_blank');if(!popup){onNotice('Allow pop-ups to open the PDF summary.');return;}popup.opener=null;popup.document.write((renderSummary ? renderSummary(rows) : summaryHtml(rows,kind)));popup.document.close();popup.focus();popup.print();onNotice('Summary opened. Choose Save as PDF in the print dialog.');}
- return <div ref={ref} className="relative"><button ref={trigger} disabled={disabled} type="button" className={primary+' flex items-center gap-2'} aria-expanded={open} aria-controls="user-export-options" onClick={()=>setOpen(!open)}><Download size={15}/>{label}<ChevronDown size={14}/></button>{open&&<div id="user-export-options" className="absolute right-0 top-full z-30 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1 shadow-xl"><button type="button" className="block w-full rounded-lg px-4 py-3 text-left text-xs hover:bg-slate-50" onClick={()=>{setOpen(false);onCsv();}}>Export CSV</button><button type="button" className="block w-full rounded-lg px-4 py-3 text-left text-xs hover:bg-slate-50" onClick={pdf}>Export PDF summary</button></div>}</div>;
+export default function UserExport({
+  rows,
+  onCsv,
+  onNotice,
+  kind = "users",
+  label = "Export",
+  renderSummary,
+  disabled = false,
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const trigger = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => {
+      if (!ref.current?.contains(e.target)) setOpen(false);
+    };
+    const key = (e) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        trigger.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", key);
+    };
+  }, [open]);
+  function pdf() {
+    setOpen(false);
+    const popup = window.open("", "_blank");
+    if (!popup) {
+      onNotice("Allow pop-ups to open the PDF summary.");
+      return;
+    }
+    popup.opener = null;
+    popup.document.write(
+      renderSummary ? renderSummary(rows) : summaryHtml(rows, kind),
+    );
+    popup.document.close();
+    popup.focus();
+    popup.print();
+    onNotice("Summary opened. Choose Save as PDF in the print dialog.");
+  }
+  return (
+    <div ref={ref} className="relative">
+      <button
+        ref={trigger}
+        disabled={disabled}
+        type="button"
+        className={primary + " flex items-center gap-2"}
+        aria-expanded={open}
+        aria-controls="user-export-options"
+        onClick={() => setOpen(!open)}
+      >
+        <Download size={15} />
+        {label}
+        <ChevronDown size={14} />
+      </button>
+      {open && (
+        <div
+          id="user-export-options"
+          className="absolute right-0 top-full z-30 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+        >
+          <button
+            type="button"
+            className="block w-full rounded-lg px-4 py-3 text-left text-xs hover:bg-slate-50"
+            onClick={() => {
+              setOpen(false);
+              onCsv();
+            }}
+          >
+            Export CSV
+          </button>
+          <button
+            type="button"
+            className="block w-full rounded-lg px-4 py-3 text-left text-xs hover:bg-slate-50"
+            onClick={pdf}
+          >
+            Export PDF summary
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }

@@ -1,4 +1,3 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import UserExport from "./UserExport.jsx";
 import UserDetails from "./UserDetails.jsx";
 import { useInteractions } from "../shared/InteractionProvider.jsx";
@@ -21,13 +20,8 @@ import {
   input,
   Avatar,
 } from "../tutor/workspace/ui.jsx";
-const key = "campustutor:admin-users:v1";
-const initial = [];
-export function loadAdminUsers() {
-  return structuredClone(initial);
-}
 export default function AdminUsers({
-  rows,
+  rows: allRows,
   onUpdate,
   query,
   setQuery,
@@ -38,6 +32,13 @@ export default function AdminUsers({
   onApplicationSave,
   onDocument,
 }) {
+  const rows = allRows.filter((user) => {
+    const roles = (user.roles || []).map((role) => role.toLowerCase());
+    return (
+      !roles.some((role) => role === "admin" || role === "osas") &&
+      roles.some((role) => role === "learner" || role === "tutor")
+    );
+  });
   const { confirm } = useInteractions();
 
   const [tab, setTab] = useState("All Users"),
@@ -56,7 +57,7 @@ export default function AdminUsers({
         (tab === "Learner + Tutor" && r.tutor) ||
         r.status === tab) &&
       (!college || r.college === college) &&
-      (!role || (role === "Tutor" ? r.tutor : !r.tutor)) &&
+      (!role || r.roles?.includes(role.toLowerCase())) &&
       `${r.id} ${r.name} ${r.email}`
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
@@ -99,7 +100,7 @@ export default function AdminUsers({
       ],
       ...filtered.map((r) => [
         ...fields.map((f) => r[f]),
-        r.tutor ? "Learner + Tutor" : "Learner",
+        (r.roles || []).join(" + "),
       ]),
     ]
       .map((row) =>
@@ -111,7 +112,7 @@ export default function AdminUsers({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "admin-users-demo.csv";
+    a.download = "admin-users.csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(`Exported ${filtered.length} matching users.`);
@@ -121,7 +122,7 @@ export default function AdminUsers({
       <div className="osas-heading">
         <div>
           <h1>User Management</h1>
-          <p>Monitor and manage authorized CampusTutor accounts.</p>
+          <p>Monitor and manage CampusTutor Learner and Tutor accounts.</p>
         </div>
       </div>
       <div className="au-metrics">
@@ -145,7 +146,7 @@ export default function AdminUsers({
             GraduationCap,
             rows.filter((r) => r.tutor).length,
             "Verified Tutors",
-            "Approved demo tutor accounts",
+            "Accounts with an active tutor role",
             "Learner + Tutor",
           ],
         ].map(([Icon, count, label, hint, value], i) => (
@@ -248,7 +249,7 @@ export default function AdminUsers({
             >
               <option value="">All roles</option>
               <option value="Tutor">Learner + Tutor</option>
-              <option value="Learner">Learner only</option>
+              <option value="Learner">Learner</option>
             </select>
           </label>
           <button
@@ -304,8 +305,11 @@ export default function AdminUsers({
                   <td>{r.college}</td>
                   <td>{r.program}</td>
                   <td>
-                    <span className="au-role">Learner</span>
-                    {r.tutor && <span className="au-tutor">+ Tutor</span>}
+                    {r.roles.map((role) => (
+                      <span className="au-role" key={role}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </span>
+                    ))}
                   </td>
                   <td>
                     <span className={`au-status ${r.status.toLowerCase()}`}>
@@ -361,7 +365,7 @@ export default function AdminUsers({
         </div>
       </div>
       <p className="text-[9px] text-slate-400">
-        Local demo · Account changes do not affect institutional sign-in.
+        Database records · Account status changes apply to CampusTutor access.
       </p>
       {selected && (
         <UserDetails
@@ -373,14 +377,7 @@ export default function AdminUsers({
           onApplicationSave={onApplicationSave}
           onDocument={onDocument}
           onClose={() => setSelected(null)}
-          onSave={(updated) => {
-            const next = rows.map((r) => (r.id === updated.id ? updated : r));
-            try {
-              requireBackendPersistence();
-            } catch {
-              return false;
-            }
-          }}
+          onSave={onUpdate}
         />
       )}
     </section>

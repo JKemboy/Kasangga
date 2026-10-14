@@ -60,7 +60,7 @@ export default function AdminCatalog({
   const [status, setStatus] = useState(""),
     [query, setQuery] = useState(""),
     [filter, setFilter] = useState(false),
-    [category, setCategory] = useState(""),
+    [groupFilter, setGroupFilter] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
     [action, setAction] = useState(""),
@@ -73,8 +73,15 @@ export default function AdminCatalog({
         (status === "inactiveGroup"
           ? ["Inactive", "Archived"].includes(r.status)
           : r.status === status)) &&
-      (!category || (verification ? r.college : r.category) === category) &&
-      Object.values(r)
+      (!groupFilter || (verification ? r.college : r.id) === groupFilter) &&
+      [
+        ...Object.values(r),
+        ...(Array.isArray(r.topics)
+          ? r.topics
+          : typeof r.topics === "string"
+            ? [r.topics]
+            : Object.values(r.topics || {}).flat()),
+      ]
         .filter((v) => typeof v !== "object")
         .join(" ")
         .toLowerCase()
@@ -92,7 +99,7 @@ export default function AdminCatalog({
   }
   function serviceOption(r, action) {
     if (action === "account") {
-      const user = users.find((u) => u.name === r.tutor);
+      const user = users.find((u) => u.userId === r.tutorUserId);
       if (user) setUserId(user.id);
       else setNotice("No matching tutor account in the available records.");
       return;
@@ -115,12 +122,14 @@ export default function AdminCatalog({
   }
   const pill = (v) => (
     <span
-      className={`au-status ${["Active", "Approved", "Complete", "Matched", "Confirmed"].includes(v) ? "active" : ["Rejected", "Suspended", "Invalid File", "Incomplete", "Not Matched"].includes(v) ? "suspended" : "restricted"}`}
+      className={`au-status ${["Active", "Approved", "Complete", "Reviewed", "Matched", "Confirmed"].includes(v) ? "active" : ["Rejected", "Suspended", "Invalid File", "Incomplete", "Not Matched"].includes(v) ? "suspended" : "restricted"}`}
     >
       {v}
     </span>
   );
   function applicationDocumentStatus(application) {
+    // The final database decision survives page refreshes; OCR state does not.
+    if (application.status === "Approved") return "Reviewed";
     const savedVerification = verificationChecks[application.id];
     const verification =
       savedVerification?.documentsKey === applicationDocumentKey(application)
@@ -182,7 +191,7 @@ export default function AdminCatalog({
             onClick={() => {
               setStatus(value);
               setQuery("");
-              setCategory("");
+              setGroupFilter("");
               setPage(1);
             }}
           >
@@ -261,23 +270,27 @@ export default function AdminCatalog({
       {filter && (
         <div className="ad-filter-row">
           <label>
-            {verification ? "College" : "Category"}
+            {verification ? "College" : "Service title / Subject"}
             <select
               className={input}
-              aria-label="Catalog category"
-              value={category}
+              aria-label={
+                verification
+                  ? "Catalog college"
+                  : "Catalog service title / Subject"
+              }
+              value={groupFilter}
               onChange={(e) => {
-                setCategory(e.target.value);
+                setGroupFilter(e.target.value);
                 setPage(1);
               }}
             >
               <option value="">All</option>
               {[
-                ...new Set(
-                  rows.map((r) => (verification ? r.college : r.category)),
-                ),
+                ...new Set(rows.map((r) => (verification ? r.college : r.id))),
               ].map((c) => (
-                <option key={c}>{c}</option>
+                <option key={c} value={c}>
+                  {verification ? c : rows.find((r) => r.id === c)?.title}
+                </option>
               ))}
             </select>
           </label>
@@ -285,7 +298,7 @@ export default function AdminCatalog({
             className={button}
             onClick={() => {
               setStatus("");
-              setCategory("");
+              setGroupFilter("");
               setQuery("");
               setPage(1);
             }}
@@ -294,12 +307,13 @@ export default function AdminCatalog({
           </button>
         </div>
       )}
-      {verification && (
-        <p className="ad-banner">
-          Run all document checks, review the original files, then confirm
-          Information Match before approving an application.
-        </p>
-      )}
+      {verification &&
+        rows.some((r) => !["Approved", "Rejected"].includes(r.status)) && (
+          <p className="ad-banner">
+            Run all document checks, review the original files, then confirm
+            Information Match before approving an application.
+          </p>
+        )}
       {notice && (
         <p role="status" className="text-xs text-green-800">
           {notice}
@@ -325,10 +339,9 @@ export default function AdminCatalog({
                   : [
                       "Service ID",
                       "Tutor",
-                      "Service Title",
-                      "Subject",
-                      "Category",
-                      "Hourly Rate",
+                      "Service title / Subject",
+                      "Topics",
+                      "Topic hourly rates",
                       "Session Type",
                       "Created Date",
                       "Service Status",
@@ -360,30 +373,50 @@ export default function AdminCatalog({
                       <td>{dateLabel(r.date)}</td>
                       <td>{pill(applicationDocumentStatus(r))}</td>
                       <td>
-                        {verificationChecks[r.id]?.documentsKey ===
-                          applicationDocumentKey(r) &&
-                        verificationChecks[r.id]?.checksRun &&
-                        verificationChecks[r.id]?.documentStatus === "Complete"
-                          ? pill(
-                              verificationChecks[r.id]?.matchConfirmed
-                                ? "Confirmed"
-                                : "Not confirmed",
-                            )
-                          : pill(
-                              verificationChecks[r.id]?.documentsKey ===
+                        {r.status === "Approved"
+                          ? pill("Confirmed")
+                          : verificationChecks[r.id]?.documentsKey ===
                                 applicationDocumentKey(r) &&
-                                verificationChecks[r.id]?.checksRun
-                                ? "Incomplete"
-                                : r.match || "Not checked",
-                            )}
+                              verificationChecks[r.id]?.checksRun &&
+                              verificationChecks[r.id]?.documentStatus ===
+                                "Complete"
+                            ? pill(
+                                verificationChecks[r.id]?.matchConfirmed
+                                  ? "Confirmed"
+                                  : "Not confirmed",
+                              )
+                            : pill(
+                                verificationChecks[r.id]?.documentsKey ===
+                                  applicationDocumentKey(r) &&
+                                  verificationChecks[r.id]?.checksRun
+                                  ? "Incomplete"
+                                  : r.match || "Not checked",
+                              )}
                       </td>
                     </>
                   ) : (
                     <>
                       <td>{r.title}</td>
-                      <td>{r.subject}</td>
-                      <td>{pill(r.category)}</td>
-                      <td>₱{r.rate}/hr</td>
+                      <td>
+                        {r.topics.length
+                          ? r.topics.join(", ")
+                          : "No active topics"}
+                      </td>
+                      <td>
+                        {r.topicDetails.length ? (
+                          r.topicDetails.map((t) => (
+                            <div key={t.id}>
+                              {t.name}: {"\u20b1"}
+                              {t.rate.toLocaleString("en-PH")}/hr
+                            </div>
+                          ))
+                        ) : (
+                          <>
+                            {"\u20b1"}
+                            {r.rate}/hr
+                          </>
+                        )}
+                      </td>
                       <td>{r.type}</td>
                       <td>{dateLabel(r.date)}</td>
                     </>
@@ -460,7 +493,7 @@ export default function AdminCatalog({
       <p className="ad-help">
         {verification
           ? "Supporting documents require manual review."
-          : "Tutor-owned content is read-only. Moderation and change requests are recorded locally; no message is sent."}
+          : "Tutor-created services and topic schedules come from the database. Moderation is saved with an audit record; change requests create a tutor notification."}
       </p>
       {selected && verification && (
         <ApplicationReview

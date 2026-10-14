@@ -392,11 +392,13 @@ export default function ApplicationReview({
                     <strong>{doc.name}</strong>
                     <p>
                       {kind} ·{" "}
-                      {ocrResults[`${kind}:${doc.storagePath}`]
-                        ? "Complete"
-                        : ocrErrors[`${kind}:${doc.storagePath}`]
-                          ? "Incomplete"
-                          : doc.state || "Pending Review"}
+                      {r.status === "Approved"
+                        ? "Accepted in approved application"
+                        : ocrResults[`${kind}:${doc.storagePath}`]
+                          ? "Complete"
+                          : ocrErrors[`${kind}:${doc.storagePath}`]
+                            ? "Incomplete"
+                            : doc.state || "Pending Review"}
                     </p>
                     <button
                       className={button}
