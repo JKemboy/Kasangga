@@ -26,7 +26,6 @@ import {
 } from "../tutor/workspace/ui.jsx";
 import { incidents } from "./incidentMonitoringData.js";
 
-const key = "campustutor:osas-case-reviews:v1";
 const statuses = [
   "Open",
   "Under Review",

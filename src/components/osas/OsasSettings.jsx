@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { Modal, input, button, primary } from "../tutor/workspace/ui.jsx";
 
-export const settingsKey = "campustutor:osas-settings:v1";
 const notificationTypes = [
   "New Case Referral",
   "High-Priority Incident",

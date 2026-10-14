@@ -49,7 +49,6 @@ import {
 } from "../tutor/workspace/ui.jsx";
 import "./osas.css";
 
-const storageKey = "campustutor:osas-clearance:v1";
 const term = "AY 2026–2027 · 1st Semester";
 const statuses = [
   "Pending Review",

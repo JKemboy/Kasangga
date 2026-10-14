@@ -1,11 +1,7 @@
 import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import IncidentAssessment from "./IncidentAssessment.jsx";
 import UserExport from "../admin/UserExport.jsx";
-import {
-  assessmentKey,
-  loadAssessments,
-  incidentSummary,
-} from "./incidentAssessment.js";
+import { loadAssessments, incidentSummary } from "./incidentAssessment.js";
 import { loadOsasCases } from "./OsasCases.jsx";
 import { useState } from "react";
 import {
@@ -47,7 +43,8 @@ const scopeMatches = (r, scope) =>
       "Awaiting Evidence",
       "Pending Decision",
     ].includes(r.status)) ||
-  (scope === "closed" && ["Resolved", "Closed / No Formal Case"].includes(r.status));
+  (scope === "closed" &&
+    ["Resolved", "Closed / No Formal Case"].includes(r.status));
 export default function OsasIncidents({ settings }) {
   const [month, setMonth] = useState("2026-09"),
     [query, setQuery] = useState(""),
@@ -72,7 +69,7 @@ export default function OsasIncidents({ settings }) {
     try {
       const next = { ...loadAssessments(), [updated.id]: updated };
       requireBackendPersistence();
-} catch {
+    } catch {
       return false;
     }
   }

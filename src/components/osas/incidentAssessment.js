@@ -1,4 +1,3 @@
-export const assessmentKey = "campustutor:osas-incident-assessments:v1";
 export function loadAssessments() {
   return {};
 }

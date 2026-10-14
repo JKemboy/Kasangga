@@ -23,7 +23,6 @@ import {
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 import { incidents } from "./incidentMonitoringData.js";
 
-const storageKey = "campustutor:osas-evidence:v1";
 const statuses = [
   "Pending Review",
   "Under Review",
