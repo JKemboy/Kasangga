@@ -1,5 +1,6 @@
 import { paidSession, sessionLifecycle } from "./sessionLifecycle.js";
 import { getSupabaseClient } from "./supabaseClient.js";
+import { meetingPlatform } from "./sessionMeeting.js";
 
 const label = (value) =>
   String(value || "")
@@ -21,13 +22,23 @@ export function mapTutorSession(row, now = new Date()) {
     type: row.session_type?.toLowerCase() === "online" ? "Online" : "In-person",
     provider:
       row.session_type?.toLowerCase() === "online"
-        ? row.meeting_platform || "Not provided"
+        ? meetingPlatform(row.meeting_platform, row.meeting_link)
         : row.location || "Not provided",
     location: row.location,
     meetingUrl: row.meeting_link || "",
     status: label(row.booking_status),
     lifecycle: sessionLifecycle(row, now),
     payment: label(row.payment_status),
+    transaction:
+      row.transaction_reference ||
+      (row.payment_id ? String(row.payment_id) : ""),
+    paymentReference: row.transaction_reference,
+    paymentMethod: row.payment_method,
+    paidAt: row.paid_at,
+    bookedAt: row.created_at,
+    completedAt: row.completed_at,
+    transferredAt: row.transferred_at,
+    allocation: row.allocation,
   };
 }
 export async function listTutorSessions(client = getSupabaseClient()) {

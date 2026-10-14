@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "./supabaseClient.js";
+import { listTutorReviews } from "./tutorReviews.js";
 async function request(name, args, client) {
   const { data, error } = await client.rpc(name, args);
   if (error)
@@ -10,8 +11,24 @@ async function request(name, args, client) {
   if (!data) throw new Error("An active tutor profile is required.");
   return data;
 }
-export const loadTutorInformation = (client = getSupabaseClient()) =>
-  request("get_my_tutor_information", {}, client);
+export const loadTutorInformation = async (client = getSupabaseClient()) => {
+  const info = await request("get_my_tutor_information", {}, client);
+  const { data: auth, error: authError } = await client.auth.getUser();
+  if (authError || !auth.user)
+    throw new Error("Unable to verify the tutor account.");
+  const { data: profile, error } = await client
+    .from("tutor_profiles")
+    .select("tutor_profile_id")
+    .eq("user_id", auth.user.id)
+    .single();
+  if (error) throw new Error(error.message);
+  const reviews = await listTutorReviews(profile.tutor_profile_id, client);
+  return {
+    ...info,
+    rating: reviews.count ? reviews.average : null,
+    reviewCount: reviews.count,
+  };
+};
 export const saveTutorInformation = (values, client = getSupabaseClient()) =>
   request(
     "save_my_tutor_information",

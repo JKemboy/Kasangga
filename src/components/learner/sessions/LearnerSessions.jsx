@@ -304,7 +304,7 @@ export default function LearnerSessions({ args = {} }) {
               </div>
               <div className="col-span-2 border-t border-[#e1e7ef] pt-2 sm:col-span-3 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-2 lg:pt-0">
                 <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-1">
-                  {canManage && (
+                  {canManage && mode === "Online" && (
                     <button
                       onClick={() =>
                         act(

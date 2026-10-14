@@ -16,12 +16,22 @@ function amountInCents(value) {
 }
 
 function isEarned(session) {
-  return session?.status === "Completed" && session?.payment === "Paid";
+  return (
+    (session?.status === "Completed" || !!session?.transferredAt) &&
+    session?.payment === "Paid"
+  );
 }
 
 function allocateCents(session) {
   const gross = amountInCents(session?.amount);
   if (!isEarned(session)) return { gross, tutor: 0, osas: 0, platform: 0 };
+  if (session.allocation)
+    return {
+      gross,
+      tutor: amountInCents(session.allocation.tutor),
+      osas: amountInCents(session.allocation.osas),
+      platform: amountInCents(session.allocation.platform),
+    };
 
   // 90/5/5 is 18/1/1 twentieths. Split full twentieths first so even large
   // safe cent amounts never need an unsafe cents * 90 multiplication.

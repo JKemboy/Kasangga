@@ -221,7 +221,15 @@ export function Profile({
             {[
               [ShieldCheck, "Tutor Verification Status", "Verified", true],
               [UserRound, "Role Status", "Active", true],
-              [Star, "Average Rating", "4.8", false],
+              [
+                Star,
+                "Average Rating",
+                data.profile.reviewCount > 0 &&
+                Number.isFinite(data.profile.rating)
+                  ? data.profile.rating.toFixed(1)
+                  : "Not rated yet",
+                false,
+              ],
               [
                 CalendarDays,
                 "Completed Sessions",

@@ -126,21 +126,7 @@ export function sessionAction(
   };
 }
 
-export function meetingUrl(value) {
-  try {
-    const url = new URL(
-      value?.startsWith("https://") ? value : `https://${value}`,
-    );
-    return url.protocol === "https:" &&
-      ["meet.google.com", "zoom.us", "www.zoom.us"].some(
-        (host) => url.hostname === host || url.hostname.endsWith(`.${host}`),
-      )
-      ? url.href
-      : null;
-  } catch {
-    return null;
-  }
-}
+export { meetingUrl } from "../../../services/sessionMeeting.js";
 
 export function rescheduleOptions(data, id, now = new Date().toISOString()) {
   const session = data.sessions.find((s) => s.id === id);

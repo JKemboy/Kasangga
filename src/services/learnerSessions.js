@@ -1,5 +1,6 @@
 import { paidSession, sessionLifecycle } from "./sessionLifecycle.js";
 import { getSupabaseClient } from "./supabaseClient.js";
+import { meetingPlatform } from "./sessionMeeting.js";
 
 const label = (value) =>
   String(value || "unknown")
@@ -37,7 +38,7 @@ export function mapLearnerSession(row, now = new Date()) {
     row.session_type?.toLowerCase() === "online" ? "Online" : "In-person";
   const venue =
     sessionType === "Online"
-      ? row.meeting_platform || "Meeting link not provided"
+      ? meetingPlatform(row.meeting_platform, row.meeting_link)
       : row.location || "To be arranged";
   return {
     id: String(row.booking_id),
@@ -56,7 +57,7 @@ export function mapLearnerSession(row, now = new Date()) {
     duration: Number(row.duration),
     time,
     type: sessionType,
-    platform: row.meeting_platform || "",
+    platform: sessionType === "Online" ? venue : "",
     link: row.meeting_link || "",
     venue,
     amount: Number(row.amount),

@@ -1,5 +1,3 @@
-import { notifications } from "./data.js";
-
 const destinationLabels = {
   dashboard: "Open dashboard",
   services: "View service",
@@ -26,15 +24,10 @@ function destination(target) {
   };
 }
 
-// New notifications supply a target directly. Only known legacy seed records
-// inherit demo record IDs; a new event with the same title must keep its own target.
 export function notificationDestination(notification) {
   if (!notification) return null;
   if (Object.hasOwn(notification, "target"))
     return destination(notification.target);
   if (Object.hasOwn(notification, "args")) return destination(notification);
-  const legacy = notifications.find(
-    (seed) => seed.id === notification.id && seed.title === notification.title,
-  );
-  return destination(legacy?.target || notification);
+  return destination(notification);
 }

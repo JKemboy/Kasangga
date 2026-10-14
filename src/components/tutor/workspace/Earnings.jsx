@@ -98,9 +98,10 @@ export default function Earnings({ data, go, args = {} }) {
       .join(" ")
       .toLowerCase();
     return (
-      s.status === "Completed" &&
+      (s.status === "Completed" || !!s.transferredAt) &&
       terms.every((term) => searchable.includes(term)) &&
-      (status === "All" || s.payment === status)
+      (status === "All" ||
+        (status === "Transferred" ? !!s.transferredAt : s.payment === status))
     );
   });
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -180,7 +181,8 @@ export default function Earnings({ data, go, args = {} }) {
             Earnings
           </h1>
           <p className="mt-0.5 text-xs text-[#001b85]">
-            Track completed paid sessions and the fixed payment allocation.
+            Track completed paid sessions, transferred payouts and payment
+            shares.
           </p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-xl bg-[#eaf4ff] px-3 py-2 text-[11px] font-semibold text-[#0027a5]">
@@ -225,8 +227,8 @@ export default function Earnings({ data, go, args = {} }) {
           [
             CalendarCheck,
             totals.count,
-            "Completed Paid Sessions",
-            "All completed and paid",
+            "Earning Sessions",
+            "Completed or transferred",
             false,
           ],
         ].map(([Icon, value, label, hint, gold]) => (
@@ -311,7 +313,7 @@ export default function Earnings({ data, go, args = {} }) {
                 setPage(1);
               }}
             >
-              {["All", "Paid", "Unpaid", "Refunded"].map((value) => (
+              {["All", "Paid", "Transferred"].map((value) => (
                 <option key={value} value={value}>
                   Payment Status: {value}
                 </option>
@@ -390,6 +392,7 @@ export default function Earnings({ data, go, args = {} }) {
                   ))}
                   <td className="px-1.5 py-1.5">
                     <PaymentBadge status={s.payment} />
+                    {s.transferredAt && <PaymentBadge status="Transferred" />}
                   </td>
                 </tr>
               );
@@ -414,6 +417,7 @@ export default function Earnings({ data, go, args = {} }) {
                   {s.transaction || "Transaction pending"}
                 </h3>
                 <PaymentBadge status={s.payment} />
+                {s.transferredAt && <PaymentBadge status="Transferred" />}
               </div>
               <p className="break-all text-[11px] text-[#455780]">
                 Booking: {s.booking || "—"}
@@ -453,7 +457,7 @@ export default function Earnings({ data, go, args = {} }) {
           <p className="text-xs text-[#455780]">
             {query || status !== "All"
               ? "Try another search or payment status."
-              : "Completed sessions will appear here."}
+              : "Completed sessions and transferred payouts will appear here."}
           </p>
           {(query || status !== "All") && (
             <button type="button" className={button} onClick={clearFilters}>
@@ -466,7 +470,7 @@ export default function Earnings({ data, go, args = {} }) {
       <footer className="flex min-h-8 flex-wrap items-center justify-between gap-2 text-[11px] text-[#001b85]">
         <p role="status" aria-live="polite">
           Showing {rows.length ? start + 1 : 0}–
-          {Math.min(start + pageSize, rows.length)} of {rows.length} completed
+          {Math.min(start + pageSize, rows.length)} of {rows.length}
           {paidResults ? " paid" : ""} sessions
         </p>
         <nav

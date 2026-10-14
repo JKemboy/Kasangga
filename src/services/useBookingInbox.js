@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { readMessages } from "./bookingMessages.js";
-import {
-  loadBookingInbox,
-  persistInboxReadIds,
-  readInboxIds,
-} from "./bookingInbox.js";
+import { loadBookingInbox } from "./bookingInbox.js";
+import { getSupabaseClient } from "./supabaseClient.js";
 
 export default function useBookingInbox(role, userId) {
   const [feed, setFeed] = useState({ notifications: [], threads: [] });
@@ -12,7 +9,7 @@ export default function useBookingInbox(role, userId) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setReadIds(readInboxIds(userId));
+    setReadIds([]);
   }, [userId]);
 
   useEffect(() => {
@@ -25,7 +22,7 @@ export default function useBookingInbox(role, userId) {
     let live = true;
     const load = async () => {
       try {
-        const next = await loadBookingInbox(role);
+        const next = await loadBookingInbox(role, userId);
         if (live) {
           setFeed(next);
           setError("");
@@ -35,7 +32,7 @@ export default function useBookingInbox(role, userId) {
       }
     };
     load();
-    const timer = setInterval(load, 30000);
+    const timer = setInterval(load, 15000);
     window.addEventListener("focus", load);
     window.addEventListener("campustutor:sessions-changed", load);
     return () => {
@@ -58,6 +55,17 @@ export default function useBookingInbox(role, userId) {
         .filter((item) => item.kind === "message")
         .map((item) => item.bookingId);
       try {
+        const storedIds = selected
+          .filter((item) => item.kind === "database")
+          .map((item) => item.notificationId);
+        if (storedIds.length) {
+          const { error } = await getSupabaseClient()
+            .from("notifications")
+            .update({ is_read: true })
+            .eq("user_id", userId)
+            .in("notification_id", storedIds);
+          if (error) throw error;
+        }
         await Promise.all(
           messageIds.map((bookingId) => readMessages(bookingId)),
         );
@@ -65,16 +73,7 @@ export default function useBookingInbox(role, userId) {
         setError(cause.message || "Unable to mark booking messages as read.");
         return;
       }
-      setReadIds((current) => {
-        const next = [...new Set([...current, ...ids])];
-        try {
-          persistInboxReadIds(userId, next);
-        } catch (cause) {
-          setError(cause.message || "Unable to save notification read status.");
-          return current;
-        }
-        return next;
-      });
+      setReadIds((current) => [...new Set([...current, ...ids])]);
       if (messageIds.length) {
         const readBookings = new Set(messageIds.map(String));
         setFeed((current) => ({
@@ -91,7 +90,7 @@ export default function useBookingInbox(role, userId) {
   );
   const notifications = feed.notifications.map((item) => ({
     ...item,
-    read: readIds.includes(item.id),
+    read: !!item.read || readIds.includes(item.id),
   }));
   return {
     notifications,

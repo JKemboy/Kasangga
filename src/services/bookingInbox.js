@@ -1,6 +1,7 @@
 import { listChats } from "./bookingMessages.js";
 import { listLearnerSessions } from "./learnerSessions.js";
 import { listTutorSessions } from "./tutorSessions.js";
+import { getSupabaseClient } from "./supabaseClient.js";
 
 const activeStatuses = new Set(["confirmed"]);
 const activePayments = new Set(["paid", "partially refunded"]);
@@ -26,14 +27,15 @@ function makeSessionNotification(session, role) {
     category: "Sessions",
     title: completed ? "Session Completed" : "Session Confirmed",
     text: `${name} · ${session.service || session.course} · ${session.date}`,
-    time: session.date,
+    time:
+      session.completedAt || session.paidAt || session.bookedAt || session.date,
     view: "sessions",
     args: { sessionId: session.id, tab: completed ? "Completed" : "Upcoming" },
     bookingId: session.id,
   };
 }
 
-export async function loadBookingInbox(role) {
+export async function loadBookingInbox(role, userId) {
   const [chats, sessions] = await Promise.all([
     listChats(role),
     role === "tutor" ? listTutorSessions() : listLearnerSessions(),
@@ -83,31 +85,75 @@ export async function loadBookingInbox(role) {
       );
     })
     .map((session) => makeSessionNotification(session, role));
+  const transfers =
+    role === "tutor"
+      ? sessions
+          .filter((session) => session.transferredAt)
+          .map((session) => ({
+            id: `transfer-${session.id}-${session.transferredAt}`,
+            kind: "transfer",
+            category: "Payments",
+            title: "Payout Transferred",
+            text: `${session.booking} · ${session.service} · Payout marked as transferred by Admin.`,
+            time: session.transferredAt,
+            view: "earnings",
+            args: { transactionId: session.transaction },
+          }))
+      : [];
+  let stored = [];
+  if (userId) {
+    const { data, error } = await getSupabaseClient()
+      .from("notifications")
+      .select(
+        "notification_id,title,message,notification_type,related_entity_type,related_entity_id,is_read,created_at",
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error)
+      throw new Error(`Unable to load notifications: ${error.message}`);
+    stored = (data || []).map((row) => {
+      const entity = row.related_entity_type,
+        id = String(row.related_entity_id || "");
+      return {
+        id: `notification-${row.notification_id}`,
+        notificationId: row.notification_id,
+        kind: "database",
+        title: row.title,
+        text: row.message,
+        time: row.created_at,
+        read: row.is_read,
+        category:
+          entity === "services"
+            ? "Services"
+            : entity === "payments"
+              ? "Payments"
+              : "Updates",
+        view:
+          entity === "services"
+            ? "services"
+            : entity === "bookings"
+              ? "sessions"
+              : "notifications",
+        args:
+          entity === "services"
+            ? { serviceId: id }
+            : entity === "bookings"
+              ? { sessionId: id }
+              : { notificationId: `notification-${row.notification_id}` },
+      };
+    });
+  }
   return {
     threads,
-    notifications: [...chatNotifications, ...sessionNotifications].sort(
-      (left, right) => String(right.time).localeCompare(String(left.time)),
+    notifications: [
+      ...stored,
+      ...transfers,
+      ...chatNotifications,
+      ...sessionNotifications,
+    ].sort((left, right) =>
+      String(right.time).localeCompare(String(left.time)),
     ),
     sessions,
   };
-}
-
-export function readInboxIds(userId) {
-  if (!userId || typeof localStorage === "undefined") return [];
-  try {
-    const value = JSON.parse(
-      localStorage.getItem(`campustutor:inbox-read:${userId}`) || "[]",
-    );
-    return Array.isArray(value) ? value : [];
-  } catch {
-    return [];
-  }
-}
-
-export function persistInboxReadIds(userId, ids) {
-  if (!userId || typeof localStorage === "undefined") return;
-  localStorage.setItem(
-    `campustutor:inbox-read:${userId}`,
-    JSON.stringify([...new Set(ids)]),
-  );
 }

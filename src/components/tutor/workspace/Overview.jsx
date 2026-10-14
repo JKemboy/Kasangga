@@ -3,6 +3,8 @@ import CreateService from "./CreateService.jsx";
 import { useState } from "react";
 import SessionDetails, { TransactionDetails } from "./SessionDetails.jsx";
 import { notificationDestination } from "./notificationTargets.js";
+import { useAuth } from "../../../auth/AuthProvider.jsx";
+import useBookingInbox from "../../../services/useBookingInbox.js";
 import {
   ArrowRight,
   Bell,
@@ -61,6 +63,14 @@ function Initials({ name }) {
   );
 }
 export default function Overview({ data, go, update, saveService }) {
+  const auth = useAuth();
+  const inbox = useBookingInbox("tutor", auth?.user?.id);
+  const activities = [
+    ...inbox.notifications,
+    ...data.notifications.filter(
+      (item) => !inbox.notifications.some((n) => n.id === item.id),
+    ),
+  ];
   const [creating, setCreating] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [transactionId, setTransactionId] = useState(null);
@@ -434,7 +444,12 @@ export default function Overview({ data, go, update, saveService }) {
             Recent Activity / Notifications
           </h2>
           <div className="divide-y divide-[#edf0f5]">
-            {[...data.notifications]
+            {inbox.error && (
+              <p role="alert" className="text-sm text-red-700">
+                {inbox.error}
+              </p>
+            )}
+            {[...activities]
               .sort((a, b) => String(b.time).localeCompare(String(a.time)))
               .slice(0, 5)
               .map((n) => {
@@ -451,6 +466,7 @@ export default function Overview({ data, go, update, saveService }) {
                     aria-label={`Open notification: ${n.title}`}
                     className="flex w-full items-center gap-2 py-1 text-left hover:bg-green-50"
                     onClick={() => {
+                      if (!n.read) void inbox.markRead([n]);
                       if (!n.read)
                         update((d) => ({
                           ...d,
@@ -478,7 +494,7 @@ export default function Overview({ data, go, update, saveService }) {
                   </button>
                 );
               })}
-            {!data.notifications.length && (
+            {!activities.length && !inbox.error && (
               <p className="py-5 text-center text-[#657599]">
                 No recent notifications.
               </p>

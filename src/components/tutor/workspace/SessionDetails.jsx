@@ -5,6 +5,7 @@ import { money, hour, time } from "./data.js";
 import { meetingUrl } from "./sessionActions.js";
 import { chatRequest } from "../../../services/bookingMessages.js";
 import { completeTutorSession } from "../../../services/tutorSessionCompletion.js";
+import { sessionAllocation } from "./earnings.js";
 
 const dateLabel = (value) =>
   new Date(`${value}T12:00:00`).toLocaleDateString("en-US", {
@@ -27,17 +28,27 @@ function Details({ rows }) {
   );
 }
 function Allocation({ session: s }) {
+  const amounts =
+    s.allocation ||
+    (s.transferredAt
+      ? sessionAllocation(s)
+      : {
+          gross: s.amount,
+          tutor: s.amount * 0.9,
+          osas: s.amount * 0.05,
+          platform: s.amount * 0.05,
+        });
   return (
     <div className="payment-allocation">
       {[
-        ["Gross Amount", 1],
-        ["Tutor (90%)", 0.9],
-        ["OSAS (5%)", 0.05],
-        ["Platform (5%)", 0.05],
+        ["Gross Amount", "gross"],
+        ["Tutor (90%)", "tutor"],
+        ["OSAS (5%)", "osas"],
+        ["Platform (5%)", "platform"],
       ].map(([label, share]) => (
         <div key={label}>
           <span>{label}</span>
-          <strong>{money(s.amount * share)}</strong>
+          <strong>{money(amounts[share])}</strong>
         </div>
       ))}
     </div>
@@ -80,10 +91,24 @@ export function TransactionDetails({ session: s, onClose, onSession }) {
           ["Paid On", s.paidAt],
           ["Payment Status", <Badge>{s.payment}</Badge>],
           [
+            "Transfer Status",
+            s.transferredAt ? "Transferred" : "Not transferred",
+          ],
+          [
+            "Transferred On",
+            s.transferredAt
+              ? new Date(s.transferredAt).toLocaleString("en-PH", {
+                  timeZone: "Asia/Manila",
+                })
+              : "Not transferred",
+          ],
+          [
             "Earnings Status",
-            s.status === "Completed"
-              ? "Included in completed session earnings"
-              : "Counted once the session is completed",
+            s.transferredAt
+              ? "Payout marked as transferred by Admin"
+              : s.status === "Completed"
+                ? "Included in completed session earnings"
+                : "Counted once the session is completed",
           ],
         ]}
       />
