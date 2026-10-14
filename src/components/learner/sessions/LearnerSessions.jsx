@@ -1,6 +1,7 @@
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { filterSessions } from "./sessionFilters.js";
+import { listLearnerSessions } from "../../../services/learnerSessions.js";
 import {
   CalendarDays,
   Clock3,
@@ -13,42 +14,68 @@ import {
   Star,
   Video,
   View,
-  XCircle,
 } from "lucide-react";
 
-import { sessionRecords } from "./sessionRecords.js";
-const tabs = ["Upcoming", "Ongoing", "Completed", "Cancelled"];
+const tabs = ["Upcoming", "Ongoing", "Done"];
 
-export default function LearnerSessions() {
+export default function LearnerSessions({ args = {} }) {
   const work = useLearnerWorkspace();
-  const records = sessionRecords.map((s) => ({
-    ...s,
-    ...work.data.sessions.find((x) => x.id === s.id),
-  }));
-  function act(kind, name, date) {
-    const source = records.find(
-      (s) => s.details[3] === name && s.date === date,
-    );
-    const d = source.details;
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const request = useRef(0);
+  const refresh = useCallback(async () => {
+    const current = ++request.current;
+    setLoading(true);
+    setLoadError("");
+    try {
+      const sessions = await listLearnerSessions();
+      if (current === request.current) setRecords(sessions);
+    } catch (error) {
+      if (current === request.current)
+        setLoadError(error.message || "Unable to load your sessions.");
+    } finally {
+      if (current === request.current) setLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    refresh();
+    window.addEventListener("campustutor:sessions-changed", refresh);
+    window.addEventListener("focus", refresh);
+    const timer = window.setInterval(refresh, 15000);
+    return () => {
+      request.current++;
+      window.clearInterval(timer);
+      window.removeEventListener("campustutor:sessions-changed", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [refresh]);
+  function act(kind, source) {
     work.open(kind, {
       ...source,
-      name,
-      subject: d[7],
-      time: d[11],
+      subject: source.subject,
+      time: source.time,
       link: source.link,
     });
   }
-  const [activeTab, setActiveTab] = useState("Upcoming");
+  const [activeTab, setActiveTab] = useState(
+    args.tab === "Completed"
+      ? "Done"
+      : tabs.includes(args.tab)
+        ? args.tab
+        : "Upcoming",
+  );
   const [selectedDate, setSelectedDate] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const visibleSessions = filterSessions(
     records,
-    activeTab,
+    activeTab === "Done" ? "Completed" : activeTab,
     selectedDate,
     selectedStatus,
   );
   const tabCount = records.filter(
-    (session) => session.lifecycle === activeTab,
+    (session) =>
+      session.lifecycle === (activeTab === "Done" ? "Completed" : activeTab),
   ).length;
 
   return (
@@ -59,6 +86,21 @@ export default function LearnerSessions() {
       <p className="mt-1 text-xs font-medium text-[#173a9b]">
         Manage your tutoring sessions and track your learning progress.
       </p>
+      {loadError && (
+        <p
+          role="alert"
+          className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700"
+        >
+          {loadError}{" "}
+          <button
+            type="button"
+            className="font-semibold underline"
+            onClick={refresh}
+          >
+            Retry
+          </button>
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4 border-b border-[#dfe5ed]">
         <nav
           aria-label="Session status"
@@ -73,7 +115,12 @@ export default function LearnerSessions() {
               className={`border-b-2 pb-2 ${activeTab === tab ? "border-[#087542] text-[#087542]" : "border-transparent hover:text-[#087542]"}`}
             >
               {tab} (
-              {records.filter((session) => session.lifecycle === tab).length})
+              {
+                records.filter(
+                  (session) =>
+                    session.lifecycle === (tab === "Done" ? "Completed" : tab),
+                ).length
+              }
             </button>
           ))}
         </nav>
@@ -127,15 +174,24 @@ export default function LearnerSessions() {
         </div>
       </div>
       <h2 className="mt-3 text-base font-bold">{activeTab} Sessions</h2>
-      {visibleSessions.length === 0 && (
-        <div
+      {loading ? (
+        <p
           role="status"
-          className="mt-2 rounded-xl border border-[#e0e7f0] bg-white p-6 text-center text-sm text-[#637191]"
+          className="mt-3 rounded-xl border border-[#e0e7f0] bg-white p-6 text-center text-sm text-[#637191]"
         >
-          {tabCount === 0
-            ? `No ${activeTab.toLowerCase()} sessions yet.`
-            : "No sessions match these filters. Try another date or status, or clear the filters."}
-        </div>
+          Loading your booked sessions...
+        </p>
+      ) : (
+        visibleSessions.length === 0 && (
+          <div
+            role="status"
+            className="mt-2 rounded-xl border border-[#e0e7f0] bg-white p-6 text-center text-sm text-[#637191]"
+          >
+            {tabCount === 0
+              ? `No ${activeTab.toLowerCase()} sessions yet.`
+              : "No sessions match these filters. Try another date or status, or clear the filters."}
+          </div>
+        )
       )}
       <div className="mt-2 space-y-1">
         {visibleSessions.map(
@@ -143,6 +199,9 @@ export default function LearnerSessions() {
             id,
             lifecycle,
             paymentStatus,
+            canManage,
+            duration,
+            link,
             details: [
               month,
               day,
@@ -164,14 +223,14 @@ export default function LearnerSessions() {
             ],
           }) => (
             <article
-              key={date}
+              key={id}
               className="grid grid-cols-2 items-center gap-3 rounded-xl border border-[#e0e7f0] bg-white p-2 text-xs [&>div]:min-w-0 [&>div]:break-words sm:grid-cols-3 lg:grid-cols-[40px_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_55px_150px] lg:gap-2"
             >
               <div className="text-center font-bold text-[#087542]">
                 <p className="text-xs">{month}</p>
                 <p className="text-2xl text-[#101828]">{day}</p>
                 <p className="text-xs">{weekday}</p>
-                <p className="mt-1 text-xs text-[#637191]">2026</p>
+                <p className="mt-1 text-xs text-[#637191]">{date.slice(-4)}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-200 text-base font-bold text-[#405276]">
@@ -197,7 +256,7 @@ export default function LearnerSessions() {
                 </p>
                 <p>
                   <FileText className="mr-1 inline h-3.5 w-3.5" />
-                  1.5 hours
+                  {duration} {Number(duration) === 1 ? "hour" : "hours"}
                 </p>
               </div>
               <div className="space-y-1 text-xs text-[#405276]">
@@ -221,10 +280,12 @@ export default function LearnerSessions() {
                   <MapPin className="mr-1 inline h-3.5 w-3.5 text-[#087542]" />
                   {venue}
                 </p>
-                {mode === "Online" && (
+                {mode === "Online" && link && (
                   <p className="text-xs text-blue-600">
-                    meet.google.com/abc-defg-hij{" "}
-                    <ExternalLink className="inline h-3.5 w-3.5" />
+                    <a href={link} target="_blank" rel="noopener noreferrer">
+                      Open meeting link{" "}
+                      <ExternalLink className="inline h-3.5 w-3.5" />
+                    </a>
                   </p>
                 )}
               </div>
@@ -235,53 +296,55 @@ export default function LearnerSessions() {
                 >
                   {paymentStatus}
                 </span>
+                {lifecycle === "Completed" && (
+                  <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                    Done
+                  </span>
+                )}
               </div>
               <div className="col-span-2 border-t border-[#e1e7ef] pt-2 sm:col-span-3 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-2 lg:pt-0">
                 <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-1">
+                  {canManage && (
+                    <button
+                      onClick={() =>
+                        act(
+                          "meeting",
+                          records.find((session) => session.id === id),
+                        )
+                      }
+                      type="button"
+                      className="min-h-6 px-1 py-0.5 rounded-md bg-[#075d34] text-xs font-semibold text-white"
+                    >
+                      {mode === "Online" && (
+                        <Video className="mr-2 inline h-4 w-4" />
+                      )}
+                      Join Session <ExternalLink className="inline h-4 w-4" />
+                    </button>
+                  )}
+                  {canManage && (
+                    <button
+                      onClick={() =>
+                        work.message({
+                          name,
+                          bookingId: records.find(
+                            (session) => session.id === id,
+                          )?.bookingId,
+                        })
+                      }
+                      type="button"
+                      className="min-h-6 px-1 py-0.5 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
+                    >
+                      <MessageCircle className="mr-2 inline h-4 w-4" />
+                      Message Tutor
+                    </button>
+                  )}
                   <button
-                    disabled={
-                      lifecycle === "Cancelled" || lifecycle === "Completed"
+                    onClick={() =>
+                      act(
+                        "details",
+                        records.find((session) => session.id === id),
+                      )
                     }
-                    onClick={() => act("meeting", name, date)}
-                    type="button"
-                    className="min-h-6 px-1 py-0.5 rounded-md bg-[#075d34] text-xs font-semibold text-white"
-                  >
-                    {mode === "Online" && (
-                      <Video className="mr-2 inline h-4 w-4" />
-                    )}
-                    Join Session <ExternalLink className="inline h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => work.message({ name })}
-                    type="button"
-                    className="min-h-6 px-1 py-0.5 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
-                  >
-                    <MessageCircle className="mr-2 inline h-4 w-4" />
-                    Message Tutor
-                  </button>
-                  <div className="grid grid-cols-[1.4fr_1fr] gap-1">
-                    <button
-                      disabled={
-                        lifecycle === "Cancelled" || lifecycle === "Completed"
-                      }
-                      onClick={() => act("reschedule", name, date)}
-                      className="min-h-6 px-1 py-0.5 rounded-md border border-[#f2a400] text-xs font-semibold text-[#d98d00]"
-                    >
-                      Reschedule
-                    </button>
-                    <button
-                      disabled={
-                        lifecycle === "Cancelled" || lifecycle === "Completed"
-                      }
-                      onClick={() => act("cancel", name, date)}
-                      className="min-h-6 px-1 py-0.5 rounded-md border border-red-500 text-xs font-semibold text-red-600"
-                    >
-                      <XCircle className="mr-1 inline h-4 w-4" />
-                      Cancel
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => act("details", name, date)}
                     className="min-h-6 px-1 py-0.5 rounded-md border border-[#dfe5ed] text-xs font-semibold"
                   >
                     <View className="mr-2 inline h-4 w-4" />

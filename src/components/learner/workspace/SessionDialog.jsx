@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Info, TriangleAlert } from "lucide-react";
 import {
   Avatar,
@@ -8,6 +8,7 @@ import {
   input,
 } from "../../tutor/workspace/ui.jsx";
 import { meetingUrl } from "../../tutor/workspace/sessionActions.js";
+import { chatRequest } from "../../../services/bookingMessages.js";
 import "./session-dialogs.css";
 const cash = (value) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
@@ -57,18 +58,60 @@ export default function SessionDialog({
   onRequest,
 }) {
   const r = sessionInfo(record);
+  const bookingStatus = r.status === "Completed" ? "Done" : r.status;
   const [reason, setReason] = useState(""),
     [notes, setNotes] = useState(""),
     [ack, setAck] = useState(false),
     [date, setDate] = useState(""),
-    [time, setTime] = useState("");
-  const slots = (record.availability || []).filter(
-    (s) =>
-      s.date && s.time && new Date(`${s.date}T${s.time}:00+08:00`) > new Date(),
-  );
+    [time, setTime] = useState(""),
+    [slots, setSlots] = useState([]),
+    [loadingSlots, setLoadingSlots] = useState(false),
+    [actionError, setActionError] = useState(""),
+    [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (kind !== "reschedule") return;
+    let live = true;
+    setLoadingSlots(true);
+    setActionError("");
+    chatRequest("chat_reschedule_options", {
+      p_booking_id: Number(r.bookingId),
+    })
+      .then((rows) => {
+        if (live)
+          setSlots(
+            (rows || []).map((row) => ({
+              date: row.session_date,
+              time: String(row.start_time).slice(0, 5),
+              end: String(row.end_time).slice(0, 5),
+            })),
+          );
+      })
+      .catch((error) => {
+        if (live) setActionError(error.message);
+      })
+      .finally(() => {
+        if (live) setLoadingSlots(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [kind, r.bookingId]);
   const dates = [...new Set(slots.map((s) => s.date))];
-  const active = !["Completed", "Cancelled"].includes(r.lifecycle);
+  const active =
+    r.canManage && !["Completed", "Cancelled"].includes(r.lifecycle);
   const link = meetingUrl(r.link);
+  async function submitAction() {
+    setBusy(true);
+    setActionError("");
+    try {
+      if (kind === "cancel") await onCancel({ reason, notes });
+      else await onRequest({ date, time, reason: reason.trim() });
+    } catch (error) {
+      setActionError(error.message || "Unable to save this session request.");
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <div className="ls-flow">
       <div className="ls-content">
@@ -80,7 +123,7 @@ export default function SessionDialog({
                 <strong>{r.name}</strong>
                 <small>{r.course}</small>
               </div>
-              <Badge>{r.status}</Badge>
+              <Badge>{bookingStatus}</Badge>
             </div>
             <Rows
               rows={[
@@ -120,7 +163,7 @@ export default function SessionDialog({
                   : []),
                 ["Rate", r.rate ? `${cash(r.rate)} / hour` : "Not available"],
                 ["Amount", cash(r.amount)],
-                ["Booking Status", r.status],
+                ["Booking Status", bookingStatus],
                 [
                   "Payment Status",
                   <Badge key="payment">{r.paymentStatus}</Badge>,
@@ -249,41 +292,27 @@ export default function SessionDialog({
                     .filter((s) => s.date === date)
                     .map((s) => (
                       <button
+                        type="button"
                         key={s.time}
                         className={time === s.time ? primary : button}
                         onClick={() => setTime(s.time)}
                       >
-                        {s.time}
+                        {s.time} – {s.end}
                       </button>
                     ))}
                 </div>
               </>
             ) : (
-              <>
-                <input
-                  aria-label="Preferred new date"
-                  className={input}
-                  type="date"
-                  min={new Intl.DateTimeFormat("en-CA", {
-                    timeZone: "Asia/Manila",
-                  }).format(new Date())}
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
-                <label className="ls-field">
-                  Preferred time
-                  <input
-                    className={input}
-                    type="time"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                  />
-                </label>
-                <p className="ls-muted">
-                  Live tutor availability is not connected. This preferred time
-                  requires the tutor's review.
-                </p>
-              </>
+              <p role={loadingSlots ? "status" : "alert"} className="ls-muted">
+                {loadingSlots
+                  ? "Loading available times..."
+                  : "No bookable reschedule slots are available. Ask your tutor to add availability."}
+              </p>
+            )}
+            {actionError && (
+              <p role="alert" className="text-sm text-red-700">
+                {actionError}
+              </p>
             )}
             <label className="ls-field">
               Reason
@@ -305,12 +334,16 @@ export default function SessionDialog({
             <button className={button} onClick={() => onOpen("report", record)}>
               Report an Issue
             </button>
-            <button
-              className={button}
-              onClick={() => onMessage({ name: r.name })}
-            >
-              Message Tutor
-            </button>
+            {r.canManage && (
+              <button
+                className={button}
+                onClick={() =>
+                  onMessage({ name: r.name, bookingId: r.bookingId })
+                }
+              >
+                Message Tutor
+              </button>
+            )}
             {r.lifecycle === "Completed" && (
               <button
                 className={button}
@@ -318,22 +351,6 @@ export default function SessionDialog({
               >
                 {r.review ? "Edit Review" : "Rate & Review"}
               </button>
-            )}
-            {active && (
-              <>
-                <button
-                  className={button}
-                  onClick={() => onOpen("reschedule", record)}
-                >
-                  Request Reschedule
-                </button>
-                <button
-                  className="ls-danger"
-                  onClick={() => onOpen("cancel", record)}
-                >
-                  Cancel Session
-                </button>
-              </>
             )}
           </>
         ) : (
@@ -344,21 +361,26 @@ export default function SessionDialog({
             <button
               className={kind === "cancel" ? "ls-danger solid" : primary}
               disabled={
+                busy ||
                 !active ||
                 (kind === "cancel"
                   ? !reason || !ack
                   : !date ||
                     !time ||
                     reason.trim().length < 10 ||
+                    loadingSlots ||
+                    !slots.some(
+                      (option) => option.date === date && option.time === time,
+                    ) ||
                     !(new Date(`${date}T${time}:00+08:00`) > new Date()))
               }
-              onClick={() =>
-                kind === "cancel"
-                  ? onCancel({ reason, notes })
-                  : onRequest({ date, time, reason: reason.trim() })
-              }
+              onClick={submitAction}
             >
-              {kind === "cancel" ? "Cancel Session" : "Send Reschedule Request"}
+              {busy
+                ? "Saving..."
+                : kind === "cancel"
+                  ? "Cancel Session"
+                  : "Send Reschedule Request"}
             </button>
           </>
         )}

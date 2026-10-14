@@ -234,6 +234,12 @@
   padding: 12px 0;
   border-bottom: 1px solid #e8edf1;
 }
+.ltp-review-summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0;
+}
 .ltp-review > div {
   display: flex;
   justify-content: space-between;

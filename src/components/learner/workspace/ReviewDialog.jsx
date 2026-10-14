@@ -5,19 +5,31 @@ import { sessionInfo } from "./SessionDialog.jsx";
 export default function ReviewDialog({ record, review, onClose, onSave }) {
   const r = sessionInfo(record);
   const [rating, setRating] = useState(Number(review?.rating) || 0),
-    [text, setText] = useState(review?.text || "");
+    [text, setText] = useState(review?.text || ""),
+    [saving, setSaving] = useState(false),
+    [error, setError] = useState("");
   return (
     <form
       className="ls-flow"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
+        if (saving) return;
         if (
           r.lifecycle === "Completed" &&
           rating >= 1 &&
           rating <= 5 &&
           text.trim().length >= 3
-        )
-          onSave({ rating, text: text.trim() });
+        ) {
+          setSaving(true);
+          setError("");
+          try {
+            await onSave({ rating, text: text.trim() });
+          } catch (err) {
+            setError(err.message);
+          } finally {
+            setSaving(false);
+          }
+        }
       }}
     >
       <div className="ls-content">
@@ -31,7 +43,7 @@ export default function ReviewDialog({ record, review, onClose, onSave }) {
             </small>
           </div>
         </div>
-        <fieldset>
+        <fieldset disabled={saving}>
           <legend className="mb-2 font-semibold">Your rating</legend>
           <div className="flex items-center gap-2">
             {[1, 2, 3, 4, 5].map((n) => (
@@ -65,6 +77,7 @@ export default function ReviewDialog({ record, review, onClose, onSave }) {
           Your review
           <textarea
             className={input}
+            disabled={saving}
             rows={4}
             required
             minLength={3}
@@ -75,22 +88,34 @@ export default function ReviewDialog({ record, review, onClose, onSave }) {
           />
         </label>
         <p className="ls-muted mt-5">
-          Reviews are only available for completed sessions. Changes are saved
-          on this browser; publishing to the tutor's profile is not connected
-          yet.
+          Reviews are available after the tutor marks the session completed.
+          Your review is saved to your account.
         </p>
       </div>
+      {error && (
+        <p role="alert" className="ls-warning">
+          {error}
+        </p>
+      )}
       <footer className="ls-footer">
-        <button type="button" className={button} onClick={onClose}>
+        <button
+          type="button"
+          className={button}
+          disabled={saving}
+          onClick={onClose}
+        >
           Cancel
         </button>
         <button
           className={primary}
           disabled={
-            r.lifecycle !== "Completed" || !rating || text.trim().length < 3
+            saving ||
+            r.lifecycle !== "Completed" ||
+            !rating ||
+            text.trim().length < 3
           }
         >
-          {review ? "Save Changes" : "Submit Review"}
+          {saving ? "Saving..." : review ? "Save Changes" : "Submit Review"}
         </button>
       </footer>
     </form>

@@ -1,15 +1,23 @@
-﻿import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
-  Video,
-  MapPin,
   ShieldCheck,
   CreditCard,
 } from "lucide-react";
 import { button, primary, input, Avatar } from "../../tutor/workspace/ui.jsx";
 import { portalApi, portalApiAvailable } from "../../../services/portalApi.js";
+import { listBookableAvailability } from "../../../services/tutorAvailability.js";
+import { availableBookingTimes } from "../../../services/availabilityTimes.js";
+import {
+  bookingTotal,
+  chooseBookingType,
+} from "../../../services/bookingSelection.js";
+import {
+  loadServiceTopicSettings,
+  withTopicSettings,
+} from "../../../services/tutorServices.js";
 import { tutorProfile } from "./TutorProfile.jsx";
 import "./booking.css";
 const today = () =>
@@ -37,12 +45,11 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
   const tutor = tutorProfile(record);
   const [step, setStep] = useState(1),
     [draft, setDraft] = useState({
+      sessions: [],
       service: tutor.selectedService || "",
       topic: "",
       date: "",
-      time: "",
-      duration: "1.5",
-      type: "",
+      duration: "1",
     }),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -51,16 +58,261 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
     [consent, setConsent] = useState(false),
     [month, setMonth] = useState(() => new Date(today() + "T12:00:00"));
   const requestId = useRef(crypto.randomUUID());
-  const services = tutor.services,
-    selected = services.find((s) => s.name === draft.service),
-    rate = Number(selected?.rate || tutor.rate) || 0,
-    total = Math.round(rate * Number(draft.duration) * 100) / 100;
+  const [checkoutCleaning, setCheckoutCleaning] = useState(true);
+  const [checkoutError, setCheckoutError] = useState("");
+  const [checkoutRetry, setCheckoutRetry] = useState(0);
+  useEffect(() => {
+    let active = true;
+    setCheckoutCleaning(true);
+    setCheckoutError("");
+    portalApi("discardUnpaidCheckout")
+      .catch((error) => {
+        if (active) setCheckoutError(error.message);
+      })
+      .finally(() => {
+        if (active) setCheckoutCleaning(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [checkoutRetry]);
+  const [services, setServices] = useState(tutor.services);
+  const [topicsLoading, setTopicsLoading] = useState(true);
+  const [topicsError, setTopicsError] = useState("");
+  useEffect(() => {
+    let active = true;
+    loadServiceTopicSettings(tutor.services.map((service) => service.id))
+      .then((rows) => {
+        if (active) {
+          setServices(
+            tutor.services.map((service) => withTopicSettings(service, rows)),
+          );
+          setTopicsError("");
+        }
+      })
+      .catch((error) => {
+        if (active) setTopicsError(error.message);
+      })
+      .finally(() => {
+        if (active) setTopicsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [record]);
+  const selected = services.find((s) => s.name === draft.service),
+    topicConfig = selected?.topicDetails?.find(
+      (topic) => topic.name === draft.topic,
+    ),
+    rate = Number(topicConfig?.rate ?? selected?.rate ?? tutor.rate) || 0,
+    totalHours = draft.sessions.reduce(
+      (sum, session) => sum + Number(session.duration),
+      0,
+    ),
+    total = bookingTotal(draft.sessions, rate);
   const topics = Array.isArray(selected?.topics)
     ? selected.topics
     : String(selected?.topics || "")
         .split(",")
         .filter(Boolean);
-  const types = selected?.types || tutor.types || ["Online", "In-person"];
+  const types =
+    topicConfig?.types ||
+    (selected?.type === "Both"
+      ? ["Online", "In-person"]
+      : selected?.type
+        ? [selected.type]
+        : selected?.types || tutor.types || ["Online", "In-person"]);
+  const [availabilitySlots, setAvailabilitySlots] = useState([]);
+  const [classBlocks, setClassBlocks] = useState([]);
+  const [bookingBlocks, setBookingBlocks] = useState([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState("");
+  const availabilityRequest = useRef(0);
+  const availabilityReady = useRef(false);
+  useEffect(() => {
+    const current = ++availabilityRequest.current;
+    availabilityReady.current = false;
+    if (step !== 3 || !selected?.id || !tutor.tutorProfileId) {
+      setAvailabilitySlots([]);
+      setClassBlocks([]);
+      setAvailabilityLoading(false);
+      setAvailabilityError("");
+      return;
+    }
+    setAvailabilitySlots([]);
+    setAvailabilityLoading(true);
+    setAvailabilityError("");
+    const refresh = () =>
+      listBookableAvailability(tutor.tutorProfileId, selected.id)
+        .then(({ slots, classBlocks: blocks, bookingBlocks: booked }) => {
+          if (current === availabilityRequest.current) {
+            availabilityReady.current = true;
+            setAvailabilitySlots(slots);
+            setClassBlocks(blocks);
+            setBookingBlocks(booked);
+            setAvailabilityError("");
+          }
+        })
+        .catch((loadError) => {
+          if (current === availabilityRequest.current)
+            setAvailabilityError(
+              loadError.message || "Could not load tutor availability.",
+            );
+        })
+        .finally(() => {
+          if (current === availabilityRequest.current)
+            setAvailabilityLoading(false);
+        });
+    refresh();
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      if (current === availabilityRequest.current)
+        availabilityRequest.current++;
+    };
+  }, [step, selected?.id, tutor.tutorProfileId]);
+  const availableTimes = availableBookingTimes(
+    availabilitySlots,
+    draft.date,
+    draft.duration,
+    selected?.id,
+    undefined,
+    classBlocks,
+    bookingBlocks,
+    topicConfig?.id,
+  );
+  const displayedTimes = availableBookingTimes(
+    availabilitySlots,
+    draft.date,
+    1,
+    selected?.id,
+    undefined,
+    classBlocks,
+    [],
+    topicConfig?.id,
+  );
+  const timesForDate = (date) =>
+    availableBookingTimes(
+      availabilitySlots,
+      date,
+      draft.duration,
+      selected?.id,
+      undefined,
+      classBlocks,
+      bookingBlocks,
+      topicConfig?.id,
+    );
+  const rangeLabel = (time, duration = draft.duration) => {
+    const [h, m] = time.split(":").map(Number);
+    const format = (minutes) =>
+      new Date(
+        2000,
+        0,
+        1,
+        Math.floor(minutes / 60),
+        minutes % 60,
+      ).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    return (
+      format(h * 60 + m) + " - " + format(h * 60 + m + Number(duration) * 60)
+    );
+  };
+  useEffect(() => {
+    if (
+      step !== 3 ||
+      !availabilityReady.current ||
+      availabilityLoading ||
+      availabilityError
+    )
+      return;
+    const remaining = draft.sessions.flatMap((session) => {
+      const option = availableBookingTimes(
+        availabilitySlots,
+        session.date,
+        session.duration,
+        selected?.id,
+        undefined,
+        classBlocks,
+        bookingBlocks,
+        topicConfig?.id,
+      ).find((option) => option.value === session.time);
+      return option ? [{ ...session, slotId: option.slotId }] : [];
+    });
+    if (remaining.length !== draft.sessions.length) {
+      setDraft((d) => ({ ...d, sessions: remaining }));
+      setError(
+        "Some selected times are no longer available. Please review your sessions.",
+      );
+      setReviewed(false);
+      setConsent(false);
+      requestId.current = crypto.randomUUID();
+    } else if (
+      remaining.some(
+        (session, index) => session.slotId !== draft.sessions[index].slotId,
+      )
+    ) {
+      setDraft((d) => ({ ...d, sessions: remaining }));
+      setReviewed(false);
+      setConsent(false);
+      requestId.current = crypto.randomUUID();
+    }
+  }, [
+    step,
+    availabilityLoading,
+    availabilityError,
+    availabilitySlots,
+    classBlocks,
+    bookingBlocks,
+    topicConfig?.id,
+    draft.sessions,
+    selected?.id,
+  ]);
+  const sessionKey = (session) => session.date + "T" + session.time;
+  const minutes = (time) => {
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const overlaps = (option) =>
+    draft.sessions.some(
+      (session) =>
+        session.date === draft.date &&
+        minutes(option.value) <
+          minutes(session.time) + Number(session.duration) * 60 &&
+        minutes(option.value) + Number(draft.duration) * 60 >
+          minutes(session.time),
+    );
+  const toggleTime = (option) => {
+    const key = draft.date + "T" + option.value;
+    if (draft.sessions.some((session) => sessionKey(session) === key))
+      return change(
+        "sessions",
+        draft.sessions.filter((session) => sessionKey(session) !== key),
+      );
+    if (overlaps(option) || draft.sessions.length >= 20) return;
+    change(
+      "sessions",
+      [
+        ...draft.sessions,
+        {
+          date: draft.date,
+          time: option.value,
+          duration: draft.duration,
+          slotId: option.slotId,
+          type: types.length === 1 ? types[0] : "",
+        },
+      ].sort((a, b) => sessionKey(a).localeCompare(sessionKey(b))),
+    );
+  };
+  const setSessionType = (key, type) =>
+    change("sessions", chooseBookingType(draft.sessions, key, type, types));
+  const sessionDate = (date) =>
+    new Date(date + "T12:00:00").toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
   const change = (key, value) => {
     setError("");
     setReviewed(false);
@@ -70,9 +322,9 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
       ...d,
       [key]: value,
       ...(key === "service"
-        ? { topic: "", type: "" }
-        : key === "date" || key === "duration"
-          ? { time: "" }
+        ? { topic: "", date: "", sessions: [] }
+        : key === "topic"
+          ? { date: "", sessions: [] }
           : {}),
     }));
   };
@@ -80,31 +332,31 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
     step === 1
       ? !!selected
       : step === 2
-        ? !!draft.topic.trim()
+        ? !!draft.topic.trim() && !topicsLoading && !topicsError
         : step === 3
-          ? !!draft.date && !!draft.time
+          ? draft.sessions.length > 0 &&
+            !availabilityLoading &&
+            !availabilityError
           : step === 4
-            ? !!draft.type
+            ? draft.sessions.length > 0 &&
+              draft.sessions.every((session) => types.includes(session.type))
             : step === 5
               ? reviewed
               : consent && rate > 0 && portalApiAvailable("createBooking");
-  const endTime = () => {
-    const [h, m] = draft.time.split(":").map(Number);
-    const end = h * 60 + m + Number(draft.duration) * 60;
-    return `${String(Math.floor(end / 60)).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`;
-  };
   async function next(e) {
     e.preventDefault();
-    if (!valid || busy) return;
+    if (!valid || busy || checkoutCleaning || checkoutError) return;
     setError("");
     if (
       step >= 3 &&
-      (new Date(`${draft.date}T${draft.time}:00+08:00`) <= new Date() ||
-        endTime() > "21:00")
+      draft.sessions.some(
+        (session) =>
+          new Date(session.date + "T" + session.time + ":00+08:00") <=
+            new Date() ||
+          minutes(session.time) + Number(session.duration) * 60 > 21 * 60,
+      )
     )
-      return setError(
-        "Choose a future time with the session ending by 9:00 PM.",
-      );
+      return setError("Choose future sessions ending by 9:00 PM.");
     if (step < 6) {
       setStep(step + 1);
       return;
@@ -114,6 +366,7 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
       const confirmed = await portalApi("createBooking", {
         ...draft,
         serviceId: selected.id,
+        topicId: topicConfig?.id || null,
         tutorId: tutor.id,
         tutor: tutor.name,
         idempotencyKey: requestId.current,
@@ -144,16 +397,8 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
     ["Tutor", tutor.name],
     ["Service", draft.service],
     ["Specific topic", draft.topic],
-    ["Date", draft.date],
-    ["Time", draft.time ? `${draft.time} – ${endTime()}` : ""],
-    ["Duration", `${draft.duration} hours`],
-    ["Session type", draft.type],
-    [
-      "Location / Platform",
-      draft.type === "Online"
-        ? `${tutor.platform || "External meeting"} · Link shared after booking`
-        : tutor.location || "To be arranged with the tutor",
-    ],
+    ["Sessions", draft.sessions.length],
+    ["Duration", totalHours + " hours"],
   ];
   return (
     <form className="booking-flow" onSubmit={next} aria-busy={busy}>
@@ -182,6 +427,29 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
         ))}
       </ol>
       <div className="booking-content">
+        {checkoutCleaning && (
+          <p role="status">Checking previous unpaid checkout...</p>
+        )}
+        {checkoutError && (
+          <p role="alert" className="booking-warning">
+            {checkoutError}{" "}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => setCheckoutRetry((value) => value + 1)}
+            >
+              Retry
+            </button>
+          </p>
+        )}
+        {topicsError && (
+          <p className="booking-warning" role="alert">
+            {topicsError}
+          </p>
+        )}
+        {topicsLoading && (
+          <p role="status">Loading topic rates and schedules...</p>
+        )}
         {step === 1 && (
           <>
             <h3>Select a subject or service</h3>
@@ -228,7 +496,24 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
                       checked={draft.topic === t}
                       onChange={() => change("topic", t)}
                     />
-                    <strong>{t}</strong>
+                    <span>
+                      <strong>{t}</strong>
+                      <small>
+                        {selected?.topicDetails
+                          ?.find((topic) => topic.name === t)
+                          ?.types.join(" / ")}
+                      </small>
+                    </span>
+                    <b>
+                      {cash(
+                        selected?.topicDetails?.find(
+                          (topic) => topic.name === t,
+                        )?.rate ??
+                          selected?.rate ??
+                          rate,
+                      )}
+                      /hr
+                    </b>
                   </label>
                 ))}
               </div>
@@ -303,53 +588,135 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
                       <button
                         key={date}
                         type="button"
-                        disabled={date < today()}
-                        className={date === draft.date ? "selected" : ""}
+                        disabled={
+                          date < today() ||
+                          availabilityLoading ||
+                          !!availabilityError ||
+                          !timesForDate(date).length
+                        }
+                        className={
+                          date === draft.date ||
+                          draft.sessions.some(
+                            (session) => session.date === date,
+                          )
+                            ? "selected"
+                            : timesForDate(date).length
+                              ? "available"
+                              : ""
+                        }
                         aria-label={date}
                         aria-pressed={date === draft.date}
                         onClick={() => change("date", date)}
                       >
                         {i + 1}
+                        {timesForDate(date).length > 0 && (
+                          <span
+                            className="booking-availability-dot"
+                            aria-hidden="true"
+                          />
+                        )}
                       </button>
                     );
                   })}
                 </div>
               </div>
+              <p className="booking-legend">
+                <span className="booking-availability-dot" /> Available{" "}
+                <span className="booking-selected-key" /> Selected
+              </p>
+              {availabilityLoading && (
+                <p role="status">Loading availability...</p>
+              )}
+              {availabilityError && (
+                <p role="alert" className="booking-warning">
+                  {availabilityError}
+                </p>
+              )}
             </section>
             <section>
-              <h3>Select a time range</h3>
-              <div className="booking-duration">
-                <span>Duration</span>
-                {[1, 1.5, 2].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={Number(draft.duration) === n ? primary : button}
-                    onClick={() => change("duration", String(n))}
-                  >
-                    {n} hr{n === 1 ? "" : "s"}
-                  </button>
-                ))}
-              </div>
+              <h3>Select time ranges</h3>
+              <p className="booking-muted">
+                Each session is 1 hour. Select one or more times, on one or more
+                dates.
+              </p>
               {draft.date ? (
                 <>
-                  <label className="booking-field">
-                    Preferred start time
-                    <input
-                      className={input}
-                      type="time"
-                      value={draft.time}
-                      min="07:00"
-                      max="20:00"
-                      step="1800"
-                      required
-                      onChange={(e) => change("time", e.target.value)}
-                    />
-                  </label>
+                  <strong className="booking-date-title">
+                    {new Date(draft.date + "T12:00:00").toLocaleDateString(
+                      "en-US",
+                      {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      },
+                    )}
+                  </strong>
+                  {availabilityLoading ? (
+                    <p role="status">Loading available times...</p>
+                  ) : (
+                    <div className="booking-time-grid">
+                      {displayedTimes.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={
+                            draft.sessions.some(
+                              (session) =>
+                                sessionKey(session) ===
+                                draft.date + "T" + option.value,
+                            )
+                              ? "selected"
+                              : ""
+                          }
+                          aria-pressed={draft.sessions.some(
+                            (session) =>
+                              sessionKey(session) ===
+                              draft.date + "T" + option.value,
+                          )}
+                          disabled={
+                            !availableTimes.some(
+                              (available) => available.value === option.value,
+                            ) ||
+                            !!availabilityError ||
+                            (!draft.sessions.some(
+                              (session) =>
+                                sessionKey(session) ===
+                                draft.date + "T" + option.value,
+                            ) &&
+                              (overlaps(option) || draft.sessions.length >= 20))
+                          }
+                          onClick={() => toggleTime(option)}
+                        >
+                          <span
+                            className="booking-availability-dot"
+                            aria-hidden="true"
+                          />
+                          {rangeLabel(option.value)}
+                          {!availableTimes.some(
+                            (available) => available.value === option.value,
+                          ) && <small>Booked</small>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <p className="booking-muted">
-                    {draft.time && `${draft.time} – ${endTime()} · `}
-                    {cash(total)} total
+                    Booked times cannot be selected. Times outside the tutor's
+                    availability are hidden.
                   </p>
+                  {availabilityError && (
+                    <p role="alert" className="booking-warning">
+                      {availabilityError}
+                    </p>
+                  )}
+                  {!availabilityLoading &&
+                    !availabilityError &&
+                    !availableTimes.length && (
+                      <p role="status" className="booking-note">
+                        No free one-hour sessions on this day. Choose another
+                        date.
+                      </p>
+                    )}
                 </>
               ) : (
                 <div className="booking-empty">
@@ -357,51 +724,139 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
                   <p>Pick a date to choose a time range.</p>
                 </div>
               )}
+              {draft.sessions.length > 0 && (
+                <div className="booking-selection">
+                  <strong>Selected ({draft.sessions.length})</strong>
+                  {draft.sessions.map((session) => (
+                    <div key={sessionKey(session)}>
+                      <span>
+                        {sessionDate(session.date)} &middot;{" "}
+                        {rangeLabel(session.time, session.duration)}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={
+                          "Remove " +
+                          sessionDate(session.date) +
+                          " " +
+                          session.time
+                        }
+                        onClick={() =>
+                          change(
+                            "sessions",
+                            draft.sessions.filter(
+                              (item) =>
+                                sessionKey(item) !== sessionKey(session),
+                            ),
+                          )
+                        }
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                  <div className="booking-total">
+                    <span>
+                      {draft.sessions.length} &times; 1 hour &times;{" "}
+                      {cash(rate)}/hour
+                    </span>
+                    <strong>{cash(total)}</strong>
+                  </div>
+                </div>
+              )}
               <p className="booking-note">
-                These are preferred times. Tutor availability and scheduling
-                conflicts must be verified before payment confirmation.
+                Available times refresh automatically. Availability is checked
+                again before checkout.
               </p>
             </section>
           </div>
         )}
         {step === 4 && (
           <>
-            <h3>Choose your session type</h3>
+            <h3>Choose a session type for each time</h3>
             <p className="booking-muted">
-              How would you like to meet your tutor?
+              {draft.service} is available {types.join(" and ").toLowerCase()}.
+              {types.includes("Online") && (
+                <>
+                  {" "}
+                  Online meeting:{" "}
+                  {topicConfig?.meetingLink ||
+                    tutor.platform ||
+                    "Meeting link shared after booking"}
+                  .
+                </>
+              )}
+              {types.includes("In-person") && (
+                <>
+                  {" "}
+                  In-person meeting:{" "}
+                  {topicConfig?.location ||
+                    tutor.location ||
+                    "Location arranged with tutor"}
+                  .
+                </>
+              )}
             </p>
-            <div className="booking-options">
-              {types.map((type) => (
-                <label
+            <div className="booking-set-all">
+              <span>Set all to:</span>
+              {["Online", "In-person"].map((type) => (
+                <button
+                  type="button"
                   key={type}
-                  className={draft.type === type ? "chosen" : ""}
+                  className={button}
+                  disabled={!types.includes(type)}
+                  onClick={() => setSessionType("all", type)}
                 >
-                  <input
-                    type="radio"
-                    name="sessionType"
-                    checked={draft.type === type}
-                    onChange={() => change("type", type)}
-                  />
-                  {type === "Online" ? (
-                    <Video size={22} />
-                  ) : (
-                    <MapPin size={22} />
-                  )}
-                  <span>
-                    <strong>{type}</strong>
-                    <small>
-                      {type === "Online"
-                        ? `${tutor.platform || "Google Meet or Zoom"} · External meeting link shared after booking`
-                        : tutor.location ||
-                          "Arrange a campus meeting location with the tutor"}
-                    </small>
-                  </span>
-                </label>
+                  {type}
+                </button>
+              ))}
+              <small>
+                {
+                  draft.sessions.filter((session) =>
+                    types.includes(session.type),
+                  ).length
+                }{" "}
+                of {draft.sessions.length} chosen
+              </small>
+            </div>
+            <div className="booking-session-types">
+              {draft.sessions.map((session) => (
+                <div
+                  className="booking-session-type-row"
+                  key={sessionKey(session)}
+                >
+                  <strong>
+                    {sessionDate(session.date)} &middot;{" "}
+                    {rangeLabel(session.time, session.duration)}
+                  </strong>
+                  <div>
+                    {["Online", "In-person"].map((type) => (
+                      <label
+                        key={type}
+                        className={
+                          !types.includes(type)
+                            ? "unavailable"
+                            : session.type === type
+                              ? "chosen"
+                              : ""
+                        }
+                      >
+                        <input
+                          type="radio"
+                          name={"session-type-" + sessionKey(session)}
+                          checked={session.type === type}
+                          disabled={!types.includes(type)}
+                          onChange={() =>
+                            setSessionType(sessionKey(session), type)
+                          }
+                        />
+                        {type}
+                      </label>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
-            <p className="booking-note">
-              CampusTutor has no built-in video or voice calls.
-            </p>
           </>
         )}
         {step === 5 && (
@@ -418,9 +873,34 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
                 </div>
               ))}
             </dl>
+            <div className="booking-session-types">
+              {draft.sessions.map((session) => (
+                <div
+                  className="booking-session-type-row"
+                  key={sessionKey(session)}
+                >
+                  <span>
+                    {sessionDate(session.date)} &middot;{" "}
+                    {rangeLabel(session.time, session.duration)}
+                    <small>
+                      {session.type} &middot;{" "}
+                      {session.type === "Online"
+                        ? topicConfig?.meetingLink ||
+                          tutor.platform ||
+                          "Meeting link shared after booking"
+                        : topicConfig?.location ||
+                          tutor.location ||
+                          "Location arranged with tutor"}
+                    </small>
+                  </span>
+                  <strong>{cash(rate * Number(session.duration))}</strong>
+                </div>
+              ))}
+            </div>
             <div className="booking-total">
               <span>
-                {cash(rate)} × {draft.duration} hours
+                {cash(rate)} × {totalHours} hours ({draft.sessions.length}{" "}
+                sessions)
               </span>
               <strong>{cash(total)}</strong>
             </div>
@@ -474,7 +954,7 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
               />
-              I authorize proceeding with payment for the session shown above.
+              I authorize proceeding with payment for all sessions shown above.
             </label>
           </>
         )}
@@ -528,7 +1008,10 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
                 Retry saving confirmed booking
               </button>
             ) : (
-              <button disabled={!valid || busy} className={primary}>
+              <button
+                disabled={!valid || busy || checkoutCleaning || !!checkoutError}
+                className={primary}
+              >
                 {busy
                   ? "Processing…"
                   : step === 5

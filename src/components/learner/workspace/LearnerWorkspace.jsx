@@ -1,3 +1,9 @@
+import { listLearnerSessions } from "../../../services/learnerSessions.js";
+import { portalApi } from "../../../services/portalApi.js";
+import {
+  listLearnerReviews,
+  saveLearnerReview,
+} from "../../../services/learnerReviews.js";
 import {
   listSavedTutors,
   persistSavedTutor,
@@ -38,7 +44,6 @@ const empty = {
   threads: [],
   notifications: [],
   requests: [],
-  settings: {},
   profile: {},
   application: null,
 };
@@ -54,6 +59,22 @@ export default function LearnerWorkspace({ children, go }) {
     [error, setError] = useState("");
   const { toast, confirm } = useInteractions();
   const uid = auth?.user?.id;
+  useEffect(() => {
+    for (const storageName of ["localStorage", "sessionStorage"]) {
+      try {
+        const storage = window[storageName];
+        const keys = Array.from({ length: storage.length }, (_, i) =>
+          storage.key(i),
+        );
+        for (const key of keys)
+          if (/learner.*settings|settings.*learner/i.test(key || ""))
+            storage.removeItem(key);
+      } catch {
+        /* Browser storage may be unavailable. */
+      }
+    }
+  }, []);
+
   function closeDialog() {
     setDialog(null);
   }
@@ -97,6 +118,75 @@ export default function LearnerWorkspace({ children, go }) {
       window.removeEventListener("focus", refreshSaved);
     };
   }, [refreshSaved, uid]);
+  const [reviewsLoading, setReviewsLoading] = useState(true),
+    [reviewsError, setReviewsError] = useState("");
+  const reviewsRequest = useRef(0);
+  const refreshReviews = useCallback(async () => {
+    const current = ++reviewsRequest.current;
+    if (!uid) return;
+    try {
+      const [sessions, reviews] = await Promise.all([
+        listLearnerSessions(),
+        listLearnerReviews(),
+      ]);
+      if (current === reviewsRequest.current) {
+        setData((previous) => ({
+          ...previous,
+          sessions,
+          reviews: reviews.map((review) => {
+            const session = sessions.find(
+              (item) => item.id === review.sessionId,
+            );
+            return { ...review, name: session?.name || "Tutor", session };
+          }),
+        }));
+        setReviewsError("");
+      }
+    } catch (err) {
+      if (current === reviewsRequest.current) setReviewsError(err.message);
+    } finally {
+      if (current === reviewsRequest.current) setReviewsLoading(false);
+    }
+  }, [uid]);
+  useEffect(() => {
+    setReviewsLoading(true);
+    setData((previous) => ({ ...previous, sessions: [], reviews: [] }));
+    refreshReviews();
+    const timer = window.setInterval(refreshReviews, 15000);
+    window.addEventListener("focus", refreshReviews);
+    window.addEventListener("campustutor:sessions-changed", refreshReviews);
+    return () => {
+      reviewsRequest.current++;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshReviews);
+      window.removeEventListener(
+        "campustutor:sessions-changed",
+        refreshReviews,
+      );
+    };
+  }, [refreshReviews]);
+  useEffect(() => {
+    if (
+      !uid ||
+      new URL(window.location.href).searchParams.get("payment") !== "cancelled"
+    )
+      return;
+    let active = true;
+    portalApi("discardUnpaidCheckout")
+      .then(() => {
+        if (!active) return;
+        const url = new URL(window.location.href);
+        url.searchParams.delete("payment");
+        window.history.replaceState(null, "", url);
+        refreshReviews();
+      })
+      .catch((error) => {
+        if (active) toast(error.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [uid, refreshReviews]);
   const isSaved = (tutor) =>
     !!serviceKey(tutor) &&
     data.saved.some((t) => serviceKey(t) === serviceKey(tutor));
@@ -166,16 +256,11 @@ export default function LearnerWorkspace({ children, go }) {
     }
   }
   function message(tutor) {
-    if (
-      !commit((d) => ({
-        ...d,
-        activeThread: tutor.name,
-        threads: d.threads.some((t) => t.name === tutor.name)
-          ? d.threads
-          : [...d.threads, { name: tutor.name, messages: [], unread: 0 }],
-      }))
-    )
-      return;
+    setData((d) => ({
+      ...d,
+      activeThread: tutor.name,
+      activeBookingId: tutor.bookingId || "",
+    }));
     go("messages");
     setDialog(null);
   }
@@ -206,6 +291,9 @@ export default function LearnerWorkspace({ children, go }) {
     savedLoading,
     savedError,
     refreshSaved,
+    reviewsLoading,
+    reviewsError,
+    refreshReviews,
   };
   const r = dialog?.record;
   return (
@@ -231,9 +319,7 @@ export default function LearnerWorkspace({ children, go }) {
                 ? "booking"
                 : dialog.kind === "details"
                   ? "session-drawer"
-                  : ["cancel", "reschedule", "report", "review"].includes(
-                        dialog.kind,
-                      )
+                  : ["report", "review"].includes(dialog.kind)
                     ? "session-modal"
                     : ["data", "delete"].includes(dialog.kind)
                       ? "account"
@@ -245,8 +331,6 @@ export default function LearnerWorkspace({ children, go }) {
               book: "Book a Session",
               details: "Session Details",
               meeting: "Open External Meeting",
-              reschedule: "Request Reschedule",
-              cancel: "Cancel Session",
               report: "Report an Issue",
               review:
                 data.reviews.find((x) => x.sessionId === r.id) || r.review
@@ -276,7 +360,7 @@ export default function LearnerWorkspace({ children, go }) {
           {dialog.kind === "book" && (
             <BookingFlow tutor={r} onClose={closeDialog} />
           )}
-          {["details", "cancel", "reschedule"].includes(dialog.kind) && (
+          {dialog.kind === "details" && (
             <SessionDialog
               key={dialog.kind}
               kind={dialog.kind}
@@ -288,33 +372,6 @@ export default function LearnerWorkspace({ children, go }) {
               onClose={closeDialog}
               onOpen={open}
               onMessage={message}
-              onRequest={(values) =>
-                request("reschedule", { sessionId: r.id, ...values })
-              }
-              onCancel={(values) => {
-                if (
-                  commit((d) => ({
-                    ...d,
-                    sessions: [
-                      ...d.sessions.filter((s) => s.id !== r.id),
-                      {
-                        ...r,
-                        ...values,
-                        lifecycle: "Cancelled",
-                        refundStatus:
-                          r.paymentStatus === "Paid"
-                            ? "Under Review"
-                            : undefined,
-                      },
-                    ],
-                  }))
-                ) {
-                  setDialog(null);
-                  toast(
-                    "Session cancelled locally. Server cancellation and refund processing are not connected.",
-                  );
-                }
-              }}
             />
           )}
           {dialog.kind === "meeting" && (
@@ -351,26 +408,23 @@ export default function LearnerWorkspace({ children, go }) {
                 data.reviews.find((x) => x.sessionId === r.id) || r.review
               }
               onClose={closeDialog}
-              onSave={(values) => {
-                if (r.lifecycle !== "Completed") return;
-                if (
-                  commit((d) => ({
-                    ...d,
-                    reviews: [
-                      ...d.reviews.filter((x) => x.sessionId !== r.id),
-                      {
-                        sessionId: r.id,
-                        name: r.name,
-                        ...values,
-                        date: new Date().toISOString(),
-                        session: r,
-                      },
-                    ],
-                  }))
-                ) {
-                  setDialog(null);
-                  toast("Review not connected to the database.");
-                }
+              onSave={async (values) => {
+                const saved = await saveLearnerReview(
+                  r.bookingId || r.id,
+                  values,
+                );
+                setData((previous) => ({
+                  ...previous,
+                  reviews: [
+                    { ...saved, name: r.name, session: r },
+                    ...previous.reviews.filter(
+                      (item) => item.sessionId !== saved.sessionId,
+                    ),
+                  ],
+                }));
+                setDialog(null);
+                toast("Review saved.");
+                refreshReviews();
               }}
             />
           )}

@@ -9,6 +9,11 @@ import {
 } from "lucide-react";
 import { button, primary } from "../../tutor/workspace/ui.jsx";
 import "./tutor-profile.css";
+import { useEffect, useState } from "react";
+import {
+  listTutorReviews,
+  getTutorCompletedSessions,
+} from "../../../services/tutorReviews.js";
 export function tutorProfile(record) {
   const sample = {};
   const tutor = { ...sample, ...profileSamples[record.name], ...record };
@@ -41,6 +46,75 @@ export default function TutorProfile({
   onBook,
 }) {
   const t = tutorProfile(record);
+  const tutorId = t.tutorProfileId || t.id;
+  const [reviews, setReviews] = useState({ entries: [], count: 0, average: 0 });
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewsError, setReviewsError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const [completedCount, setCompletedCount] = useState(null);
+  const [completedError, setCompletedError] = useState("");
+  useEffect(() => {
+    let active = true,
+      inFlight = false;
+    setCompletedCount(null);
+    setCompletedError("");
+    const load = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const count = await getTutorCompletedSessions(tutorId);
+        if (active) {
+          setCompletedCount(count);
+          setCompletedError("");
+        }
+      } catch (error) {
+        if (active) setCompletedError(error.message);
+      } finally {
+        inFlight = false;
+      }
+    };
+    load();
+    const timer = window.setInterval(load, 15000);
+    window.addEventListener("focus", load);
+    window.addEventListener("campustutor:sessions-changed", load);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", load);
+      window.removeEventListener("campustutor:sessions-changed", load);
+    };
+  }, [tutorId, retry]);
+  useEffect(() => {
+    let active = true,
+      inFlight = false;
+    setReviewsLoading(true);
+    setReviews({ entries: [], count: 0, average: 0 });
+    setReviewsError("");
+    const load = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const result = await listTutorReviews(tutorId);
+        if (active) {
+          setReviews(result);
+          setReviewsError("");
+        }
+      } catch (error) {
+        if (active) setReviewsError(error.message);
+      } finally {
+        inFlight = false;
+        if (active) setReviewsLoading(false);
+      }
+    };
+    load();
+    const timer = window.setInterval(load, 15000);
+    window.addEventListener("focus", load);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", load);
+    };
+  }, [tutorId, retry]);
   const chips = (value) =>
     Array.isArray(value)
       ? value
@@ -83,15 +157,23 @@ export default function TutorProfile({
           <div className="ltp-stats">
             <span>
               <Star size={15} className="text-amber-500 fill-amber-500" />
-              {t.rating || "Not rated"}
-              {t.reviews && ` (${t.reviews} reviews)`}
+              {reviews.count
+                ? reviews.average.toFixed(1)
+                : reviewsLoading
+                  ? t.rating || "Not rated"
+                  : "Not rated"}
+              {reviews.count > 0 && ` (${reviews.count} reviews)`}
             </span>
-            {t.completed != null && (
+            {
               <span>
                 <Check size={14} />
-                {t.completed} completed sessions
+                {completedError
+                  ? "Session count unavailable"
+                  : completedCount == null
+                    ? "Loading completed sessions..."
+                    : `${completedCount} completed session${completedCount === 1 ? "" : "s"}`}
               </span>
-            )}
+            }
             <span>
               <b>{t.rate ? `₱${t.rate}` : "Rate unavailable"}</b>
               {t.rate && " / hour"}
@@ -213,25 +295,59 @@ export default function TutorProfile({
       </section>
       <section>
         <h4>Ratings and reviews</h4>
-        {t.reviewEntries?.length ? (
-          t.reviewEntries.map((review, i) => (
-            <div className="ltp-review" key={i}>
-              <div>
-                <b>{review.name}</b>
-                <small>{review.date}</small>
-              </div>
-              <p
-                className="text-amber-500"
-                aria-label={review.rating + " out of 5 stars"}
-              >
-                {"★".repeat(review.rating)}
-              </p>
-              <p>{review.text}</p>
-            </div>
-          ))
-        ) : (
-          <p>No written reviews available.</p>
+        {completedError && (
+          <p role="alert" className="text-red-700">
+            {completedError}{" "}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => setRetry((value) => value + 1)}
+            >
+              Retry
+            </button>
+          </p>
         )}
+        {reviewsLoading && <p role="status">Loading ratings and reviews...</p>}
+        {reviewsError && (
+          <p role="alert" className="text-red-700">
+            {reviewsError}{" "}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => setRetry((value) => value + 1)}
+            >
+              Retry
+            </button>
+          </p>
+        )}
+        {!reviewsLoading && !reviewsError && reviews.count > 0 && (
+          <p className="ltp-review-summary">
+            <Star size={18} className="text-amber-500 fill-amber-500" />{" "}
+            <strong>{reviews.average.toFixed(1)} / 5</strong> · {reviews.count}{" "}
+            review{reviews.count === 1 ? "" : "s"}
+          </p>
+        )}
+        {!reviewsError && reviews.entries.length
+          ? reviews.entries.map((review) => (
+              <div className="ltp-review" key={review.id}>
+                <div>
+                  <b>{review.name}</b>
+                  <small>{review.date}</small>
+                </div>
+                <p
+                  className="text-amber-500"
+                  aria-label={review.rating + " out of 5 stars"}
+                >
+                  {"★".repeat(review.rating)}
+                </p>
+                <p>{review.text}</p>
+                <small>
+                  {[review.service, review.topic].filter(Boolean).join(" · ")}
+                </small>
+              </div>
+            ))
+          : !reviewsLoading &&
+            !reviewsError && <p>No ratings or written reviews yet.</p>}
       </section>
     </article>
   );

@@ -35,7 +35,9 @@ export default function LearnerReviews() {
   const work = useLearnerWorkspace();
   const original = reviews;
   const completed = work.data.sessions.filter(
-    (s) => s.lifecycle === "Completed",
+    (s) =>
+      s.bookingStatus === "Completed" &&
+      ["Paid", "Partially Refunded", "Refunded"].includes(s.paymentStatus),
   );
   const pendingReviews = completed
     .filter((s) => !work.data.reviews.some((r) => r.sessionId === s.id))
@@ -110,7 +112,7 @@ export default function LearnerReviews() {
         ];
       }),
   );
-  const [activeTab, setActiveTab] = useState("Submitted");
+  const [activeTab, setActiveTab] = useState("Pending");
   const [sort, setSort] = useState("recent");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const selectedReviews = activeTab === "Submitted" ? rows : pendingReviews;
@@ -131,6 +133,21 @@ export default function LearnerReviews() {
         Manage the reviews you’ve given to your tutors and leave reviews for
         your completed sessions.
       </p>
+      {work.reviewsLoading && (
+        <p role="status">Loading reviews and completed sessions...</p>
+      )}
+      {work.reviewsError && (
+        <p role="alert" className="mt-3 text-red-700">
+          {work.reviewsError}{" "}
+          <button
+            type="button"
+            className="underline"
+            onClick={work.refreshReviews}
+          >
+            Retry
+          </button>
+        </p>
+      )}
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
         <Summary
           icon={Star}
