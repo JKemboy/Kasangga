@@ -1,15 +1,30 @@
 import { summarizeEarnings } from "./earnings.js";
 
 export const services = [];
-export const people = [];
-const completedAmounts = [];
-export const completed = [];
-export const upcoming = [];
 export const classes = [];
 export const slots = [];
 export const notifications = [];
-export const profile = {"name":"","email":"","studentId":"","college":"","program":"","year":"","bio":"","expertise":"","skills":""};
-export const seed = { services, sessions: [], slots, notifications, profile, threads: [], reports: [], uploads: [] };
+export const profile = {
+  name: "",
+  email: "",
+  studentId: "",
+  college: "",
+  program: "",
+  year: "",
+  bio: "",
+  expertise: "",
+  skills: "",
+};
+export const seed = {
+  services,
+  sessions: [],
+  slots,
+  notifications,
+  profile,
+  threads: [],
+  reports: [],
+  uploads: [],
+};
 export const money = (v) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
     v,
@@ -63,11 +78,6 @@ export function slotError(slot, existing, sessions, confirmed = classes) {
     )
   )
     return "This time overlaps your confirmed class schedule.";
-  if (
-    (slot.day === 0 || slot.day === 2) &&
-    overlaps(slot.start, slot.end, 17, 19)
-  )
-    return "This time overlaps protected unavailable time.";
   if (
     existing.some(
       (s) =>

@@ -7,6 +7,7 @@ const decimal = (value) =>
       Number(String(value).split(":")[1]) / 60;
 export function topicTimeOptions({
   date,
+  duration = 1,
   repeat = false,
   rowKey,
   topics = [],
@@ -16,6 +17,7 @@ export function topicTimeOptions({
   serviceId = null,
   now = new Date(),
 }) {
+  if (![1, 2].includes(duration)) return [];
   const parsed = parseDate(date);
   if (!parsed) return [];
   const day = (parsed.getDay() + 6) % 7;
@@ -33,7 +35,6 @@ export function topicTimeOptions({
     ...classes
       .filter((row) => row[0] === day)
       .map((row) => ({ start: row[1], end: row[2] })),
-    ...(day === 0 || day === 2 ? [{ start: 17, end: 19 }] : []),
     ...bookings
       .filter(
         (booking) =>
@@ -55,15 +56,24 @@ export function topicTimeOptions({
       .flatMap((topic) => topic.availability)
       .filter((slot) => slot.key !== rowKey && matches(slot)),
   ];
+  const covered = (start) => {
+    let cursor = start;
+    for (const slot of sources.slice().sort((a, b) => a.start - b.start)) {
+      if (slot.start > cursor) break;
+      if (slot.end > cursor) cursor = slot.end;
+      if (cursor >= start + duration) return true;
+    }
+    return false;
+  };
   return Array.from({ length: 27 }, (_, i) => 7 + i * 0.5).filter(
     (start) =>
+      start + duration <= 21 &&
       (repeat ||
         new Date(
           `${date}T${String(Math.floor(start)).padStart(2, "0")}:${start % 1 ? "30" : "00"}:00+08:00`,
         ) > now) &&
-      (!general.length ||
-        sources.some((slot) => start >= slot.start && start + 1 <= slot.end)) &&
-      !occupied.some((slot) => overlaps(start, start + 1, slot)),
+      (!general.length || covered(start)) &&
+      !occupied.some((slot) => overlaps(start, start + duration, slot)),
   );
 }
 

@@ -81,7 +81,7 @@ export default function AvailabilityPopover({
         ) : event.kind === "available" ? (
           "Available for Tutoring"
         ) : (
-          "Protected Time"
+          "Scheduled event"
         )}
       </span>
       <strong>
@@ -123,7 +123,7 @@ export default function AvailabilityPopover({
           <p className="session-muted">
             {event.kind === "class"
               ? "Class blocks are read-only here. Changes go through Upload Updated Class Schedule."
-              : "This protected time is locked."}
+              : "This scheduled event is read-only."}
           </p>
         </>
       )}

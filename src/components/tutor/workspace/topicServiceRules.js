@@ -71,11 +71,11 @@ export function validateTopicService(source, services = [], editingId = null) {
         !Number.isFinite(slot.end) ||
         slot.start < 7 ||
         slot.end > 21 ||
-        slot.end - slot.start !== 1 ||
+        ![1, 2].includes(slot.end - slot.start) ||
         slot.start * 2 !== Math.round(slot.start * 2)
       )
         return {
-          error: `${label}: choose valid one-hour times between 7 AM and 9 PM.`,
+          error: `${label}: choose valid 1- or 2-hour times between 7 AM and 9 PM.`,
         };
       if (
         allSlots.some(

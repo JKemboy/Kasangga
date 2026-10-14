@@ -98,16 +98,6 @@ export function eventsForDate(
           ]
         : [],
   );
-  if (day === 0 || day === 2) {
-    events.push({
-      id: `protected:${iso}`,
-      kind: "protected",
-      start: 17,
-      end: 19,
-      title: "Protected time",
-      detail: "Protected unavailable time",
-    });
-  }
   if (includeAvailability) {
     slots.forEach((slot, index) => {
       if (slot.day !== day || (!slot.repeat && slot.date !== iso)) return;

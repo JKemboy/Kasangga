@@ -24,7 +24,6 @@ const kindNames = {
   class: "Confirmed class",
   available: "Available for tutoring",
   session: "Confirmed tutoring session",
-  protected: "Protected unavailable time",
 };
 const fullDate = (date) =>
   date.toLocaleDateString("en-US", {

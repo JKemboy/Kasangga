@@ -24,6 +24,7 @@ const newDate = () => ({
   date: "",
   start: null,
   end: null,
+  duration: 1,
   repeat: false,
 });
 
@@ -44,11 +45,12 @@ export default function CreateService({
             .filter((slot) => slot.topicId === topic.id)
             .flatMap((slot) =>
               Array.from(
-                { length: Math.floor(slot.end - slot.start) },
+                { length: Math.ceil((slot.end - slot.start) / 2) },
                 (_, i) => ({
                   ...slot,
-                  start: slot.start + i,
-                  end: slot.start + i + 1,
+                  start: slot.start + i * 2,
+                  end: Math.min(slot.end, slot.start + i * 2 + 2),
+                  duration: Math.min(2, slot.end - slot.start - i * 2),
                   key: crypto.randomUUID(),
                 }),
               ),
@@ -124,6 +126,7 @@ export default function CreateService({
   const optionsFor = (row, currentTopics = topics) =>
     topicTimeOptions({
       ...schedule,
+      duration: row.duration || row.end - row.start || 1,
       date: row.date,
       repeat: row.repeat,
       rowKey: row.key,
@@ -149,7 +152,7 @@ export default function CreateService({
         ),
       );
       row.start = available[0] ?? null;
-      row.end = row.start === null ? null : row.start + 1;
+      row.end = row.start === null ? null : row.start + (row.duration || 1);
     }
     patch(topic.key, "availability", rows);
   };
@@ -165,7 +168,27 @@ export default function CreateService({
       topic.key,
       "availability",
       topic.availability.map((row) =>
-        row.key === key ? { ...row, start, end: start + 1 } : row,
+        row.key === key
+          ? {
+              ...row,
+              start,
+              end: start + (row.duration || row.end - row.start || 1),
+            }
+          : row,
+      ),
+    );
+  const patchDuration = (topic, key, duration) =>
+    patch(
+      topic.key,
+      "availability",
+      topic.availability.map((row) =>
+        row.key === key
+          ? {
+              ...row,
+              duration,
+              end: row.start === null ? null : row.start + duration,
+            }
+          : row,
       ),
     );
   const dateError = (row) => {
@@ -398,8 +421,9 @@ export default function CreateService({
                   <div>
                     <h3>Dates and times *</h3>
                     <p className="create-service-hint">
-                      Each time slot is 1 hour. Checked against classes, booked
-                      sessions and the other topics in this service.
+                      Choose 1 or 2 hours when the full time range is available.
+                      Checked against classes, booked sessions and the other
+                      topics in this service.
                     </p>
                   </div>
                 </div>
@@ -488,8 +512,45 @@ export default function CreateService({
                                   </option>
                                 ))}
                               </select>
+                              <select
+                                className={input}
+                                aria-label={
+                                  "Duration on " +
+                                  (group.date || "selected date")
+                                }
+                                value={row.duration || row.end - row.start || 1}
+                                disabled={
+                                  !group.date ||
+                                  scheduleLoading ||
+                                  !!scheduleError ||
+                                  !Number.isFinite(row.start)
+                                }
+                                onChange={(e) =>
+                                  patchDuration(
+                                    topic,
+                                    row.key,
+                                    Number(e.target.value),
+                                  )
+                                }
+                              >
+                                {[1, 2].map((duration) => (
+                                  <option
+                                    key={duration}
+                                    value={duration}
+                                    disabled={
+                                      !optionsFor({
+                                        ...row,
+                                        duration,
+                                      }).includes(row.start)
+                                    }
+                                  >
+                                    {duration}{" "}
+                                    {duration === 1 ? "hour" : "hours"}
+                                  </option>
+                                ))}
+                              </select>
                               <span className="service-time-end">
-                                {valid ? "to " + time(row.start + 1) : "1 hour"}
+                                {valid ? "to " + time(row.end) : "Choose time"}
                               </span>
                               <span
                                 className={

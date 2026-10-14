@@ -17,6 +17,7 @@ export default function StudentShell({
   name = "Account",
   searchContent,
   profileRestricted = false,
+  tutorScheduleRestricted = false,
 }) {
   useEffect(() => {
     const previous = document.body.dataset.workspaceRole;
@@ -44,8 +45,9 @@ export default function StudentShell({
     setOpen(false);
   }
   const locked = (id) =>
-    profileRestricted &&
-    !["dashboard", "settings", "help-support"].includes(id);
+    (tutorScheduleRestricted && !["dashboard", "availability"].includes(id)) ||
+    (profileRestricted &&
+      !["dashboard", "settings", "help-support"].includes(id));
   return (
     <>
       {open && (
@@ -101,9 +103,12 @@ export default function StudentShell({
             <button
               key={id}
               aria-disabled={locked(id)}
+              disabled={tutorScheduleRestricted && locked(id)}
               title={
                 locked(id)
-                  ? "Complete your profile to access this section"
+                  ? tutorScheduleRestricted
+                    ? "Upload and confirm your class schedule to unlock this section"
+                    : "Complete your profile to access this section"
                   : undefined
               }
               aria-current={view === id ? "page" : undefined}
@@ -111,7 +116,9 @@ export default function StudentShell({
               onClick={() => select(id)}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {label}
+              {tutorScheduleRestricted && id === "availability"
+                ? "Class Schedule"
+                : label}
               {locked(id) && (
                 <span className="ml-auto text-[10px] text-white/60">
                   Locked
@@ -152,17 +159,27 @@ export default function StudentShell({
         </button>
         {searchContent}
         <div className="ml-auto flex items-center gap-3">
-          {profileRestricted ? (
+          {profileRestricted || tutorScheduleRestricted ? (
             <div className="flex items-center gap-3">
               <button
-                aria-label="Notifications locked until profile is complete"
+                aria-label={
+                  tutorScheduleRestricted
+                    ? "Notifications locked until class schedule is confirmed"
+                    : "Notifications locked until profile is complete"
+                }
+                disabled={tutorScheduleRestricted}
                 aria-disabled="true"
                 onClick={() => go("notifications")}
               >
                 <Bell size={18} />
               </button>
               <button
-                aria-label="Messages locked until profile is complete"
+                aria-label={
+                  tutorScheduleRestricted
+                    ? "Messages locked until class schedule is confirmed"
+                    : "Messages locked until profile is complete"
+                }
+                disabled={tutorScheduleRestricted}
                 aria-disabled="true"
                 onClick={() => go("messages")}
               >

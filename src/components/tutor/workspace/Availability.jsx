@@ -4,7 +4,7 @@ import SessionDetails from "./SessionDetails.jsx";
 import "./availability-interactions.css";
 import { confirmedClasses } from "./scheduleReview.js";
 import { useInteractions } from "../../shared/InteractionProvider.jsx";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   Check,
@@ -51,7 +51,6 @@ const swatches = {
   class: "bg-rose-400",
   available: "bg-green-400",
   session: "bg-blue-400",
-  protected: "bg-slate-400",
 };
 
 function rangeLabel(anchor, mode) {
@@ -72,6 +71,7 @@ function rangeLabel(anchor, mode) {
 
 export default function Availability({
   data,
+  scheduleRequired = false,
   update,
   go,
   args = {},
@@ -85,7 +85,9 @@ export default function Availability({
   refreshClassSchedule,
   saveClassSchedule,
 }) {
-  const [tab, setTab] = useState(tabs.includes(args.tab) ? args.tab : tabs[0]);
+  const [tab, setTab] = useState(
+    !scheduleRequired && tabs.includes(args.tab) ? args.tab : tabs[0],
+  );
   const [anchor, setAnchor] = useState(
     () => parseDate(args.date) || todayInManila(),
   );
@@ -96,6 +98,14 @@ export default function Availability({
   const [selected, setSelected] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [day, setDay] = useState(null);
+  useEffect(() => {
+    if (scheduleRequired) {
+      setTab(tabs[0]);
+      setEdit(null);
+      setSelected(null);
+      setDay(null);
+    }
+  }, [scheduleRequired]);
   const [calendarHeight, setCalendarHeight] = useState(380);
   const calendarRef = useRef(null);
   const classOnly = tab === "Class Schedule";
@@ -254,6 +264,7 @@ export default function Availability({
           <button
             key={name}
             type="button"
+            disabled={scheduleRequired && name !== "Class Schedule"}
             role="tab"
             id={`schedule-tab-${index}`}
             aria-controls="schedule-panel"
@@ -264,6 +275,7 @@ export default function Availability({
                 e.preventDefault();
                 const next =
                   e.key === "Home" ? 0 : e.key === "End" ? 1 : 1 - index;
+                if (scheduleRequired && next !== 0) return;
                 setTab(tabs[next]);
                 document.getElementById(`schedule-tab-${next}`).focus();
               }
@@ -465,15 +477,11 @@ export default function Availability({
           className="flex flex-wrap justify-end gap-x-4 gap-y-1 text-[10px] text-[#344675]"
         >
           {(classOnly
-            ? [
-                ["class", "Confirmed Class"],
-                ["protected", "Protected Time"],
-              ]
+            ? [["class", "Confirmed Class"]]
             : [
                 ["class", "Class Schedule — Blocked"],
                 ["available", "Available for Tutoring"],
                 ["session", "Confirmed Tutoring Session — Occupied"],
-                ["protected", "Protected Time"],
               ]
           ).map(([kind, label]) => (
             <span key={kind} className="inline-flex items-center gap-1.5">

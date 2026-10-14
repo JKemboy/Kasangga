@@ -1,3 +1,4 @@
+import { tutorScheduleReady } from "./workspace/scheduleAccess.js";
 import {
   loadTutorInformation,
   saveTutorInformation,
@@ -19,7 +20,6 @@ import {
 } from "../../services/tutorSchedule.js";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import { workspaceProfile } from "../../services/authAccount.js";
-import { clearLegacyScheduleData } from "../../services/clearLegacyScheduleData.js";
 import { TutorModalContext } from "./workspace/ui.jsx";
 import StudentShell from "../shared/StudentShell.jsx";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -55,9 +55,6 @@ const nav = [
 ];
 export default function TutorDashboardPage() {
   const auth = useAuth();
-  useEffect(() => {
-    clearLegacyScheduleData();
-  }, []);
   const [data, setData] = useState(() => ({
       ...structuredClone(seed),
       services: [],
@@ -103,6 +100,7 @@ export default function TutorDashboardPage() {
     };
   }, [refreshTutorInformation]);
   async function persistTutorInformation(values) {
+    requireSchedule();
     const info = await saveTutorInformation(values);
     profileRequest.current++;
     setData((previous) => ({
@@ -123,6 +121,23 @@ export default function TutorDashboardPage() {
   const [classScheduleLoading, setClassScheduleLoading] = useState(true);
   const [classScheduleError, setClassScheduleError] = useState("");
   const classScheduleRequest = useRef(0);
+  const scheduleLocked = !tutorScheduleReady(
+    data,
+    classScheduleLoading,
+    classScheduleError,
+  );
+  function requireSchedule() {
+    if (scheduleLocked)
+      throw new Error(
+        "Upload and confirm your class schedule to unlock Tutor sections.",
+      );
+  }
+  useEffect(() => {
+    if (scheduleLocked && !["dashboard", "availability"].includes(view)) {
+      setView("dashboard");
+      setArgs({});
+    }
+  }, [scheduleLocked, view]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState("");
   const sessionsRequest = useRef(0);
@@ -225,6 +240,7 @@ export default function TutorDashboardPage() {
     };
   }, [refreshClassSchedule]);
   async function persistService(values, id) {
+    requireSchedule();
     const service = await saveTutorService(values, id);
     request.current++;
     setServicesLoading(false);
@@ -240,6 +256,7 @@ export default function TutorDashboardPage() {
     );
   }
   async function changeServiceStatus(id, status) {
+    requireSchedule();
     const service = await setTutorServiceStatus(id, status);
     request.current++;
     setServicesLoading(false);
@@ -251,6 +268,7 @@ export default function TutorDashboardPage() {
     setNotice("Service status updated in Supabase.");
   }
   async function persistAvailability(slot) {
+    requireSchedule();
     const saved = await saveTutorAvailability(
       slot,
       slot.id || null,
@@ -269,6 +287,7 @@ export default function TutorDashboardPage() {
     return saved;
   }
   async function removeAvailability(slot) {
+    requireSchedule();
     await deactivateTutorAvailability(slot.id);
     availabilityRequest.current++;
     setData((d) => ({
@@ -295,6 +314,14 @@ export default function TutorDashboardPage() {
     return false;
   }
   function go(next, options = {}) {
+    if (scheduleLocked && !["dashboard", "availability"].includes(next)) {
+      setNotice(
+        "Upload and confirm your class schedule to unlock this section.",
+      );
+      return;
+    }
+    if (scheduleLocked && next === "availability")
+      options = { ...options, tab: "Class Schedule" };
     setView(next);
     setArgs(options);
     setRevision((n) => n + 1);
@@ -330,6 +357,7 @@ export default function TutorDashboardPage() {
     refreshAvailability,
     saveAvailability: persistAvailability,
     removeAvailability,
+    scheduleRequired: scheduleLocked,
     classScheduleLoading,
     classScheduleError,
     refreshClassSchedule,
@@ -348,6 +376,7 @@ export default function TutorDashboardPage() {
       <div className="min-h-screen bg-[#fbfcfe] text-[#101828]">
         <StudentShell
           role="tutor"
+          tutorScheduleRestricted={scheduleLocked}
           nav={nav}
           view={view}
           go={go}
@@ -399,6 +428,22 @@ export default function TutorDashboardPage() {
         />
         <main className="min-h-screen px-4 pb-2 pt-[72px] md:ml-[230px] lg:px-6">
           <div className="mx-auto max-w-[1600px]">
+            {scheduleLocked && (
+              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+                <p>
+                  {classScheduleLoading
+                    ? "Checking your class schedule..."
+                    : "Upload and confirm your class schedule to unlock Tutor sections. Dashboard is read-only."}
+                </p>
+                {classScheduleError && <p role="alert">{classScheduleError}</p>}
+                <button
+                  className="mt-2 font-semibold text-green-800 underline"
+                  onClick={() => go("availability", { tab: "Class Schedule" })}
+                >
+                  Upload Class Schedule
+                </button>
+              </div>
+            )}
             {notice && (
               <div
                 role="status"
@@ -439,7 +484,9 @@ export default function TutorDashboardPage() {
             )}
             <div key={`${view}-${revision}`}>
               {view === "dashboard" && (
-                <Overview {...props} saveService={persistService} />
+                <fieldset disabled={scheduleLocked} className="contents">
+                  <Overview {...props} saveService={persistService} />
+                </fieldset>
               )}
               {view === "services" && (
                 <Services
