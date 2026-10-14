@@ -1,25 +1,18 @@
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
-import { useEffect, useState } from "react";
-import {
-  filterNotifications,
-  markNotificationsRead,
-} from "./notificationFilters.js";
+import { useState } from "react";
+import { filterNotifications } from "./notificationFilters.js";
+import { useAuth } from "../../../auth/AuthProvider.jsx";
+import useBookingInbox from "../../../services/useBookingInbox.js";
 import {
   Bell,
   BriefcaseBusiness,
-  CalendarCheck,
   CalendarDays,
-  CircleAlert,
-  GraduationCap,
   Info,
   Mail,
   MessageCircle,
-  ShieldCheck,
   Star,
-  UserRound,
 } from "lucide-react";
 
-const notifications = [];
 const filters = [
   [Bell, "All Notifications"],
   [Mail, "Unread"],
@@ -29,36 +22,19 @@ const filters = [
   [Star, "Reviews"],
   [Info, "System"],
 ];
-const categories = [
-  "Sessions",
-  "Messages",
-  "Payments",
-  "Sessions",
-  "Sessions",
-  "Reviews",
-  "System",
-  "System",
-  "System",
-];
-export const initialNotifications = notifications.map(
-  ([Icon, title, text, time, color, unread], index) => ({
-    id: title,
-    Icon,
-    title,
-    text,
-    time,
-    color,
-    unread: Boolean(unread),
-    category: categories[index],
-  }),
-);
-const storageKey = "campustutor:learner:sample-notification-read-ids";
-
-export default function LearnerNotifications({ onOpenSettings }) {
+export default function LearnerNotifications() {
   const work = useLearnerWorkspace();
-  const [items, setItems] = useState(() => {
-    return initialNotifications;
-  });
+  const auth = useAuth();
+  const inbox = useBookingInbox("learner", auth?.user?.id);
+  const items = inbox.notifications.map((notification) => ({
+    ...notification,
+    Icon: notification.kind === "message" ? MessageCircle : CalendarDays,
+    color:
+      notification.kind === "message"
+        ? "bg-blue-100 text-blue-700"
+        : "bg-green-100 text-green-700",
+    unread: !notification.read,
+  }));
   const [activeFilter, setActiveFilter] = useState("All Notifications");
   const [expandedId, setExpandedId] = useState(null);
   const visibleItems = filterNotifications(items, activeFilter);
@@ -71,6 +47,14 @@ export default function LearnerNotifications({ onOpenSettings }) {
       <p className="mt-1 text-xs font-medium text-[#566aa3]">
         Stay updated with your sessions, messages, and account activity.
       </p>
+      {inbox.error && (
+        <p
+          role="alert"
+          className="mt-2 rounded-md bg-red-50 p-3 text-sm text-red-700"
+        >
+          {inbox.error}
+        </p>
+      )}
       <div className="mt-3 grid gap-2 lg:grid-cols-[minmax(0,1fr)_230px]">
         <div className="min-w-0">
           <nav
@@ -109,20 +93,18 @@ export default function LearnerNotifications({ onOpenSettings }) {
                   aria-expanded={expandedId === id}
                   aria-label={`${title}, ${unread ? "unread" : "read"}`}
                   onClick={() => {
-                    setItems((current) => markNotificationsRead(current, id));
+                    const notification = items.find((item) => item.id === id);
+                    if (notification) inbox.markRead([notification]);
                     setExpandedId((current) => (current === id ? null : id));
-                    if (title === "New Message")
-                      work.message({ name: "Maria Angelica R." });
-                    else if (title.includes("Application"))
-                      work.open("application");
-                    else if (title.includes("Review")) work.go("reviews");
-                    else if (
-                      title.includes("Booking") ||
-                      title.includes("Session") ||
-                      title.includes("Payment")
-                    )
-                      work.go("sessions");
-                    else work.open("article", { title, body: text });
+                    if (notification?.view === "messages")
+                      work.message({
+                        name: notification.title.replace(
+                          /^New message from /,
+                          "",
+                        ),
+                        bookingId: notification.bookingId,
+                      });
+                    else work.go("sessions", notification?.args || {});
                   }}
                   className={`flex w-full items-center gap-2 border-b border-[#e7edf3] px-3 py-2 text-left last:border-b-0 ${unread ? "bg-[#f3fbf6]" : ""}`}
                 >
@@ -168,13 +150,6 @@ export default function LearnerNotifications({ onOpenSettings }) {
               Enable notifications to never miss important updates about your
               sessions, payments, and messages.
             </p>
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              className="mt-2 h-8 w-full rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
-            >
-              Notification Settings
-            </button>
           </section>
           <section className="rounded-lg border border-[#e1e7ef] bg-white p-3">
             <h2 className="text-sm font-bold">Notification Filters</h2>
@@ -205,7 +180,7 @@ export default function LearnerNotifications({ onOpenSettings }) {
               type="button"
               disabled={unreadCount === 0}
               onClick={() =>
-                setItems((current) => markNotificationsRead(current))
+                inbox.markRead(items.filter((item) => item.unread))
               }
               className="disabled:cursor-not-allowed disabled:opacity-50 mt-2 flex h-7 w-full items-center justify-center gap-2 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
             >

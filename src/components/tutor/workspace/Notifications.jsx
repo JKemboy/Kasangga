@@ -1,4 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { useAuth } from "../../../auth/AuthProvider.jsx";
+import useBookingInbox from "../../../services/useBookingInbox.js";
 import {
   ArrowRight,
   Bell,
@@ -60,6 +62,15 @@ function ReadBadge({ read }) {
 }
 
 export default function Notifications({ data, update, go, args = {} }) {
+  const auth = useAuth();
+  const inbox = useBookingInbox("tutor", auth?.user?.id);
+  const notifications = [
+    ...inbox.notifications,
+    ...data.notifications.filter(
+      (notification) =>
+        !inbox.notifications.some((item) => item.id === notification.id),
+    ),
+  ];
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [tab, setTab] = useState("All");
@@ -67,11 +78,11 @@ export default function Notifications({ data, update, go, args = {} }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
   const listRef = useRef(null);
-  const unreadCount = data.notifications.filter((n) => !n.read).length;
-  const selected = data.notifications.find((n) => n.id === selectedId);
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const selected = notifications.find((n) => n.id === selectedId);
   const destination = selected ? notificationDestination(selected) : null;
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const rows = data.notifications.filter((n) => {
+  const rows = notifications.filter((n) => {
     const searchable = [
       n.title,
       n.text,
@@ -119,6 +130,10 @@ export default function Notifications({ data, update, go, args = {} }) {
   }, []);
 
   function markRead(id, read) {
+    if (read) {
+      const notification = notifications.find((item) => item.id === id);
+      if (notification) inbox.markRead([notification]);
+    }
     update((d) => ({
       ...d,
       notifications: d.notifications.map((n) =>
@@ -152,16 +167,30 @@ export default function Notifications({ data, update, go, args = {} }) {
             account activity.
           </p>
         </div>
+        {inbox.error && (
+          <p
+            role="alert"
+            className="w-full rounded-md bg-red-50 p-3 text-sm text-red-700"
+          >
+            {inbox.error}
+          </p>
+        )}
         <button
           type="button"
           className="inline-flex items-center gap-2 rounded-md border border-[#dce4f1] bg-white px-3 py-2 text-xs font-semibold text-[#001ca8] hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-default disabled:text-slate-400"
           disabled={unreadCount === 0}
-          onClick={() =>
+          onClick={() => {
+            inbox.markRead(
+              notifications.filter((notification) => !notification.read),
+            );
             update((d) => ({
               ...d,
-              notifications: d.notifications.map((n) => ({ ...n, read: true })),
-            }))
-          }
+              notifications: d.notifications.map((n) => ({
+                ...n,
+                read: true,
+              })),
+            }));
+          }}
         >
           <MailCheck className="h-4 w-4" />
           Mark all as read
@@ -207,9 +236,7 @@ export default function Notifications({ data, update, go, args = {} }) {
           >
             <option value="All">All Notifications</option>
             {[
-              ...new Set(
-                data.notifications.map((n) => n.category).filter(Boolean),
-              ),
+              ...new Set(notifications.map((n) => n.category).filter(Boolean)),
             ].map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -308,12 +335,12 @@ export default function Notifications({ data, update, go, args = {} }) {
           <div className="grid justify-items-center gap-2 px-4 py-10 text-center">
             <Bell className="h-7 w-7 text-slate-400" />
             <p className="text-sm font-semibold">
-              {data.notifications.length
+              {notifications.length
                 ? "No matching notifications"
                 : "You're all caught up"}
             </p>
             <p className="text-xs text-[#455780]">
-              {data.notifications.length
+              {notifications.length
                 ? "Try a different search, category, or read status."
                 : "New updates will appear here."}
             </p>

@@ -1,7 +1,7 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
 import { useEffect, useRef, useState } from "react";
 import {
   Bell,
+  CalendarDays,
   MessageCircle,
   ShieldCheck,
   AlertTriangle,
@@ -12,6 +12,8 @@ import {
 import { Modal, primary, Avatar } from "../tutor/workspace/ui.jsx";
 import "./header-inbox.css";
 const icons = {
+  session: CalendarDays,
+  message: MessageCircle,
   application: ShieldCheck,
   incident: AlertTriangle,
   payment: CreditCard,
@@ -26,10 +28,10 @@ export default function HeaderInbox({
   onNotification,
   onThread,
   onNavigate,
+  inboxError = "",
 }) {
   const [panel, setPanel] = useState(null),
-    [detail, setDetail] = useState(null),
-    [error, setError] = useState("");
+    [detail, setDetail] = useState(null);
   const [read, setRead] = useState(() => {
     return [];
   });
@@ -60,16 +62,13 @@ export default function HeaderInbox({
       onRead(items.map((n) => n.id));
       return;
     }
-    try {
-      const next = [...new Set([...read, ...items.map((n) => n.id)])];
-      requireBackendPersistence();
-    } catch {
-      setError(
-        "Notification read status is not connected to the database yet.",
-      );
-    }
+    setRead((current) => [...new Set([...current, ...items.map((n) => n.id)])]);
   }
   const unread = notifications.filter((n) => !isRead(n)).length;
+  const unreadMessages = threads.reduce(
+    (count, thread) => count + Number(thread.unread || 0),
+    0,
+  );
   return (
     <div className="header-inbox" ref={root}>
       <button
@@ -92,6 +91,9 @@ export default function HeaderInbox({
         onClick={() => setPanel(panel === "messages" ? null : "messages")}
       >
         <MessageCircle size={22} />
+        {unreadMessages > 0 && (
+          <span className="hi-count">{unreadMessages}</span>
+        )}
       </button>
       {panel && (
         <section
@@ -114,7 +116,7 @@ export default function HeaderInbox({
               <span>From users</span>
             )}
           </header>
-          {error && <p role="alert">{error}</p>}
+          {inboxError && <p role="alert">{inboxError}</p>}
           <div className="hi-list">
             {panel === "notifications"
               ? notifications.map((n) => {
@@ -156,9 +158,15 @@ export default function HeaderInbox({
                     <span>
                       <strong>{t.name}</strong>
                       <span>
-                        {t.messages?.at(-1)?.text || "Open conversation"}
+                        {t.last_message ||
+                          t.messages?.at(-1)?.text ||
+                          "Open conversation"}
                       </span>
-                      <small>{t.messages?.at(-1)?.time}</small>
+                      <small>
+                        {t.last_message_at ||
+                          t.messages?.at(-1)?.time ||
+                          t.session_date}
+                      </small>
                     </span>
                   </button>
                 ))}

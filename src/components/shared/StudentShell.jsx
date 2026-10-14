@@ -1,5 +1,6 @@
 import { useAuth } from "../../auth/AuthProvider.jsx";
-import { initialNotifications } from "../learner/notifications/LearnerNotifications.jsx";
+import useChatPresence from "../../services/useChatPresence.js";
+import useBookingInbox from "../../services/useBookingInbox.js";
 import HeaderInbox from "./HeaderInbox.jsx";
 import { useLearnerWorkspace } from "../learner/workspace/LearnerWorkspace.jsx";
 import { notificationDestination } from "../tutor/workspace/notificationTargets.js";
@@ -14,10 +15,7 @@ export default function StudentShell({
   view,
   go,
   name = "Account",
-  unread = 0,
   searchContent,
-  inboxData,
-  onInboxRead,
   profileRestricted = false,
 }) {
   useEffect(() => {
@@ -29,35 +27,14 @@ export default function StudentShell({
     };
   }, [role]);
   const auth = useAuth();
+  useChatPresence(auth?.user?.id);
+  const liveInbox = useBookingInbox(role, auth?.user?.id);
   name =
     [auth?.profile?.first_name, auth?.profile?.last_name]
       .filter(Boolean)
       .join(" ") || name;
   const learner = useLearnerWorkspace();
-  const inbox = inboxData || learner?.data || {};
-  const [sampleRead, setSampleRead] = useState(() => {
-    return [];
-  });
-  const alerts =
-    role === "learner"
-      ? [
-          ...(inbox.notifications || []),
-          ...initialNotifications.map((n) => ({
-            ...n,
-            read: !n.unread || sampleRead.includes(n.id),
-            demo: true,
-            view: "notifications",
-          })),
-        ]
-      : inbox.notifications || [];
-  function readLearner(ids) {
-    learner?.commit((d) => ({
-      ...d,
-      notifications: d.notifications.map((n) =>
-        ids.includes(n.id) ? { ...n, read: true } : n,
-      ),
-    }));
-  }
+  const alerts = liveInbox.notifications;
   const requestLogout = useLogout();
 
   const navigate = useNavigate();
@@ -196,24 +173,33 @@ export default function StudentShell({
             <HeaderInbox
               role={role}
               notifications={alerts}
-              threads={inbox.threads || []}
-              onRead={onInboxRead || (learner ? readLearner : undefined)}
+              threads={liveInbox.threads}
+              inboxError={liveInbox.error}
+              onRead={liveInbox.markRead}
               onNavigate={select}
-              onNotification={
-                role === "tutor"
-                  ? (n) => {
-                      const target = notificationDestination(n);
-                      go(
-                        target?.view || "notifications",
-                        target?.args || { notificationId: n.id },
-                      );
-                    }
-                  : undefined
-              }
+              onNotification={(n) => {
+                if (role === "tutor") {
+                  const target = notificationDestination(n);
+                  go(
+                    target?.view || "notifications",
+                    target?.args || { notificationId: n.id },
+                  );
+                } else if (n.view === "messages" && learner) {
+                  learner.message({
+                    name: n.title.replace(/^New message from /, ""),
+                    bookingId: n.bookingId,
+                  });
+                } else {
+                  go(n.view || "notifications", n.args || {});
+                }
+              }}
               onThread={(t) =>
                 role === "learner" && learner
-                  ? learner.message(t)
-                  : go("messages", { learner: t.name })
+                  ? learner.message({ name: t.name, bookingId: t.booking_id })
+                  : go("messages", {
+                      learner: t.name,
+                      bookingId: t.booking_id,
+                    })
               }
             />
           )}
