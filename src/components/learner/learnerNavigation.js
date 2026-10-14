@@ -7,7 +7,6 @@ import {
   Star,
   Bell,
   UserRound,
-  Settings,
   CircleHelp,
 } from "lucide-react";
 export const learnerNav = [
@@ -19,6 +18,5 @@ export const learnerNav = [
   ["reviews", "My Reviews", Star],
   ["notifications", "Notifications", Bell],
   ["profile", "Profile", UserRound],
-  ["settings", "Settings", Settings],
   ["help-support", "Help & Support", CircleHelp],
 ];

@@ -23,7 +23,6 @@ import {
   profileError,
 } from "../services/profileCompletion.js";
 import LearnerWorkspace from "../components/learner/workspace/LearnerWorkspace.jsx";
-import LearnerSettings from "../components/learner/settings/LearnerSettings.jsx";
 import LearnerHelpSupport from "../components/learner/support/LearnerHelpSupport.jsx";
 
 export default function ProfileSetupGate({ children }) {
@@ -46,7 +45,7 @@ function Setup() {
   const [error, setError] = useState("");
   const verified = !!auth.user.email_confirmed_at;
   const go = (id) => {
-    if (["dashboard", "settings", "help-support"].includes(id)) setView(id);
+    if (["dashboard", "help-support"].includes(id)) setView(id);
     else setOpen(true);
   };
   async function save(e) {
@@ -155,8 +154,6 @@ function Setup() {
           </div>
           {view === "dashboard" ? (
             <LearnerOverview go={go} />
-          ) : view === "settings" ? (
-            <LearnerSettings />
           ) : (
             <LearnerHelpSupport />
           )}

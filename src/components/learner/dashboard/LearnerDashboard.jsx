@@ -1,4 +1,4 @@
-import {useLogout} from "../../shared/LogoutProvider.jsx";
+import { useLogout } from "../../shared/LogoutProvider.jsx";
 import { useRef, useState } from "react";
 import {
   Bell,
@@ -13,7 +13,6 @@ import {
   Menu,
   MessageCircle,
   Search,
-  Settings,
   Star,
   UserRound,
   X,
@@ -32,7 +31,6 @@ const mainNavigation = [
 
 const accountNavigation = [
   { label: "Profile", icon: UserRound },
-  { label: "Settings", icon: Settings },
   { label: "Help & Support", icon: CircleHelp },
 ];
 
@@ -75,13 +73,12 @@ export default function LearnerDashboard({
   onOpenProfile,
   onOpenFindTutor,
   onOpenHelpSupport,
-  onOpenSettings,
   onOpenSessions,
   onOpenSavedTutors,
   onOpenReviews,
   onOpenNotifications,
 }) {
- const requestLogout = useLogout();
+  const requestLogout = useLogout();
 
   const [open, setOpen] = useState(false);
   const [activeTopMenu, setActiveTopMenu] = useState(null);
@@ -157,21 +154,23 @@ export default function LearnerDashboard({
               {mainNavigation.map((item) => (
                 <NavigationItem
                   key={item.label}
-                  item={{...item, active: item.label === activeLabel}}
+                  item={{ ...item, active: item.label === activeLabel }}
                   onClick={
-                    item.label === "Dashboard" ? onOpenDashboard : item.label === "Messages"
-                      ? onOpenMessages
-                      : item.label === "Find a Tutor"
-                        ? onOpenFindTutor
-                        : item.label === "My Sessions"
-                          ? onOpenSessions
-                          : item.label === "Saved Tutors"
-                            ? onOpenSavedTutors
-                            : item.label === "My Reviews"
-                              ? onOpenReviews
-                              : item.label === "Notifications"
-                                ? onOpenNotifications
-                                : undefined
+                    item.label === "Dashboard"
+                      ? onOpenDashboard
+                      : item.label === "Messages"
+                        ? onOpenMessages
+                        : item.label === "Find a Tutor"
+                          ? onOpenFindTutor
+                          : item.label === "My Sessions"
+                            ? onOpenSessions
+                            : item.label === "Saved Tutors"
+                              ? onOpenSavedTutors
+                              : item.label === "My Reviews"
+                                ? onOpenReviews
+                                : item.label === "Notifications"
+                                  ? onOpenNotifications
+                                  : undefined
                   }
                 />
               ))}
@@ -188,20 +187,21 @@ export default function LearnerDashboard({
               {accountNavigation.map((item) => (
                 <NavigationItem
                   key={item.label}
-                  item={{...item, active: item.label === activeLabel}}
+                  item={{ ...item, active: item.label === activeLabel }}
                   onClick={
                     item.label === "Profile"
                       ? onOpenProfile
-                      : item.label === "Settings"
-                        ? onOpenSettings
-                        : item.label === "Help & Support"
-                          ? onOpenHelpSupport
-                          : undefined
+                      : item.label === "Help & Support"
+                        ? onOpenHelpSupport
+                        : undefined
                   }
                 />
               ))}
               <div className="mx-2 my-[clamp(2px,1.2dvh,10px)] h-px bg-[#60a982]/20" />
-              <NavigationItem item={{ label: "Logout", icon: LogOut }} onClick={requestLogout} />
+              <NavigationItem
+                item={{ label: "Logout", icon: LogOut }}
+                onClick={requestLogout}
+              />
             </nav>
           </div>
         </div>
@@ -303,20 +303,13 @@ export default function LearnerDashboard({
             >
               My Profile
             </button>
+
             <button
               type="button"
-              onClick={() => {
-                onOpenSettings?.();
-                setActiveTopMenu(null);
-              }}
-              className="w-full px-3 py-2 text-left text-[11px] text-slate-700 hover:bg-slate-50"
+              className="w-full border-t border-slate-100 px-3 py-2 text-left text-[11px] text-red-600 hover:bg-red-50"
+              onClick={requestLogout}
             >
-              Settings
-            </button>
-            <button
-              type="button"
-              className="w-full border-t border-slate-100 px-3 py-2 text-left text-[11px] text-red-600 hover:bg-red-50" onClick={requestLogout}>
- Logout
+              Logout
             </button>
           </div>
         )}
