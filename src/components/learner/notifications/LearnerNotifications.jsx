@@ -3,6 +3,7 @@ import { useState } from "react";
 import { filterNotifications } from "./notificationFilters.js";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import useBookingInbox from "../../../services/useBookingInbox.js";
+import FollowUpEvidence from "../../shared/FollowUpEvidence.jsx";
 import {
   Bell,
   BriefcaseBusiness,
@@ -133,6 +134,13 @@ export default function LearnerNotifications() {
               ),
             )}
           </div>
+          {items.find((item) => item.id === expandedId)?.notificationType ===
+            "case_evidence_requested" && (
+            <FollowUpEvidence
+              key={expandedId}
+              caseId={items.find((item) => item.id === expandedId).entityId}
+            />
+          )}
           <p
             aria-live="polite"
             className="mt-2 text-center text-xs text-[#637191]"

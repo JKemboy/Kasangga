@@ -43,6 +43,7 @@ export function mapLearnerSession(row, now = new Date()) {
   return {
     id: String(row.booking_id),
     bookingId: String(row.booking_id),
+    tutorUserId: row.tutor_user_id || row.user_id || null,
     lifecycle: sessionLifecycle(row, now),
     date: row.session_date,
     paymentStatus,

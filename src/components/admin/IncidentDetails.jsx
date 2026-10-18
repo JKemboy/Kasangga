@@ -1,3 +1,4 @@
+import { statusClass } from "../shared/statusColors.js";
 import EvidencePreview from "./EvidencePreview.jsx";
 import { useEffect, useRef, useState } from "react";
 import { X, Info, Check, Users } from "lucide-react";
@@ -20,10 +21,15 @@ export default function IncidentDetails({
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const technical = r.type === "Platform / Technical";
-  const complete = ["Admin Screening Complete", "Resolved by Admin"].includes(
-    r.status,
+  const technical = ["Platform / Technical", "Technical issue"].includes(
+    r.type,
   );
+  const complete = [
+    "Admin Screening Complete",
+    "Resolved by Admin",
+    "Resolved by OSAS",
+    "Under OSAS Review",
+  ].includes(r.status);
   useEffect(() => {
     const dialog = ref.current;
     dialog.showModal();
@@ -59,11 +65,7 @@ export default function IncidentDetails({
     }
   }
   const pill = (value) => (
-    <span
-      className={`ai-pill ${value === "High" ? "red" : ["Resolved by Admin", "Admin Screening Complete"].includes(value) ? "green" : value === "Referred to OSAS" ? "purple" : value === "Not Required" ? "gray" : "gold"}`}
-    >
-      {value}
-    </span>
+    <span className={statusClass(value, "ai-pill")}>{value}</span>
   );
   const facts = [
     ["Incident Report ID", r.id],
@@ -99,6 +101,19 @@ export default function IncidentDetails({
     ["Submitted Date", dateLabel(r.date)],
     ["Admin Status", pill(r.status)],
     ["OSAS Referral Status", pill(r.referral)],
+    ...(r.osasCaseId
+      ? [
+          ["OSAS Case", r.osasCaseId],
+          ["OSAS Case Status", r.osasStatus],
+        ]
+      : []),
+    ...(r.osasOutcome
+      ? [
+          ["OSAS Decision", r.osasOutcome],
+          ["Decision Notes", r.osasNotes],
+          ["Policy Basis", r.osasBasis || "Not recorded"],
+        ]
+      : []),
   ];
   return (
     <dialog

@@ -1,3 +1,4 @@
+import PortalAvatar from "./PortalAvatar.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import useChatPresence from "../../services/useChatPresence.js";
 import useBookingInbox from "../../services/useBookingInbox.js";
@@ -225,7 +226,7 @@ export default function StudentShell({
             onClick={() => select("profile")}
             aria-label="Open profile"
           >
-            <Avatar name={name} />
+            <PortalAvatar name={name} role={role} editable />
             <span className="hidden text-left text-xs lg:block">
               <b>{name}</b>
               <span className="block text-slate-500">

@@ -1,15 +1,15 @@
+import AdminCatalog from "./AdminCatalog.jsx";
+import PortalAvatar from "../shared/PortalAvatar.jsx";
 import { saveAdminRecord } from "../../services/adminDatabase.js";
 import useAdminRecords from "./useAdminRecords.js";
 import { AdminDatabaseContext } from "./AdminDatabaseContext.jsx";
 import HeaderInbox from "../shared/HeaderInbox.jsx";
 import { adminAlerts, adminThreads } from "../shared/headerInboxData.js";
 import { useLogout } from "../shared/LogoutProvider.jsx";
-import AdminAudit from "./AdminAudit.jsx";
 import AdminBookings from "./AdminBookings.jsx";
 import AdminIncidents from "./AdminIncidents.jsx";
 import AdminOverview from "./AdminOverview.jsx";
 import AdminPayments from "./AdminPayments.jsx";
-import AdminCatalog from "./AdminCatalog.jsx";
 import AdminSettings from "./AdminSettings.jsx";
 import AdminReports from "./AdminReports.jsx";
 import { loadConfig } from "./adminData.js";
@@ -26,7 +26,6 @@ import {
   CreditCard,
   TriangleAlert,
   ChartNoAxesCombined,
-  ClipboardList,
   Settings,
   GraduationCap,
   LogOut,
@@ -50,7 +49,6 @@ const navigation = [
   ["Payments & Transactions", CreditCard],
   ["Incident Reports", TriangleAlert],
   ["Reports & Analytics", ChartNoAxesCombined],
-  ["Audit Logs", ClipboardList],
   ["Settings", Settings],
 ];
 export default function AdminDashboardPage() {
@@ -108,7 +106,6 @@ export default function AdminDashboardPage() {
         "Payments & Transactions",
         "Incident Reports",
         "Bookings Monitoring",
-        "Audit Logs",
         "Overview",
         "Settings",
       ].includes(label)
@@ -217,7 +214,7 @@ export default function AdminDashboardPage() {
               aria-label="Admin account"
               onClick={() => setModal("Account")}
             >
-              <span className="osas-avatar">AD</span>
+              <PortalAvatar role="admin" editable />
               <span className="hidden sm:block">
                 <b className="block text-xs text-slate-900">{config.name}</b>
                 <small>Administrator</small>
@@ -303,13 +300,6 @@ export default function AdminDashboardPage() {
               kind="services"
               rows={services}
               onUpdate={(next) => persist("services", next)}
-              config={config}
-            />
-          ) : view === "Audit Logs" ? (
-            <AdminAudit
-              users={rows}
-              applications={apps}
-              services={services}
               config={config}
             />
           ) : view === "Bookings Monitoring" ? (

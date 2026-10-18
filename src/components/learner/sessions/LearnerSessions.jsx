@@ -2,6 +2,7 @@ import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { filterSessions } from "./sessionFilters.js";
 import { listLearnerSessions } from "../../../services/learnerSessions.js";
+import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import {
   CalendarDays,
   Clock3,
@@ -197,6 +198,7 @@ export default function LearnerSessions({ args = {} }) {
         {visibleSessions.map(
           ({
             id,
+            tutorUserId,
             lifecycle,
             paymentStatus,
             canManage,
@@ -233,9 +235,11 @@ export default function LearnerSessions({ args = {} }) {
                 <p className="mt-1 text-xs text-[#637191]">{date.slice(-4)}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-200 text-base font-bold text-[#405276]">
-                  {initials}
-                </span>
+                <PortalAvatar
+                  name={name}
+                  userId={tutorUserId}
+                  className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-200 text-base font-bold text-[#405276]"
+                />
                 <div>
                   <h3 className="font-bold">{name}</h3>
                   <p className="mt-1 text-xs text-blue-600">{course}</p>

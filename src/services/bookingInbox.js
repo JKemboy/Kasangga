@@ -118,6 +118,9 @@ export async function loadBookingInbox(role, userId) {
       return {
         id: `notification-${row.notification_id}`,
         notificationId: row.notification_id,
+        notificationType: row.notification_type,
+        entityType: entity,
+        entityId: id,
         kind: "database",
         title: row.title,
         text: row.message,
@@ -128,7 +131,7 @@ export async function loadBookingInbox(role, userId) {
             ? "Services"
             : entity === "payments"
               ? "Payments"
-              : "Updates",
+              : "System",
         view:
           entity === "services"
             ? "services"

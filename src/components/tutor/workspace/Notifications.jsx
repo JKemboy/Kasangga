@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Modal, button, primary } from "./ui.jsx";
 import { notificationDestination } from "./notificationTargets.js";
+import FollowUpEvidence from "../../shared/FollowUpEvidence.jsx";
 
 const appearance = {
   "Booking Confirmed": [CalendarCheck, "bg-green-700"],
@@ -404,6 +405,9 @@ export default function Notifications({ data, update, go, args = {} }) {
               </time>
             </div>
             <p className="break-words leading-6">{selected.text}</p>
+            {selected.notificationType === "case_evidence_requested" && (
+              <FollowUpEvidence key={selected.id} caseId={selected.entityId} />
+            )}
             <p className="break-words rounded-lg bg-slate-50 p-3 text-xs leading-5 text-[#344675]">
               {selected.detail}
             </p>

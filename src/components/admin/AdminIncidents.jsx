@@ -1,3 +1,4 @@
+import { statusClass } from "../shared/statusColors.js";
 import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import UserExport from "./UserExport.jsx";
 import ServiceMenu from "./ServiceMenu.jsx";
@@ -135,13 +136,7 @@ export default function AdminIncidents({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(`Exported ${filtered.length} reports.`);
   }
-  const pill = (v) => (
-    <span
-      className={`ai-pill ${["High", "Institutional Conduct"].includes(v) ? "red" : ["Resolved by Admin", "Admin Screening Complete"].includes(v) ? "green" : v === "Referred to OSAS" ? "purple" : v === "Not Required" ? "gray" : v === "Platform / Technical" || v === "Low" ? "blue" : "gold"}`}
-    >
-      {v}
-    </span>
-  );
+  const pill = (v) => <span className={statusClass(v, "ai-pill")}>{v}</span>;
   function select(label, value, setter, options) {
     return (
       <select

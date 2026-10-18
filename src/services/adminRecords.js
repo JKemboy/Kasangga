@@ -123,6 +123,9 @@ export function mapAdminDatabase(input, now = new Date()) {
     "ratings",
     "incident_reports",
     "incident_evidence",
+    "cases",
+    "case_decisions",
+    "case_actions",
     "audit_logs",
     "system_settings",
   ];
@@ -406,38 +409,75 @@ export function mapAdminDatabase(input, now = new Date()) {
     booking.allocation = payments.find(
       (p) => p.id === booking.transaction,
     )?.allocation;
-  const incidents = db.incident_reports.map((r) => ({
-    id: key(r.report_id),
-    booking: r.booking_id ? key(r.booking_id) : "",
-    reporterId: r.reported_by,
-    reportedId: r.reported_against,
-    reporter: fullName(r.reported_by),
-    reported: fullName(r.reported_against),
-    type: label(r.incident_type),
-    issue: r.description,
-    description: r.description,
-    priority: label(r.priority),
-    status:
-      r.report_status === "resolved"
-        ? "Resolved by Admin"
-        : r.report_status === "screened"
-          ? "Admin Screening Complete"
-          : label(r.report_status),
-    referral:
-      r.osas_referral_status === "referred"
+  const incidents = db.incident_reports.map((r) => {
+    const linkedCase = (db.cases || []).find(
+      (c) => key(c.report_id) === key(r.report_id),
+    );
+    const decision = (db.case_decisions || [])
+      .filter((d) => key(d.case_id) === key(linkedCase?.case_id))
+      .sort((a, b) => Number(b.decision_id) - Number(a.decision_id))[0];
+    let details = {};
+    try {
+      details = JSON.parse(decision?.decision_details || "{}");
+    } catch {}
+    return {
+      osasCaseId: linkedCase ? `CASE-${linkedCase.case_id}` : "",
+      osasStatus: linkedCase ? label(linkedCase.case_status) : "",
+      osasOutcome:
+        decision?.decision_type ||
+        (r.osas_assessment?.action === "close" &&
+          "Closed without a formal case") ||
+        "",
+      osasNotes: details.notes || r.osas_assessment?.notes || "",
+      osasBasis: details.basis || "",
+      osasDecisionAt: decision?.decision_date || r.osas_assessment?.at || "",
+      id: key(r.report_id),
+      booking: r.booking_id ? key(r.booking_id) : "",
+      reporterId: r.reported_by,
+      reportedId: r.reported_against,
+      reporter: fullName(r.reported_by),
+      reported: fullName(r.reported_against),
+      type: ["Technical issue", "Platform / Technical"].includes(
+        r.incident_type,
+      )
+        ? "Platform / Technical"
+        : label(r.incident_type),
+      issue: r.description,
+      description: r.description,
+      priority: r.priority === "normal" ? "Medium" : label(r.priority),
+      status:
+        r.report_status === "resolved"
+          ? r.osas_referral_status === "not_referred"
+            ? "Resolved by Admin"
+            : "Resolved by OSAS"
+          : r.report_status === "screened"
+            ? "Admin Screening Complete"
+            : r.osas_referral_status === "case_opened"
+              ? "Under OSAS Review"
+              : r.report_status === "submitted"
+                ? "Pending Review"
+                : label(r.report_status),
+      referral: ["referred", "case_opened", "closed_no_case"].includes(
+        r.osas_referral_status,
+      )
         ? "Referred to OSAS"
-        : "Not Referred",
-    date: manilaDate(r.submitted_at),
-    history: history("incident_reports", r.report_id),
-    evidence: db.incident_evidence
-      .filter((e) => key(e.report_id) === key(r.report_id))
-      .map((e) => ({
-        id: key(e.evidence_id),
-        name: e.file_name,
-        path: e.file_path,
-        type: e.evidence_type,
-      })),
-  }));
+        : ["Technical issue", "Platform / Technical"].includes(
+              r.incident_type,
+            ) || r.osas_referral_status === "not_required"
+          ? "Not Required"
+          : "Not Referred",
+      date: manilaDate(r.submitted_at),
+      history: history("incident_reports", r.report_id),
+      evidence: db.incident_evidence
+        .filter((e) => key(e.report_id) === key(r.report_id))
+        .map((e) => ({
+          id: key(e.evidence_id),
+          name: e.file_name,
+          path: e.file_path,
+          type: e.evidence_type,
+        })),
+    };
+  });
   const config = { ...configDefaults };
   for (const setting of db.system_settings)
     if (Object.hasOwn(config, setting.setting_key)) {

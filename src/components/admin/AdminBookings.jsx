@@ -1,3 +1,4 @@
+import { statusClass } from "../shared/statusColors.js";
 import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import IncidentDetails from "./IncidentDetails.jsx";
@@ -71,13 +72,7 @@ export default function AdminBookings() {
     const [h, m] = v.split(":");
     return `${Number(h) % 12 || 12}:${m} ${Number(h) >= 12 ? "PM" : "AM"}`;
   };
-  const badge = (v) => (
-    <span
-      className={`au-status ${["Completed", "Confirmed", "Paid"].includes(v) ? "active" : v === "Cancelled" ? "suspended" : "restricted"}`}
-    >
-      {v}
-    </span>
-  );
+  const badge = (v) => <span className={statusClass(v, "au-status")}>{v}</span>;
   function exportCsv() {
     const csv = [
       [

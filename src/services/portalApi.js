@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "./supabaseClient.js";
+import { submitIncidentReport } from "./incidentReports.js";
 
 // Replace these adapters when connecting the database/auth/payment services.
 // Never manufacture provider confirmations, password changes, or OTPs.
@@ -41,6 +42,7 @@ async function functionErrorMessage(error) {
 
 export function connectBookingApi() {
   return configurePortalApi({
+    report: submitIncidentReport,
     async discardUnpaidCheckout() {
       const { data, error } = await getSupabaseClient().functions.invoke(
         "create-payment",

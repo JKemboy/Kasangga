@@ -43,8 +43,19 @@ export default function CreateService({
           key: crypto.randomUUID(),
           availability: (data.slots || [])
             .filter((slot) => slot.topicId === topic.id)
-            .flatMap((slot) =>
-              Array.from(
+            .flatMap((slot) => {
+              const bookings = (schedule.bookings || []).filter(
+                (booking) =>
+                  (!booking.service_id && !booking.serviceId ||
+                    String(booking.service_id || booking.serviceId) ===
+                      String(service.id)) &&
+                  String(booking.date || booking.session_date).slice(0, 10) ===
+                    slot.date &&
+                  ["pending", "confirmed", "completed"].includes(
+                    String(booking.status || booking.booking_status).toLowerCase(),
+                  ),
+              );
+              const rows = Array.from(
                 { length: Math.ceil((slot.end - slot.start) / 2) },
                 (_, i) => ({
                   ...slot,
@@ -52,9 +63,31 @@ export default function CreateService({
                   end: Math.min(slot.end, slot.start + i * 2 + 2),
                   duration: Math.min(2, slot.end - slot.start - i * 2),
                   key: crypto.randomUUID(),
+                  id: slot.id,
                 }),
-              ),
-            ),
+              );
+              for (const booking of bookings) {
+                const start =
+                  typeof booking.start === "number"
+                    ? booking.start
+                    : hour(booking.start || booking.start_time);
+                const end =
+                  typeof booking.end === "number"
+                    ? booking.end
+                    : hour(booking.end || booking.end_time);
+                if (!rows.some((row) => row.start === start)) {
+                  rows.push({
+                    ...slot,
+                    start,
+                    end,
+                    duration: end - start,
+                    key: crypto.randomUUID(),
+                    id: slot.id,
+                  });
+                }
+              }
+              return rows;
+            }),
         }))
       : service
         ? String(service.topics || "")
@@ -93,7 +126,9 @@ export default function CreateService({
         const [slots, classes, bookings] = await Promise.all([
           listTutorAvailability(undefined, data.services),
           listTutorClassSchedule(),
-          getSupabaseClient().rpc("get_my_tutor_booking_blocks"),
+          getSupabaseClient().rpc("get_my_tutor_booking_blocks", {
+            p_service_id: service?.id ? Number(service.id) : null,
+          }),
         ]);
         if (bookings.error)
           throw new Error(
@@ -133,6 +168,39 @@ export default function CreateService({
       topics: currentTopics,
       serviceId: service?.id || null,
     });
+  const bookingCountFor = (row) =>
+    (schedule.bookings || []).filter(
+      (booking) =>
+          (!booking.service_id && !booking.serviceId ||
+            String(booking.service_id || booking.serviceId) ===
+              String(service?.id || "")) &&
+        String(booking.date || booking.session_date || "").slice(0, 10) ===
+          row.date &&
+        Number(String(booking.start || booking.start_time).slice(0, 2)) +
+          Number(String(booking.start || booking.start_time).slice(3, 5)) /
+            60 ===
+          row.start &&
+        ["pending", "confirmed", "completed"].includes(
+          String(booking.status || booking.booking_status).toLowerCase(),
+        ),
+    ).length;
+  const isBooked = (row) => bookingCountFor(row) > 0;
+  const bookedSlot = (row) =>
+    (schedule.bookings || []).find(
+      (booking) =>
+        (!booking.service_id && !booking.serviceId ||
+          String(booking.service_id || booking.serviceId) ===
+            String(service?.id || "")) &&
+        String(booking.date || booking.session_date || "").slice(0, 10) ===
+          row.date &&
+        Number(String(booking.start || booking.start_time).slice(0, 2)) +
+          Number(String(booking.start || booking.start_time).slice(3, 5)) /
+            60 ===
+          row.start &&
+        ["pending", "confirmed", "completed"].includes(
+          String(booking.status || booking.booking_status).toLowerCase(),
+        ),
+    );
   const patch = (key, field, value) => {
     setTopics((rows) =>
       rows.map((row) => (row.key === key ? { ...row, [field]: value } : row)),
@@ -216,7 +284,8 @@ export default function CreateService({
           (!optionsFor(row).includes(row.start)
             ? "Choose an available start time."
             : "");
-        if (message) return setError(topic.name + ": " + message);
+        if (message && !isBooked(row))
+          return setError(topic.name + ": " + message);
       }
     setSaving(true);
     setError("");
@@ -317,6 +386,12 @@ export default function CreateService({
           </div>
           {topics.map((topic) => (
             <section className="service-topic-card" key={topic.key}>
+              {topic.availability.some(isBooked) && (
+                <p className="create-service-hint">
+                  This topic has booked sessions. Its details and booked times
+                  stay locked; you can still add new times or topics.
+                </p>
+              )}
               <header>
                 <strong>
                   <span className="booking-availability-dot" />{" "}
@@ -325,6 +400,7 @@ export default function CreateService({
                 <button
                   className={button}
                   type="button"
+                  disabled={topic.availability.some(isBooked)}
                   onClick={() =>
                     setTopics((rows) =>
                       rows.filter((row) => row.key !== topic.key),
@@ -343,6 +419,7 @@ export default function CreateService({
                       maxLength={200}
                       value={topic.name}
                       placeholder="e.g., Derivatives"
+                      disabled={topic.availability.some(isBooked)}
                       onChange={(e) => patch(topic.key, "name", e.target.value)}
                     />
                   </Field>
@@ -356,6 +433,7 @@ export default function CreateService({
                       step="0.01"
                       value={topic.rate}
                       placeholder="e.g., 350"
+                      disabled={topic.availability.some(isBooked)}
                       onChange={(e) => patch(topic.key, "rate", e.target.value)}
                     />
                   </Field>
@@ -367,6 +445,7 @@ export default function CreateService({
                           <input
                             type="checkbox"
                             checked={topic.types.includes(type)}
+                            disabled={topic.availability.some(isBooked)}
                             onChange={(e) =>
                               patch(
                                 topic.key,
@@ -395,6 +474,7 @@ export default function CreateService({
                         required
                         value={topic.meetingLink}
                         maxLength={2000}
+                        disabled={topic.availability.some(isBooked)}
                         placeholder="https://meet.google.com/..."
                         onChange={(e) =>
                           patch(topic.key, "meetingLink", e.target.value)
@@ -410,6 +490,7 @@ export default function CreateService({
                         maxLength={300}
                         value={topic.location}
                         placeholder="e.g., CCIS Building, Computer Lab 1"
+                        disabled={topic.availability.some(isBooked)}
                         onChange={(e) =>
                           patch(topic.key, "location", e.target.value)
                         }
@@ -433,7 +514,9 @@ export default function CreateService({
                       No dates and times for this topic.
                     </p>
                   )}
-                  {groupTopicDates(topic.availability).map((group) => (
+                  {groupTopicDates(topic.availability).map((group) => {
+                    const groupBooked = group.rows.some(isBooked);
+                    return (
                     <div className="service-date-group" key={group.key}>
                       <div className="service-date-picker">
                         <Field label="Date">
@@ -442,7 +525,7 @@ export default function CreateService({
                             className={input}
                             required
                             value={group.date}
-                            disabled={scheduleLoading || !!scheduleError}
+                            disabled={scheduleLoading || !!scheduleError || groupBooked}
                             onChange={(e) =>
                               moveDate(topic, group, e.target.value)
                             }
@@ -451,6 +534,7 @@ export default function CreateService({
                         <button
                           type="button"
                           className="service-remove-date"
+                          disabled={groupBooked}
                           onClick={() =>
                             patch(
                               topic.key,
@@ -467,6 +551,7 @@ export default function CreateService({
                           <Trash2 size={12} /> Remove this date
                         </button>
                         {group.repeat && <small>Repeats weekly</small>}
+                        {groupBooked && <small>Booked time is locked</small>}
                       </div>
                       <div className="service-date-times">
                         {group.rows.map((row) => {
@@ -485,6 +570,7 @@ export default function CreateService({
                                   !group.date ||
                                   scheduleLoading ||
                                   !!scheduleError ||
+                                  isBooked(row) ||
                                   !choices.length
                                 }
                                 value={valid ? formatTimeInput(row.start) : ""}
@@ -523,6 +609,7 @@ export default function CreateService({
                                   !group.date ||
                                   scheduleLoading ||
                                   !!scheduleError ||
+                                  isBooked(row) ||
                                   !Number.isFinite(row.start)
                                 }
                                 onChange={(e) =>
@@ -572,6 +659,7 @@ export default function CreateService({
                               <button
                                 type="button"
                                 aria-label="Remove time"
+                                disabled={isBooked(row)}
                                 onClick={() =>
                                   patch(
                                     topic.key,
@@ -594,6 +682,7 @@ export default function CreateService({
                             !group.date ||
                             scheduleLoading ||
                             !!scheduleError ||
+                            group.rows.some(isBooked) ||
                             topic.availability.length >= 20 ||
                             !optionsFor({
                               ...newDate(),
@@ -607,7 +696,8 @@ export default function CreateService({
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   <div className="service-availability-actions">
                     <button
                       type="button"

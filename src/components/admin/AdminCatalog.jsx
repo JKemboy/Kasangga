@@ -1,3 +1,4 @@
+import { statusClass } from "../shared/statusColors.js";
 import ServiceDetails from "./ServiceDetails.jsx";
 import ServiceMenu from "./ServiceMenu.jsx";
 import UserDetails from "./UserDetails.jsx";
@@ -120,13 +121,7 @@ export default function AdminCatalog({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice("Exported " + filtered.length + " matching services.");
   }
-  const pill = (v) => (
-    <span
-      className={`au-status ${["Active", "Approved", "Complete", "Reviewed", "Matched", "Confirmed"].includes(v) ? "active" : ["Rejected", "Suspended", "Invalid File", "Incomplete", "Not Matched"].includes(v) ? "suspended" : "restricted"}`}
-    >
-      {v}
-    </span>
-  );
+  const pill = (v) => <span className={statusClass(v, "au-status")}>{v}</span>;
   function applicationDocumentStatus(application) {
     // The final database decision survives page refreshes; OCR state does not.
     if (application.status === "Approved") return "Reviewed";
@@ -357,9 +352,11 @@ export default function AdminCatalog({
                 <tr key={r.id}>
                   <td>{r.id}</td>
                   <td>
-                    <div className="au-person">
+                    <div className="au-person ad-catalog-person">
                       <Avatar name={verification ? r.name : r.tutor} />
-                      <span>{verification ? r.name : r.tutor}</span>
+                      <span className="ad-catalog-person-name">
+                        {verification ? r.name : r.tutor}
+                      </span>
                     </div>
                   </td>
                   {verification ? (

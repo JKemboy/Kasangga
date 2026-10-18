@@ -108,14 +108,21 @@ Deno.serve(async (request: Request) => {
     return json("Invalid checkout ID", 400);
   }
 
-  const verification = await fetch(
-    `https://api.paymongo.com/v1/checkout_sessions/${encodeURIComponent(checkoutId)}`,
-    {
-      headers: {
-        Authorization: `Basic ${btoa(`${paymongoKey}:`)}`,
+  let verification: Response;
+  try {
+    verification = await fetch(
+      `https://api.paymongo.com/v1/checkout_sessions/${encodeURIComponent(checkoutId)}`,
+      {
+        headers: {
+          Authorization: `Basic ${btoa(`${paymongoKey}:`)}`,
+        },
+        signal: AbortSignal.timeout(10000),
       },
-    },
-  );
+    );
+  } catch (error) {
+    console.error("PayMongo verification request failed:", error);
+    return json("PayMongo verification temporarily unavailable", 503);
+  }
 
   if (!verification.ok) {
     console.error("PayMongo verification status:", verification.status);
@@ -252,6 +259,21 @@ Deno.serve(async (request: Request) => {
       p_payment_id: paidPayment.id,
     });
     if (error) return json("Batch payment finalization failed", 500);
+    const { data: items, error: itemsError } = await admin
+      .from("booking_checkout_batch_items")
+      .select("booking_id")
+      .eq("request_id", batch.request_id);
+    if (itemsError || !items?.length)
+      return json("Batch payment reference update failed", 500);
+    const { error: paymentUpdateError } = await admin
+      .from("payments")
+      .update({ paymongo_payment_id: paidPayment.id })
+      .in(
+        "paymongo_checkout_session_id",
+        items.map((item) => `${checkoutId}:${item.booking_id}`),
+      );
+    if (paymentUpdateError)
+      return json("Batch payment reference update failed", 500);
     return json("All session payments verified and recorded");
   }
   const { error: finalizeError } = await admin.rpc(

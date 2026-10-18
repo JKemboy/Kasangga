@@ -1,4 +1,5 @@
-﻿import { useState } from "react";
+import { casePermissions } from "./caseProgress.js";
+import { useState } from "react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 const outcomes = [
   "No Violation",
@@ -14,13 +15,17 @@ export function caseTransition(record, action, form = {}) {
   const at = new Date().toISOString(),
     entry = {
       at,
-      officer: "Maria Santos",
+      officer: record.officer,
       action,
       notes: form.notes?.trim() || "",
       status: record.status,
     };
   let next = { ...record };
-  if (action === "pending") {
+  if (action === "review") {
+    if (record.status === "Resolved") throw Error("This case is resolved.");
+    next.status = "Under Review";
+    entry.notes = "Evidence validated. Started case review.";
+  } else if (action === "pending") {
     if (record.status === "Resolved")
       throw Error("Resolved cases cannot return to review.");
     next.status = "Pending Decision";
@@ -28,7 +33,7 @@ export function caseTransition(record, action, form = {}) {
   } else if (action === "request") {
     if (record.status === "Resolved") throw Error("This case is resolved.");
     if (
-      ![record.reporter, record.student].includes(form.recipient) ||
+      ![record.reporterId, record.studentUserId].includes(form.recipient) ||
       form.notes?.trim().length < 10 ||
       !form.notes ||
       !/^\d{4}-\d{2}-\d{2}$/.test(form.due || "")
@@ -36,7 +41,9 @@ export function caseTransition(record, action, form = {}) {
       throw Error("Complete the recipient, details and due date.");
     next.status = "Awaiting Evidence";
     next.evidenceRequest = {
-      recipient: form.recipient,
+      recipient:
+        form.recipient === record.reporterId ? record.reporter : record.student,
+      recipientId: form.recipient,
       due: form.due,
       notes: form.notes.trim(),
     };
@@ -55,7 +62,7 @@ export function caseTransition(record, action, form = {}) {
       );
     if (form.hasCondition && (!form.condition?.trim() || !form.due))
       throw Error("Enter a condition and due date.");
-    next.status = "Resolved";
+    next.status = form.hasCondition ? "Pending Completion" : "Resolved";
     next.decision = {
       outcome: form.outcome,
       notes: form.notes.trim(),
@@ -68,7 +75,7 @@ export function caseTransition(record, action, form = {}) {
     };
   } else if (action === "condition") {
     if (
-      record.status !== "Resolved" ||
+      !["Pending Completion", "Resolved"].includes(record.status) ||
       !record.decision?.condition ||
       record.decision.conditionDone
     )
@@ -78,107 +85,158 @@ export function caseTransition(record, action, form = {}) {
       conditionDone: true,
       completedAt: at,
     };
+    next.status = "Resolved";
     entry.notes = "Condition marked completed.";
   } else throw Error("Invalid case action.");
   entry.status = next.status;
   return { ...next, history: [...(record.history || []), entry] };
 }
-export default function CaseWorkflow({ record: r, evidence, onSave }) {
+export default function CaseWorkflow({
+  record: r,
+  evidence,
+  clearance = [],
+  onSave,
+}) {
   const [menu, setMenu] = useState(false),
     [action, setAction] = useState(""),
     [form, setForm] = useState({}),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [confirmation, setConfirmation] = useState(null),
+    [saving, setSaving] = useState(false);
+  const permissions = casePermissions(r, evidence, clearance);
   const pending = evidence.filter((e) => e.status !== "Validated");
   function open(a) {
+    if (!permissions[a]) return;
     setMenu(false);
     setAction(a);
     setError("");
-    setForm({ recipient: r.reporter, notes: "", due: "", notify: true });
+    setForm({ recipient: r.reporterId, notes: "", due: "", notify: true });
   }
-  function save(e) {
+  async function save(e, confirmed = false) {
     e?.preventDefault();
+    if (saving) return;
     try {
+      if (!permissions[action])
+        throw Error("Complete the current workflow step first.");
+      if (
+        ["review", "pending", "decision"].includes(action) &&
+        (!evidence.length || pending.length)
+      )
+        throw Error("Validate every evidence file before proceeding.");
+      if (action === "pending" && !["Open", "Under Review"].includes(r.status))
+        throw Error(
+          "The case must be Open or Under Review before proceeding.",
+        );
       const next = caseTransition(r, action, form);
-      if (onSave(next) === false)
+      if (["decision", "condition"].includes(action) && !confirmed) {
+        setConfirmation(next);
+        return;
+      }
+      setSaving(true);
+      if ((await onSave(next)) === false)
         throw Error("Could not save this case. Please try again.");
       setAction("");
+      setConfirmation(null);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSaving(false);
     }
   }
   const set = (k, v) => setForm({ ...form, [k]: v });
   return (
     <>
-      {r.status !== "Resolved" && (
-        <>
-          <div className="ocx-status-menu">
+      {!["Resolved", "Pending Completion"].includes(r.status) &&
+        !evidence.some((e) => e.status === "Insufficient") && (
+          <>
+            <div className="ocx-status-menu">
+              <button
+                className={button}
+                disabled={
+                  r.archived ||
+                  !["Case Actions"].includes(permissions.step)
+                }
+                aria-expanded={menu}
+                onClick={() => setMenu(!menu)}
+              >
+                Update Status ▾
+              </button>
+              {menu && (
+                <div>
+                  <button
+                    disabled={!permissions.request}
+                    onClick={() => open("request")}
+                  >
+                    Request evidence
+                  </button>
+                  <button
+                    disabled={!permissions.pending}
+                    onClick={() => open("pending")}
+                  >
+                    Move to Pending Decision
+                  </button>
+                </div>
+              )}
+            </div>
             <button
-              className={button}
-              disabled={r.archived}
-              aria-expanded={menu}
-              onClick={() => setMenu(!menu)}
+              className={primary}
+              disabled={!permissions.decision}
+              onClick={() => open("decision")}
             >
-              Update Status ▾
+              Record Decision
             </button>
-            {menu && (
-              <div>
-                <button onClick={() => open("request")}>
-                  Request evidence
-                </button>
-                <button onClick={() => open("pending")}>
-                  Move to Pending Decision
-                </button>
-              </div>
-            )}
-          </div>
-          <button
-            className={primary}
-            disabled={r.archived || r.status !== "Pending Decision"}
-            onClick={() => open("decision")}
-          >
-            Record Decision
-          </button>
-        </>
-      )}
-      {r.status === "Resolved" &&
+          </>
+        )}
+      {["Pending Completion", "Resolved"].includes(r.status) &&
         r.decision?.condition &&
         !r.decision.conditionDone && (
-          <button
-            className={primary}
-            disabled={r.archived}
-            onClick={() => open("condition")}
-          >
-            Mark Condition Completed
-          </button>
+          <>
+            <button
+              className={primary}
+              disabled={!permissions.condition}
+              onClick={() => open("condition")}
+            >
+              Mark Condition Completed
+            </button>
+          </>
         )}
       {action && (
         <Modal
           title={
-            action === "request"
-              ? "Request Evidence"
-              : action === "pending"
-                ? pending.length
-                  ? "Evidence still under validation"
-                  : "Move to Pending Decision?"
-                : action === "condition"
-                  ? "Mark the condition completed?"
-                  : "Record Decision"
+            action === "review"
+              ? "Start Case Review?"
+              : action === "request"
+                ? "Request Evidence"
+                : action === "pending"
+                  ? pending.length
+                    ? "Evidence still under validation"
+                    : "Move to Pending Decision?"
+                  : action === "condition"
+                    ? "Mark the condition completed?"
+                    : "Record Decision"
           }
           subtitle={`${r.caseId} · ${r.type}`}
           onClose={() => setAction("")}
         >
           <form onSubmit={save} className="ocx-workflow-form">
+            {action === "review" && (
+              <p>
+                All evidence must be validated and the case must be Under
+                Review before proceeding to Pending Decision. A case note is
+                optional.
+              </p>
+            )}
             {action === "pending" && (
               <p className="ocx-warning">
                 {pending.length
-                  ? `${pending.map((e) => e.id).join(", ")} has not been validated. Move this case to Pending Decision anyway?`
+                  ? `${pending.map((e) => e.id).join(", ")} must be validated before this case can move to Pending Decision.`
                   : "The case will become ready for a recorded decision."}
               </p>
             )}
             {action === "condition" && (
               <p>
-                {r.decision.condition}. Mark this condition completed? Clearance
-                review remains a separate action.
+                {r.decision.condition}. Mark this condition completed? The case
+                will then be ready for resolution and archival.
               </p>
             )}
             {action === "request" && (
@@ -190,8 +248,10 @@ export default function CaseWorkflow({ record: r, evidence, onSave }) {
                     value={form.recipient}
                     onChange={(e) => set("recipient", e.target.value)}
                   >
-                    <option>{r.reporter}</option>
-                    <option>{r.student}</option>
+                    <option value={r.reporterId}>Reporter: {r.reporter}</option>
+                    <option value={r.studentUserId}>
+                      Reported student: {r.student}
+                    </option>
                   </select>
                 </label>
                 <label>
@@ -217,7 +277,8 @@ export default function CaseWorkflow({ record: r, evidence, onSave }) {
                   />
                 </label>
                 <small>
-                  Saving and external delivery are not connected yet.
+                  The request is saved to the case record and sent as an in-app
+                  notification.
                 </small>
               </>
             )}
@@ -316,7 +377,7 @@ export default function CaseWorkflow({ record: r, evidence, onSave }) {
                     checked={form.notify}
                     onChange={(e) => set("notify", e.target.checked)}
                   />{" "}
-                  Record a request to notify both parties (local only)
+                  Record a request to notify both parties in the database
                 </label>
               </>
             )}
@@ -333,17 +394,63 @@ export default function CaseWorkflow({ record: r, evidence, onSave }) {
               >
                 Cancel
               </button>
-              <button className={primary}>
-                {action === "pending"
-                  ? "Move to Pending Decision"
-                  : action === "request"
-                    ? "Save Request"
-                    : action === "condition"
-                      ? "Mark Completed"
-                      : "Record Decision"}
+              <button
+                className={primary}
+                disabled={
+                  saving ||
+                  (action === "pending" &&
+                    (pending.length > 0 ||
+                      !["Open", "Under Review"].includes(r.status)))
+                }
+              >
+                {action === "review"
+                  ? "Start Case Review"
+                  : action === "pending"
+                    ? "Move to Pending Decision"
+                    : action === "request"
+                      ? "Save Request"
+                      : action === "condition"
+                        ? "Mark Completed"
+                        : "Record Decision"}
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+      {confirmation && (
+        <Modal
+          title={
+            action === "decision"
+              ? `Record ${form.outcome} for ${r.caseId}?`
+              : "Mark the condition completed?"
+          }
+          onClose={() => setConfirmation(null)}
+        >
+          <p>
+            {action === "decision"
+              ? "This decision becomes part of the institutional case record and cannot be changed after recording."
+              : r.decision?.condition}
+          </p>
+          <div className="ocx-results">
+            <button
+              className={button}
+              disabled={saving}
+              onClick={() => setConfirmation(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className={primary}
+              disabled={saving}
+              onClick={(e) => save(e, true)}
+            >
+              {saving
+                ? "Saving..."
+                : action === "decision"
+                  ? "Record Decision"
+                  : "Mark Completed"}
+            </button>
+          </div>
         </Modal>
       )}
     </>

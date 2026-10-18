@@ -148,20 +148,52 @@ Deno.serve(async (request: Request) => {
     },
   });
 
-  const { data: paymentRow, error: lookupError } = await admin
-    .from("payments")
-    .select("booking_id,gross_amount,payment_status")
-    .eq("paymongo_checkout_session_id", checkoutId)
+  const { data: batch, error: batchError } = await admin
+    .from("booking_checkout_batches")
+    .select("request_id")
+    .eq("checkout_id", checkoutId)
     .maybeSingle();
-
-  if (lookupError) {
-    console.error("Payment lookup:", lookupError.code);
-    return reply("Payment lookup failed", 500);
+  if (batchError && !["42P01", "PGRST205"].includes(batchError.code)) {
+    console.error("Batch lookup:", batchError.code);
+    return reply("Checkout lookup failed", 500);
   }
-
-  if (!paymentRow) {
-    return reply("Unknown checkout session", 404);
+  let paymentRows: { booking_id: number; gross_amount: number }[] = [];
+  let batchItems: { booking_id: number }[] = [];
+  if (batch) {
+    const { data: items, error: itemsError } = await admin
+      .from("booking_checkout_batch_items")
+      .select("booking_id")
+      .eq("request_id", batch.request_id);
+    if (itemsError || !items?.length)
+      return reply("Batch sessions lookup failed", 500);
+    batchItems = items;
+    const { data: rows, error: rowsError } = await admin
+      .from("payments")
+      .select("booking_id,gross_amount,payment_status")
+      .in(
+        "paymongo_checkout_session_id",
+        items.map((item) => `${checkoutId}:${item.booking_id}`),
+      );
+    if (rowsError || rows?.length !== items.length)
+      return reply("Batch payment lookup failed", 500);
+    paymentRows = rows;
+  } else {
+    const { data: row, error: lookupError } = await admin
+      .from("payments")
+      .select("booking_id,gross_amount,payment_status")
+      .eq("paymongo_checkout_session_id", checkoutId)
+      .maybeSingle();
+    if (lookupError) {
+      console.error("Payment lookup:", lookupError.code);
+      return reply("Payment lookup failed", 500);
+    }
+    if (!row) return reply("Unknown checkout session", 404);
+    paymentRows = [row];
   }
+  const expectedAmount = paymentRows.reduce(
+    (total, row) => total + Number(row.gross_amount),
+    0,
+  );
 
   // Verify the checkout with PayMongo independently.
   let verified: any;
@@ -198,8 +230,7 @@ Deno.serve(async (request: Request) => {
     return reply("Checkout not verified as paid", 409);
   }
 
-  const expectedCentavos =
-    Math.round(Number(paymentRow.gross_amount) * 100);
+  const expectedCentavos = Math.round(expectedAmount * 100);
 
   const actualCentavos =
     checkoutAmountCentavos(attributes?.line_items);
@@ -228,21 +259,30 @@ Deno.serve(async (request: Request) => {
     return reply("No verified paid payment", 409);
   }
 
-  // The RPC must be restricted to the service_role.
-  const { error: finalizeError } = await admin.rpc(
-    "finalize_campustutor_payment",
-    { p_checkout_session_id: checkoutId },
-  );
+  // Finalize every reserved session for a batch, or the single booking.
+  const { error: finalizeError } = batch
+    ? await admin.rpc("finalize_booking_batch_payment", {
+        p_checkout_id: checkoutId,
+        p_payment_id: paidPayment.id,
+      })
+    : await admin.rpc("finalize_campustutor_payment", {
+        p_checkout_session_id: checkoutId,
+      });
 
   if (finalizeError) {
     console.error("Finalization:", finalizeError.code);
     return reply("Payment finalization failed", 500);
   }
 
-  const { error: updateError } = await admin
+  const update = admin
     .from("payments")
-    .update({ paymongo_payment_id: paidPayment.id })
-    .eq("paymongo_checkout_session_id", checkoutId);
+    .update({ paymongo_payment_id: paidPayment.id });
+  const { error: updateError } = batch
+    ? await update.in(
+        "paymongo_checkout_session_id",
+        batchItems.map((item) => `${checkoutId}:${item.booking_id}`),
+      )
+    : await update.eq("paymongo_checkout_session_id", checkoutId);
 
   if (updateError) {
     console.error("Payment ID update:", updateError.code);

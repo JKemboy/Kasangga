@@ -5,6 +5,7 @@ import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { useEffect, useState } from "react";
 import { Users, CalendarDays, Bookmark, Star, Heart } from "lucide-react";
 import { button, primary, input } from "../../tutor/workspace/ui.jsx";
+import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import "./overview.css";
 
 export default function LearnerOverview({ go }) {
@@ -245,7 +246,11 @@ export default function LearnerOverview({ go }) {
                   fill={work.isSaved(tutor) ? "#087542" : "none"}
                 />
               </button>
-              <div className="lo-avatar">{tutor.initials}</div>
+              <PortalAvatar
+                name={tutor.name}
+                userId={tutor.avatarUserId}
+                className="lo-avatar overflow-hidden"
+              />
               <h3>{tutor.name}</h3>
               <p>
                 {tutor.courseServices.map((service) => service.name).join(", ")}

@@ -249,7 +249,13 @@ export default function LearnerWorkspace({ children, go }) {
     go("messages");
     setDialog(null);
   }
-  function request(type, values) {
+  async function request(type, values) {
+    if (type === "report") {
+      const result = await portalApi("report", values);
+      setDialog(null);
+      toast(`Report ${result.id} submitted for Admin and OSAS review.`);
+      return result;
+    }
     const record = {
       id: crypto.randomUUID(),
       type,

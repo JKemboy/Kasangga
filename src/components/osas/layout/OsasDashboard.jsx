@@ -1,4 +1,4 @@
-import {useLogout} from "../../shared/LogoutProvider.jsx";
+import { useLogout } from "../../shared/LogoutProvider.jsx";
 import { useRef, useState } from "react";
 import {
   Archive,
@@ -20,13 +20,11 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import useSidebarMenuScale from "../../dashboard/useSidebarMenuScale.js";
+import useSidebarMenuScale from "../../shared/useSidebarMenuScale.js";
 
 const osasNavigation = [
   { label: "Overview", icon: LayoutDashboard, active: true },
   { label: "Case Review", icon: FileText },
-  { label: "Evidence Validation", icon: ShieldCheck },
-  { label: "Incident Monitoring", icon: CircleAlert },
   { label: "Student Clearance Review", icon: IdCard },
   { label: "Policies & Procedures", icon: BookOpen },
   { label: "Case Archive", icon: Archive },
@@ -61,7 +59,7 @@ function NavigationItem({ item }) {
 }
 
 export default function OsasDashboard() {
- const requestLogout = useLogout();
+  const requestLogout = useLogout();
 
   const [open, setOpen] = useState(false);
   const [activeTopMenu, setActiveTopMenu] = useState(null);
@@ -147,7 +145,10 @@ export default function OsasDashboard() {
               className="px-3 py-[clamp(3px,1.4dvh,12px)]"
               aria-label="OSAS session"
             >
-              <NavigationItem item={{ label: "Logout", icon: LogOut }} onClick={requestLogout} />
+              <NavigationItem
+                item={{ label: "Logout", icon: LogOut }}
+                onClick={requestLogout}
+              />
             </nav>
           </div>
         </div>
@@ -275,8 +276,10 @@ export default function OsasDashboard() {
             </button>
             <button
               type="button"
-              className="w-full border-t border-slate-100 px-3 py-2 text-left text-[11px] text-red-600 hover:bg-red-50" onClick={requestLogout}>
- Logout
+              className="w-full border-t border-slate-100 px-3 py-2 text-left text-[11px] text-red-600 hover:bg-red-50"
+              onClick={requestLogout}
+            >
+              Logout
             </button>
           </div>
         )}

@@ -365,8 +365,8 @@ export default function UserDetails({
                   />
                 </label>
                 <small>
-                  {form.reason.trim().length}/15 characters minimum · not
-                  connected to the database
+                  {form.reason.trim().length}/15 characters minimum · saved to
+                  the database
                 </small>
                 <label>
                   Review date

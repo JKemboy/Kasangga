@@ -24,7 +24,7 @@ Example: `schedule-uploads/john-kirk-emboy--<user-uuid>/<file-uuid>-class-schedu
 
 The user ID prevents collisions between people with the same name. Owner-only reads continue to support older UUID-only folders, including after a name change. Restrictive ownership guards prevent broad permissive policies from granting cross-user access. No public URLs, service-role credentials, local-save fallback, or OCR JSON files are used. Only the original schedule document is uploaded; reviewed rows and the exact source path are stored in class_schedules/class_schedule_entries. Saving verifies the private source object exists first.
 
-The latest confirmed schedule and its source file reload from Supabase. Unconfirmed review rows are temporary React state, not browser persistence. Opening the tutor dashboard removes retired schedule-named CampusTutor storage keys and the old schedule-upload IndexedDB database; Supabase login sessions remain untouched. Existing cloud objects are not moved or deleted automatically.
+The latest confirmed schedule and its source file reload from Supabase. Unconfirmed review rows are temporary React state, not browser persistence. The active dashboard does not store schedules in browser storage; Supabase manages login session persistence. Existing cloud objects are not moved or deleted automatically.
 
 The SQL is not automatically applied to the hosted project. The RLS error will remain until the Storage policies are installed. Live verification requires an authenticated tutor and these policies.
 

@@ -1,3 +1,4 @@
+import EvidencePicker from "./EvidencePicker.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
   X,
@@ -7,12 +8,16 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { chatRequest } from "../../services/bookingMessages.js";
+import { submitIncidentReport } from "../../services/incidentReports.js";
 export default function ChatDetails({ chat, mode, close, role }) {
+  const [reportOpen, setReportOpen] = useState(false);
   const ref = useRef(null);
+  const submissionKey = useRef(crypto.randomUUID());
   const [data, setData] = useState(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [sent, setSent] = useState(false),
+    [files, setFiles] = useState([]),
     [kind, setKind] = useState(""),
     [description, setDescription] = useState("");
   useEffect(() => {
@@ -38,10 +43,12 @@ export default function ChatDetails({ chat, mode, close, role }) {
     setBusy(true);
     setError("");
     try {
-      await chatRequest("report_booking_chat", {
-        p_booking_id: chat.booking_id,
-        p_type: kind,
-        p_description: description,
+      await submitIncidentReport({
+        sessionId: chat.booking_id,
+        incidentType: kind,
+        reason: description,
+        evidence: files,
+        submissionKey: submissionKey.current,
       });
       setSent(true);
     } catch (e) {
@@ -197,6 +204,13 @@ export default function ChatDetails({ chat, mode, close, role }) {
                 />
               </label>
               <small>At least 20 characters.</small>
+              <EvidencePicker
+                attachmentCard={role === "tutor"}
+                files={files}
+                onChange={setFiles}
+                onError={setError}
+                disabled={busy}
+              />
               <p className="chat-safety">
                 <ShieldCheck size={23} />
                 Reports are confidential. Admin reviews them and refers conduct
@@ -322,7 +336,16 @@ export default function ChatDetails({ chat, mode, close, role }) {
       <footer>
         {mode === "session" && (
           <>
-            {link && (
+            {tutorSession && (
+              <button
+                type="button"
+                className="chat-outline"
+                onClick={() => setReportOpen(true)}
+              >
+                Report an Issue
+              </button>
+            )}
+            {link && !/in.?person/i.test(data?.type || "") && (
               <a
                 className="chat-green-button"
                 href={link}
@@ -343,12 +366,22 @@ export default function ChatDetails({ chat, mode, close, role }) {
             form="chat-report"
             type="submit"
             className="chat-submit"
-            disabled={busy || !kind || description.trim().length < 20}
+            disabled={
+              busy || !kind || description.trim().length < 20 || !files.length
+            }
           >
             {busy ? "Submitting..." : "Submit Report"}
           </button>
         )}
       </footer>
+      {reportOpen && (
+        <ChatDetails
+          chat={chat}
+          role={role}
+          mode="report"
+          close={() => setReportOpen(false)}
+        />
+      )}
     </dialog>
   );
 }

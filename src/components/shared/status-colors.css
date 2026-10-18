@@ -1,0 +1,24 @@
+.ct-status.ct-status-red {
+  background: #ffebee;
+  color: #d90020;
+}
+.ct-status.ct-status-amber {
+  background: #fff5dd;
+  color: #995600;
+}
+.ct-status.ct-status-blue {
+  background: #e4efff;
+  color: #075bda;
+}
+.ct-status.ct-status-green {
+  background: #def3e9;
+  color: #006b4a;
+}
+.ct-status.ct-status-purple {
+  background: #f0e7ff;
+  color: #7039ad;
+}
+.ct-status.ct-status-gray {
+  background: #eef1f5;
+  color: #526072;
+}

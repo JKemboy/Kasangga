@@ -17,7 +17,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import useSidebarMenuScale from "../../dashboard/useSidebarMenuScale.js";
+import useSidebarMenuScale from "../../shared/useSidebarMenuScale.js";
 
 const mainNavigation = [
   { label: "Dashboard", icon: LayoutDashboard, active: true },

@@ -1,3 +1,4 @@
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import { useState } from "react";
 import {
   ChartNoAxesCombined,
@@ -11,7 +12,7 @@ import {
   LockKeyhole,
   Download,
 } from "lucide-react";
-import { seed, money } from "../tutor/workspace/data.js";
+import { money } from "../tutor/workspace/data.js";
 import { summarizeEarnings } from "../tutor/workspace/earnings.js";
 import { Modal, button, input } from "../tutor/workspace/ui.jsx";
 
@@ -65,33 +66,41 @@ const group = (records, key) =>
     count: records.filter((r) => (r[key] || "Not recorded") === label).length,
     records: records.filter((r) => (r[key] || "Not recorded") === label),
   }));
-function loadSessions() {
-  return seed.sessions;
-}
 
 export default function OsasReports({ rows, settings }) {
-  const [start, setStart] = useState("2026-09-01"),
-    [end, setEnd] = useState("2026-09-30"),
-    [academic, setAcademic] = useState("2026–2027"),
-    [semester, setSemester] = useState("1st Semester"),
+  const database = useOsasDatabase();
+  const sessions = database.records?.sessions || [];
+  const [start, setStart] = useState(""),
+    [end, setEnd] = useState(""),
+    [academic, setAcademic] = useState(""),
+    [semester, setSemester] = useState(""),
     [caseStatus, setCaseStatus] = useState(""),
     [incident, setIncident] = useState(""),
     [detail, setDetail] = useState(null);
-  const [sessions] = useState(loadSessions);
+
   const invalid = start && end && start > end;
   const inPeriod = (date) =>
     date && (!start || date >= start) && (!end || date <= end);
-  const termMatches = academic === "2026–2027" && semester === "1st Semester";
+  const termMatches = true;
   const clearance =
     invalid || !termMatches
       ? []
       : rows.filter(
           (r) =>
             inPeriod(r.requested) &&
+            (!academic || r.academicYear === academic) &&
+            (!semester || r.semester === semester) &&
             (!caseStatus || r.caseStatus === caseStatus) &&
             (!incident || r.caseId !== "None"),
         );
-  const cases = clearance.filter((r) => r.caseId !== "None");
+  const cases = (database.records?.cases || [])
+    .filter(
+      (r) =>
+        inPeriod(r.date) &&
+        (!caseStatus || r.status === caseStatus) &&
+        (!incident || r.type === incident),
+    )
+    .map((r) => ({ ...r, caseStatus: r.status }));
   const resolved = cases.filter((r) => r.caseStatus.startsWith("Resolved"));
   const open = cases.filter((r) => !r.caseStatus.startsWith("Resolved"));
   const reviewed = clearance.filter((r) => r.reviewed);
@@ -108,7 +117,9 @@ export default function OsasReports({ rows, settings }) {
   const totals = summarizeEarnings(
     invalid || !termMatches ? [] : sessions.filter((s) => inPeriod(s.date)),
   );
-  const endDate = new Date((end || "2026-09-30") + "T12:00:00");
+  const endDate = new Date(
+    (end || new Date().toISOString().slice(0, 10)) + "T12:00:00",
+  );
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(endDate.getFullYear(), endDate.getMonth() - 5 + i, 1);
     const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -133,7 +144,7 @@ export default function OsasReports({ rows, settings }) {
         incident: incident || "All",
       },
       source:
-        "Local demo records; case type, priority and resolution timestamps are not recorded.",
+        "Database cases, clearance reviews and recorded financial allocations.",
       referredCases: cases.length,
       openCases: open.length,
       resolvedCases: resolved.length,
@@ -204,8 +215,10 @@ export default function OsasReports({ rows, settings }) {
             value={academic}
             onChange={(e) => setAcademic(e.target.value)}
           >
-            <option>2026–2027</option>
-            <option>2025–2026</option>
+            <option value="">All academic years</option>
+            {[...new Set(rows.map((r) => r.academicYear))].map((year) => (
+              <option key={year}>{year}</option>
+            ))}
           </select>
         </label>
         <label>
@@ -216,8 +229,10 @@ export default function OsasReports({ rows, settings }) {
             value={semester}
             onChange={(e) => setSemester(e.target.value)}
           >
-            <option>1st Semester</option>
-            <option>2nd Semester</option>
+            <option value="">All semesters</option>
+            {[...new Set(rows.map((r) => r.semester))].map((value) => (
+              <option key={value}>{value}</option>
+            ))}
           </select>
         </label>
         <label>
@@ -229,7 +244,11 @@ export default function OsasReports({ rows, settings }) {
             onChange={(e) => setIncident(e.target.value)}
           >
             <option value="">All</option>
-            <option value="unknown">Not recorded</option>
+            {[
+              ...new Set((database.records?.cases || []).map((r) => r.type)),
+            ].map((value) => (
+              <option key={value}>{value}</option>
+            ))}
           </select>
         </label>
         <label>
@@ -249,10 +268,10 @@ export default function OsasReports({ rows, settings }) {
         <button
           className={button}
           onClick={() => {
-            setStart("2026-09-01");
-            setEnd("2026-09-30");
-            setAcademic("2026–2027");
-            setSemester("1st Semester");
+            setStart("");
+            setEnd("");
+            setAcademic("");
+            setSemester("");
             setCaseStatus("");
             setIncident("");
           }}
@@ -267,7 +286,7 @@ export default function OsasReports({ rows, settings }) {
       )}
       <div className="or-metrics">
         {[
-          [BriefcaseBusiness, cases.length, "Total Referred Incidents", cases],
+          [BriefcaseBusiness, cases.length, "Formal Cases", cases],
           [FileText, open.length, "Open Cases", open],
           [ShieldCheck, resolved.length, "Resolved Cases", resolved],
           [Clock, "—", "Average Resolution Time", null],
@@ -307,26 +326,27 @@ export default function OsasReports({ rows, settings }) {
         />
         <section className="or-chart">
           <h2>Incident Types</h2>
-          <button
-            className="or-bar-row"
-            onClick={() => show("Incident types not recorded", cases)}
-          >
-            <span>Not recorded</span>
-            <i>
-              <b style={{ width: cases.length ? "100%" : "0%" }} />
-            </i>
-            <strong>{cases.length}</strong>
-          </button>
-          <p className="or-explanation">
-            Incident classifications are not available in the current case
-            references.
-          </p>
+          {group(cases, "type").map((item) => (
+            <button
+              key={item.label}
+              className="or-bar-row"
+              onClick={() => show(item.label, item.records)}
+            >
+              <span>{item.label}</span>
+              <i>
+                <b
+                  style={{
+                    width: `${cases.length ? (item.count / cases.length) * 100 : 0}%`,
+                  }}
+                />
+              </i>
+              <strong>{item.count}</strong>
+            </button>
+          ))}
         </section>
         <Donut
           title="Cases by Priority"
-          items={[
-            { label: "Not recorded", count: cases.length, records: cases },
-          ]}
+          items={group(cases, "priority")}
           onSelect={(r) => show(r.label, r.records)}
         />
       </div>
@@ -405,9 +425,10 @@ export default function OsasReports({ rows, settings }) {
       </section>
       {settings.tips && (
         <p className="or-explanation">
-          Local demo: case totals use available clearance references. Case
-          filters do not affect financial totals. Missing incident types,
-          priorities, and resolution timestamps are not estimated.
+          Database records. Date and case filters apply to case counts; academic
+          filters apply to clearance reviews. Financial totals use stored
+          allocations and session dates. Missing incident types, priorities, and
+          resolution timestamps are not estimated.
         </p>
       )}
       {detail && (

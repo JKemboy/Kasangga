@@ -480,3 +480,6 @@
     flex-wrap: wrap;
   }
 }
+
+.ocx-stages > .completed { background: #def3e9; color: #087542; }
+.ocx-stages > span > span { padding: 0; background: transparent; color: inherit; font-size: inherit; }

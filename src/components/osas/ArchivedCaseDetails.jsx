@@ -9,6 +9,7 @@ import {
   Eye,
 } from "lucide-react";
 import { Modal, button } from "../tutor/workspace/ui.jsx";
+import EvidenceFile from "./EvidenceFile.jsx";
 import "./case-shortcuts.css";
 import "./archive-details.css";
 
@@ -186,10 +187,18 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
           subtitle={preview.filename}
           onClose={() => setPreview(null)}
         >
-          <p className="text-sm text-slate-600">
-            This archived evidence reference has no source file attached. The
-            original document preview is unavailable.
-          </p>
+          <div className="text-sm text-slate-600">
+            <p className="mb-3">
+              Read-only archived evidence preview loaded from the case record.
+            </p>
+            <EvidenceFile
+              evidence={{
+                ...preview,
+                fileName: preview.fileName || preview.filename,
+              }}
+              readOnly
+            />
+          </div>
           <div className="mt-4 flex justify-end">
             <button className={button} onClick={() => setPreview(null)}>
               Close preview

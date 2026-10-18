@@ -1,3 +1,4 @@
+import { statusClass } from "../shared/statusColors.js";
 import {
   paymentAllocation,
   timestampLabel,
@@ -43,11 +44,7 @@ export default function BookingDetails({
     return () => d.close();
   }, []);
   const badge = (value) => (
-    <span
-      className={`au-status ${["Confirmed", "Completed", "Paid"].includes(value) ? "active" : value === "Cancelled" ? "suspended" : "restricted"}`}
-    >
-      {value || "Unavailable"}
-    </span>
+    <span className={statusClass(value, "au-status")}>{value || "Unavailable"}</span>
   );
   const booking = r.booking || r.id;
   const related = incidents.filter((i) => i.booking === booking);

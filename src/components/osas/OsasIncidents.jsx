@@ -1,8 +1,9 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
+import { statusClass } from "../shared/statusColors.js";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import IncidentAssessment from "./IncidentAssessment.jsx";
+import CaseShortcut from "./CaseShortcut.jsx";
 import UserExport from "../admin/UserExport.jsx";
-import { loadAssessments, incidentSummary } from "./incidentAssessment.js";
-import { loadOsasCases } from "./OsasCases.jsx";
+import { incidentSummary } from "./incidentAssessment.js";
 import { useState } from "react";
 import {
   TriangleAlert,
@@ -18,16 +19,8 @@ import {
 } from "lucide-react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 
-import { incidents } from "./incidentMonitoringData.js";
-export { incidents } from "./incidentMonitoringData.js";
 function Badge({ value }) {
-  return (
-    <span
-      className={`oi-badge ${["High", "Open"].includes(value) ? "red" : ["Resolved", "Case Created"].includes(value) ? "green" : ["Medium", "Under Institutional Review", "Pending Decision"].includes(value) ? "gold" : value === "Assessed by OSAS" ? "purple" : ["Not Referred", "Admin Handling"].includes(value) ? "gray" : "blue"}`}
-    >
-      {value}
-    </span>
-  );
+  return <span className={statusClass(value, "oi-badge")}>{value}</span>;
 }
 const scopeMatches = (r, scope) =>
   !scope ||
@@ -42,12 +35,26 @@ const scopeMatches = (r, scope) =>
       "Under Review",
       "Awaiting Evidence",
       "Pending Decision",
+      "Pending Completion",
+      "Resolved",
     ].includes(r.status)) ||
   (scope === "closed" &&
     ["Resolved", "Closed / No Formal Case"].includes(r.status));
-export default function OsasIncidents({ settings }) {
-  const [month, setMonth] = useState("2026-09"),
-    [query, setQuery] = useState(""),
+export default function OsasIncidents({
+  settings,
+  initialQuery = "",
+  embedded = false,
+}) {
+  const database = useOsasDatabase();
+  const cases = database.records?.cases || [];
+  const incidents = (database.records?.incidents || []).filter((r) => {
+    const linkedCase = cases.find((c) => c.caseId === r.caseId);
+    return linkedCase
+      ? !linkedCase.archived
+      : !["Resolved", "Closed / No Formal Case"].includes(r.status);
+  });
+  const [month, setMonth] = useState(""),
+    [query, setQuery] = useState(initialQuery),
     [referral, setReferral] = useState(""),
     [type, setType] = useState(""),
     [priority, setPriority] = useState(""),
@@ -56,22 +63,23 @@ export default function OsasIncidents({ settings }) {
     [scope, setScope] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
-    [caseView, setCaseView] = useState(false),
+    [selectedCase, setSelectedCase] = useState(null),
     [notice, setNotice] = useState("");
-  const [assessments, setAssessments] = useState(loadAssessments);
-  const cases = loadOsasCases();
+  const assessments = {};
   const monitoring = incidents.map((r) => {
     const record = assessments[r.id] || r;
     const linked = cases.find((c) => c.caseId === record.caseId);
     return linked ? { ...record, status: linked.status } : record;
   });
-  function saveAssessment(updated) {
-    try {
-      const next = { ...loadAssessments(), [updated.id]: updated };
-      requireBackendPersistence();
-    } catch {
-      return false;
-    }
+  async function saveAssessment(updated) {
+    await database.save(
+      "incident",
+      updated.reportDatabaseId,
+      updated.assessment.action,
+      updated,
+    );
+    setSelected(null);
+    return true;
   }
   const monthly = monitoring.filter((r) => !month || r.date.startsWith(month));
   const filtered = monthly.filter(
@@ -113,12 +121,16 @@ export default function OsasIncidents({ settings }) {
     setStatus("");
     setScope("");
     setPage(1);
-    setMonth("2026-09");
+    setMonth("");
     setNotice("");
   }
   function view(r) {
     setSelected(r);
-    setCaseView(false);
+  }
+  function openCase(r) {
+    const record = cases.find((c) => c.caseId === r.caseId);
+    if (record) setSelectedCase(record);
+    else view(r);
   }
   function exportCsv() {
     const fields = [
@@ -156,10 +168,10 @@ export default function OsasIncidents({ settings }) {
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "incident-monitoring-demo.csv";
+    a.download = "incident-monitoring.csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setNotice(`Exported ${filtered.length} matching demo records.`);
+    setNotice(`Exported ${filtered.length} matching database records.`);
   }
   function selectFilter(label, value, setter, field) {
     return (
@@ -181,12 +193,12 @@ export default function OsasIncidents({ settings }) {
       <div className="osas-heading">
         <div>
           <h1>
-            Incident Monitoring{" "}
+            {embedded ? "Case Review" : "Incident Monitoring"}{" "}
             <ShieldAlert size={22} className="text-green-800" />
           </h1>
           <p>
-            Monitor incident reports referred or escalated for institutional
-            review and track whether a formal OSAS case is required.
+            Open an incident to assess the referral, create its formal case,
+            validate evidence and complete the case workflow.
           </p>
         </div>
         <label className="op-month">
@@ -364,10 +376,7 @@ export default function OsasIncidents({ settings }) {
                   {r.caseId ? (
                     <button
                       className="hover:underline"
-                      onClick={() => {
-                        setSelected(r);
-                        setCaseView(true);
-                      }}
+                      onClick={() => openCase(r)}
                     >
                       {r.caseId}
                     </button>
@@ -379,19 +388,17 @@ export default function OsasIncidents({ settings }) {
                   <Badge value={r.status} />
                 </td>
                 <td>
-                  {r.referral === "Not Referred" ? (
-                    <span title="Technical matters remain under Admin handling">
-                      —
-                    </span>
-                  ) : (
-                    <button
-                      className={button + " oi-view"}
-                      aria-label={`View incident ${r.id}`}
-                      onClick={() => view(r)}
-                    >
-                      View Incident
-                    </button>
-                  )}
+                  <button
+                    className={button + " oi-view"}
+                    aria-label={
+                      r.caseId
+                        ? `Open case ${r.caseId}`
+                        : `View incident ${r.id}`
+                    }
+                    onClick={() => (r.caseId ? openCase(r) : view(r))}
+                  >
+                    {r.caseId ? "Open Case" : "View Incident"}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -468,8 +475,14 @@ export default function OsasIncidents({ settings }) {
           onSave={saveAssessment}
           onClose={() => {
             setSelected(null);
-            setAssessments(loadAssessments());
           }}
+        />
+      )}
+      {selectedCase && (
+        <CaseShortcut
+          record={selectedCase}
+          onSave={database.saveCase}
+          onClose={() => setSelectedCase(null)}
         />
       )}
     </section>

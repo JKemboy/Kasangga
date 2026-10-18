@@ -1,6 +1,6 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
+import { statusClass } from "../shared/statusColors.js";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
-import { loadOsasCases } from "./OsasCases.jsx";
 import ServiceMenu from "../admin/ServiceMenu.jsx";
 import { History } from "lucide-react";
 import { useState } from "react";
@@ -21,13 +21,11 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
-import { incidents } from "./incidentMonitoringData.js";
 
 const statuses = [
   "Pending Review",
   "Under Review",
   "Validated",
-  "Requires Clarification",
   "Insufficient",
 ];
 const criteria = [
@@ -37,37 +35,17 @@ const criteria = [
   "Source Verification",
   "Signs of Manipulation",
 ];
-const initial = incidents
-  .filter((r) => r.caseId)
-  .map((r, i) => ({
-    ...r,
-    id: `EVD-2026-${String(45 - i).padStart(3, "0")}`,
-    reportId: r.id,
-    evidenceType: [
-      "Screenshot",
-      "Conversation Log",
-      "Session Record",
-      "Signed Statement",
-      "Image",
-    ][i],
-    time: ["10:24", "14:17", "11:08", "16:36", "13:52"][i],
-    status: [
-      "Pending Review",
-      "Under Review",
-      "Requires Clarification",
-      "Validated",
-      "Insufficient",
-    ][i],
-    history: [],
-  }));
-export function loadOsasEvidence() {
-  return structuredClone(initial);
-}
-export default function OsasEvidence({ settings }) {
-  const [caseRows, setCaseRows] = useState(loadOsasCases);
 
-  const [rows, setRows] = useState(loadOsasEvidence),
-    [month, setMonth] = useState("2026-09"),
+export default function OsasEvidence({ settings }) {
+  const database = useOsasDatabase();
+  const caseRows = database.records?.cases || [];
+  const rows = (database.records?.evidence || []).filter((e) =>
+    caseRows.some(
+      (c) => c.caseId === e.caseId && !c.archived && c.status !== "Resolved",
+    ),
+  );
+
+  const [month, setMonth] = useState(""),
     [status, setStatus] = useState(""),
     [type, setType] = useState(""),
     [incident, setIncident] = useState(""),
@@ -119,33 +97,13 @@ export default function OsasEvidence({ settings }) {
     setPage(1);
   }
   function open(r, nextMode = "evidence") {
-    if (
-      nextMode !== "history" &&
-      !caseRows.some((c) => c.caseId === r.caseId)
-    ) {
-      setNotice("No matching case record is available.");
-      return;
-    }
     setSelected(r);
     setMode(nextMode);
   }
-  function saveCase(record) {
-    try {
-      const next = caseRows.map((c) =>
-        c.caseId === record.caseId ? record : c,
-      );
-      requireBackendPersistence();
-    } catch {
-      return false;
-    }
+  async function saveCase(record) {
+    return database.saveCase(record);
   }
-  const badge = (v) => (
-    <span
-      className={`oe-badge ${v === "Validated" ? "green" : v === "Insufficient" ? "red" : v === "Requires Clarification" ? "blue" : "gold"}`}
-    >
-      {v}
-    </span>
-  );
+  const badge = (v) => <span className={statusClass(v, "oe-badge")}>{v}</span>;
   return (
     <section className="oe-evidence">
       <div className="osas-heading">
@@ -203,7 +161,7 @@ export default function OsasEvidence({ settings }) {
                       [
                         "Awaiting validation",
                         "Currently being assessed",
-                        "Recorded demo outcome",
+                        "Recorded validation result",
                         "Need more information",
                         "Does not meet criteria",
                       ][i]
@@ -268,7 +226,7 @@ export default function OsasEvidence({ settings }) {
             setType("");
             setIncident("");
             setQuery("");
-            setMonth("2026-09");
+            setMonth("");
             setPage(1);
             setNotice("");
           }}
@@ -321,7 +279,7 @@ export default function OsasEvidence({ settings }) {
                 <td>{r.reportId}</td>
                 <td>
                   <span
-                    className={`oe-type type-${initial.findIndex((v) => v.id === r.id)}`}
+                    className={`oe-type type-${rows.findIndex((v) => v.id === r.id) % 5}`}
                   >
                     {r.evidenceType}
                   </span>
@@ -364,7 +322,8 @@ export default function OsasEvidence({ settings }) {
         </table>
         {!visible.length && (
           <p className="p-8 text-center text-xs text-slate-500">
-            No matching evidence. Try resetting your filters.
+            No eligible evidence. Open a formal case in Incident Monitoring
+            before validating its evidence.
           </p>
         )}
       </div>
@@ -427,14 +386,19 @@ export default function OsasEvidence({ settings }) {
       {selected && mode !== "history" && (
         <CaseShortcut
           key={selected.id + mode}
-          record={caseRows.find((c) => c.caseId === selected.caseId)}
+          record={
+            caseRows.find((c) => c.caseId === selected.caseId) ||
+            database.records?.incidents.find(
+              (r) => r.reportDatabaseId === selected.reportDatabaseId,
+            )
+          }
           initialView={mode}
           initialEvidenceId={selected.id}
           onSave={saveCase}
-          onEvidenceSave={setRows}
+          allowEvidenceValidation
+          onEvidenceSave={database.refresh}
           onClose={() => {
             setSelected(null);
-            setRows(loadOsasEvidence());
           }}
         />
       )}

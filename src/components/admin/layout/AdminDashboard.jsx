@@ -1,4 +1,4 @@
-import {useLogout} from "../../shared/LogoutProvider.jsx";
+import { useLogout } from "../../shared/LogoutProvider.jsx";
 import { useRef, useState } from "react";
 import {
   Bell,
@@ -7,7 +7,6 @@ import {
   ChartNoAxesCombined,
   ChevronDown,
   CircleUserRound,
-  ClipboardList,
   CreditCard,
   GraduationCap,
   LayoutDashboard,
@@ -21,7 +20,7 @@ import {
   UserCog,
   X,
 } from "lucide-react";
-import useSidebarMenuScale from "../../dashboard/useSidebarMenuScale.js";
+import useSidebarMenuScale from "../../shared/useSidebarMenuScale.js";
 
 const adminNavigation = [
   { label: "Overview", icon: LayoutDashboard, active: true },
@@ -32,7 +31,6 @@ const adminNavigation = [
   { label: "Payments & Transactions", icon: CreditCard },
   { label: "Incident Reports", icon: TriangleAlert },
   { label: "Reports & Analytics", icon: ChartNoAxesCombined },
-  { label: "Audit Logs", icon: ClipboardList },
   { label: "Settings", icon: Settings },
 ];
 
@@ -63,7 +61,7 @@ function NavigationItem({ item }) {
 }
 
 export default function AdminDashboard() {
- const requestLogout = useLogout();
+  const requestLogout = useLogout();
 
   const [open, setOpen] = useState(false);
   const [activeTopMenu, setActiveTopMenu] = useState(null);
@@ -271,8 +269,10 @@ export default function AdminDashboard() {
             </button>
             <button
               type="button"
-              className="w-full border-t border-slate-100 px-3 py-2 text-left text-[11px] text-red-600 hover:bg-red-50" onClick={requestLogout}>
- Logout
+              className="w-full border-t border-slate-100 px-3 py-2 text-left text-[11px] text-red-600 hover:bg-red-50"
+              onClick={requestLogout}
+            >
+              Logout
             </button>
           </div>
         )}

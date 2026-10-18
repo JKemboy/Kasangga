@@ -1,3 +1,4 @@
+import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { workspaceProfile } from "../../../services/authAccount.js";
 import { getSupabaseClient } from "../../../services/supabaseClient.js";
@@ -211,16 +212,8 @@ export default function LearnerProfile() {
       )}
       <div className="mt-3 grid items-start gap-3 [&>div]:min-w-0 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]">
         <aside className="rounded-xl bg-[linear-gradient(145deg,#f1faf5,#fbfdfc)] p-3 text-center lg:row-span-2">
-          <div className="relative mx-auto grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-slate-200 text-slate-400 shadow">
-            <UserRound className="h-11 w-11" />
-            <button
-              type="button"
-              aria-label="Change profile photo"
-              className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-4 border-white bg-[#087542] text-white"
-            >
-              <Camera className="h-4 w-4" />
-            </button>
-          </div>
+          <PortalAvatar name={profile.name} role="learner" editable className="grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-slate-200 text-xl text-green-800 shadow"/>
+          <p className="text-xs text-slate-500 mt-1">Click photo to change</p>
           <h2 className="mt-2 text-base font-bold">
             {profile.name || "Learner"}
           </h2>

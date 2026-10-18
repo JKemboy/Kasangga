@@ -1,12 +1,15 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
+import { caseProgress, casePermissions } from "./caseProgress.js";
+import { statusClass } from "../shared/statusColors.js";
+import EvidenceFile from "./EvidenceFile.jsx";
+import { useInteractions } from "../shared/InteractionProvider.jsx";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import CaseWorkflow from "./CaseWorkflow.jsx";
-import { caseDescriptions, evidenceSamples } from "./casePreviewData.js";
 import { useEffect, useRef, useState } from "react";
 import { X, FileText, ShieldCheck, Eye, PenLine } from "lucide-react";
-import { button, primary, input } from "../tutor/workspace/ui.jsx";
-import { loadOsasEvidence } from "./OsasEvidence.jsx";
+import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 import "./case-shortcuts.css";
 const criteria = [
+  "Authenticity",
   "Readability",
   "Context Completeness",
   "Relevance to Case",
@@ -16,7 +19,7 @@ const criteria = [
 export function validateEvidence(record, result, checks, notes) {
   if (record.status === "Validated")
     throw Error("Validated evidence is read-only.");
-  if (!["Validated", "Requires Clarification", "Insufficient"].includes(result))
+  if (!["Validated", "Insufficient"].includes(result))
     throw Error("Choose a validation result.");
   if (notes.trim().length < 10)
     throw Error("Enter at least 10 characters of review notes.");
@@ -44,18 +47,14 @@ export function validateEvidence(record, result, checks, notes) {
         status: result,
         criteria: checks,
         notes: notes.trim(),
-        reviewer: "Maria Santos",
+        reviewer: "OSAS Officer",
         at: new Date().toISOString(),
       },
     ],
   };
 }
 const Badge = ({ value }) => (
-  <span
-    className={`ocx-badge ${["High", "Insufficient", "Open"].includes(value) ? "red" : ["Resolved", "Validated", "Case Created", "Pending Decision"].includes(value) ? "green" : ["Referred to OSAS", "Awaiting Evidence", "Low"].includes(value) ? "blue" : "gold"}`}
-  >
-    {value}
-  </span>
+  <span className={statusClass(value, "ocx-badge")}>{value}</span>
 );
 const Facts = ({ items }) => (
   <dl className="ocx-facts">
@@ -74,22 +73,40 @@ export default function CaseShortcut({
   onClose,
   onSave,
   onEvidenceSave,
+  allowEvidenceValidation = true,
 }) {
+  const database = useOsasDatabase();
+  allowEvidenceValidation =
+    allowEvidenceValidation &&
+    !!r.caseDatabaseId &&
+    !(database.records?.evidence||[]).some(e=>e.caseId===r.caseId && e.status==="Insufficient") &&
+    (database.records?.cases || []).some(
+      (c) =>
+        c.caseDatabaseId === r.caseDatabaseId &&
+        !c.archived &&
+        !["Resolved", "Pending Completion"].includes(c.status),
+    );
+  const { confirm } = useInteractions();
+  const evidence = database.records?.evidence || [];
+  r = database.records?.cases.find((c) => c.caseId === r.caseId) || r;
   const [view, setView] = useState(initialView),
-    [evidence, setEvidence] = useState(loadOsasEvidence),
     [evidenceId, setEvidenceId] = useState(initialEvidenceId),
     [notes, setNotes] = useState(""),
     [actionType, setActionType] = useState("Case note"),
     [error, setError] = useState(""),
     [enlarged, setEnlarged] = useState(false),
     [status, setStatus] = useState(r.status);
+  const [archiveConfirm, setArchiveConfirm] = useState(false),
+    [archiving, setArchiving] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
     const d = ref.current;
     d.showModal();
     return () => d.close();
   }, []);
-  const attached = evidence.filter((e) => e.caseId === r.caseId),
+  const attached = evidence.filter(
+      (e) => e.reportDatabaseId === r.reportDatabaseId,
+    ),
     ev = attached.find((e) => e.id === evidenceId) || attached[0];
   const [checks, setChecks] = useState({}),
     [result, setResult] = useState("");
@@ -97,11 +114,7 @@ export default function CaseShortcut({
     const last = ev?.history?.at(-1);
     setChecks(last?.criteria || {});
     setResult(
-      ["Validated", "Requires Clarification", "Insufficient"].includes(
-        ev?.status,
-      )
-        ? ev.status
-        : "",
+      ["Validated", "Insufficient"].includes(ev?.status) ? ev.status : "",
     );
     setNotes(view === "evidence" ? last?.notes || "" : "");
   }, [ev?.id]);
@@ -110,8 +123,14 @@ export default function CaseShortcut({
     setError("");
     setNotes(next === "evidence" ? ev?.history?.at(-1)?.notes || "" : "");
   }
-  function saveNote(e) {
+  async function saveNote(e) {
     e.preventDefault();
+    if (!casePermissions(r, attached, database.records?.clearance || []).note) {
+      setError(
+        "Complete the current workflow step before adding case actions.",
+      );
+      return;
+    }
     if (notes.trim().length < 10) {
       setError("Enter at least 10 characters.");
       return;
@@ -124,23 +143,33 @@ export default function CaseShortcut({
           action: actionType,
           notes: notes.trim(),
           status: r.status,
-          officer: "Maria Santos",
+          officer: "OSAS Officer",
           at: new Date().toISOString(),
         },
       ],
     };
-    if (onSave(next) === false) {
-      setError("Could not save this case.");
-      return;
-    }
-    open("case");
-  }
-  function saveEvidence() {
     try {
+      await (onSave || database.saveCase)(next);
+      open("case");
+    } catch (cause) {
+      setError(cause.message);
+    }
+  }
+  async function saveEvidence() {
+    try {
+      if (!allowEvidenceValidation)
+        throw Error("Open a formal case before validating evidence.");
       const updated = validateEvidence(ev, result, checks, notes);
       const next = evidence.map((e) => (e.id === ev.id ? updated : e));
-      requireBackendPersistence();
-} catch (e) {
+      await database.save(
+        "evidence",
+        updated.evidenceDatabaseId,
+        "validate",
+        updated,
+      );
+      setError("");
+      if (result === "Insufficient") open("case");
+    } catch (e) {
       setError(e.message);
     }
   }
@@ -181,6 +210,19 @@ export default function CaseShortcut({
             {view === "incident" && (
               <Badge value={r.referral || "Case Created"} />
             )}
+            {view === "evidence" && !allowEvidenceValidation && (
+              <button
+                className={primary}
+                onClick={() => {
+                  onClose();
+                  window.dispatchEvent(
+                    new Event("campustutor:open-evidence-validation"),
+                  );
+                }}
+              >
+                Go to Case Review
+              </button>
+            )}
             {view === "evidence" && ev && <Badge value={ev.status} />}
           </h2>
           <p>
@@ -205,22 +247,27 @@ export default function CaseShortcut({
         {view === "case" && (
           <>
             <nav className="ocx-stages" aria-label="Case workflow">
-              {[
-                "Incident Report",
-                "OSAS Referral",
-                "Formal Case",
-                "Evidence Validation",
-                "Case Review",
-                "Case Actions",
-                "Case Decision",
-                "Clearance Effect",
-                "Resolution",
-                "Archive",
-              ].map((t) => (
-                <span key={t} className={t === "Case Review" ? "current" : ""}>
-                  {t}
-                </span>
-              ))}
+              {caseProgress(r, attached, database.records?.clearance || []).map(
+                (step) => (
+                  <span
+                    key={step.label}
+                    className={step.state}
+                    aria-current={step.state === "current" ? "step" : undefined}
+                    title={
+                      step.state === "completed"
+                        ? "Completed"
+                        : step.state === "current"
+                          ? "Current step"
+                          : "Upcoming"
+                    }
+                  >
+                    {step.state === "completed" && (
+                      <span aria-hidden="true">? </span>
+                    )}
+                    {step.label}
+                  </span>
+                ),
+              )}
             </nav>
             <section>
               <h3>
@@ -266,8 +313,8 @@ export default function CaseShortcut({
                 <b>ALLEGATION AS REPORTED · NOT A FINDING</b>
                 <br />
                 {r.description ||
-                  caseDescriptions[r.caseId] ||
-                  "The source narrative is not attached to this sample case."}
+                  r.description ||
+                  "The source narrative is not attached to this case."}
               </p>
             </section>
             <section>
@@ -303,7 +350,7 @@ export default function CaseShortcut({
                 </li>
                 {(r.history || []).map((h, i) => (
                   <li key={i}>
-                    <b>{h.action || h.status}</b>
+                    <b>{h.actionLabel || h.action || h.status}</b>
                     <small>
                       {h.at} ? {h.officer}
                     </small>
@@ -321,7 +368,7 @@ export default function CaseShortcut({
                     [
                       "Resolution",
                       r.decision.condition && !r.decision.conditionDone
-                        ? "Resolved ? Conditions Pending"
+                        ? "Pending Completion ? Conditions Pending"
                         : "Resolved",
                     ],
                     ["Decision basis", r.decision.notes],
@@ -344,7 +391,7 @@ export default function CaseShortcut({
               {r.history?.length ? (
                 r.history.map((h, i) => (
                   <article key={i}>
-                    <b>{h.action || h.status}</b>
+                    <b>{h.actionLabel || h.action || h.status}</b>
                     <p>{h.notes}</p>
                     <small>
                       {h.officer} · {h.at}
@@ -368,9 +415,11 @@ export default function CaseShortcut({
               >
                 {[
                   "Case note",
-                  "Follow-up",
-                  "Documentation",
-                  "Participant contact",
+                  "Interview conducted",
+                  "Notice sent to parties",
+                  "Meeting scheduled",
+                  "Referral to counseling",
+                  "Correspondence logged",
                 ].map((t) => (
                   <option key={t}>{t}</option>
                 ))}
@@ -388,8 +437,8 @@ export default function CaseShortcut({
               />
             </label>
             <small>
-              {notes.trim().length}/10 characters minimum · not connected to the database to the
-              case record
+              {notes.trim().length}/10 characters minimum · saved to the
+              database for the case record
             </small>
           </form>
         )}
@@ -456,8 +505,8 @@ export default function CaseShortcut({
                 AS SUBMITTED BY THE REPORTER
               </strong>
               {r.description ||
-                caseDescriptions[r.caseId] ||
-                "Original report narrative not attached to this sample."}
+                r.description ||
+                "Original report narrative not attached to this record."}
             </p>
             <h3>Evidence attached to the report ({attached.length})</h3>
             {!attached.length && <p className="ocx-muted">None.</p>}
@@ -495,6 +544,12 @@ export default function CaseShortcut({
             <p>No evidence is attached to this case.</p>
           ) : (
             <>
+              {!allowEvidenceValidation && (
+                <p className="ocx-warning">
+                  Evidence preview only. Perform validation in the Evidence
+                  Validation section.
+                </p>
+              )}
               <div className="ocx-evidence-grid">
                 <div>
                   <h3>
@@ -508,19 +563,11 @@ export default function CaseShortcut({
                     </button>
                   </h3>
                   <div className={`ocx-preview ${enlarged ? "large" : ""}`}>
-                    <div className="ocx-sample">
-                      <b>{ev.evidenceType}</b>
-                      {evidenceSamples[ev.id]?.lines.map((line, i) => (
-                        <p key={i}>{line}</p>
-                      )) || <p>Original evidence file not attached.</p>}
-                    </div>
-                    <small>
-                      Illustrative demo preview from the supplied design.
-                      Original source file not attached.
-                    </small>
+                    <EvidenceFile evidence={ev} />
                   </div>
                   <p className="ocx-warning">
-                    Evidence requires manual review. Submission alone does not establish misconduct.
+                    Evidence requires manual review. Submission alone does not
+                    establish misconduct.
                   </p>
                 </div>
                 <div>
@@ -540,7 +587,7 @@ export default function CaseShortcut({
                       ["Submitted By", ev.reporter],
                       ["Evidence Type", ev.evidenceType],
                       ["Submission Date", `${ev.date} · ${ev.time}`],
-                      ["File", ev.fileName || evidenceSamples[ev.id]?.file],
+                      ["File", ev.fileName],
                     ]}
                   />
                   <h3>
@@ -560,7 +607,10 @@ export default function CaseShortcut({
                       <label>
                         <input
                           type="checkbox"
-                          disabled={ev.status === "Validated"}
+                          disabled={
+                            !allowEvidenceValidation ||
+                            ev.status === "Validated"
+                          }
                           checked={checks[c] === "Meets criterion"}
                           onChange={(e) =>
                             setChecks({
@@ -574,6 +624,7 @@ export default function CaseShortcut({
                         {c}
                       </label>
                       {c === "Source Verification" &&
+                        allowEvidenceValidation &&
                         ev.status !== "Validated" && (
                           <button
                             className="ocx-link"
@@ -594,15 +645,11 @@ export default function CaseShortcut({
                         )}
                     </div>
                   ))}
-                  {ev.status !== "Validated" && (
+                  {allowEvidenceValidation && ev.status !== "Validated" && (
                     <>
                       <h3>Validation result</h3>
                       <div className="ocx-results">
-                        {[
-                          "Validated",
-                          "Requires Clarification",
-                          "Insufficient",
-                        ].map((v) => (
+                        {["Validated", "Insufficient"].map((v) => (
                           <button
                             className={result === v ? primary : button}
                             key={v}
@@ -637,7 +684,7 @@ export default function CaseShortcut({
                   {ev.status === "Validated" && (
                     <p>
                       {ev.history?.at(-1)?.notes ||
-                        "Validation notes not recorded in this sample."}
+                        "Validation notes not recorded in this record."}
                     </p>
                   )}
                 </div>
@@ -650,21 +697,114 @@ export default function CaseShortcut({
           </p>
         )}
       </div>
+      {archiveConfirm && (
+        <Modal
+          title={`Archive ${r.caseId}?`}
+          onClose={() => setArchiveConfirm(false)}
+        >
+          <p>
+            Archived cases become read-only institutional records. Their
+            decisions cannot be changed.
+          </p>
+          <div className="ocx-results">
+            <button
+              className={button}
+              disabled={archiving}
+              onClick={() => setArchiveConfirm(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className={primary}
+              disabled={archiving}
+              onClick={async () => {
+                setArchiving(true);
+                try {
+                  await database.saveCase({ ...r, archived: true });
+                  onClose();
+                  window.dispatchEvent(
+                    new Event("campustutor:open-case-archive"),
+                  );
+                } catch (cause) {
+                  setError(cause.message);
+                  setArchiveConfirm(false);
+                } finally {
+                  setArchiving(false);
+                }
+              }}
+            >
+              {archiving
+                ? "Archiving..."
+                : attached.some((e) => e.status === "Insufficient")
+                  ? "Archive Case"
+                  : "Resolve & Archive"}
+            </button>
+          </div>
+        </Modal>
+      )}
       <footer>
+        {(r.status === "Resolved" ||
+          attached.some((e) => e.status === "Insufficient")) &&
+          !r.archived && (
+            <button
+              className={button}
+              disabled={
+                caseProgress(
+                  r,
+                  attached,
+                  database.records?.clearance || [],
+                ).find((step) => step.state === "current")?.label !== "Archive"
+              }
+              onClick={() => setArchiveConfirm(true)}
+            >
+              {attached.some((e) => e.status === "Insufficient")
+                ? "Archive Case ? Insufficient Evidence"
+                : "Resolve & Archive"}
+            </button>
+          )}
         {view === "case" ? (
           <>
             <button
               className={button}
-              disabled={r.archived}
+              disabled={
+                !casePermissions(r, attached, database.records?.clearance || [])
+                  .note
+              }
               onClick={() => open("note")}
             >
               <PenLine size={15} />
               Add Case Action/Note
             </button>
-            <button className={button} onClick={() => open("evidence")}>
-              Review Evidence
-            </button>
-            <CaseWorkflow record={r} evidence={attached} onSave={onSave} />
+            {allowEvidenceValidation &&
+              attached.some((e) => e.status !== "Validated") && (
+                <button
+                  className={primary}
+                  disabled={
+                    casePermissions(
+                      r,
+                      attached,
+                      database.records?.clearance || [],
+                    ).step !== "Evidence Validation"
+                  }
+                  onClick={() => open("evidence")}
+                >
+                  Validate Evidence
+                </button>
+              )}
+            {attached.length > 0 &&
+              attached.every((e) => e.status === "Validated") && (
+                <button className={button} onClick={() => open("evidence")}>
+                  Review Evidence
+                </button>
+              )}
+            {r.caseDatabaseId && (
+              <CaseWorkflow
+                record={r}
+                evidence={attached}
+                clearance={database.records?.clearance || []}
+                onSave={onSave || database.saveCase}
+              />
+            )}
           </>
         ) : view === "incident" ? (
           <button className={primary} onClick={onClose}>
@@ -687,22 +827,25 @@ export default function CaseShortcut({
                 Save to Case Record
               </button>
             )}
-            {view === "evidence" && ev && ev.status !== "Validated" && (
-              <button
-                className={primary}
-                onClick={saveEvidence}
-                disabled={!result || notes.trim().length < 10}
-              >
-                Save Validation
-              </button>
-            )}
+            {view === "evidence" &&
+              allowEvidenceValidation &&
+              ev &&
+              ev.status !== "Validated" && (
+                <button
+                  className={primary}
+                  onClick={saveEvidence}
+                  disabled={!result || notes.trim().length < 10}
+                >
+                  Save Validation
+                </button>
+              )}
             {view === "status" && (
               <button
                 className={primary}
                 disabled={notes.trim().length < 10}
-                onClick={() => {
-                  if (
-                    onSave({
+                onClick={async () => {
+                  try {
+                    await (onSave || database.saveCase)({
                       ...r,
                       status,
                       history: [
@@ -710,14 +853,15 @@ export default function CaseShortcut({
                         {
                           status,
                           notes: notes.trim(),
-                          officer: "Maria Santos",
+                          officer: "OSAS Officer",
                           at: new Date().toISOString(),
                         },
                       ],
-                    }) === false
-                  )
-                    setError("Could not save.");
-                  else open("case");
+                    });
+                    open("case");
+                  } catch (cause) {
+                    setError(cause.message);
+                  }
                 }}
               >
                 Save Status

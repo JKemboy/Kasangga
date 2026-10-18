@@ -472,6 +472,30 @@
   font-size: 8px;
   padding: 3px 5px;
 }
+.ad-table .ad-catalog-person {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.ad-table .ad-catalog-person > span:first-child {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+}
+.ad-table .ad-catalog-person .ad-catalog-person-name {
+  display: block;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #17233f;
+  font-size: 10px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+}
 .ad-actions {
   display: flex;
   gap: 5px;
@@ -678,9 +702,10 @@
     padding: 4px 5px;
     line-height: 12px;
   }
-  .ad-table .au-person > span {
-    width: 23px;
-    height: 23px;
+  .ad-table .ad-catalog-person > span:first-child {
+    flex-basis: 30px;
+    width: 30px;
+    height: 30px;
   }
   .ad-table th {
     padding: 7px 5px;

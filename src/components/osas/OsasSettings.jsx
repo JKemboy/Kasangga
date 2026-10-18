@@ -1,5 +1,6 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
+import PortalAvatar from "../shared/PortalAvatar.jsx";
 import SecurityFlow from "../shared/SecurityFlow.jsx";
+import { useAuth } from "../../auth/AuthProvider.jsx";
 import { useState } from "react";
 import {
   UserRound,
@@ -48,6 +49,7 @@ export function loadSettings() {
 }
 
 export default function OsasSettings({ settings, onSave }) {
+  const auth = useAuth();
   const [draft, setDraft] = useState(() => structuredClone(settings)),
     [notice, setNotice] = useState(""),
     [error, setError] = useState(""),
@@ -72,7 +74,7 @@ export default function OsasSettings({ settings, onSave }) {
           month: draft.dateFormat === "long" ? "short" : "2-digit",
           day: "2-digit",
         }).format(now);
-  function save(e) {
+  async function save(e) {
     e.preventDefault();
     setError("");
     if (
@@ -88,11 +90,10 @@ export default function OsasSettings({ settings, onSave }) {
       alternate: draft.alternate.trim(),
     };
     try {
-      requireBackendPersistence();
-    } catch {
-      setError(
-        "This action is not connected to the database yet. Nothing was saved.",
-      );
+      await onSave(next);
+      setNotice("OSAS preferences saved to Supabase.");
+    } catch (cause) {
+      setError(cause.message);
     }
   }
   function locked(label, value) {
@@ -131,9 +132,14 @@ export default function OsasSettings({ settings, onSave }) {
             1. OSAS Profile Information
           </h2>
           <div className="os-profile">
-            <span className="os-profile-avatar">OS</span>
-            {locked("Full Name", "OSAS Officer")}
-            {locked("University Email", "")}
+            <PortalAvatar role="osas" editable />
+            {locked(
+              "Full Name",
+              [auth?.profile?.first_name, auth?.profile?.last_name]
+                .filter(Boolean)
+                .join(" "),
+            )}
+            {locked("University Email", auth?.user?.email || "")}
           </div>
           <div className="os-fields">
             {locked("Position / Role", "OSAS Case Officer")}
@@ -212,8 +218,9 @@ export default function OsasSettings({ settings, onSave }) {
             </tbody>
           </table>
           <p className="os-help">
-            Preferences are not connected to the database; notification delivery
-            is not connected yet.
+            Preferences are saved to Supabase. Case updates create in-app
+            notifications; email delivery requires an institutional email
+            service.
           </p>
         </section>
         <section className="os-card">
@@ -247,7 +254,7 @@ export default function OsasSettings({ settings, onSave }) {
           </div>
           <div className="os-security-row">
             <b>Recent Login</b>
-            <span>Unavailable in local demo</span>
+            <span>Unavailable until configured</span>
           </div>
           <p className="os-help flex items-center gap-2">
             <Info size={13} />

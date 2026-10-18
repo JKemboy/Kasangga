@@ -390,6 +390,7 @@ export function mapDirectory(rows) {
         id: key,
         tutorProfileId: key,
         userId: row.user_id,
+        avatarUserId: row.user_id,
         name,
         degree: row.program || "",
         bio: row.bio || "",

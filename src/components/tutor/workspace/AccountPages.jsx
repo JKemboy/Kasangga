@@ -1,3 +1,4 @@
+import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import BookingMessages from "../../shared/BookingMessages.jsx";
 import SessionDetails from "./SessionDetails.jsx";
 import { time, hour } from "./data.js";
@@ -105,17 +106,12 @@ export function Profile({
         >
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              <div
-                aria-label="Tutor profile avatar"
-                className="grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-slate-50 to-slate-200 text-2xl font-semibold text-green-800"
-              >
-                {p.name
-                  .split(" ")
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((part) => part[0])
-                  .join("")}
-              </div>
+              <PortalAvatar
+                name={p.name}
+                role="tutor"
+                editable
+                className="grid h-20 w-20 place-items-center rounded-full bg-slate-100 text-2xl font-semibold text-green-800"
+              />
               <span className="absolute -bottom-0.5 -right-0.5 grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-green-700 text-white">
                 <Check className="h-4 w-4" strokeWidth={3} />
               </span>

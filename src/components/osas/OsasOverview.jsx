@@ -1,8 +1,7 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
-import { loadOsasEvidence } from "./OsasEvidence.jsx";
+import { statusClass } from "../shared/statusColors.js";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import OverviewMonth from "./OverviewMonth.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
-import { loadOsasCases } from "./OsasCases.jsx";
 import ServiceMenu from "../admin/ServiceMenu.jsx";
 import { Eye, PenLine } from "lucide-react";
 import { useState } from "react";
@@ -27,9 +26,11 @@ export default function OsasOverview({
   onClearance,
   onReports,
 }) {
-  const [month, setMonth] = useState("2026-09"),
+  const database = useOsasDatabase();
+  const caseRows = database.records?.cases || [];
+  const [month, setMonth] = useState(""),
     [detail, setDetail] = useState(null);
-  const [caseRows, setCaseRows] = useState(loadOsasCases);
+
   const [shortcut, setShortcut] = useState(null);
   const openCase = (record, view = "case") =>
     setShortcut({
@@ -37,19 +38,15 @@ export default function OsasOverview({
       view,
       evidenceId: view === "evidence" ? record.id : undefined,
     });
-  const saveCase = (updated) => {
-    try {
-      const next = caseRows.map((r) =>
-        r.caseId === updated.caseId ? updated : r,
-      );
-      requireBackendPersistence();
-} catch {
-      return false;
-    }
-  };
+  const saveCase = database.saveCase;
   const records = rows.filter((r) => !month || r.requested.startsWith(month));
   const cases = caseRows
-    .filter((r) => !r.archived && (!month || r.date.startsWith(month)))
+    .filter(
+      (r) =>
+        !r.archived &&
+        r.status !== "Resolved" &&
+        (!month || r.date.startsWith(month)),
+    )
     .map((r) => ({
       ...r,
       name: r.student,
@@ -58,7 +55,7 @@ export default function OsasOverview({
     }))
     .sort((a, b) => b.date.localeCompare(a.date));
   const open = cases.filter((r) => !r.caseStatus.startsWith("Resolved"));
-  const evidence = loadOsasEvidence()
+  const evidence = (database.records?.evidence || [])
     .filter(
       (e) =>
         cases.some((c) => c.caseId === e.caseId) && e.status !== "Validated",
@@ -223,13 +220,15 @@ export default function OsasOverview({
                       <small>{r.caseId}</small>
                     </td>
                     <td>{r.type}</td>
-                    <td className="text-slate-400">—</td>
+                    <td>
+                      <span className={statusClass(r.priority, "oo-status")}>
+                        {r.priority || "Not recorded"}
+                      </span>
+                    </td>
                     <td>{date(r.requested)}</td>
                     <td>{r.officer}</td>
                     <td>
-                      <span
-                        className={`oo-status ${r.caseStatus.startsWith("Resolved") ? "resolved" : r.caseStatus === "Awaiting Evidence" ? "evidence" : "review"}`}
-                      >
+                      <span className={statusClass(r.caseStatus, "oo-status")}>
                         {r.caseStatus}
                       </span>
                     </td>
@@ -251,7 +250,8 @@ export default function OsasOverview({
             </table>
             {!cases.length && (
               <p className="p-8 text-center text-xs text-slate-500">
-                No case references for this month.
+                No formal cases for the selected period. Review pending
+                referrals above.
               </p>
             )}
           </div>
@@ -335,7 +335,7 @@ export default function OsasOverview({
           <p>
             Incident reports remain allegations until OSAS completes impartial
             review and records a final institutional decision. Case totals
-            reflect the local case records; clearance totals reflect clearance
+            reflect database case records; clearance totals reflect clearance
             requests.
           </p>
         </div>

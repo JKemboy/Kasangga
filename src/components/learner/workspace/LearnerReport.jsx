@@ -1,8 +1,10 @@
-﻿import { useState } from "react";
-import { Upload, ShieldCheck } from "lucide-react";
+import EvidencePicker from "../../shared/EvidencePicker.jsx";
+import { useRef, useState } from "react";
+import { ShieldCheck } from "lucide-react";
 import { button, input, primary } from "../../tutor/workspace/ui.jsx";
 import { sessionInfo } from "./SessionDialog.jsx";
 export default function LearnerReport({ record, onClose, onSubmit }) {
+  const submissionKey = useRef(crypto.randomUUID());
   const bookings = record.bookings || (record.id ? [sessionInfo(record)] : []);
   const [booking, setBooking] = useState(String(bookings[0]?.id || "")),
     [type, setType] = useState(""),
@@ -10,57 +12,28 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
     [files, setFiles] = useState([]),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
-  async function attach(e) {
-    const chosen = [...e.target.files];
-    e.target.value = "";
-    if (
-      chosen.some(
-        (f) =>
-          !["image/png", "image/jpeg", "application/pdf"].includes(f.type) ||
-          f.size > 10 * 1024 * 1024,
-      )
-    )
-      return setError("Choose PNG, JPG or PDF files up to 10 MB each.");
-    setBusy(true);
-    setError("");
-    try {
-      const attachments = await Promise.all(
-        chosen.map(
-          (f) =>
-            new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () =>
-                resolve({
-                  name: f.name,
-                  type: f.type,
-                  size: f.size,
-                  data: reader.result,
-                });
-              reader.onerror = () =>
-                reject(new Error("Could not read evidence."));
-              reader.readAsDataURL(f);
-            }),
-        ),
-      );
-      setFiles((prev) => [...prev, ...attachments]);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  }
   return (
     <form
       className="ls-flow"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit({
-          sessionId: bookings.find((b) => String(b.id) === booking)?.id,
-          name: record.name,
-          incidentType: type,
-          reason: description.trim(),
-          evidence: files,
-        });
+        if (busy) return;
+        setBusy(true);
+        setError("");
+        try {
+          await onSubmit({
+            sessionId: bookings.find((b) => String(b.id) === booking)?.id,
+            name: record.name,
+            incidentType: type,
+            reason: description.trim(),
+            evidence: files,
+            submissionKey: submissionKey.current,
+          });
+        } catch (cause) {
+          setError(cause.message);
+        } finally {
+          setBusy(false);
+        }
       }}
     >
       <div className="ls-content">
@@ -71,7 +44,6 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
             value={booking}
             onChange={(e) => setBooking(e.target.value)}
           >
-            <option value="">Conversation only (no booking)</option>
             {bookings.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.bookingId}, {b.name}, {b.date}
@@ -113,36 +85,12 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
           />
         </label>
         <p className="ls-muted">At least 20 characters.</p>
-        <label className="ls-field">
-          Evidence (optional)
-          <span className="flex items-center gap-3 rounded-lg border border-dashed border-slate-300 p-4">
-            <Upload size={20} />
-            <span>
-              Upload screenshots or files
-              <small className="block font-normal text-slate-500">
-                PNG, JPG or PDF, up to 10 MB each
-              </small>
-            </span>
-          </span>
-          <input
-            type="file"
-            multiple
-            accept="image/png,image/jpeg,application/pdf"
-            onChange={attach}
-            disabled={busy}
-          />
-        </label>
-        {files.map((f, i) => (
-          <div key={i} className="flex justify-between gap-2">
-            <span className="truncate">{f.name}</span>
-            <button
-              type="button"
-              onClick={() => setFiles(files.filter((_, j) => i !== j))}
-            >
-              Remove
-            </button>
-          </div>
-        ))}
+        <EvidencePicker
+          files={files}
+          onChange={setFiles}
+          onError={setError}
+          disabled={busy}
+        />
         {error && (
           <p role="alert" className="text-red-600">
             {error}
@@ -151,8 +99,8 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
         <div className="ls-alert mt-4">
           <ShieldCheck size={23} />
           <p>
-            Report saving and admin delivery are not connected
-            yet. For emergencies, contact campus security right away.
+            Reports are saved securely for Admin screening and OSAS review. For
+            emergencies, contact campus security right away.
           </p>
         </div>
       </div>
@@ -162,7 +110,13 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
         </button>
         <button
           className={primary}
-          disabled={busy || !type || description.trim().length < 20}
+          disabled={
+            busy ||
+            !booking ||
+            !type ||
+            description.trim().length < 20 ||
+            !files.length
+          }
         >
           {busy ? "Reading evidence…" : "Submit Report"}
         </button>

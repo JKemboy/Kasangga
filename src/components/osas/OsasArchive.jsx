@@ -1,3 +1,5 @@
+import CaseShortcut from "./CaseShortcut.jsx";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import { useState } from "react";
 import {
   Archive,
@@ -12,14 +14,13 @@ import { button, input } from "../tutor/workspace/ui.jsx";
 
 import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 
-// Fictional archive references matching the design; no official case documents.
-export const initialRecords = [];
+// Resolved cases appear here; final archival still enforces conditions and holds.
+
 export default function OsasArchive({ settings }) {
-  const [records] = useState(() => {
-    return initialRecords;
-  });
+  const database = useOsasDatabase();
+  const records = database.records?.archive || [];
   const [query, setQuery] = useState(""),
-    [year, setYear] = useState("2026–2027"),
+    [year, setYear] = useState(""),
     [type, setType] = useState(""),
     [outcome, setOutcome] = useState(""),
     [start, setStart] = useState(""),
@@ -68,7 +69,7 @@ export default function OsasArchive({ settings }) {
   }
   function reset() {
     setQuery("");
-    setYear("2026–2027");
+    setYear("");
     setType("");
     setOutcome("");
     setStart("");
@@ -113,8 +114,11 @@ export default function OsasArchive({ settings }) {
           onChange={(e) => change(setYear, e.target.value)}
         >
           <option value="">All academic years</option>
-          <option value="2026–2027">Academic Year 2026–2027</option>
-          <option value="2025–2026">Academic Year 2025–2026</option>
+          {[...new Set(records.map((r) => r.year))].map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
         </select>
       </div>
       <div className="op-metrics oi-metrics oa-metrics">
@@ -151,9 +155,11 @@ export default function OsasArchive({ settings }) {
           ],
           [
             Archive,
-            records.filter((r) => r.year === (year || "2026–2027")).length,
+            records.filter(
+              (r) => r.year === (year || String(new Date().getFullYear())),
+            ).length,
             "Archived This Academic Year",
-            `Academic Year ${year || "2026–2027"}`,
+            `Academic Year ${year || String(new Date().getFullYear())}`,
             "View this year",
             "year",
             "#076eff",
@@ -162,7 +168,7 @@ export default function OsasArchive({ settings }) {
           <button
             key={value}
             onClick={() => {
-              const selectedYear = year || "2026–2027";
+              const selectedYear = year || String(new Date().getFullYear());
               card(value);
               if (value === "year") setYear(selectedYear);
             }}
@@ -287,7 +293,11 @@ export default function OsasArchive({ settings }) {
                 <td>{date(r.opened)}</td>
                 <td>{date(r.resolved)}</td>
                 <td>{badge(r)}</td>
-                <td>{date(r.archived)}</td>
+                <td>
+                  {r.full?.archived
+                    ? date(r.archived)
+                    : "Awaiting final archival"}
+                </td>
                 <td>{r.officer}</td>
                 <td>
                   <button
@@ -338,17 +348,27 @@ export default function OsasArchive({ settings }) {
       <div className="op-note">
         <Info size={18} />
         <p>
-          Archived cases are read-only reference records. This demo catalog
-          contains fictional samples; official records, authorization, and
-          retention controls require institutional integration.
+          Resolved cases appear here. Complete any remaining conditions and
+          clearance holds before final archival. Archived cases are read-only.
         </p>
       </div>
-      {selected && (
-        <ArchivedCaseDetails
-          record={selected}
-          date={date}
+      {selected && !selected.full?.archived ? (
+        <CaseShortcut
+          record={
+            database.records.cases.find((c) => c.caseId === selected.caseId) ||
+            selected.full
+          }
           onClose={() => setSelected(null)}
+          onSave={database.saveCase}
         />
+      ) : (
+        selected && (
+          <ArchivedCaseDetails
+            record={selected}
+            date={date}
+            onClose={() => setSelected(null)}
+          />
+        )
       )}
     </section>
   );

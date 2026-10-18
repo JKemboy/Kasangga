@@ -1,3 +1,4 @@
+import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import "./tutor-modals.css";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
@@ -17,16 +18,8 @@ export function Badge({ children }) {
     </span>
   );
 }
-export function Avatar({ name }) {
-  return (
-    <span className="inline-grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-green-50 to-slate-200 text-xs font-bold text-green-800">
-      {name
-        .split(" ")
-        .slice(0, 2)
-        .map((s) => s[0])
-        .join("")}
-    </span>
-  );
+export function Avatar({ name, userId }) {
+  return <PortalAvatar name={name} userId={userId} />;
 }
 export function Panel({ title, children, action }) {
   return (

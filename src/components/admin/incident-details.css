@@ -1,1 +1,150 @@
-﻿.admin-incident-details{margin:auto;width:min(960px,95vw);max-height:92dvh;padding:0;border:0;border-radius:14px;color:#17212b;font-size:12px;box-shadow:0 24px 70px #0003}.admin-incident-details::backdrop{background:#15231d70}.admin-incident-details[open]{display:flex;flex-direction:column}.admin-incident-details>header,.admin-incident-details>footer{padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}.admin-incident-details>header{border-bottom:1px solid #e5e7eb}.admin-incident-details h2{font-size:19px;font-weight:700;display:flex;align-items:center;gap:7px}.admin-incident-details header p{color:#718096;margin-top:5px}.aid-body{overflow-y:auto;min-height:0;padding:20px 24px}.aid-body dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 24px;margin-bottom:22px}.aid-body dt{color:#718096;font-size:11px;margin-bottom:5px}.aid-body dd{overflow-wrap:anywhere}.aid-body dd small{display:block;color:#718096;margin-top:3px}.aid-body h3{font-weight:700;margin:18px 0 10px}.aid-description{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px}.aid-description strong{color:#a16207;font-size:10px}.aid-description p{margin-top:5px}.aid-evidence{padding:16px;border:1px solid #e5e7eb;border-radius:8px;color:#718096}.aid-info{display:flex;align-items:flex-start;gap:12px;background:#e8f3ff;padding:14px;border-radius:9px;margin:12px 0;color:#253b60}.aid-info svg{flex-shrink:0;color:#1671ed}.admin-incident-details>footer{border-top:1px solid #e5e7eb;justify-content:flex-end}.aid-body details{margin-top:12px}.aid-body details>div{padding:10px;border-bottom:1px solid #e5e7eb}.aid-action{font-size:12px}.aid-action label{display:block;font-weight:600;margin-bottom:6px}.aid-action textarea{width:100%}.aid-action small{display:block;color:#718096;margin:7px 0}.aid-action-footer{display:flex;justify-content:space-between;gap:10px;padding-top:18px;margin-top:14px;border-top:1px solid #e5e7eb}@media(max-width:600px){.aid-body dl{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-incident-details>footer{flex-wrap:wrap}.aid-body,.admin-incident-details>header,.admin-incident-details>footer{padding:14px}}
+﻿.admin-incident-details {
+  margin: auto;
+  width: min(960px, 95vw);
+  max-height: 92dvh;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  color: #17212b;
+  font-size: 12px;
+  box-shadow: 0 24px 70px #0003;
+}
+.admin-incident-details::backdrop {
+  background: #15231d70;
+}
+.admin-incident-details[open] {
+  display: flex;
+  flex-direction: column;
+}
+.admin-incident-details > header,
+.admin-incident-details > footer {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.admin-incident-details > header {
+  border-bottom: 1px solid #e5e7eb;
+}
+.admin-incident-details h2 {
+  font-size: 19px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.admin-incident-details header p {
+  color: #718096;
+  margin-top: 5px;
+}
+.aid-body {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 20px 24px;
+}
+.aid-body dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 24px;
+  margin-bottom: 22px;
+}
+.aid-body dt {
+  color: #718096;
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.aid-body dd {
+  overflow-wrap: anywhere;
+}
+.aid-body dd small {
+  display: block;
+  color: #718096;
+  margin-top: 3px;
+}
+.aid-body h3 {
+  font-weight: 700;
+  margin: 18px 0 10px;
+}
+.aid-description {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 12px;
+}
+.aid-description strong {
+  color: #a16207;
+  font-size: 10px;
+}
+.aid-description p {
+  margin-top: 5px;
+}
+.aid-evidence {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #718096;
+}
+.aid-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #e8f3ff;
+  padding: 14px;
+  border-radius: 9px;
+  margin: 12px 0;
+  color: #253b60;
+}
+.aid-info svg {
+  flex-shrink: 0;
+  color: #1671ed;
+}
+.admin-incident-details > footer {
+  border-top: 1px solid #e5e7eb;
+  justify-content: flex-end;
+}
+.aid-body details {
+  margin-top: 12px;
+}
+.aid-body details > div {
+  padding: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.aid-action {
+  font-size: 12px;
+}
+.aid-action label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.aid-action textarea {
+  width: 100%;
+}
+.aid-action small {
+  display: block;
+  color: #718096;
+  margin: 7px 0;
+}
+.aid-action-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 18px;
+  margin-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+@media (max-width: 600px) {
+  .aid-body dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-incident-details > footer {
+    flex-wrap: wrap;
+  }
+  .aid-body,
+  .admin-incident-details > header,
+  .admin-incident-details > footer {
+    padding: 14px;
+  }
+}

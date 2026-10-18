@@ -1,5 +1,6 @@
 import { savedService } from "../../../services/savedTutors.js";
 import { listDiscoverableTutors } from "../../../services/tutorServices.js";
+import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import { useState, useEffect } from "react";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import {
@@ -251,7 +252,7 @@ export default function LearnerFindTutor() {
         }
       >
         {rows.map(({ tutor, service }) => {
-          const { name, degree, rating, initials } = tutor;
+          const { name, degree, rating } = tutor;
           const bookmark = savedService(tutor, service);
           return (
             <article
@@ -274,9 +275,11 @@ export default function LearnerFindTutor() {
                   fill={work.isSaved(bookmark) ? "#087542" : "none"}
                 />
               </button>
-              <div className="mx-auto grid h-8 w-8 place-items-center rounded-full bg-[linear-gradient(145deg,#e5e7eb,#cbd5e1)] text-xl font-bold text-[#405276]">
-                {initials}
-              </div>
+              <PortalAvatar
+                name={name}
+                userId={tutor.avatarUserId}
+                className="mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-[linear-gradient(145deg,#e5e7eb,#cbd5e1)] text-base font-bold text-[#405276]"
+              />
               <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#dff8e8] px-2 py-0.5 text-xs font-semibold text-[#087542]">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Verified

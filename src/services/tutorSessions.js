@@ -12,6 +12,7 @@ export function mapTutorSession(row, now = new Date()) {
     booking: `BK-${row.booking_id}`,
     serviceId: String(row.service_id),
     learnerId: row.learner_id,
+    learnerUserId: row.learner_id,
     learner: row.learner_name || "Learner",
     service: row.service_title,
     topic: row.specific_topic || "",

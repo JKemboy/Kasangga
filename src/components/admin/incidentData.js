@@ -1,5 +1,12 @@
 export function reviewIncident(record, action, notes) {
-  if (["Admin Screening Complete", "Resolved by Admin"].includes(record.status))
+  if (
+    [
+      "Admin Screening Complete",
+      "Resolved by Admin",
+      "Resolved by OSAS",
+      "Under OSAS Review",
+    ].includes(record.status)
+  )
     throw new Error("This review is complete.");
   if (
     !["Resolved by Admin", "Referred to OSAS"].includes(action) ||

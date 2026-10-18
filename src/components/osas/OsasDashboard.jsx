@@ -1,18 +1,22 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
+import OsasCaseWorkspace from "./OsasCaseWorkspace.jsx";
+import PortalAvatar from "../shared/PortalAvatar.jsx";
+import { statusClass } from "../shared/statusColors.js";
+import { OsasDatabaseProvider } from "./OsasDatabaseContext.jsx";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useAuth } from "../../auth/AuthProvider.jsx";
+import CaseShortcut from "./CaseShortcut.jsx";
 import ClearanceReview from "./ClearanceReview.jsx";
 import UserExport from "../admin/UserExport.jsx";
 import { reportHtml } from "../admin/reportExport.js";
 import HeaderInbox from "../shared/HeaderInbox.jsx";
 import { useLogout } from "../shared/LogoutProvider.jsx";
-import OsasEvidence from "./OsasEvidence.jsx";
 import OsasArchive from "./OsasArchive.jsx";
 import OsasCases from "./OsasCases.jsx";
-import OsasIncidents from "./OsasIncidents.jsx";
 import OsasOverview from "./OsasOverview.jsx";
 import OsasPolicies from "./OsasPolicies.jsx";
 import OsasReports from "./OsasReports.jsx";
 import OsasSettings, { loadSettings } from "./OsasSettings.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Archive,
@@ -49,28 +53,23 @@ import {
 } from "../tutor/workspace/ui.jsx";
 import "./osas.css";
 
-const term = "AY 2026–2027 · 1st Semester";
 const statuses = [
   "Pending Review",
   "Cleared",
   "On Hold",
   "Requires Resolution",
 ];
-const initial = [];
+
 const navigation = [
   ["Overview", LayoutDashboard],
   ["Case Review", FileText],
-  ["Evidence Validation", ShieldCheck],
-  ["Incident Monitoring", CircleAlert],
   ["Student Clearance Review", IdCard],
   ["Policies & Procedures", BookOpen],
   ["Case Archive", Archive],
   ["Reports & Analytics", ChartNoAxesCombined],
   ["Settings", Settings],
 ];
-function load() {
-  return structuredClone(initial);
-}
+
 const dateLabel = (v) =>
   v
     ? new Date(v + "T12:00:00").toLocaleDateString("en-US", {
@@ -80,13 +79,7 @@ const dateLabel = (v) =>
       })
     : "—";
 function Status({ value }) {
-  return (
-    <span
-      className={`osas-badge ${value === "Cleared" ? "green" : value === "On Hold" || value === "Awaiting Evidence" ? "blue" : value === "Requires Resolution" ? "red" : value === "Pending Review" || value === "Under Review" ? "gold" : "gray"}`}
-    >
-      {value}
-    </span>
-  );
+  return <span className={statusClass(value, "osas-badge")}>{value}</span>;
 }
 function csvCell(v) {
   return (
@@ -97,11 +90,37 @@ function csvCell(v) {
 }
 
 export default function OsasDashboardPage() {
+  return (
+    <OsasDatabaseProvider>
+      <OsasDashboardContent />
+    </OsasDatabaseProvider>
+  );
+}
+function OsasDashboardContent() {
+  const auth = useAuth();
+  const [submittedSearch, setSubmittedSearch] = useState("");
+  const database = useOsasDatabase();
+  const rows = database.records?.clearance || [];
   const requestLogout = useLogout();
 
   const navigate = useNavigate();
   const [view, setView] = useState("Overview");
+  useEffect(() => {
+    const open = () => setView("Case Archive");
+    window.addEventListener("campustutor:open-case-archive", open);
+    return () =>
+      window.removeEventListener("campustutor:open-case-archive", open);
+  }, []);
+  useEffect(() => {
+    const open = () => setView("Case Review");
+    window.addEventListener("campustutor:open-evidence-validation", open);
+    return () =>
+      window.removeEventListener("campustutor:open-evidence-validation", open);
+  }, []);
   const [settings, setSettings] = useState(loadSettings);
+  useEffect(() => {
+    if (database.records?.settings) setSettings(database.records.settings);
+  }, [database.records?.settings]);
   const pageSize = Number(settings.pageSize);
   const formatDate = (v) =>
     !v
@@ -113,15 +132,14 @@ export default function OsasDashboardPage() {
             day: "numeric",
             year: "numeric",
           });
-  const [rows, setRows] = useState(load),
-    [mobile, setMobile] = useState(false),
+  const [mobile, setMobile] = useState(false),
     [query, setQuery] = useState(""),
     [global, setGlobal] = useState(""),
     [status, setStatus] = useState(""),
     [program, setProgram] = useState(""),
     [caseStatus, setCaseStatus] = useState(""),
     [requested, setRequested] = useState(""),
-    [semester, setSemester] = useState(term),
+    [semester, setSemester] = useState(""),
     [page, setPage] = useState(1),
     [modal, setModal] = useState(null),
     [selected, setSelected] = useState(null),
@@ -137,7 +155,7 @@ export default function OsasDashboardPage() {
       (!program || r.program === program) &&
       (!caseStatus || r.caseStatus === caseStatus) &&
       (!requested || r.requested === requested) &&
-      r.term === semester &&
+      (!semester || r.term === semester) &&
       `${r.id} ${r.name} ${r.program} ${r.caseId}`
         .toLowerCase()
         .includes(query.toLowerCase()),
@@ -154,45 +172,16 @@ export default function OsasDashboardPage() {
     setError("");
     setModal("Review Clearance");
   }
-  function save(e) {
+  async function save(e) {
     e.preventDefault();
-    if (!basis.trim() || !notes.trim() || !confirmed) {
-      setError(
-        "Enter the institutional basis and review notes, then confirm the review.",
-      );
-      return;
-    }
-    const reviewed = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Manila",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date());
-    const next = rows.map((r) =>
-      r.id === selected.id
-        ? {
-            ...r,
-            status: decision,
-            reviewed,
-            history: [
-              ...r.history,
-              {
-                status: decision,
-                basis: basis.trim(),
-                notes: notes.trim(),
-                reviewed,
-                officer: "OSAS Officer",
-              },
-            ],
-          }
-        : r,
-    );
     try {
-      requireBackendPersistence();
-    } catch {
-      setError(
-        "Could not save the review. Browser storage is unavailable or full.",
-      );
+      await database.save("clearance", selected.clearanceDatabaseId, "review", {
+        status: decision,
+        notes: notes.trim(),
+      });
+      setModal(null);
+    } catch (cause) {
+      setError(cause.message);
     }
   }
   function exportCsv() {
@@ -238,6 +227,7 @@ export default function OsasDashboardPage() {
     setPage(1);
   }
   function openNav(label) {
+    setSubmittedSearch("");
     setMobile(false);
     if (
       [
@@ -321,8 +311,8 @@ export default function OsasDashboardPage() {
           className="osas-global"
           onSubmit={(e) => {
             e.preventDefault();
-            setView("Student Clearance Review");
-            setQuery(global);
+            setSubmittedSearch(global.trim());
+            setView("Case Review");
             setPage(1);
             setNotice("Showing matching student and case records.");
           }}
@@ -341,17 +331,23 @@ export default function OsasDashboardPage() {
         <div className="ml-auto flex items-center gap-4">
           <HeaderInbox
             role="osas"
-            notifications={rows.map((r) => ({
-              id: r.id,
-              title: "Case record update",
-              text: `${r.name || r.id}: ${r.status}`,
-              kind: "incident",
-              time: r.updatedAt || r.date || "",
-              record: r,
-            }))}
+            notifications={database.records?.notifications || []}
+            onRead={database.markNotificationsRead}
             onNotification={(n) => {
-              setSelected(n.record);
-              setModal("Case Record");
+              if (n.entityType === "cases") {
+                const record = database.records.cases.find(
+                  (c) => c.caseDatabaseId === n.entityId,
+                );
+                if (record) {
+                  setSelected(record);
+                  setModal("Case Record");
+                }
+              } else if (n.entityType === "clearance_reviews") {
+                setView("Student Clearance Review");
+              } else {
+                setSubmittedSearch(`IR-${n.entityId}`);
+                setView("Case Review");
+              }
             }}
           />
           <button
@@ -359,9 +355,13 @@ export default function OsasDashboardPage() {
             aria-label="Open account menu"
             onClick={() => setModal("Account")}
           >
-            <span className="osas-avatar">OS</span>
+            <PortalAvatar role="osas" editable />
             <span className="hidden sm:block">
-              <b className="block text-xs text-slate-900">OSAS Officer</b>
+              <b className="block text-xs text-slate-900">
+                {[auth?.profile?.first_name, auth?.profile?.last_name]
+                  .filter(Boolean)
+                  .join(" ") || "OSAS Officer"}
+              </b>
               <small>OSAS Case Officer</small>
             </span>
             <ChevronDown size={14} />
@@ -371,6 +371,15 @@ export default function OsasDashboardPage() {
       <main
         className={`osas-main ${settings.compact ? "" : "osas-comfortable"}`}
       >
+        {database.error && (
+          <p role="alert" className="osas-alert">
+            {database.error}
+            <button onClick={database.refresh}>Retry</button>
+          </p>
+        )}
+        {database.loading && (
+          <p role="status">Loading OSAS records from Supabase...</p>
+        )}
         {view === "Overview" ? (
           <OsasOverview
             onReports={() => setView("Reports & Analytics")}
@@ -383,23 +392,33 @@ export default function OsasDashboardPage() {
             onClearance={review}
           />
         ) : view === "Settings" ? (
-          <OsasSettings settings={settings} onSave={setSettings} />
+          <OsasSettings
+            settings={settings}
+            onSave={async (next) => {
+              await database.save("settings", null, "settings", next);
+              setSettings(next);
+            }}
+          />
         ) : view === "Reports & Analytics" ? (
           <OsasReports rows={rows} settings={settings} />
         ) : view === "Policies & Procedures" ? (
           <OsasPolicies settings={settings} />
-        ) : view === "Incident Monitoring" ? (
-          <OsasIncidents settings={settings} />
-        ) : view === "Case Review" ? (
-          <OsasCases settings={settings} />
+        ) : [
+            "Case Review",
+            "Incident Monitoring",
+            "Evidence Validation",
+          ].includes(view) ? (
+          <OsasCaseWorkspace
+            key={submittedSearch}
+            settings={settings}
+            initialQuery={submittedSearch}
+          />
         ) : view === "Case Archive" ? (
           <OsasArchive settings={settings} />
-        ) : view === "Evidence Validation" ? (
-          <OsasEvidence settings={settings} />
         ) : (
           <>
             <div className="text-[10px] text-slate-400">
-              Local demo · Reviews stay on this browser
+              Supabase records · Authorized OSAS review
             </div>
             <div className="osas-heading">
               <div>
@@ -419,8 +438,10 @@ export default function OsasDashboardPage() {
                 value={semester}
                 onChange={(e) => change(setSemester, e.target.value)}
               >
-                <option>{term}</option>
-                <option>AY 2025–2026 · 2nd Semester</option>
+                <option value="">All academic terms</option>
+                {[...new Set(rows.map((r) => r.term))].map((value) => (
+                  <option key={value}>{value}</option>
+                ))}
               </select>
             </div>
             <div className="osas-metrics">
@@ -463,7 +484,9 @@ export default function OsasDashboardPage() {
                     <strong>
                       {
                         rows.filter(
-                          (r) => r.status === value && r.term === semester,
+                          (r) =>
+                            r.status === value &&
+                            (!semester || r.term === semester),
                         ).length
                       }
                     </strong>
@@ -523,7 +546,7 @@ export default function OsasDashboardPage() {
                   setRequested("");
                   setQuery("");
                   setGlobal("");
-                  setSemester(term);
+                  setSemester("");
                   setPage(1);
                 }}
               >
@@ -563,7 +586,7 @@ export default function OsasDashboardPage() {
                   ])
                     .replace(
                       /<p>Local demo records[\s\S]*?<\/p>/,
-                      "<p>Filtered local student clearance records.</p>",
+                      "<p>Student clearance records from the OSAS database.</p>",
                     )
                     .replaceAll(
                       "Reports &amp; Analytics",
@@ -706,17 +729,35 @@ export default function OsasDashboardPage() {
         <ClearanceReview
           record={rows.find((r) => r.id === selected.id) || selected}
           onClose={() => setModal(null)}
-          onSave={(updated) => {
-            try {
-              const next = rows.map((r) => (r.id === updated.id ? updated : r));
-              requireBackendPersistence();
-            } catch {
-              return false;
-            }
+          onSave={async (updated) => {
+            await database.save(
+              "clearance",
+              updated.clearanceDatabaseId,
+              updated.clearanceDatabaseId ? "review" : "create_follow_up",
+              updated.clearanceDatabaseId
+                ? updated
+                : {
+                    ...updated,
+                    academicYear: "Case follow-up",
+                    semester: "Case follow-up",
+                  },
+            );
+            setModal(null);
+            return true;
           }}
         />
       )}
-      {modal && modal !== "Review Clearance" && (
+      {modal === "Case Record" &&
+        database.records?.cases.find((c) => c.caseId === selected?.caseId) && (
+          <CaseShortcut
+            record={database.records.cases.find(
+              (c) => c.caseId === selected.caseId,
+            )}
+            onSave={database.saveCase}
+            onClose={() => setModal(null)}
+          />
+        )}
+      {modal && !["Review Clearance", "Case Record"].includes(modal) && (
         <Modal title={modal} onClose={() => setModal(null)}>
           {modal === "Case Record" ? (
             <div className="space-y-3 text-xs">
@@ -725,7 +766,7 @@ export default function OsasDashboardPage() {
               </p>
               <Status value={selected.caseStatus} />
               <p>
-                Only the case reference and status are available in this demo.
+                Open Case Review for the complete database case record.
                 Supporting evidence and official decisions have not been
                 connected.
               </p>
@@ -736,8 +777,8 @@ export default function OsasDashboardPage() {
           ) : modal === "Logout" ? (
             <div className="space-y-3 text-xs">
               <p>
-                Leave the OSAS portal? Saved local reviews will remain on this
-                browser.
+                Leave the OSAS portal? Saved database reviews will remain on
+                this browser.
               </p>
               <button className={primary} onClick={() => navigate("/")}>
                 Logout
@@ -749,8 +790,8 @@ export default function OsasDashboardPage() {
                 <b>OSAS Officer</b> · OSAS Case Officer
               </p>
               <p>
-                Demo account. Institutional account settings are not connected
-                yet.
+                {auth?.user?.email}. Display preferences are available in
+                Settings.
               </p>
               <button className={button} onClick={requestLogout}>
                 Logout
@@ -758,12 +799,13 @@ export default function OsasDashboardPage() {
             </div>
           ) : modal === "Notifications" || modal === "Messages" ? (
             <p className="p-3 text-xs text-slate-500">
-              No {modal.toLowerCase()} are connected to this demo account yet.
+              No {modal.toLowerCase()} are connected to this account yet.
             </p>
           ) : modal === "Overview" || modal === "Reports & Analytics" ? (
             <div className="space-y-3 text-xs">
               <p>
-                Clearance summary for the {rows.length} available demo records.
+                Clearance summary for the {rows.length} available database
+                records.
               </p>
               {statuses.map((s) => (
                 <p key={s}>

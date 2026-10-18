@@ -20,7 +20,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import useSidebarMenuScale from "../../dashboard/useSidebarMenuScale.js";
+import useSidebarMenuScale from "../../shared/useSidebarMenuScale.js";
 
 const tutorNavigation = [
   { label: "My Services", icon: Boxes, active: true },

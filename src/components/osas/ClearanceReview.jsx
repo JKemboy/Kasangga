@@ -1,10 +1,10 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
-﻿import { useState, useRef, useEffect } from "react";
+import { statusClass } from "../shared/statusColors.js";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useState, useRef, useEffect } from "react";
 import { X } from "lucide-react";
-import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
-import { loadOsasCases } from "./OsasCases.jsx";
-import { initialRecords } from "./OsasArchive.jsx";
+import { button, primary, input } from "../tutor/workspace/ui.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
+import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 import { clearanceOptions, decideClearance } from "./clearanceRules.js";
 import "./case-shortcuts.css";
 export default function ClearanceReview({ record: r, onSave, onClose }) {
@@ -14,23 +14,35 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
     d.showModal();
     return () => d.close();
   }, []);
-  const [cases, setCases] = useState(loadOsasCases),
-    [linked, setLinked] = useState(null),
+  const database = useOsasDatabase();
+  const cases = database.records?.cases || [];
+  const initialRecords = database.records?.archive || [];
+  const [linked, setLinked] = useState(null),
     [choice, setChoice] = useState(""),
     [note, setNote] = useState(""),
     [error, setError] = useState("");
-  const related = cases.filter((c) => c.student === r.name),
+  const related = cases.filter((c) => c.studentUserId === r.userId),
     archives = initialRecords.filter(
       (c) =>
-        c.student === r.name && !related.some((a) => a.caseId === c.caseId),
+        c.studentUserId === r.userId &&
+        !related.some((a) => a.caseId === c.caseId),
     );
   const options = clearanceOptions(r, cases),
+    followUpOnly = !r.clearanceDatabaseId,
     complete = r.status === "Cleared",
     last = r.history?.at(-1);
-  function save() {
+  const formatArchiveDate = (value) =>
+    value
+      ? new Date(`${String(value).slice(0, 10)}T12:00:00`).toLocaleDateString(
+          "en-US",
+          { month: "short", day: "numeric", year: "numeric" },
+        )
+      : "Not recorded";
+  async function save() {
     try {
-      const updated = decideClearance(r, choice, note, loadOsasCases());
-      if (onSave(updated) === false) throw Error("Could not save the review.");
+      const updated = decideClearance(r, choice, note, cases);
+      if ((await onSave(updated)) === false)
+        throw Error("Could not save the review.");
       setNote("");
       setChoice("");
     } catch (e) {
@@ -49,7 +61,7 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
           <h2>
             {complete ? "Clearance Review Record" : "Review Clearance"} ·{" "}
             {r.clearanceId || r.id}
-            <span className="ocx-badge">{r.status}</span>
+            <span className={statusClass(r.status, "ocx-badge")}>{r.status}</span>
           </h2>
           <p>
             {r.name} · {r.id}
@@ -81,6 +93,33 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
             </div>
           ))}
         </dl>
+        {(r.holds || [])
+          .filter((h) => h.hold_status === "active")
+          .map((h) => (
+            <div key={h.hold_id}>
+              <p>Active hold: {h.reason}</p>
+              <button
+                className={button}
+                disabled={note.trim().length < 15}
+                onClick={async () => {
+                  try {
+                    await database.save("hold", h.hold_id, "release", {
+                      notes: note.trim(),
+                    });
+                    setNote("");
+                  } catch (cause) {
+                    setError(cause.message);
+                  }
+                }}
+              >
+                Release Hold with Recorded Basis
+              </button>
+              <small>
+                Enter at least 15 characters in review notes. Case conditions
+                must be completed.
+              </small>
+            </div>
+          ))}
         <h3>Relevant cases (student as reported party)</h3>
         {[...related, ...archives].map((c) => (
           <button
@@ -139,6 +178,12 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
           </p>
         ) : (
           <>
+            {followUpOnly && (
+              <p className="clr-effect">
+                This case follow-up has no clearance request yet. Saving a
+                decision will create its clearance review record.
+              </p>
+            )}
             <h3>Clearance decision</h3>
             <div className="ocx-outcomes">
               {[
@@ -151,7 +196,7 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
                 [
                   "Requires Resolution",
                   "Requires Resolution",
-                  "Requires a recorded decision with a pending condition.",
+                  "Record the pending case condition so it can be completed.",
                 ],
                 [
                   "Maintain",
@@ -174,7 +219,7 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
               ))}
             </div>
             <label>
-              Decision note (required)
+              Decision note (optional)
               <textarea
                 className={input}
                 rows={4}
@@ -185,7 +230,7 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
               />
             </label>
             <small>
-              {note.trim().length}/15 characters minimum · local review
+              Optional · database review
             </small>
           </>
         )}
@@ -198,7 +243,7 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
         {!complete && (
           <button
             className={primary}
-            disabled={!choice || note.trim().length < 15}
+            disabled={!choice}
             onClick={save}
           >
             Save Clearance Decision
@@ -207,53 +252,18 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
       </footer>
       {linked &&
         (linked.archived || archives.includes(linked) ? (
-          <Modal
-            title={`${linked.caseId} · Archived`}
+          <ArchivedCaseDetails
+            record={linked}
+            date={formatArchiveDate}
             onClose={() => setLinked(null)}
-          >
-            <p className="ocx-warning">
-              Read-only archived record. Edit, delete and decision changes are
-              unavailable.
-            </p>
-            <dl className="ocx-facts">
-              {[
-                ["Student", linked.student],
-                ["Incident", linked.incident || linked.id],
-                ["Type", linked.type],
-                ["Date Opened", linked.opened || linked.date],
-                ["Resolved", linked.resolved],
-                ["Archived", linked.archived],
-                ["Outcome", linked.outcome || linked.decision?.outcome],
-                ["Officer", linked.officer],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <dt>{k}</dt>
-                  <dd>{String(v || "Not recorded")}</dd>
-                </div>
-              ))}
-            </dl>
-            <p>Original archived evidence files are not attached.</p>
-            <button className={primary} onClick={() => setLinked(null)}>
-              Close
-            </button>
-          </Modal>
+          />
         ) : (
           <CaseShortcut
             record={cases.find((c) => c.caseId === linked.caseId) || linked}
             onClose={() => {
               setLinked(null);
-              setCases(loadOsasCases());
             }}
-            onSave={(updated) => {
-              try {
-                const next = loadOsasCases().map((c) =>
-                  c.caseId === updated.caseId ? updated : c,
-                );
-                requireBackendPersistence();
-} catch {
-                return false;
-              }
-            }}
+            onSave={database.saveCase}
           />
         ))}
     </dialog>

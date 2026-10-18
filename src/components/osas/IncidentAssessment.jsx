@@ -1,9 +1,10 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
-﻿import { useState, useRef, useEffect } from "react";
+import { statusClass } from "../shared/statusColors.js";
+import EvidenceFile from "./EvidenceFile.jsx";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useState, useRef, useEffect } from "react";
 import { X } from "lucide-react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
-import { loadOsasCases } from "./OsasCases.jsx";
 import { assessIncident } from "./incidentAssessment.js";
 import "./case-shortcuts.css";
 export default function IncidentAssessment({ record: r, onSave, onClose }) {
@@ -11,7 +12,8 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
     [action, setAction] = useState(""),
     [notes, setNotes] = useState(""),
     [error, setError] = useState("");
-  const [cases, setCases] = useState(loadOsasCases);
+  const database = useOsasDatabase();
+  const cases = database.records?.cases || [];
   const linked = cases.find((c) => c.caseId === r.caseId);
   const canAssess =
     !r.caseId &&
@@ -24,11 +26,12 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
     d?.showModal();
     return () => d?.close();
   }, [!!linked]);
-  function save() {
+  async function save() {
     try {
-      const next = assessIncident(r, action, notes, loadOsasCases());
-      if (onSave(next) === false) throw Error("Could not save assessment.");
-      setCases(loadOsasCases());
+      const next = assessIncident(r, action, notes, cases);
+      if ((await onSave(next)) === false)
+        throw Error("Could not save assessment.");
+
       setAction("");
     } catch (e) {
       setError(e.message);
@@ -40,16 +43,7 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
         record={linked}
         initialView="incident"
         onClose={onClose}
-        onSave={(updated) => {
-          try {
-            const next = loadOsasCases().map((c) =>
-              c.caseId === updated.caseId ? updated : c,
-            );
-            requireBackendPersistence();
-} catch {
-            return false;
-          }
-        }}
+        onSave={database.saveCase}
       />
     );
   return (
@@ -63,7 +57,7 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
         <div>
           <h2>
             {r.id}
-            <span className="ocx-badge">{r.referral}</span>
+            <span className={statusClass(r.referral, "ocx-badge")}>{r.referral}</span>
           </h2>
           <p>Incident report · submitted {r.date}</p>
         </div>
@@ -102,10 +96,17 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
         <h3>Reported concern</h3>
         <p className="ocx-warning">
           {r.description ||
-            "Original narrative is not attached to this sample."}
+            "Original narrative is not attached to this record."}
         </p>
         <h3>Evidence attached to the report</h3>
-        <p>No attachments recorded.</p>
+        {(database.records?.evidence || [])
+          .filter((e) => e.reportDatabaseId === r.reportDatabaseId)
+          .map((e) => (
+            <EvidenceFile key={e.id} evidence={e} />
+          ))}
+        {!database.records?.evidence.some(
+          (e) => e.reportDatabaseId === r.reportDatabaseId,
+        ) && <p>No attachments recorded.</p>}
         <h3>Formal OSAS case</h3>
         <section>
           <b>Referral from CampusTutor Admin</b>
@@ -184,7 +185,8 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
                   placeholder="Record why this referral does not need a formal case."
                 />
                 <small>
-                  {notes.trim().length}/10 characters minimum · not connected to the database
+                  {notes.trim().length}/10 characters minimum · saved to
+                  Supabase
                 </small>
               </label>
             )}

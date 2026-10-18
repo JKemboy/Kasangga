@@ -1,11 +1,13 @@
-import { useState } from "react";
-import { ExternalLink, MessageCircle, Video, Paperclip } from "lucide-react";
+import EvidencePicker from "../../shared/EvidencePicker.jsx";
+import { useRef, useState } from "react";
+import { ExternalLink, MessageCircle, Video, ShieldCheck } from "lucide-react";
 import { Modal, Avatar, Badge, Field, button, primary, input } from "./ui.jsx";
 import { money, hour, time } from "./data.js";
 import { meetingUrl } from "./sessionActions.js";
 import { chatRequest } from "../../../services/bookingMessages.js";
 import { completeTutorSession } from "../../../services/tutorSessionCompletion.js";
 import { sessionAllocation } from "./earnings.js";
+import { submitIncidentReport } from "../../../services/incidentReports.js";
 
 const dateLabel = (value) =>
   new Date(`${value}T12:00:00`).toLocaleDateString("en-US", {
@@ -123,6 +125,7 @@ export default function SessionDetails({
   initialAction = "",
   refreshSessions,
 }) {
+  const reportKey = useRef(crypto.randomUUID());
   const s = data.sessions.find((s) => s.id === sessionId);
   const [action, setAction] = useState(initialAction),
     [feedback, setFeedback] = useState(""),
@@ -140,6 +143,8 @@ export default function SessionDetails({
     options = actionOptions;
 
   const changeAction = (value) => {
+    if (value === "incident" && action !== "incident")
+      reportKey.current = crypto.randomUUID();
     setAction(value);
     setReason("");
     setKind("");
@@ -185,14 +190,24 @@ export default function SessionDetails({
           p_reason: reason.trim(),
         });
       } else {
-        throw new Error("This action is not available here.");
+        if (action !== "incident")
+          throw new Error("This action is not available here.");
+        await submitIncidentReport({
+          sessionId: s.id,
+          incidentType: kind,
+          reason,
+          evidence: files,
+          submissionKey: reportKey.current,
+        });
       }
       changeAction("");
       await refreshSessions?.();
       setFeedback(
-        action === "cancel"
-          ? "Session cancelled. Refund eligibility will be reviewed separately."
-          : "Reschedule request sent. The current schedule remains until the learner approves.",
+        action === "incident"
+          ? "Report submitted for Admin and OSAS review."
+          : action === "cancel"
+            ? "Session cancelled. Refund eligibility will be reviewed separately."
+            : "Reschedule request sent. The current schedule remains until the learner approves.",
       );
     } catch (error) {
       setFeedback(error.message);
@@ -224,7 +239,10 @@ export default function SessionDetails({
         }
       >
         <div className="session-person">
-          <Avatar name={s.learner} />
+          <Avatar
+            name={s.learner}
+            userId={s.learnerUserId || s.learnerId}
+          />
           <div>
             <strong>{s.learner}</strong>
             {s.program && <p>{s.program}</p>}
@@ -342,7 +360,7 @@ export default function SessionDetails({
                   disabled={
                     actionLoading ||
                     (action === "incident" &&
-                      (!kind || reason.trim().length < 20))
+                      (!kind || reason.trim().length < 20 || !files.length))
                   }
                 >
                   {actionLoading
@@ -494,7 +512,7 @@ export default function SessionDetails({
                     {(action === "incident"
                       ? [
                           "No-show",
-                          "Inappropriate behavior",
+                          "Inappropriate behavior or harassment",
                           "Harassment",
                           "Payment concern",
                           "Technical issue",
@@ -548,47 +566,23 @@ export default function SessionDetails({
                 </p>
               )}
               {action === "incident" && (
-                <Field label="Evidence (optional)">
-                  <span className="session-evidence">
-                    <Paperclip /> Attach screenshots or files (PNG, JPG, PDF)
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/png,image/jpeg,application/pdf"
-                      onChange={async (e) => {
-                        const selected = Array.from(e.target.files);
-                        if (selected.some((f) => f.size > 2 * 1024 * 1024)) {
-                          setFeedback(
-                            "Each attachment must be 2 MB or smaller.",
-                          );
-                          e.target.value = "";
-                          setFiles([]);
-                          return;
-                        }
-                        setFiles(
-                          await Promise.all(
-                            selected.map(
-                              (file) =>
-                                new Promise((resolve) => {
-                                  const reader = new FileReader();
-                                  reader.onload = () =>
-                                    resolve({
-                                      name: file.name,
-                                      type: file.type,
-                                      data: reader.result,
-                                    });
-                                  reader.readAsDataURL(file);
-                                }),
-                            ),
-                          ),
-                        );
-                      }}
-                    />
-                  </span>
-                  {files.map((f) => (
-                    <p key={f.name}>{f.name}</p>
-                  ))}
-                </Field>
+                <EvidencePicker
+                  attachmentCard
+                  files={files}
+                  onChange={setFiles}
+                  onError={setFeedback}
+                  disabled={actionLoading}
+                />
+              )}
+              {action === "incident" && (
+                <div className="session-info mt-3">
+                  <ShieldCheck size={22} />
+                  <p>
+                    Include accurate details and evidence. Admin reviews each
+                    report and refers conduct concerns to OSAS. Updates appear
+                    in Notifications.
+                  </p>
+                </div>
               )}
             </form>
           )}

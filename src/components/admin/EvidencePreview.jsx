@@ -1,5 +1,6 @@
 import { Panel } from "./UserDetails.jsx";
 import { button } from "../tutor/workspace/ui.jsx";
+import EvidenceFile from "../osas/EvidenceFile.jsx";
 export default function EvidencePreview({ record, onClose }) {
   return (
     <Panel
@@ -16,7 +17,13 @@ export default function EvidencePreview({ record, onClose }) {
         <div key={e.id} className="rounded border p-3 mb-3">
           <strong>{e.name}</strong>
           <p>{e.type}</p>
-          <p className="text-xs break-all">{e.path}</p>
+          <EvidenceFile
+            evidence={{
+              filePath: e.path,
+              fileName: e.name,
+              evidenceType: e.type,
+            }}
+          />
         </div>
       ))}
       {!record.evidence?.length && <p>No evidence files recorded.</p>}

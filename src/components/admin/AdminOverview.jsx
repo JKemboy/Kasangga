@@ -1,3 +1,4 @@
+import { statusClass } from "../shared/statusColors.js";
 import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import { useState } from "react";
@@ -40,13 +41,7 @@ export default function AdminOverview({
     )
     .sort((a, b) => b.date.localeCompare(a.date));
   const totals = summarizePayments(database?.payments || []);
-  const badge = (v) => (
-    <span
-      className={`au-status ${["Paid", "Completed", "Approved", "Resolved"].includes(v) ? "active" : ["Cancelled", "Rejected", "Failed"].includes(v) ? "suspended" : "restricted"}`}
-    >
-      {v}
-    </span>
-  );
+  const badge = (v) => <span className={statusClass(v, "au-status")}>{v}</span>;
   function bookingTable(items) {
     return (
       <div className="ao-table">

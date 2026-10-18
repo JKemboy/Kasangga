@@ -1,6 +1,6 @@
-import { requireBackendPersistence } from "../../services/backendPersistence.js";
+import { statusClass } from "../shared/statusColors.js";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
-import { loadAssessments } from "./incidentAssessment.js";
 import CaseShortcut from "./CaseShortcut.jsx";
 import CaseActions from "./CaseActions.jsx";
 import { useInteractions } from "../shared/InteractionProvider.jsx";
@@ -24,80 +24,33 @@ import {
   input,
   Avatar,
 } from "../tutor/workspace/ui.jsx";
-import { incidents } from "./incidentMonitoringData.js";
 
 const statuses = [
   "Open",
   "Under Review",
   "Awaiting Evidence",
   "Pending Decision",
+  "Pending Completion",
   "Resolved",
 ];
-const studentIds = {
-  "John Michael Perez": "2020-00077",
-  "Juan Dela Cruz": "2021-00123",
-  "Karl Jhon Dimaano": "2021-00111",
-  "Maria Angelica Reyes": "2022-00345",
-  "Mark Joseph Paloma": "2020-00055",
-  "Janine Claire Tampus": "2021-00222",
-  "Allen Ezra Mandia": "2020-00044",
-  "Lyla Shane Balais": "2021-00288",
-};
-const personnel = ["Maria Santos", "Ramon Villanueva", "Elena Cruz"];
-const initial = incidents
-  .filter((r) => r.caseId)
-  .map((r, i) => ({
-    ...r,
-    status:
-      r.status === "Under Institutional Review" ? "Under Review" : r.status,
-    officer: [
-      personnel[0],
-      personnel[0],
-      personnel[1],
-      personnel[2],
-      personnel[1],
-    ][i],
-    decision:
-      r.caseId === "CASE-2026-014"
-        ? {
-            outcome: "Verbal Warning",
-            notes:
-              "Attendance records and the learner statement describe three missed sessions without notice.",
-            basis: "Tutoring Conduct and Safety Standards v1.5 (sample)",
-            condition:
-              "Complete an OSAS attendance-commitment counseling session",
-            due: "2026-09-30",
-            conditionDone: false,
-            at: "2026-09-12T10:30:00+08:00",
-            notify: false,
-          }
-        : undefined,
-    history: [],
-  }));
-export function loadOsasCases() {
-  const merge = (records) => {
-    const extra = Object.values(loadAssessments())
-      .map((r) => r.formalCase)
-      .filter(Boolean);
-    return [
-      ...records,
-      ...extra.filter((r) => !records.some((c) => c.caseId === r.caseId)),
-    ];
-  };
 
-  return merge(structuredClone(initial));
-}
 export default function OsasCases({ settings }) {
+  const database = useOsasDatabase();
+  const rows = database.records?.cases || [];
+  const personnel = (database.records?.users || [])
+    .filter((u) =>
+      database.records?.cases.some((c) => c.officerId === u.user_id),
+    )
+    .map((u) => u.name);
   const { confirm } = useInteractions();
 
-  const [rows, setRows] = useState(loadOsasCases),
-    [datesOpen, setDatesOpen] = useState(false),
+  const [datesOpen, setDatesOpen] = useState(false),
     [query, setQuery] = useState(""),
     [status, setStatus] = useState(""),
     [priority, setPriority] = useState(""),
     [type, setType] = useState(""),
-    [start, setStart] = useState("2026-09-01"),
-    [end, setEnd] = useState("2026-09-30"),
+    [start, setStart] = useState(""),
+    [end, setEnd] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
     [decision, setDecision] = useState(""),
@@ -111,7 +64,7 @@ export default function OsasCases({ settings }) {
     ? []
     : rows.filter(
         (r) =>
-          (!r.archived || settings.showArchived) &&
+          !r.archived &&
           (!start || r.date >= start) &&
           (!end || r.date <= end),
       );
@@ -125,8 +78,8 @@ export default function OsasCases({ settings }) {
         r.id,
         r.student,
         r.reporter,
-        studentIds[r.student],
-        studentIds[r.reporter],
+        r.studentId,
+        r.reporterStudentId,
         r.type,
         r.officer,
       ]
@@ -150,31 +103,16 @@ export default function OsasCases({ settings }) {
     setter(value);
     setPage(1);
   }
-  function persistCase(record) {
-    try {
-      const next = rows.map((r) => (r.caseId === record.caseId ? record : r));
-      requireBackendPersistence();
-    } catch {
-      setError("Could not save case.");
-      return false;
-    }
+  async function persistCase(record) {
+    return database.saveCase(record);
   }
-  function archiveCase(record) {
-    const archived = {
-      caseId: record.caseId,
-      incident: record.id,
-      student: record.student,
-      type: record.type,
-      opened: record.date,
-      resolved: record.decision.at.slice(0, 10),
-      outcome: record.decision.outcome,
-      archived: new Date().toISOString().slice(0, 10),
-      officer: record.officer,
-      year: "2026-2027",
-      full: record,
-    };
-    if (persistCase({ ...record, archived: true, archiveRecord: archived }))
+  async function archiveCase(record) {
+    try {
+      await database.saveCase({ ...record, archived: true });
       setSelected(null);
+    } catch (cause) {
+      setError(cause.message);
+    }
   }
   function open(r) {
     setSelected(r);
@@ -186,49 +124,23 @@ export default function OsasCases({ settings }) {
   }
   async function save(e) {
     e.preventDefault();
-    if (!notes.trim() || (decision === "Resolved" && !basis.trim())) {
-      setError(
-        "Enter review notes and an institutional basis for a resolved decision.",
-      );
-      return;
-    }
-    if (
-      decision === "Resolved" &&
-      !(await confirm({
-        title: "Record this decision?",
-        message: `${selected.caseId}: ${basis}. The decision becomes part of the case record.`,
-        accept: "Record Decision",
-        acknowledgement:
-          "I completed an impartial review and recorded the institutional basis.",
-      }))
-    )
-      return;
-    const entry = {
-      status: decision,
-      officer,
-      notes: notes.trim(),
-      basis: basis.trim(),
-      at: new Date().toISOString(),
-    };
-    const next = rows.map((r) =>
-      r.caseId === selected.caseId
-        ? { ...r, status: decision, officer, history: [...r.history, entry] }
-        : r,
-    );
     try {
-      requireBackendPersistence();
-    } catch {
-      setError(
-        "This action is not connected to the database yet. Nothing was saved.",
-      );
+      const updated = {
+        ...selected,
+        status: decision,
+        history: [
+          ...selected.history,
+          { notes: notes.trim(), basis: basis.trim(), status: decision },
+        ],
+      };
+      await database.saveCase(updated);
+      setSelected(null);
+    } catch (cause) {
+      setError(cause.message);
     }
   }
   const badge = (value) => (
-    <span
-      className={`oc-badge ${["Resolved", "Pending Decision"].includes(value) ? "green" : value === "High" ? "red" : value === "Awaiting Evidence" || value === "Low" ? "blue" : "gold"}`}
-    >
-      {value}
-    </span>
+    <span className={statusClass(value, "oc-badge")}>{value}</span>
   );
   return (
     <section className="oc-cases">
@@ -351,8 +263,8 @@ export default function OsasCases({ settings }) {
             setStatus("");
             setPriority("");
             setType("");
-            setStart("2026-09-01");
-            setEnd("2026-09-30");
+            setStart("");
+            setEnd("");
             setPage(1);
             setNotice("");
           }}
@@ -404,9 +316,7 @@ export default function OsasCases({ settings }) {
                     <Avatar name={r.student} />
                     <span>
                       {r.student}
-                      <small>
-                        ID: {studentIds[r.student] || "Not recorded"}
-                      </small>
+                      <small>ID: {r.studentId || "Not recorded"}</small>
                     </span>
                   </div>
                 </td>
@@ -415,9 +325,7 @@ export default function OsasCases({ settings }) {
                     <Avatar name={r.reporter} />
                     <span>
                       {r.reporter}
-                      <small>
-                        ID: {studentIds[r.reporter] || "Not recorded"}
-                      </small>
+                      <small>ID: {r.reporterStudentId || "Not recorded"}</small>
                     </span>
                   </div>
                 </td>
@@ -429,13 +337,17 @@ export default function OsasCases({ settings }) {
                 <td>
                   <button
                     className={
-                      (r.status === "Resolved" ? button : primary) +
+                      (["Resolved", "Pending Completion"].includes(r.status)
+                        ? button
+                        : primary) +
                       " oc-review"
                     }
                     aria-label={`Review ${r.caseId}`}
                     onClick={() => open(r)}
                   >
-                    {r.status === "Resolved" ? "View Case" : "Review Case"}
+                    {["Resolved", "Pending Completion"].includes(r.status)
+                      ? "View Case"
+                      : "Review Case"}
                   </button>
                 </td>
               </tr>
@@ -444,7 +356,8 @@ export default function OsasCases({ settings }) {
         </table>
         {!visible.length && (
           <p className="p-8 text-center text-xs text-slate-500">
-            No matching cases. Try resetting your filters.
+            No formal cases match these filters. Referred reports awaiting
+            assessment appear above.
           </p>
         )}
       </div>
@@ -478,8 +391,8 @@ export default function OsasCases({ settings }) {
         <Info size={18} />
         <p>
           Incident reports contain allegations requiring impartial review. A
-          report does not establish misconduct. Demo case reviews do not issue
-          official decisions or change student clearance.
+          report does not establish misconduct. OSAS case actions and decisions
+          are saved to the database.
         </p>
       </div>
       {datesOpen && (

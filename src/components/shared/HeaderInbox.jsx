@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import FollowUpEvidence from "./FollowUpEvidence.jsx";
 import {
   Bell,
   CalendarDays,
@@ -202,7 +203,16 @@ export default function HeaderInbox({
                 </article>
               ))
             ) : (
-              <p>{detail.notification.text}</p>
+              <div>
+                <p>{detail.notification.text}</p>
+                {detail.notification.notificationType ===
+                  "case_evidence_requested" && (
+                  <FollowUpEvidence
+                    key={detail.notification.id}
+                    caseId={detail.notification.entityId}
+                  />
+                )}
+              </div>
             )}
             <>
               {detail.notification?.view && onNavigate && (

@@ -83,60 +83,19 @@ export default function PolicyDetails({
           </div>
         )}
         <article className="policy-content">
-          {policy.title === "Student Code of Conduct" ? (
-            <>
-              <h3>Purpose</h3>
-              <p>
-                Sets expectations for respectful, honest, and safe conduct by
-                CSU students, including when they use CampusTutor as tutors or
-                learners.
-              </p>
-              <h3>Scope</h3>
-              <p>
-                Applies to interactions arranged through CampusTutor, whether
-                online (external Google Meet or Zoom) or in person on campus.
-              </p>
-              <h3>Expected conduct</h3>
-              <ul>
-                <li>Treat others with respect in messages and sessions.</li>
-                <li>
-                  Uphold academic integrity; tutors guide, they do not complete
-                  graded work.
-                </li>
-                <li>
-                  Keep personal information private and use approved campus
-                  locations for in-person sessions.
-                </li>
-              </ul>
-              <h3>Due process</h3>
-              <p>
-                An incident report is an allegation. No sanction is applied
-                unless OSAS completes a review under the Institutional Case
-                Review Procedure and records a decision.
-              </p>
-            </>
-          ) : replacement ? (
-            <>
-              <h3>Archived</h3>
-              <p>
-                Superseded by the {replacement.title} ({replacement.version}).
-                Kept for reference only.
-              </p>
-            </>
+          {policy.documentPath && /^https:\/\//i.test(policy.documentPath) ? (
+            <a
+              href={policy.documentPath}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open institutional policy document
+            </a>
           ) : (
-            <>
-              <h3>
-                {policy.status === "Draft"
-                  ? "Draft document"
-                  : "Policy document"}
-              </h3>
-              <p>
-                {policy.status === "Draft"
-                  ? "This draft is under development and is not an active institutional policy."
-                  : "The full policy text is not attached to this reference."}{" "}
-                Request the approved document from its document owner.
-              </p>
-            </>
+            <p>
+              No document URL is stored for this policy. Contact its document
+              owner for the original.
+            </p>
           )}
         </article>
       </div>

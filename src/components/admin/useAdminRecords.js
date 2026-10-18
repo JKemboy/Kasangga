@@ -1,3 +1,4 @@
+import { getSupabaseClient } from "../../services/supabaseClient.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadAdminDatabase } from "../../services/adminDatabase.js";
 import { loadTutorApplications } from "../../services/tutorApplications.js";
@@ -43,11 +44,35 @@ export default function useAdminRecords(userId, view) {
     const visible = () => {
       if (document.visibilityState === "visible") refresh();
     };
+    const client = getSupabaseClient();
+    let changeTimer;
+    let channel = client.channel("admin-osas-" + userId);
+    const changed = () => {
+      window.clearTimeout(changeTimer);
+      changeTimer = window.setTimeout(() => refresh(), 150);
+    };
+    for (const table of [
+      "incident_reports",
+      "incident_evidence",
+      "cases",
+      "case_decisions",
+      "case_actions",
+    ])
+      channel = channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table },
+        changed,
+      );
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") refresh();
+    });
     const timer = window.setInterval(visible, 15000);
     window.addEventListener("focus", focused);
     window.addEventListener("campustutor:sessions-changed", focused);
     document.addEventListener("visibilitychange", visible);
     return () => {
+      window.clearTimeout(changeTimer);
+      client.removeChannel(channel);
       mounted.current = false;
       request.current++;
       window.clearInterval(timer);

@@ -1,3 +1,4 @@
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import { useState } from "react";
 import {
   BookOpen,
@@ -16,99 +17,14 @@ import { Modal, button, input } from "../tutor/workspace/ui.jsx";
 
 import PolicyDetails from "./PolicyDetails.jsx";
 
-const office = "Office of Student Affairs and Services",
-  unit = "OSAS Case Management Unit";
-const policies = [
-  [
-    "Student Code of Conduct",
-    "Student Conduct",
-    "v2.1",
-    "2026-01-15",
-    office,
-    "Active",
-    "2026-09-10",
-  ],
-  [
-    "Incident Reporting and Referral Guidelines",
-    "Incident Reporting",
-    "v1.6",
-    "2026-02-01",
-    unit,
-    "Active",
-    "2026-09-08",
-  ],
-  [
-    "Evidence Handling and Validation Procedure",
-    "Evidence Handling",
-    "v1.4",
-    "2026-03-01",
-    unit,
-    "Active",
-    "2026-09-05",
-  ],
-  [
-    "Institutional Case Review Procedure",
-    "Case Review Procedures",
-    "v2.0",
-    "2026-04-15",
-    office,
-    "Active",
-    "2026-08-28",
-  ],
-  [
-    "Student Clearance Review Guidelines",
-    "Student Clearance",
-    "v1.3",
-    "2026-06-01",
-    "OSAS Clearance Unit",
-    "Active",
-    "2026-08-22",
-  ],
-  [
-    "Tutoring Conduct and Safety Standards",
-    "Tutoring Conduct / Safety",
-    "v1.5",
-    "2026-07-01",
-    office,
-    "Active",
-    "2026-08-15",
-  ],
-  [
-    "Case Documentation Retention Guide",
-    "Case Review Procedures",
-    "v0.9",
-    "",
-    unit,
-    "Draft",
-    "2026-09-12",
-  ],
-  [
-    "Legacy Incident Handling Guide",
-    "Incident Reporting",
-    "v1.0",
-    "2024-01-10",
-    office,
-    "Archived",
-    "2026-07-30",
-  ],
-].map(([title, category, version, effective, owner, status, updated], i) => ({
-  id: `POL-${String(i + 1).padStart(3, "0")}`,
-  title,
-  category,
-  version,
-  effective,
-  owner,
-  status,
-  updated,
-}));
-
 export default function OsasPolicies({ settings }) {
+  const policies = useOsasDatabase().records?.policies || [];
   const [query, setQuery] = useState(""),
     [category, setCategory] = useState(""),
     [status, setStatus] = useState(""),
     [owner, setOwner] = useState(""),
     [effective, setEffective] = useState(""),
-    [month, setMonth] = useState("2026-09"),
+    [month, setMonth] = useState(""),
     [recent, setRecent] = useState(false),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
@@ -167,7 +83,7 @@ export default function OsasPolicies({ settings }) {
     setOwner("");
     setEffective("");
     setRecent(false);
-    setMonth("2026-09");
+    setMonth("");
     setPage(1);
   }
   return (

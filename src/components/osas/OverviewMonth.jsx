@@ -23,7 +23,18 @@ export default function OverviewMonth({ value, onChange, onReports }) {
       document.removeEventListener("keydown", key);
     };
   }, [open]);
-  const [year, month] = value.split("-").map(Number),
+  const calendarValue = /^\d{4}-(0[1-9]|1[0-2])$/.test(value)
+    ? value
+    : new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "2-digit",
+      })
+        .format(new Date())
+        .split("/")
+        .reverse()
+        .join("-");
+  const [year, month] = calendarValue.split("-").map(Number),
     first = new Date(year, month - 1, 1),
     days = new Date(year, month, 0).getDate();
   return (
@@ -36,7 +47,12 @@ export default function OverviewMonth({ value, onChange, onReports }) {
         onClick={() => setOpen(!open)}
       >
         <CalendarDays size={17} />
-        {first.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+        {value
+          ? first.toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })
+          : "All dates"}
         <ChevronDown size={15} />
       </button>
       {open && (
@@ -46,7 +62,7 @@ export default function OverviewMonth({ value, onChange, onReports }) {
             <input
               className={input}
               type="month"
-              value={value}
+              value={value || calendarValue}
               min="2024-01"
               max="2099-12"
               onChange={(e) => {
@@ -54,6 +70,16 @@ export default function OverviewMonth({ value, onChange, onReports }) {
               }}
             />
           </label>
+          <button
+            type="button"
+            className={button}
+            onClick={() => {
+              onChange("");
+              setOpen(false);
+            }}
+          >
+            All dates
+          </button>
           <div className="ocx-calendar-grid">
             {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
               <b key={"d" + i}>{d}</b>
@@ -65,7 +91,7 @@ export default function OverviewMonth({ value, onChange, onReports }) {
               <span key={i}>{i + 1}</span>
             ))}
           </div>
-          <p>Overview reflects the selected month’s local records.</p>
+          <p>Overview reflects the selected month’s database records.</p>
           {onReports && (
             <button
               className="ocx-link"

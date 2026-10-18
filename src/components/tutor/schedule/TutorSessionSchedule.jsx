@@ -405,7 +405,6 @@ export default function TutorSessionSchedule() {
               {[
                 [MessageCircle, "Message Student"],
                 [CalendarDays, "Reschedule"],
-                [Trash2, "Cancel Session"],
               ].map(([Icon, label]) => (
                 <button
                   key={label}

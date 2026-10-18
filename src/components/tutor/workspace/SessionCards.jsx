@@ -1,5 +1,6 @@
 ﻿import { ExternalLink, MapPin, Video } from "lucide-react";
 import { hour, time } from "./data.js";
+import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import "./sessions.css";
 export function MeetingBrand({ provider, compact = false }) {
   return (
@@ -62,16 +63,11 @@ export default function SessionCards({
           return (
             <article className="session-card-row" key={s.id}>
               <div className="session-learner">
-                <div
-                  className="session-avatar"
-                  aria-label={`${s.learner} profile placeholder`}
-                >
-                  {s.learner
-                    .split(" ")
-                    .slice(0, 2)
-                    .map((n) => n[0])
-                    .join("")}
-                </div>
+                <PortalAvatar
+                  name={s.learner}
+                  userId={s.learnerUserId || s.learnerId}
+                  className="session-avatar overflow-hidden"
+                />
                 <b>{s.learner}</b>
               </div>
               <b>{s.service}</b>

@@ -34,7 +34,10 @@ export function SessionTable({ rows, actions }) {
         <tr key={s.id}>
           {[
             <div className="flex items-center gap-2">
-              <Avatar name={s.learner} />
+              <Avatar
+                name={s.learner}
+                userId={s.learnerUserId || s.learnerId}
+              />
               {s.learner}
             </div>,
             s.service,
