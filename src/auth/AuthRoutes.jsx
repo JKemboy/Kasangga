@@ -63,6 +63,11 @@ export function LoginRoute({ children }) {
   if (!auth.session) return children;
   if (auth.error) return <AccountNotice message={auth.error} />;
   const privilegedHome = privilegedAccountHome(auth.roles);
+  if (
+    location.pathname === "/register" &&
+    new URLSearchParams(location.search).has("terms_nonce")
+  )
+    return children;
   if (privilegedHome) return <Navigate to={privilegedHome} replace />;
   const requested =
     location.pathname === "/register"

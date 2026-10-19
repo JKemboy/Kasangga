@@ -1,9 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SecurityNotice from "./SecurityNotice.jsx";
 import { registerWithGoogle } from "../../services/googleRegistration.js";
+import { useAuth } from "../../auth/AuthProvider.jsx";
+import { getSupabaseClient } from "../../services/supabaseClient.js";
+import { accountHome } from "../../services/authAccount.js";
+import { useNavigate } from "react-router-dom";
 export default function RegisterCard() {
-  const [busy, setBusy] = useState(false);
+  const auth = useAuth();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false),
+    [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState(() => {
     const query = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.slice(1));
@@ -11,12 +18,43 @@ export default function RegisterCard() {
       ? "Google registration was not completed. Please try again."
       : "";
   });
+  useEffect(() => {
+    const nonce = new URLSearchParams(window.location.search).get("terms_nonce");
+    if (!nonce) return;
+    let active = true;
+    const recordAcceptance = async () => {
+      if (!auth.user || auth.loading) return;
+      try {
+        const { error: acceptanceError } = await getSupabaseClient().rpc(
+          "record_terms_acceptance",
+          { p_nonce: nonce },
+        );
+        if (acceptanceError) throw acceptanceError;
+        window.history.replaceState({}, "", "/register");
+        if (active) navigate(accountHome(auth.roles), { replace: true });
+      } catch (cause) {
+        if (active)
+          setError(
+            cause.message ||
+              "Could not save your Terms & Conditions acceptance. Please retry registration.",
+          );
+      }
+    };
+    recordAcceptance();
+    return () => {
+      active = false;
+    };
+  }, [auth.user, auth.loading, auth.roles, navigate]);
   async function register() {
     if (busy) return;
+    if (!acceptedTerms) {
+      setError("Please accept the Terms & Conditions before continuing.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      await registerWithGoogle(window.location.origin);
+      await registerWithGoogle(window.location.origin, acceptedTerms);
     } catch {
       setError(
         "Unable to open Google sign-up. Please try again or contact support.",
@@ -34,9 +72,33 @@ export default function RegisterCard() {
             create.
           </p>
         </header>
+        <label className="flex items-start gap-2 text-left text-xs leading-5 text-slate-600">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(event) => {
+              setAcceptedTerms(event.target.checked);
+              setError("");
+            }}
+            className="mt-1 h-4 w-4 shrink-0 accent-[#006b3c]"
+          />
+          <span>
+            I have read and agree to the{" "}
+            <a
+              href="/CampusTutor-Terms-Conditions.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[#006b3c] underline underline-offset-2"
+              onClick={(event) => event.stopPropagation()}
+            >
+              Terms &amp; Conditions
+            </a>
+            .
+          </span>
+        </label>
         <button
           onClick={register}
-          disabled={busy}
+          disabled={busy || !acceptedTerms}
           className="flex w-full items-center justify-center gap-3 rounded-md border border-[#a8c7b8] px-4 py-3 text-sm font-semibold hover:bg-green-50 disabled:opacity-50"
         >
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 48 48">
