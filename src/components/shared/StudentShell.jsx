@@ -226,7 +226,7 @@ export default function StudentShell({
             onClick={() => select("profile")}
             aria-label="Open profile"
           >
-            <PortalAvatar name={name} role={role} editable />
+            <PortalAvatar name={name} role={role} />
             <span className="hidden text-left text-xs lg:block">
               <b>{name}</b>
               <span className="block text-slate-500">

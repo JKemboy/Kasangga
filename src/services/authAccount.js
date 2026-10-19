@@ -1,4 +1,4 @@
-import { findCollege, findProgram } from "../data/collegeProgramMap.js";
+import { findCollege, findProgram } from "./collegeProgramMap.js";
 export const isCsuEmail = (email) =>
   /^[^\s@]+@carsu\.edu\.ph$/i.test(String(email || "").trim());
 export async function loadAuthAccount(client, userId) {

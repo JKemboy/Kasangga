@@ -2,7 +2,7 @@ import {
   findCollege,
   findProgram,
   validAcademicPair,
-} from "../data/collegeProgramMap.js";
+} from "./collegeProgramMap.js";
 export function profileError(p, verified = true) {
   if (!verified) return "Verify your email before completing your profile.";
   for (const key of [

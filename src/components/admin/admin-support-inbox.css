@@ -1,0 +1,23 @@
+.admin-support-chat .admin-support-resolved {
+  background: #eef1f5;
+  color: #566584;
+}
+
+.admin-support-chat .admin-support-status {
+  cursor: pointer;
+}
+
+.admin-support-chat .admin-support-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+
+@media (max-width: 800px) {
+  .admin-support-chat {
+    min-height: 0;
+  }
+
+  .admin-support-chat .chat-sidebar {
+    height: 32dvh;
+  }
+}

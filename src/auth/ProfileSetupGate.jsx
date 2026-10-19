@@ -1,4 +1,4 @@
-import { collegeProgramMap, findCollege } from "../data/collegeProgramMap.js";
+import { collegeProgramMap, findCollege } from "../services/collegeProgramMap.js";
 import { applyIdFields } from "../services/studentIdOcr.js";
 import StudentIdUpload from "./StudentIdUpload.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";

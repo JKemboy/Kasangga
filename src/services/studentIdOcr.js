@@ -2,7 +2,7 @@ import {
   detectAcademicPair,
   findCollege,
   findProgram,
-} from "../data/collegeProgramMap.js";
+} from "./collegeProgramMap.js";
 import { extractImageText, scheduleImageError } from "./ocrService.js";
 import { prepareStudentIdRegions } from "./studentIdRegions.js";
 

@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { Modal, button, primary } from "../tutor/workspace/ui.jsx";
 import AdminUsers from "./AdminUsers.jsx";
+import AdminSupportInbox from "./AdminSupportInbox.jsx";
 import "../osas/osas.css";
 import "./admin.css";
 const navigation = [
@@ -46,6 +47,7 @@ const navigation = [
   ["Tutor Verification", ShieldCheck],
   ["Service Management", BriefcaseBusiness],
   ["Bookings Monitoring", CalendarDays],
+  ["Messages", MessageCircle],
   ["Payments & Transactions", CreditCard],
   ["Incident Reports", TriangleAlert],
   ["Reports & Analytics", ChartNoAxesCombined],
@@ -106,6 +108,7 @@ export default function AdminDashboardPage() {
         "Payments & Transactions",
         "Incident Reports",
         "Bookings Monitoring",
+        "Messages",
         "Overview",
         "Settings",
       ].includes(label)
@@ -304,6 +307,8 @@ export default function AdminDashboardPage() {
             />
           ) : view === "Bookings Monitoring" ? (
             <AdminBookings />
+          ) : view === "Messages" ? (
+            <AdminSupportInbox />
           ) : view === "Incident Reports" ? (
             <AdminIncidents
               users={rows}

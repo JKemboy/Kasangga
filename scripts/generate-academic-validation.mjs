@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { collegeProgramMap } from "../src/data/collegeProgramMap.js";
+import { collegeProgramMap } from "../src/services/collegeProgramMap.js";
 
 // Generate the RPC's allow-list from the same catalogue used in the browser.
 // This writes a manual SQL file only; it never executes against Supabase.
@@ -20,11 +20,12 @@ const block = `  -- BEGIN GENERATED ACADEMIC VALIDATION (scripts/generate-academ
 `;
 let sql = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
 const marker =
-  /  -- BEGIN GENERATED ACADEMIC VALIDATION[\s\S]*?  -- END GENERATED ACADEMIC VALIDATION\n/;
-sql = marker.test(sql)
-  ? sql.replace(marker, block)
-  : sql.replace(
-      "  update public.users set",
-      block + "  update public.users set",
-    );
-fs.writeFileSync(file, sql);
+  /  -- BEGIN GENERATED ACADEMIC VALIDATION[^\n]*\n[\s\S]*?  -- END GENERATED ACADEMIC VALIDATION\n?/;
+if (!marker.test(sql)) {
+  throw new Error(
+    `Generated validation markers were not found in ${file.pathname}. Refusing to modify the SQL function.`,
+  );
+}
+const updated = sql.replace(marker, block);
+if (updated !== sql) fs.writeFileSync(file, updated);
+console.log(`Updated academic validation in ${file.pathname}`);

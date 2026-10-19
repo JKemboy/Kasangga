@@ -212,8 +212,15 @@ export default function LearnerProfile() {
       )}
       <div className="mt-3 grid items-start gap-3 [&>div]:min-w-0 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]">
         <aside className="rounded-xl bg-[linear-gradient(145deg,#f1faf5,#fbfdfc)] p-3 text-center lg:row-span-2">
-          <PortalAvatar name={profile.name} role="learner" editable className="grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-slate-200 text-xl text-green-800 shadow"/>
-          <p className="text-xs text-slate-500 mt-1">Click photo to change</p>
+          <PortalAvatar
+            name={profile.name}
+            role="learner"
+            editable={editing === "personal"}
+            className="mx-auto grid h-20 w-20 place-items-center rounded-full border-4 border-white bg-slate-200 text-xl text-green-800 shadow"
+          />
+          {editing === "personal" && (
+            <p className="mt-1 text-xs text-slate-500">Click photo to change</p>
+          )}
           <h2 className="mt-2 text-base font-bold">
             {profile.name || "Learner"}
           </h2>
