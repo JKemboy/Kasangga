@@ -1,3 +1,4 @@
+// OSAS data provider: reads the role-authorized snapshot, writes through osas_save_record, and refreshes committed database state.
 import {
   createContext,
   useCallback,
@@ -18,6 +19,7 @@ export function OsasDatabaseProvider({ children }) {
   const refresh = useCallback(async () => {
     const request = ++generation.current;
     try {
+      // osas_dashboard_snapshot is the authoritative OSAS data/settings read.
       const { data, error } = await getSupabaseClient().rpc(
         "osas_dashboard_snapshot",
       );
@@ -45,6 +47,8 @@ export function OsasDatabaseProvider({ children }) {
     };
   }, [refresh]);
   async function save(kind, id, action, value, expected = null) {
+    // Persist through the role-checked RPC, then reload the snapshot so every
+    // OSAS view renders the committed database value rather than a local copy.
     const { error } = await getSupabaseClient().rpc("osas_save_record", {
       p_kind: kind,
       p_id: id,

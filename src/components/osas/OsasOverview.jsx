@@ -1,3 +1,4 @@
+// OSAS Overview: derives case, incident, clearance, and review summaries from the OSAS database snapshot.
 import { statusClass } from "../shared/statusColors.js";
 import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import OverviewMonth from "./OverviewMonth.jsx";
@@ -90,7 +91,8 @@ export default function OsasOverview({
   const date = (v) =>
     settings.dateFormat === "iso"
       ? v
-      : new Date(v + "T12:00:00").toLocaleDateString("en-US", {
+      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
+          timeZone: settings.timezone || "Asia/Manila",
           month: settings.dateFormat === "short" ? "2-digit" : "short",
           day: "numeric",
           year: "numeric",

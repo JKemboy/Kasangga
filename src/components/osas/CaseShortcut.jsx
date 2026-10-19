@@ -1,3 +1,4 @@
+// Case detail workflow: coordinates evidence, case actions, decision, clearance effects, and final archival for one OSAS case.
 import { caseProgress, casePermissions } from "./caseProgress.js";
 import { statusClass } from "../shared/statusColors.js";
 import EvidenceFile from "./EvidenceFile.jsx";

@@ -1,3 +1,4 @@
+// Evidence Validation: reviews evidence linked to open cases and persists validation decisions through the OSAS case workflow.
 import { statusClass } from "../shared/statusColors.js";
 import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
@@ -80,14 +81,15 @@ export default function OsasEvidence({ settings }) {
   const date = (v) =>
     settings.dateFormat === "iso"
       ? v
-      : new Date(v + "T12:00:00").toLocaleDateString("en-US", {
+      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
+          timeZone: settings.timezone || "Asia/Manila",
           month: settings.dateFormat === "short" ? "2-digit" : "short",
           day: "numeric",
           year: "numeric",
         });
   const time = (r) =>
-    new Date(`${r.date}T${r.time}:00+08:00`).toLocaleTimeString("en-PH", {
-      timeZone: "Asia/Manila",
+    new Date(`${r.date}T${r.time}:00+08:00`).toLocaleTimeString(settings.language || "en-PH", {
+      timeZone: settings.timezone || "Asia/Manila",
       hour: "2-digit",
       minute: "2-digit",
       hour12: settings.timeFormat === "12",

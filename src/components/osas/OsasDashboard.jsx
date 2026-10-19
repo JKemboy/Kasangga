@@ -1,3 +1,4 @@
+// OSAS portal coordinator: loads the database snapshot, applies saved preferences, and routes clearance, case, policy, archive, and report sections.
 import OsasCaseWorkspace from "./OsasCaseWorkspace.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
 import { statusClass } from "../shared/statusColors.js";
@@ -15,7 +16,11 @@ import OsasCases from "./OsasCases.jsx";
 import OsasOverview from "./OsasOverview.jsx";
 import OsasPolicies from "./OsasPolicies.jsx";
 import OsasReports from "./OsasReports.jsx";
-import OsasSettings, { loadSettings } from "./OsasSettings.jsx";
+import OsasSettings, {
+  filterOsasNotifications,
+  loadSettings,
+  normalizeSettings,
+} from "./OsasSettings.jsx";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -118,16 +123,28 @@ function OsasDashboardContent() {
       window.removeEventListener("campustutor:open-evidence-validation", open);
   }, []);
   const [settings, setSettings] = useState(loadSettings);
+  // Apply the latest server settings snapshot; local state is only a UI cache
+  // and never a persistent settings store.
   useEffect(() => {
-    if (database.records?.settings) setSettings(database.records.settings);
+    if (database.records?.settings) {
+      const next = normalizeSettings(database.records.settings);
+      setSettings((current) =>
+        JSON.stringify(current) === JSON.stringify(next) ? current : next,
+      );
+    }
   }, [database.records?.settings]);
+  const notifications = filterOsasNotifications(
+    database.records?.notifications || [],
+    settings,
+  );
   const pageSize = Number(settings.pageSize);
   const formatDate = (v) =>
     !v
       ? "—"
       : settings.dateFormat === "iso"
         ? v
-        : new Date(v + "T12:00:00").toLocaleDateString("en-US", {
+        : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
+            timeZone: settings.timezone || "Asia/Manila",
             month: settings.dateFormat === "short" ? "2-digit" : "short",
             day: "numeric",
             year: "numeric",
@@ -331,7 +348,7 @@ function OsasDashboardContent() {
         <div className="ml-auto flex items-center gap-4">
           <HeaderInbox
             role="osas"
-            notifications={database.records?.notifications || []}
+            notifications={notifications}
             onRead={database.markNotificationsRead}
             onNotification={(n) => {
               if (n.entityType === "cases") {
@@ -380,6 +397,8 @@ function OsasDashboardContent() {
         {database.loading && (
           <p role="status">Loading OSAS records from Supabase...</p>
         )}
+        {/* OSAS section router: every child receives the snapshot records or
+            settings it needs; mutations go through OsasDatabaseContext RPCs. */}
         {view === "Overview" ? (
           <OsasOverview
             onReports={() => setView("Reports & Analytics")}
@@ -395,6 +414,8 @@ function OsasDashboardContent() {
           <OsasSettings
             settings={settings}
             onSave={async (next) => {
+              // Persist first; update the rendered preference cache only after
+              // the RPC succeeds and its snapshot refresh completes.
               await database.save("settings", null, "settings", next);
               setSettings(next);
             }}

@@ -1,3 +1,4 @@
+// OSAS record mapper: converts database snapshot tables into the case, clearance, evidence, archive, and report view models.
 const label = (value) =>
   String(value || "")
     .replaceAll("_", " ")
@@ -12,6 +13,7 @@ const day = (value) =>
       }).format(new Date(value))
     : "";
 const json = (value, fallback = {}) => {
+  if (value && typeof value === "object") return value;
   try {
     return JSON.parse(value);
   } catch {
@@ -262,6 +264,7 @@ export function mapOsasRecords(db) {
     users: db.users,
     notifications: db.notifications.map((n) => ({
       id: String(n.notification_id),
+      notificationType: n.notification_type,
       title: n.title,
       text: n.message,
       time: n.created_at,

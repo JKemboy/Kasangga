@@ -1,3 +1,4 @@
+// Incident Monitoring: reviews incoming reports and routes referral/assessment changes through the OSAS database workflow.
 import { statusClass } from "../shared/statusColors.js";
 import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import IncidentAssessment from "./IncidentAssessment.jsx";
@@ -102,7 +103,8 @@ export default function OsasIncidents({
   const formatDate = (v) =>
     settings.dateFormat === "iso"
       ? v
-      : new Date(v + "T12:00:00").toLocaleDateString("en-US", {
+      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
+          timeZone: settings.timezone || "Asia/Manila",
           month: settings.dateFormat === "short" ? "2-digit" : "short",
           day: "numeric",
           year: "numeric",

@@ -1,3 +1,4 @@
+// Student Clearance Review dialog: derives enabled decisions from relevant database cases and saves an authorized decision through its parent.
 import { statusClass } from "../shared/statusColors.js";
 import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import { useState, useRef, useEffect } from "react";

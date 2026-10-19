@@ -1,7 +1,8 @@
+// OSAS Settings: keeps edits as a draft until Save Changes, then delegates to the OSAS Supabase RPC and refresh flow.
 import PortalAvatar from "../shared/PortalAvatar.jsx";
 import SecurityFlow from "../shared/SecurityFlow.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   UserRound,
   Bell,
@@ -44,16 +45,54 @@ export const defaultSettings = {
   showArchived: false,
   notifications: notificationTypes.map(() => ({ email: true, app: true })),
 };
+// Defaults initialize the form only; saved values are loaded from the OSAS
+// dashboard snapshot and written through its database RPC.
 export function loadSettings() {
-  return structuredClone(defaultSettings);
+  return normalizeSettings(defaultSettings);
+}
+export function normalizeSettings(value = {}) {
+  const next = { ...defaultSettings, ...value };
+  next.notifications = defaultSettings.notifications.map((defaults, index) => ({
+    ...defaults,
+    ...(Array.isArray(value.notifications) ? value.notifications[index] : {}),
+  }));
+  return next;
+}
+// Match notification records to the OSAS preference row before rendering the
+// shared in-app inbox. Email switches are saved as preferences, while actual
+// email delivery is handled by the institution's notification service.
+export function filterOsasNotifications(rows = [], settings = defaultSettings) {
+  const enabled = settings.notifications || defaultSettings.notifications;
+  return rows.filter((notification) => {
+    const text = `${notification.notificationType || ""} ${notification.title || ""} ${notification.text || ""}`.toLowerCase();
+    const index = text.includes("referral")
+      ? 0
+      : text.includes("priority") || text.includes("high-priority")
+        ? 1
+        : text.includes("evidence")
+          ? 2
+          : text.includes("clearance")
+            ? 3
+            : text.includes("case") && text.includes("status")
+              ? 4
+              : text.includes("policy")
+                ? 5
+                : -1;
+    return index < 0 || enabled[index]?.app !== false;
+  });
 }
 
 export default function OsasSettings({ settings, onSave }) {
   const auth = useAuth();
-  const [draft, setDraft] = useState(() => structuredClone(settings)),
+  const [draft, setDraft] = useState(() => normalizeSettings(settings)),
     [notice, setNotice] = useState(""),
     [error, setError] = useState(""),
     [security, setSecurity] = useState(null);
+  // Draft edits stay in memory until the user confirms Save Changes; refreshes
+  // replace the draft with settings returned from Supabase.
+  useEffect(() => {
+    setDraft(normalizeSettings(settings));
+  }, [settings]);
   const dirty = JSON.stringify(draft) !== JSON.stringify(settings);
   const set = (key, value) => {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -63,13 +102,13 @@ export default function OsasSettings({ settings, onSave }) {
   const date =
     draft.dateFormat === "iso"
       ? new Intl.DateTimeFormat("en-CA", {
-          timeZone: draft.timezone,
+          timeZone: draft.timezone || "Asia/Manila",
           year: "numeric",
           month: "2-digit",
           day: "2-digit",
         }).format(now)
-      : new Intl.DateTimeFormat(draft.language, {
-          timeZone: draft.timezone,
+      : new Intl.DateTimeFormat(draft.language || "en-PH", {
+          timeZone: draft.timezone || "Asia/Manila",
           year: "numeric",
           month: draft.dateFormat === "long" ? "short" : "2-digit",
           day: "2-digit",
@@ -84,11 +123,13 @@ export default function OsasSettings({ settings, onSave }) {
       setError("Enter a valid contact number (7–20 characters).");
       return;
     }
-    const next = {
+    const next = normalizeSettings({
       ...draft,
       contact: draft.contact.trim(),
       alternate: draft.alternate.trim(),
-    };
+    });
+    // The parent calls osas_save_record; show success only after that RPC and
+    // its follow-up snapshot refresh both complete.
     try {
       await onSave(next);
       setNotice("OSAS preferences saved to Supabase.");
@@ -320,8 +361,8 @@ export default function OsasSettings({ settings, onSave }) {
               ))}
               <small className="os-help">
                 Time preview:{" "}
-                {new Intl.DateTimeFormat("en-PH", {
-                  timeZone: draft.timezone,
+                {new Intl.DateTimeFormat(draft.language || "en-PH", {
+                  timeZone: draft.timezone || "Asia/Manila",
                   hour: "2-digit",
                   minute: "2-digit",
                   hour12: draft.timeFormat === "12",
@@ -373,7 +414,7 @@ export default function OsasSettings({ settings, onSave }) {
             type="button"
             className={button}
             onClick={() => {
-              setDraft(structuredClone(settings));
+              setDraft(normalizeSettings(settings));
               setError("");
               setNotice("Changes discarded.");
             }}

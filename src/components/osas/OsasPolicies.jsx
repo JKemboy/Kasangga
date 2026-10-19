@@ -1,3 +1,4 @@
+// Policies & Procedures: displays policy records and available authorized policy-management actions.
 import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import { useState } from "react";
 import {
@@ -67,7 +68,8 @@ export default function OsasPolicies({ settings }) {
       ? "—"
       : settings.dateFormat === "iso"
         ? v
-        : new Date(v + "T12:00:00").toLocaleDateString("en-US", {
+      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
+          timeZone: settings.timezone || "Asia/Manila",
             month: settings.dateFormat === "short" ? "2-digit" : "short",
             day: "numeric",
             year: "numeric",

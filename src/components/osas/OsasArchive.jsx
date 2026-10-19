@@ -1,3 +1,4 @@
+// Case Archive: lists archived case records and opens them in read-only detail views.
 import CaseShortcut from "./CaseShortcut.jsx";
 import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import { useState } from "react";
@@ -58,7 +59,8 @@ export default function OsasArchive({ settings }) {
   const date = (v) =>
     settings.dateFormat === "iso"
       ? v
-      : new Date(v + "T12:00:00").toLocaleDateString("en-US", {
+      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
+          timeZone: settings.timezone || "Asia/Manila",
           month: settings.dateFormat === "short" ? "2-digit" : "short",
           day: "numeric",
           year: "numeric",

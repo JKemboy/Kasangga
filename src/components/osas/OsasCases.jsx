@@ -1,3 +1,4 @@
+// Case Review: searches active cases and optionally archived records, then opens the case workflow for authorized decisions.
 import { statusClass } from "../shared/statusColors.js";
 import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
@@ -64,7 +65,7 @@ export default function OsasCases({ settings }) {
     ? []
     : rows.filter(
         (r) =>
-          !r.archived &&
+          (!r.archived || settings.showArchived) &&
           (!start || r.date >= start) &&
           (!end || r.date <= end),
       );
@@ -94,7 +95,8 @@ export default function OsasCases({ settings }) {
   const date = (v) =>
     settings.dateFormat === "iso"
       ? v
-      : new Date(v + "T12:00:00").toLocaleDateString("en-US", {
+      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
+          timeZone: settings.timezone || "Asia/Manila",
           month: settings.dateFormat === "short" ? "2-digit" : "short",
           day: "numeric",
           year: "numeric",
