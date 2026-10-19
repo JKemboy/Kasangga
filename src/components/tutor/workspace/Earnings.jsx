@@ -1,3 +1,4 @@
+// Earnings: presents tutor earnings and payment records supplied by the tutor workspace data/services.
 import { TransactionDetails } from "./SessionDetails.jsx";
 import { useLayoutEffect, useRef, useState } from "react";
 import {

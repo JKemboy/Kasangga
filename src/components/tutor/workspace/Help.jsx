@@ -1,3 +1,4 @@
+// Tutor Help & Safety: provides help content, account support actions, and report/contact workflows.
 import ContactSupport from "./ContactSupport.jsx";
 import {
   Search,

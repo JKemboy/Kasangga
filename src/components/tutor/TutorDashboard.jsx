@@ -1,3 +1,4 @@
+// Tutor portal coordinator: loads tutor profile, services, availability, class schedule, and sessions, then routes to each tutor section.
 import { tutorScheduleReady } from "./workspace/scheduleAccess.js";
 import {
   loadTutorInformation,
@@ -101,6 +102,8 @@ export default function TutorDashboardPage() {
     };
   }, [refreshTutorInformation]);
   async function persistTutorInformation(values) {
+    // Each section calls these dashboard callbacks so account data is saved
+    // once through the matching Supabase service and then refreshed in memory.
     requireSchedule();
     const info = await saveTutorInformation(values);
     profileRequest.current++;
@@ -326,6 +329,8 @@ export default function TutorDashboardPage() {
     );
     return false;
   }
+  // All tutor sidebar and cross-section links pass through this gate so a
+  // missing confirmed class schedule cannot open protected Tutor sections.
   function go(next, options = {}) {
     if (scheduleLocked && !["dashboard", "availability"].includes(next)) {
       setNotice(
@@ -495,6 +500,8 @@ export default function TutorDashboardPage() {
                 </button>
               </p>
             )}
+            {/* Keep one section mounted at a time; shared props carry the
+                loaded records and their database-backed save callbacks. */}
             <div key={`${view}-${revision}`}>
               {view === "dashboard" && (
                 <fieldset disabled={scheduleLocked} className="contents">

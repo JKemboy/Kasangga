@@ -1,3 +1,4 @@
+// Tutor service API: reads and writes tutor-owned services, topics, and time slots through Supabase-backed operations.
 import { getSupabaseClient } from "./supabaseClient.js";
 
 const SERVICE_FIELDS =

@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from "react";
+// Service editor: builds a tutor service and topic schedule; save callbacks enforce booking-aware edit restrictions.
+import { useEffect, useState } from "react";
 import { Plus, Check, X, Trash2 } from "lucide-react";
 import { Modal, Field, input, button, primary } from "./ui.jsx";
 import { hour, time, slotError } from "./data.js";

@@ -1,3 +1,4 @@
+// Tutor My Sessions: filters paid bookings into upcoming, ongoing, and done groups using the session lifecycle helper.
 import SessionDetails from "./SessionDetails.jsx";
 import { Search, ListFilter, ChevronDown, Info } from "lucide-react";
 import SessionCards from "./SessionCards.jsx";

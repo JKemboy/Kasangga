@@ -1,3 +1,4 @@
+// Tutor Notifications: displays tutor notifications and routes actionable items to their related workspace section.
 import { useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import useBookingInbox from "../../../services/useBookingInbox.js";

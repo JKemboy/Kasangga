@@ -1,3 +1,4 @@
+// Tutor account sections: connects Messages to booking chat and renders editable profile information from the tutor workspace.
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import BookingMessages from "../../shared/BookingMessages.jsx";
 import SessionDetails from "./SessionDetails.jsx";

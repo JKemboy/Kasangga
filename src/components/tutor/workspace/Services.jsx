@@ -1,3 +1,4 @@
+// My Services: lists tutor-owned services and sends create, edit, status, and availability changes to TutorDashboard callbacks.
 import ServiceDetails from "./ServiceDetails.jsx";
 import CreateService from "./CreateService.jsx";
 import { useInteractions } from "../../shared/InteractionProvider.jsx";

@@ -1,3 +1,4 @@
+// Availability & Schedule: combines the tutor class schedule and open tutoring slots, using callbacks for Supabase persistence.
 import AvailabilityEditor from "./AvailabilityEditor.jsx";
 import AvailabilityPopover from "./AvailabilityPopover.jsx";
 import SessionDetails from "./SessionDetails.jsx";

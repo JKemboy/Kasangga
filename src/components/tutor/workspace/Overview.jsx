@@ -1,3 +1,4 @@
+// Tutor dashboard overview: summarizes tutor activity and provides entry points into service, schedule, and session sections.
 import { confirmedClasses } from "./scheduleReview.js";
 import CreateService from "./CreateService.jsx";
 import { useState } from "react";
