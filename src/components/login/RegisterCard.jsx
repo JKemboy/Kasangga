@@ -55,9 +55,9 @@ export default function RegisterCard() {
     setError("");
     try {
       await registerWithGoogle(window.location.origin, acceptedTerms);
-    } catch {
+    } catch (cause) {
       setError(
-        "Unable to open Google sign-up. Please try again or contact support.",
+        `Could not start Google registration: ${cause.message || "Please try again or contact support."}`,
       );
       setBusy(false);
     }
@@ -119,7 +119,7 @@ export default function RegisterCard() {
               d="M24 12.1c3 0 5.6 1 7.7 3l5.8-5.8A19.5 19.5 0 0 0 24 4 20.4 20.4 0 0 0 5.8 15.3l6.8 5.2C14.2 15.7 18.7 12.1 24 12.1Z"
             />
           </svg>
-          {busy ? "Opening Google?" : "Continue with Google"}
+          {busy ? "Opening Google…" : "Continue with Google"}
         </button>
         {error && (
           <p role="alert" className="text-sm text-red-700">

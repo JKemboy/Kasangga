@@ -104,6 +104,8 @@ export function learnerOtpMessage(error) {
     case "missing_otp_session":
       return "Verification did not complete. Please request a new code and try again.";
     default:
-      return "We could not complete your request. Check your connection and try again, or contact support.";
+      return error?.message
+        ? `We could not complete your request: ${error.message}`
+        : "We could not complete your request. Check your connection and try again, or contact support.";
   }
 }
