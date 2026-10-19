@@ -126,9 +126,7 @@ export default function CreateService({
         const [slots, classes, bookings] = await Promise.all([
           listTutorAvailability(undefined, data.services),
           listTutorClassSchedule(),
-          getSupabaseClient().rpc("get_my_tutor_booking_blocks", {
-            p_service_id: service?.id ? Number(service.id) : null,
-          }),
+          getSupabaseClient().rpc("get_my_tutor_booking_blocks"),
         ]);
         if (bookings.error)
           throw new Error(

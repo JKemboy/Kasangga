@@ -7,7 +7,8 @@ export function paidSession(row) {
   );
 }
 export function sessionLifecycle(row, now = new Date()) {
-  if (String(row.booking_status).toLowerCase() === "completed")
+  const status = String(row.booking_status).toLowerCase();
+  if (status === "completed")
     return "Completed";
   const time = (value) =>
     String(value).length === 5
@@ -17,5 +18,7 @@ export function sessionLifecycle(row, now = new Date()) {
     row.session_date + "T" + time(row.start_time) + "+08:00",
   );
   const end = new Date(row.session_date + "T" + time(row.end_time) + "+08:00");
-  return start <= now && now < end ? "Ongoing" : "Upcoming";
+  if (now < start) return "Upcoming";
+  if (now < end) return "Ongoing";
+  return now < end ? "Ongoing" : "Awaiting Completion";
 }

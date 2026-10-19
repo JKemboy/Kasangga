@@ -66,19 +66,38 @@ export default function LearnerSessions({ args = {} }) {
         ? args.tab
         : "Upcoming",
   );
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => tick((value) => value + 1), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [selectedDate, setSelectedDate] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const now = new Date();
+  const lifecycleFor = (session) => {
+    if (session.bookingStatus === "Completed") return "Completed";
+    const start = new Date(session.startAt);
+    const end = new Date(session.endAt);
+    return now < start
+      ? "Upcoming"
+      : now < end
+        ? "Ongoing"
+        : "Awaiting Completion";
+  };
+  const liveRecords = records.map((session) => ({
+    ...session,
+    lifecycle: lifecycleFor(session),
+  }));
   const visibleSessions = filterSessions(
-    records,
+    liveRecords,
     activeTab === "Done" ? "Completed" : activeTab,
     selectedDate,
     selectedStatus,
   );
-  const tabCount = records.filter(
+  const tabCount = liveRecords.filter(
     (session) =>
       session.lifecycle === (activeTab === "Done" ? "Completed" : activeTab),
   ).length;
-
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-3 lg:px-5">
       <h1 className="text-2xl font-bold tracking-[-1px] text-[#101828]">
@@ -117,7 +136,7 @@ export default function LearnerSessions({ args = {} }) {
             >
               {tab} (
               {
-                records.filter(
+                liveRecords.filter(
                   (session) =>
                     session.lifecycle === (tab === "Done" ? "Completed" : tab),
                 ).length

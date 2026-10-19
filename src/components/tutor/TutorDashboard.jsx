@@ -4,6 +4,7 @@ import {
   saveTutorInformation,
 } from "../../services/tutorInformation.js";
 import { listTutorSessions } from "../../services/tutorSessions.js";
+import { sessionLifecycle } from "../../services/sessionLifecycle.js";
 import {
   listTutorServices,
   saveTutorService,
@@ -170,6 +171,18 @@ export default function TutorDashboardPage() {
       window.removeEventListener("focus", refreshSessions);
     };
   }, [refreshSessions, view]);
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setData((current) => ({
+        ...current,
+        sessions: current.sessions.map((session) => ({
+          ...session,
+          lifecycle: sessionLifecycle(session),
+        })),
+      }));
+    }, 30000);
+    return () => window.clearInterval(timer);
+  }, []);
   const refreshServices = useCallback(async () => {
     const current = ++request.current;
     setServicesLoading(true);

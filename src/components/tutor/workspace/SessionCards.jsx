@@ -121,7 +121,11 @@ export default function SessionCards({
               <span
                 className={`session-status ${s.status === "Pending" ? "pending" : ""}`}
               >
-                {s.lifecycle === "Completed" ? "Done" : s.lifecycle || s.status}
+                {s.lifecycle === "Completed"
+                  ? "Done"
+                  : s.lifecycle === "Awaiting Completion"
+                    ? "Ongoing · mark complete"
+                    : s.lifecycle || s.status}
               </span>
               <span
                 className={`session-status ${s.payment === "Unpaid" ? "unpaid" : ""}`}

@@ -45,6 +45,12 @@ export function mapLearnerSession(row, now = new Date()) {
     bookingId: String(row.booking_id),
     tutorUserId: row.tutor_user_id || row.user_id || null,
     lifecycle: sessionLifecycle(row, now),
+    startAt: new Date(
+      `${row.session_date}T${String(row.start_time).length === 5 ? row.start_time + ":00" : String(row.start_time).slice(0, 8)}+08:00`,
+    ).toISOString(),
+    endAt: new Date(
+      `${row.session_date}T${String(row.end_time).length === 5 ? row.end_time + ":00" : String(row.end_time).slice(0, 8)}+08:00`,
+    ).toISOString(),
     date: row.session_date,
     paymentStatus,
     bookingStatus,

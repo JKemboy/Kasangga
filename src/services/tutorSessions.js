@@ -29,6 +29,12 @@ export function mapTutorSession(row, now = new Date()) {
     meetingUrl: row.meeting_link || "",
     status: label(row.booking_status),
     lifecycle: sessionLifecycle(row, now),
+    startAt: new Date(
+      `${row.session_date}T${String(row.start_time).length === 5 ? row.start_time + ":00" : String(row.start_time).slice(0, 8)}+08:00`,
+    ).toISOString(),
+    endAt: new Date(
+      `${row.session_date}T${String(row.end_time).length === 5 ? row.end_time + ":00" : String(row.end_time).slice(0, 8)}+08:00`,
+    ).toISOString(),
     payment: label(row.payment_status),
     transaction:
       row.transaction_reference ||

@@ -1,7 +1,7 @@
 import SessionDetails from "./SessionDetails.jsx";
 import { Search, ListFilter, ChevronDown, Info } from "lucide-react";
 import SessionCards from "./SessionCards.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { money, hour, time } from "./data.js";
 import {
   Heading,
@@ -84,11 +84,29 @@ export function Sessions({
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(initialSession || null),
     [action, setAction] = useState("");
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => tick((value) => value + 1), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const now = new Date();
+  const lifecycleFor = (session) => {
+    if (session.status === "Completed") return "Completed";
+    const start = new Date(session.startAt);
+    const end = new Date(session.endAt);
+    return now < start
+      ? "Upcoming"
+      : now < end
+        ? "Ongoing"
+        : "Awaiting Completion";
+  };
   const rows = data.sessions.filter(
     (s) =>
       (!args.serviceId || s.serviceId === String(args.serviceId)) &&
       s.payment === "Paid" &&
-      s.lifecycle === (tab === "Done" ? "Completed" : tab) &&
+      (tab === "Done"
+        ? lifecycleFor(s) === "Completed"
+        : lifecycleFor(s) === tab) &&
       (type === "All" || s.type === type) &&
       matches(s, query),
   );
