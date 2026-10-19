@@ -1,7 +1,10 @@
+// Admin database gateway: reads the Admin snapshot and persists authorized changes through Admin RPCs.
 import { getSupabaseClient } from "./supabaseClient.js";
 import { mapAdminDatabase } from "./adminRecords.js";
 export { mapAdminDatabase } from "./adminRecords.js";
 export async function loadAdminDatabase(client = getSupabaseClient()) {
+  // The snapshot RPC returns system_settings with the rest of the Admin data;
+  // mapAdminDatabase parses recognized setting keys into the UI config.
   const { data, error } = await client.rpc("admin_dashboard_snapshot");
   if (error)
     throw new Error(
@@ -34,6 +37,8 @@ export async function saveAdminRecord(
   record,
   client = getSupabaseClient(),
 ) {
+  // Admin settings are saved by the database RPC into public.system_settings.
+  // Do not mirror these preferences into localStorage or browser storage.
   const id =
     kind === "users"
       ? record.userId

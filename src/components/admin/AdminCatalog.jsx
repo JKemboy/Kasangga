@@ -1,3 +1,4 @@
+// Admin catalogs: renders tutor verification and service moderation tables with their record-review actions.
 import { statusClass } from "../shared/statusColors.js";
 import ServiceDetails from "./ServiceDetails.jsx";
 import ServiceMenu from "./ServiceMenu.jsx";

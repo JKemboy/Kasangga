@@ -1,3 +1,4 @@
+// Admin Messages: lists and responds to learner/tutor support conversations using the support inbox service.
 import { useCallback, useEffect, useState } from "react";
 import { Search, Send, UserRound } from "lucide-react";
 import "../shared/booking-messages.css";

@@ -1,3 +1,4 @@
+// Admin Settings: edits supported alert preferences as an in-memory draft, confirms before save, and delegates persistence to AdminDashboard.
 import { useInteractions } from "../shared/InteractionProvider.jsx";
 import { useEffect, useState } from "react";
 import {
@@ -10,14 +11,26 @@ import {
   Info,
 } from "lucide-react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
+import SecurityFlow from "../shared/SecurityFlow.jsx";
+import { useAuth } from "../../auth/AuthProvider.jsx";
+import PortalAvatar from "../shared/PortalAvatar.jsx";
 export default function AdminSettings({ config, onSave }) {
   const { confirm } = useInteractions();
+  const auth = useAuth();
 
   const [draft, setDraft] = useState({ ...config }),
     [tab, setTab] = useState("System Settings"),
     [notice, setNotice] = useState(""),
     [error, setError] = useState(""),
-    [security, setSecurity] = useState(false);
+    [security, setSecurity] = useState("");
+  const accountName =
+    [auth?.profile?.first_name, auth?.profile?.last_name]
+      .filter(Boolean)
+      .join(" ") ||
+    auth?.user?.email?.split("@")[0] ||
+    "Administrator";
+  // Keep unsaved edits in component state only; the latest Supabase snapshot
+  // is the source of truth and replaces the draft after it changes.
   useEffect(() => {
     setDraft({ ...config });
   }, [config]);
@@ -53,10 +66,6 @@ export default function AdminSettings({ config, onSave }) {
   async function save(e) {
     e.preventDefault();
     setError("");
-    if (!draft.name.trim()) {
-      setError("Enter an account name.");
-      return;
-    }
     const next = { ...draft };
     const fields = Object.keys(next).filter(
       (k) => k !== "auditHistory" && next[k] !== config[k],
@@ -65,6 +74,8 @@ export default function AdminSettings({ config, onSave }) {
       setNotice("No changes to save.");
       return;
     }
+    // Require an explicit confirmation before passing Admin preferences to
+    // the database save handler; cancelling leaves the Supabase row unchanged.
     if (
       !(await confirm({
         title: "Save Settings?",
@@ -86,6 +97,8 @@ export default function AdminSettings({ config, onSave }) {
         : []),
     ];
     try {
+      // AdminDashboard persists this through admin_save_record into
+      // public.system_settings, then refreshes the authoritative snapshot.
       await onSave(next);
       setNotice("Settings saved to the database.");
     } catch (error) {
@@ -93,18 +106,23 @@ export default function AdminSettings({ config, onSave }) {
     }
   }
   return (
-    <form onSubmit={save} className="ad-page">
+    <form
+      onSubmit={tab === "System Settings" ? save : (event) => event.preventDefault()}
+      className="ad-page"
+    >
       <div className="osas-heading">
         <div>
           <h1>
             Settings <Settings size={22} />
           </h1>
-          <p>Configure authorized CampusTutor system settings.</p>
+          <p>Manage Admin notification preferences and account security.</p>
         </div>
-        <button className={primary + " flex items-center gap-2"}>
-          <Save size={15} />
-          Save Settings
-        </button>
+        {tab === "System Settings" && (
+          <button className={primary + " flex items-center gap-2"}>
+            <Save size={15} />
+            Save Settings
+          </button>
+        )}
       </div>
       <div className="au-tabs">
         {["System Settings", "Account Settings"].map((t) => (
@@ -124,35 +142,35 @@ export default function AdminSettings({ config, onSave }) {
             <UserRound />
             Account Settings
           </h2>
-          {[
-            ["Full Name", "name"],
-            ["Email Address", "email"],
-            ["Contact Number", "contact"],
-            ["Position", "position"],
-            ["Department", "department"],
-          ].map(([label, key]) => (
-            <label className="ad-setting-row" key={key}>
-              <span>{label}</span>
-              <input
-                className={input}
-                type={key === "email" ? "email" : "text"}
-                required={key === "name" || key === "email"}
-                maxLength={150}
-                value={draft[key]}
-                onChange={(e) => change(key, e.target.value)}
+          <div className="mb-4 flex items-center gap-3">
+              <PortalAvatar
+                role="admin"
+                editable
+                className="h-16 w-16 rounded-full"
               />
+            <p className="ad-help">Click the avatar to update your profile picture.</p>
+          </div>
+          {[
+            ["Full Name", accountName],
+            ["Email Address", auth?.user?.email || ""],
+            ["Contact Number", ""],
+            ["Position", "System Administrator"],
+            ["Department", "Information Technology Services"],
+          ].map(([label, value]) => (
+            <label className="ad-setting-row" key={label}>
+              <span>{label}</span>
+              <input className={input} value={value} readOnly />
             </label>
           ))}
           <button
             type="button"
             className={button}
-            onClick={() => setSecurity(true)}
+            onClick={() => setSecurity("Change Password")}
           >
             Change Password
           </button>
           <p className="ad-help">
-            Account details are saved administrator preferences. Institutional
-            identity is not modified.
+            These account details are managed by your institutional sign-in.
           </p>
         </section>
       ) : (
@@ -216,9 +234,14 @@ export default function AdminSettings({ config, onSave }) {
               </h2>
               {fixed("Platform Name", "CampusTutor")}
               {fixed("Timezone", "Asia/Manila (UTC+08:00)")}
-              {toggle("Require CSU Email Verification", "emailVerification")}
-              {toggle("Admin Two-Factor Authentication", "twoFactor")}
-              {toggle("Maintenance Mode", "maintenance")}
+              {fixed("CSU Email Verification", "Required by platform authentication")}
+              <div className="ad-setting-row">
+                <span>Admin Multi-Factor Authentication</span>
+                <button type="button" className={button} onClick={() => setSecurity("Manage Security")}>
+                  Manage Authenticator
+                </button>
+              </div>
+              {fixed("Maintenance Mode", "Not configured for this deployment")}
               <hr />
               {toggle("Tutor Application Alerts", "tutorAlerts")}
               {toggle("Payment Status Alerts", "paymentAlerts")}
@@ -228,12 +251,14 @@ export default function AdminSettings({ config, onSave }) {
           </div>
         </div>
       )}
-      <p className="ad-help flex items-center gap-2">
-        <Info size={14} />
-        Preferences are saved in the database. Authentication, maintenance
-        enforcement, and notification delivery need backend integration. No
-        payment secrets are stored here.
-      </p>
+      {tab === "System Settings" && (
+        <p className="ad-help flex items-center gap-2">
+          <Info size={14} />
+          Account and alert preferences are saved in Supabase. Authentication
+          policy, maintenance mode, and delivery channels are managed by the
+          institution and deployment configuration.
+        </p>
+      )}
       {notice && (
         <p role="status" className="text-xs text-green-800">
           {notice}
@@ -245,11 +270,8 @@ export default function AdminSettings({ config, onSave }) {
         </p>
       )}
       {security && (
-        <Modal title="Change Password" onClose={() => setSecurity(false)}>
-          <p className="text-xs">
-            Use your institutional account service to change your password.
-            Security settings management is not connected yet.
-          </p>
+        <Modal title={security} onClose={() => setSecurity("")}>
+          <SecurityFlow mode={security} onClose={() => setSecurity("")} />
         </Modal>
       )}
     </form>

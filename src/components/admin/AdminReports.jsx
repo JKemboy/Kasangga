@@ -1,3 +1,4 @@
+// Reports & Analytics: derives report summaries from the Admin snapshot and exports the currently selected report data.
 import {
   buildAdminReport,
   summarizePayments,

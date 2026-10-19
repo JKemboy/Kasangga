@@ -1,3 +1,4 @@
+// Admin Overview: summarizes users, applications, services, and system activity from the Admin database snapshot.
 import { statusClass } from "../shared/statusColors.js";
 import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import BookingDetails from "./BookingDetails.jsx";

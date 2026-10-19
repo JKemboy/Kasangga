@@ -1,3 +1,4 @@
+// Bookings Monitoring: reads booking and payment details through the Admin database context.
 import { statusClass } from "../shared/statusColors.js";
 import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import BookingDetails from "./BookingDetails.jsx";

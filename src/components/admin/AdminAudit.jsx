@@ -1,3 +1,4 @@
+// Audit History: displays audit entries returned by the Admin database snapshot; it does not create local audit records.
 import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import AuditDetails, { auditSummary } from "./AuditDetails.jsx";
 import UserExport from "./UserExport.jsx";

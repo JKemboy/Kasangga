@@ -1,3 +1,4 @@
+// Incident Reports: lets Admin review reports, linked users, evidence, and referral status through saved-record callbacks.
 import { statusClass } from "../shared/statusColors.js";
 import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import UserExport from "./UserExport.jsx";

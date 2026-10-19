@@ -1,3 +1,4 @@
+// User Management: searches and reviews user records, then sends authorized changes to the Admin database callbacks.
 import UserExport from "./UserExport.jsx";
 import UserDetails from "./UserDetails.jsx";
 import { useInteractions } from "../shared/InteractionProvider.jsx";

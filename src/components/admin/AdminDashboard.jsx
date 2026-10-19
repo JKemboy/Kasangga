@@ -1,10 +1,11 @@
+// Admin portal coordinator: loads the role-authorized Supabase snapshot, maintains the Admin inbox, and routes to each Admin section.
 import AdminCatalog from "./AdminCatalog.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
 import { saveAdminRecord } from "../../services/adminDatabase.js";
 import useAdminRecords from "./useAdminRecords.js";
 import { AdminDatabaseContext } from "./AdminDatabaseContext.jsx";
 import HeaderInbox from "../shared/HeaderInbox.jsx";
-import { adminAlerts, adminThreads } from "../shared/headerInboxData.js";
+import { adminThreads } from "../shared/headerInboxData.js";
 import { useLogout } from "../shared/LogoutProvider.jsx";
 import AdminBookings from "./AdminBookings.jsx";
 import AdminIncidents from "./AdminIncidents.jsx";
@@ -13,8 +14,13 @@ import AdminPayments from "./AdminPayments.jsx";
 import AdminSettings from "./AdminSettings.jsx";
 import AdminReports from "./AdminReports.jsx";
 import { loadConfig } from "./adminData.js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthProvider.jsx";
+import {
+  filterAdminNotifications,
+  loadAdminNotifications,
+  markAdminNotificationsRead,
+} from "../../services/adminNotifications.js";
 import { downloadTutorApplicationDocument } from "../../services/tutorApplicationStorage.js";
 import { saveTutorApplicationReview } from "../../services/tutorApplications.js";
 import {
@@ -58,6 +64,8 @@ export default function AdminDashboardPage() {
   const auth = useAuth();
 
   const [view, setView] = useState("Overview");
+  const [adminNotifications, setAdminNotifications] = useState([]);
+  const [notificationError, setNotificationError] = useState("");
   const {
     database,
     applications: apps,
@@ -69,6 +77,32 @@ export default function AdminDashboardPage() {
   const rows = database?.users || [],
     services = database?.services || [],
     config = database?.config || loadConfig();
+  useEffect(() => {
+    let alive = true;
+    const refresh = async () => {
+      try {
+        const next = await loadAdminNotifications(auth.user.id);
+        if (alive) {
+          setAdminNotifications(next);
+          setNotificationError("");
+        }
+      } catch (cause) {
+        if (alive) setNotificationError(cause.message);
+      }
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [auth.user.id]);
+  const visibleAdminNotifications = filterAdminNotifications(
+    adminNotifications,
+    config,
+  );
   const appsLoading = !database && refreshing;
   const [verificationChecks, setVerificationChecks] = useState({}),
     [verificationError, setVerificationError] = useState("");
@@ -85,6 +119,8 @@ export default function AdminDashboardPage() {
     return downloadTutorApplicationDocument(doc.storagePath, auth.user.id);
   }
   async function saveRecord(kind, record) {
+    // Section components submit edits here; saveAdminRecord writes them via
+    // the Admin RPC and refreshDatabase reloads the authorized snapshot.
     await saveAdminRecord(kind, record);
     await refreshDatabase();
     return true;
@@ -208,8 +244,21 @@ export default function AdminDashboardPage() {
           <div className="ml-auto flex items-center gap-4">
             <HeaderInbox
               role="admin"
-              notifications={adminAlerts}
+              notifications={visibleAdminNotifications}
               threads={adminThreads}
+              inboxError={notificationError}
+              onRead={async (ids) => {
+                try {
+                  await markAdminNotificationsRead(auth.user.id, ids);
+                  setAdminNotifications((current) =>
+                    current.map((item) =>
+                      ids.includes(item.id) ? { ...item, read: true } : item,
+                    ),
+                  );
+                } catch (cause) {
+                  setNotificationError(cause.message);
+                }
+              }}
               onNavigate={go}
             />
             <button
@@ -219,7 +268,7 @@ export default function AdminDashboardPage() {
             >
               <PortalAvatar role="admin" editable />
               <span className="hidden sm:block">
-                <b className="block text-xs text-slate-900">{config.name}</b>
+                <b className="block text-xs text-slate-900">{auth.profile?.first_name ? [auth.profile.first_name, auth.profile.last_name].filter(Boolean).join(" ") : config.name}</b>
                 <small>Administrator</small>
               </span>
               <ChevronDown size={14} />
@@ -274,6 +323,8 @@ export default function AdminDashboardPage() {
               config={config}
               go={go}
             />
+          // The view switch is the Admin section router. Section components
+          // receive only the records and callbacks needed for their workflow.
           ) : view === "Settings" ? (
             <AdminSettings
               config={config}
@@ -357,7 +408,7 @@ export default function AdminDashboardPage() {
           <Modal title="Administrator account" onClose={() => setModal(null)}>
             <div className="space-y-3 text-xs">
               <p>
-                <b>{config.name}</b>
+                <b>{auth.profile?.first_name ? [auth.profile.first_name, auth.profile.last_name].filter(Boolean).join(" ") : config.name}</b>
               </p>
               <p>{auth.profile?.csu_email || auth.user?.email}</p>
               <button className={button} onClick={() => go("Settings")}>

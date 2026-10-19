@@ -1,3 +1,4 @@
+// Payments & Transactions: presents payment records and delegates allowed payment actions to database-backed services.
 import { markPaymentTransferred } from "../../services/adminDatabase.js";
 import {
   paymentAllocation,
