@@ -1,3 +1,4 @@
+// Learner session service: loads the authenticated learner's booking records from Supabase and maps them for My Sessions.
 import { paidSession, sessionLifecycle } from "./sessionLifecycle.js";
 import { getSupabaseClient } from "./supabaseClient.js";
 import { meetingPlatform } from "./sessionMeeting.js";

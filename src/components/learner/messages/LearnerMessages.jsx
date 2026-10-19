@@ -1,3 +1,4 @@
+// Messages: switches between tutor conversations and the persistent CampusTutor Support conversation.
 import BookingMessages from "../../shared/BookingMessages.jsx";
 import LearnerSupportMessages from "./LearnerSupportMessages.jsx";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";

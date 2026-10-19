@@ -1,3 +1,4 @@
+// Learner workspace provider: coordinates learner profile, saved tutors, sessions, reviews, messages, and dialogs for all learner sections.
 import { listLearnerSessions } from "../../../services/learnerSessions.js";
 import { portalApi } from "../../../services/portalApi.js";
 import {
@@ -270,6 +271,8 @@ export default function LearnerWorkspace({ children, go }) {
     );
   }
   const api = {
+    // Sections share this account-scoped API instead of maintaining separate
+    // copies of learner selections and conversation state.
     data,
     commit,
     open,

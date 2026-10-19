@@ -1,3 +1,4 @@
+// My Sessions: loads the signed-in learner's paid sessions and groups them by their time-based lifecycle.
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { filterSessions } from "./sessionFilters.js";

@@ -1,3 +1,4 @@
+// Booking flow: validates the selected tutor topic and time, then hands checkout to the booking/payment service.
 import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,

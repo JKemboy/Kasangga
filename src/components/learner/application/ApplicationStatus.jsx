@@ -1,4 +1,5 @@
-﻿import { useEffect, useRef } from "react";
+// Application Status: renders the learner's current tutor-application state and any review feedback.
+import { useEffect, useRef } from "react";
 import { ArrowLeft, Check, Info } from "lucide-react";
 import { DOCUMENTS } from "./applicationRules.js";
 const date = (value) =>

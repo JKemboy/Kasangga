@@ -1,3 +1,4 @@
+// Support conversation: reads and sends learner support messages through the shared support inbox service.
 import { useCallback, useEffect, useState } from "react";
 import { Search, Send, UserRound } from "lucide-react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";

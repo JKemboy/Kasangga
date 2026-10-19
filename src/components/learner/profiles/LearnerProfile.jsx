@@ -1,3 +1,4 @@
+// Learner Profile: shows institutional profile data and saves editable profile details through the account services.
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { workspaceProfile } from "../../../services/authAccount.js";

@@ -1,3 +1,4 @@
+// Learner dashboard summary: fetches discoverable tutors, applies recommendations, and links metrics to learner sections.
 import { savedService } from "../../../services/savedTutors.js";
 import { courseRecommendations } from "../../../services/tutorRecommendations.js";
 import { listDiscoverableTutors } from "../../../services/tutorServices.js";

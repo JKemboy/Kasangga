@@ -1,3 +1,4 @@
+// Find a Tutor: loads published tutor services, supports search/filtering, and opens profile, booking, save, or message actions.
 import { savedService } from "../../../services/savedTutors.js";
 import { listDiscoverableTutors } from "../../../services/tutorServices.js";
 import PortalAvatar from "../../shared/PortalAvatar.jsx";

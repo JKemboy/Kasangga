@@ -1,3 +1,4 @@
+// Notifications: displays the signed-in learner's database notifications and their read state.
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { useState } from "react";
 import { filterNotifications } from "./notificationFilters.js";

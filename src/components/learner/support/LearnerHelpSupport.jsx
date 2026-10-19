@@ -1,3 +1,4 @@
+// Help & Support: provides learner help content and opens the support-contact conversation flow.
 import {useState} from "react";
 import {useLearnerWorkspace} from "../workspace/LearnerWorkspace.jsx";
 ﻿import {

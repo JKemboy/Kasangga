@@ -1,3 +1,4 @@
+// Tutor Application: collects learner application data and submits it to the tutor-application service.
 import ApplicationStatus from "./ApplicationStatus.jsx";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
