@@ -1,3 +1,4 @@
+// Shared inbox UI: renders role-provided notifications and conversations; parent handlers own database reads/writes.
 import { useEffect, useRef, useState } from "react";
 import FollowUpEvidence from "./FollowUpEvidence.jsx";
 import {

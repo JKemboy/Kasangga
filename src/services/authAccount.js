@@ -1,3 +1,4 @@
+// Account service: resolves the authenticated user's public profile and active portal roles before dashboards load.
 import { findCollege, findProgram } from "./collegeProgramMap.js";
 export const isCsuEmail = (email) =>
   /^[^\s@]+@carsu\.edu\.ph$/i.test(String(email || "").trim());

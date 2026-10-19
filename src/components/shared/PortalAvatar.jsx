@@ -1,3 +1,4 @@
+// Shared avatar: resolves the profile image from the avatar storage/database flow and uploads only when explicitly editable.
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import { getSupabaseClient } from "../../services/supabaseClient.js";
