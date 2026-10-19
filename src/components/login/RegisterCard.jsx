@@ -6,11 +6,11 @@ import { useAuth } from "../../auth/AuthProvider.jsx";
 import { getSupabaseClient } from "../../services/supabaseClient.js";
 import { accountHome } from "../../services/authAccount.js";
 import { useNavigate } from "react-router-dom";
-export default function RegisterCard() {
+export default function RegisterCard({ loginMode = false }) {
   const auth = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false),
-    [acceptedTerms, setAcceptedTerms] = useState(false);
+    [acceptedTerms, setAcceptedTerms] = useState(loginMode);
   const [error, setError] = useState(() => {
     const query = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.slice(1));
@@ -19,7 +19,9 @@ export default function RegisterCard() {
       : "";
   });
   useEffect(() => {
-    const nonce = new URLSearchParams(window.location.search).get("terms_nonce");
+    const nonce = new URLSearchParams(window.location.search).get(
+      "terms_nonce",
+    );
     if (!nonce) return;
     let active = true;
     const recordAcceptance = async () => {
@@ -47,7 +49,7 @@ export default function RegisterCard() {
   }, [auth.user, auth.loading, auth.roles, navigate]);
   async function register() {
     if (busy) return;
-    if (!acceptedTerms) {
+    if (!loginMode && !acceptedTerms) {
       setError("Please accept the Terms & Conditions before continuing.");
       return;
     }
@@ -66,39 +68,44 @@ export default function RegisterCard() {
     <div className="mt-6 w-full max-w-[390px] overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-md">
       <div className="space-y-5 p-5 text-center">
         <header>
-          <h2 className="text-xl font-bold">Create your account</h2>
+          <h2 className="text-xl font-bold">
+            {loginMode ? "Welcome back!" : "Create your account"}
+          </h2>
           <p className="mt-2 text-sm text-slate-500">
-            Join CampusTutor using your CSU Google account. No password to
-            create.
+            {loginMode
+              ? "Continue with your CSU Google account. New learners will continue to profile setup."
+              : "Join CampusTutor using your CSU Google account. No password to create."}
           </p>
         </header>
-        <label className="flex items-start gap-2 text-left text-xs leading-5 text-slate-600">
-          <input
-            type="checkbox"
-            checked={acceptedTerms}
-            onChange={(event) => {
-              setAcceptedTerms(event.target.checked);
-              setError("");
-            }}
-            className="mt-1 h-4 w-4 shrink-0 accent-[#006b3c]"
-          />
-          <span>
-            I have read and agree to the{" "}
-            <a
-              href="/CampusTutor-Terms-Conditions.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[#006b3c] underline underline-offset-2"
-              onClick={(event) => event.stopPropagation()}
-            >
-              Terms &amp; Conditions
-            </a>
-            .
-          </span>
-        </label>
+        {!loginMode && (
+          <label className="flex items-start gap-2 text-left text-xs leading-5 text-slate-600">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(event) => {
+                setAcceptedTerms(event.target.checked);
+                setError("");
+              }}
+              className="mt-1 h-4 w-4 shrink-0 accent-[#006b3c]"
+            />
+            <span>
+              I have read and agree to the{" "}
+              <a
+                href="/CampusTutor-Terms-Conditions.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[#006b3c] underline underline-offset-2"
+                onClick={(event) => event.stopPropagation()}
+              >
+                Terms &amp; Conditions
+              </a>
+              .
+            </span>
+          </label>
+        )}
         <button
           onClick={register}
-          disabled={busy || !acceptedTerms}
+          disabled={busy || (!loginMode && !acceptedTerms)}
           className="flex w-full items-center justify-center gap-3 rounded-md border border-[#a8c7b8] px-4 py-3 text-sm font-semibold hover:bg-green-50 disabled:opacity-50"
         >
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 48 48">
@@ -130,9 +137,12 @@ export default function RegisterCard() {
           Choose your @carsu.edu.ph account.
         </p>
         <p className="text-xs">
-          Already registered?{" "}
-          <Link to="/login" className="font-semibold text-[#006b3c]">
-            Log in with email OTP
+          {loginMode ? "New to CampusTutor? " : "Already registered? "}
+          <Link
+            to={loginMode ? "/register" : "/login"}
+            className="font-semibold text-[#006b3c]"
+          >
+            {loginMode ? "Register with Google" : "Continue with Google"}
           </Link>
         </p>
       </div>
