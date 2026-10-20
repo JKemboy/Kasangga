@@ -3,21 +3,30 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { createBatchPayment } from "./batch.ts";
 import { discardUnpaidCheckouts } from "./discard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "http://localhost:5173",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function jsonResponse(body: Record<string, unknown>, status = 200) {
-  return Response.json(body, {
-    status,
-    headers: corsHeaders,
-  });
-}
-
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("Origin");
+  const allowedOrigins = new Set([
+    "http://localhost:5173",
+    "https://kasangga-test.vercel.app",
+  ]);
+  const corsHeaders = new Headers({
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    Vary: "Origin",
+  });
+
+  if (origin && allowedOrigins.has(origin)) {
+    corsHeaders.set("Access-Control-Allow-Origin", origin);
+  }
+
+  function jsonResponse(body: Record<string, unknown>, status = 200) {
+    return Response.json(body, {
+      status,
+      headers: corsHeaders,
+    });
+  }
+
   // 1. Handle CORS
   if (req.method === "OPTIONS") {
     return new Response(null, {
