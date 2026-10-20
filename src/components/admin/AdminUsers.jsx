@@ -123,7 +123,7 @@ export default function AdminUsers({
       <div className="osas-heading">
         <div>
           <h1>User Management</h1>
-          <p>Monitor and manage CampusTutor Learner and Tutor accounts.</p>
+          <p>Monitor and manage Kasangga Learner and Tutor accounts.</p>
         </div>
       </div>
       <div className="au-metrics">
@@ -366,7 +366,7 @@ export default function AdminUsers({
         </div>
       </div>
       <p className="text-[9px] text-slate-400">
-        Database records · Account status changes apply to CampusTutor access.
+        Database records · Account status changes apply to Kasangga access.
       </p>
       {selected && (
         <UserDetails

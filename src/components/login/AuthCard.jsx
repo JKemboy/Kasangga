@@ -166,7 +166,7 @@ export default function AuthCard() {
           </div>
         )}
         <p className="text-center text-xs">
-          New to CampusTutor?{" "}
+          New to Kasangga?{" "}
           <Link to="/register" className="font-semibold text-[#006b3c]">
             Register with Google
           </Link>

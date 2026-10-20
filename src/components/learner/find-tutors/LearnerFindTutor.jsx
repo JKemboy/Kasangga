@@ -6,14 +6,10 @@ import { useState, useEffect } from "react";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import {
   BookOpen,
-  BriefcaseBusiness,
   CheckCircle2,
   ChevronDown,
-  FlaskConical,
-  GraduationCap,
   Grid2X2,
   List,
-  MessageCircle,
   ShieldCheck,
   Star,
 } from "lucide-react";
@@ -69,13 +65,7 @@ export default function LearnerFindTutor() {
     [level, setLevel] = useState("All Levels"),
     [availability, setAvailability] = useState("All Availability"),
     [sort, setSort] = useState("Highest Rated"),
-    [category, setCategory] = useState(""),
     [list, setList] = useState(false);
-  const categories = {
-    STEM: ["Mathematics", "Science"],
-    "IT & Computer Science": ["Computer Science"],
-    Others: ["Other"],
-  };
   const rows = tutors
     .flatMap((tutor) => tutor.services.map((service) => ({ tutor, service })))
     .filter(
@@ -90,9 +80,7 @@ export default function LearnerFindTutor() {
           s.level === "All Levels") &&
         (availability === "All Availability" ||
           s.type === availability ||
-          s.type === "Both") &&
-        (!category ||
-          (categories[category] || [category]).includes(s.category)),
+          s.type === "Both"),
     )
     .sort((a, b) =>
       sort === "Lowest Rate"
@@ -150,58 +138,6 @@ export default function LearnerFindTutor() {
             onChange={setSort}
             options={["Highest Rated", "Lowest Rate"]}
           />
-        </div>
-        <p className="mt-1 text-xs font-semibold">Popular Subjects</p>
-        <div className="mt-1 flex flex-wrap gap-2">
-          {[
-            "Programming",
-            "Calculus",
-            "Physics",
-            "Chemistry",
-            "Statistics",
-            "Accounting",
-            "English",
-            "More",
-          ].map((item) => (
-            <button
-              key={item}
-              onClick={() =>
-                setSubject(
-                  item === "More" || subject === item ? "All Subjects" : item,
-                )
-              }
-              aria-pressed={subject === item}
-              type="button"
-              className="h-7 rounded-md border border-[#e1e7ef] px-2 text-xs hover:bg-slate-50"
-            >
-              {item}
-              {item === "More" && (
-                <ChevronDown className="ml-3 inline h-4 w-4" />
-              )}
-            </button>
-          ))}
-        </div>
-        <p className="mt-1 text-xs font-semibold">Tutor Categories</p>
-        <div className="mt-1 grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-          {[
-            [FlaskConical, "STEM"],
-            [GraduationCap, "IT & Computer Science"],
-            [BriefcaseBusiness, "Business"],
-            [MessageCircle, "Languages"],
-            [BookOpen, "Education"],
-            [Grid2X2, "Others"],
-          ].map(([Icon, label]) => (
-            <button
-              key={label}
-              onClick={() => setCategory(category === label ? "" : label)}
-              aria-pressed={category === label}
-              type="button"
-              className="flex min-h-9 items-center justify-center gap-1.5 rounded-md border border-[#e1e7ef] px-2 py-1 text-xs hover:bg-slate-50"
-            >
-              <Icon className="h-4 w-4 shrink-0 text-[#087542]" />
-              {label}
-            </button>
-          ))}
         </div>
       </section>
       {loading && (
@@ -328,12 +264,11 @@ export default function LearnerFindTutor() {
           );
         })}
       </div>
-      {(!rows.length || subject !== "All Subjects" || category) && (
+      {(subject !== "All Subjects" || level !== "All Levels" || availability !== "All Availability") && (
         <button
           className="mt-2 text-xs text-green-800"
           onClick={() => {
             setSubject("All Subjects");
-            setCategory("");
             setLevel("All Levels");
             setAvailability("All Availability");
           }}

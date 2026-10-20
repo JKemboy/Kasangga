@@ -85,7 +85,7 @@ export default function ApplicationStatus({
         Tutor Application Status
       </h1>
       <p className="ta-subtitle">
-        Tutor approval is decided by an authorized CampusTutor Admin.
+        Tutor approval is decided by an authorized Kasangga Admin.
       </p>
       <div className="ta-status-grid">
         <section className="ta-status-card">
@@ -169,7 +169,7 @@ export default function ApplicationStatus({
                   ? "Your tutor application was rejected. Review the Admin feedback below before starting a new application."
                   : application.status === "Resubmission Required"
                     ? "The Admin requested changes. Your current status and application remain available here while you prepare the requested updates."
-                    : "Your application is submitted to CampusTutor for Admin review. You can keep using your Learner account while it is being reviewed."}
+                    : "Your application is submitted to Kasangga for Admin review. You can keep using your Learner account while it is being reviewed."}
             </p>
           </div>
           {(adminFeedback || requestedChanges.length > 0) && (

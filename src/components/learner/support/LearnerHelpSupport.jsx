@@ -19,7 +19,7 @@ const topics = [
   [
     Rocket,
     "Getting Started",
-    "Learn the basics of using CampusTutor as a learner.",
+    "Learn the basics of using Kasangga as a learner.",
     "text-[#087542]",
     "bg-[#e5f8ec]",
   ],
@@ -126,7 +126,7 @@ export default function LearnerHelpSupport() {
               <h2 className="text-sm font-bold">Safety Reminder</h2>
               <p className="mt-2 text-xs leading-4 text-[#566584]">
                 For your safety, keep booking, payment, and important session
-                coordination within CampusTutor. Report any suspicious or
+                coordination within Kasangga. Report any suspicious or
                 inappropriate activity through our platform.
               </p>
             </div>
@@ -143,7 +143,7 @@ export default function LearnerHelpSupport() {
               <br />
               Our support team is here to help.
             </p>
-            <button onClick={()=>work.message({name:"CampusTutor Support"})}
+            <button onClick={()=>work.message({name:"Kasangga Support"})}
               type="button"
               className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-md bg-[#087542] text-xs font-semibold text-white"
             >

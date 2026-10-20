@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Modal, Field, input, button, primary } from "./ui.jsx";
 import { hour, time, slotError } from "./data.js";
 import { confirmedClasses } from "./scheduleReview.js";

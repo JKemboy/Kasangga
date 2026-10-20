@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { LockKeyhole, X } from "lucide-react";
 import { primary } from "../tutor/workspace/ui.jsx";
 import "./incident-details.css";
@@ -77,7 +77,7 @@ export default function AuditDetails({ record: r, onClose }) {
           ))}
         </dl>
         <p className="audit-source">
-          {"Recorded in the CampusTutor database."}
+          {"Recorded in the Kasangga database."}
         </p>
       </div>
       <footer>
@@ -112,5 +112,5 @@ export function auditSummary(rows) {
     "Result",
     "Source",
   ];
-  return `<!doctype html><html><head><meta charset="utf-8"><title>CampusTutor Audit Logs</title><style>@page{size:A4 landscape;margin:12mm}body{font:11px Arial;color:#17212b}h1{color:#00542f}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #ddd;padding:8px;text-align:left;overflow-wrap:anywhere}thead{display:table-header-group}tr{break-inside:avoid}th{background:#edf6f0}@media print{button{display:none}}</style></head><body><h1>Audit Logs</h1><p>${rows.length} matching records. Read-only database workflow events.</p><button onclick="window.print()">Print / Save as PDF</button><table><thead><tr>${headings.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${[r.id, `${r.actor} · ${r.email}`, r.action, r.module, r.target, auditTimestamp(r.at), r.ip, r.result, r.source].map((v) => `<td>${escape(v)}</td>`).join("")}</tr>`).join("") || '<tr><td colspan="9">No matching records.</td></tr>'}</tbody></table></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Kasangga Audit Logs</title><style>@page{size:A4 landscape;margin:12mm}body{font:11px Arial;color:#17212b}h1{color:#00542f}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #ddd;padding:8px;text-align:left;overflow-wrap:anywhere}thead{display:table-header-group}tr{break-inside:avoid}th{background:#edf6f0}@media print{button{display:none}}</style></head><body><h1>Audit Logs</h1><p>${rows.length} matching records. Read-only database workflow events.</p><button onclick="window.print()">Print / Save as PDF</button><table><thead><tr>${headings.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${[r.id, `${r.actor} · ${r.email}`, r.action, r.module, r.target, auditTimestamp(r.at), r.ip, r.result, r.source].map((v) => `<td>${escape(v)}</td>`).join("")}</tr>`).join("") || '<tr><td colspan="9">No matching records.</td></tr>'}</tbody></table></body></html>`;
 }

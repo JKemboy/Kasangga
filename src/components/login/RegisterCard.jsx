@@ -74,7 +74,7 @@ export default function RegisterCard({ loginMode = false }) {
           <p className="mt-2 text-sm text-slate-500">
             {loginMode
               ? "Continue with your CSU Google account. New learners will continue to profile setup."
-              : "Join CampusTutor using your CSU Google account. No password to create."}
+              : "Join Kasangga using your CSU Google account. No password to create."}
           </p>
         </header>
         {!loginMode && (
@@ -91,7 +91,7 @@ export default function RegisterCard({ loginMode = false }) {
             <span>
               I have read and agree to the{" "}
               <a
-                href="/CampusTutor-Terms-Conditions.pdf"
+                href="/Kasangga-Terms-Conditions.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-[#006b3c] underline underline-offset-2"
@@ -137,7 +137,7 @@ export default function RegisterCard({ loginMode = false }) {
           Choose your @carsu.edu.ph account.
         </p>
         <p className="text-xs">
-          {loginMode ? "New to CampusTutor? " : "Already registered? "}
+          {loginMode ? "New to Kasangga? " : "Already registered? "}
           <Link
             to={loginMode ? "/register" : "/login"}
             className="font-semibold text-[#006b3c]"

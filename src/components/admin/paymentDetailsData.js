@@ -1,4 +1,4 @@
-﻿export const paymentBookings = {};
+export const paymentBookings = {};
 export function refundDecision(record, decision, note) {
   if (record.payment !== "Refund Review" || record.refundDecision)
     throw new Error("This refund is not awaiting a decision.");

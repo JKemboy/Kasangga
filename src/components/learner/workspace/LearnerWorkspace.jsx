@@ -370,7 +370,7 @@ export default function LearnerWorkspace({ children, go }) {
           )}
           {dialog.kind === "meeting" && (
             <div className="space-y-3 text-sm">
-              <p>This session runs outside CampusTutor.</p>
+              <p>This session runs outside Kasangga.</p>
               {meetingUrl(r.link) ? (
                 <a
                   className={primary}
@@ -490,7 +490,7 @@ export default function LearnerWorkspace({ children, go }) {
               <p>{r.body}</p>
               <button
                 className={button}
-                onClick={() => message({ name: "CampusTutor Support" })}
+                onClick={() => message({ name: "Kasangga Support" })}
               >
                 Contact Support
               </button>

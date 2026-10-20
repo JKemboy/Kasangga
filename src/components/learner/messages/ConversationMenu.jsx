@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MoreVertical, CalendarDays, Mail, Flag } from "lucide-react";
 import { button } from "../../tutor/workspace/ui.jsx";
 import { sessionRecords } from "../sessions/sessionRecords.js";
@@ -48,7 +48,7 @@ export default function ConversationMenu({ work, thread }) {
     <div className="ml-auto flex items-center gap-3">
       <button
         className={button}
-        disabled={thread.name === "CampusTutor Support"}
+        disabled={thread.name === "Kasangga Support"}
         onClick={() =>
           work.open(
             "profile",

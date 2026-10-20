@@ -37,7 +37,7 @@ export async function createBatchPayment(
                 name: `${reserved.title} — ${session.date} ${session.time}`,
                 quantity: 1,
               })),
-              description: `CampusTutor ${reserved.sessions.length} sessions`,
+              description: `Kasangga ${reserved.sessions.length} sessions`,
               success_url: `${appUrl}/?payment=success`,
               cancel_url: `${appUrl}/?payment=cancelled`,
             },

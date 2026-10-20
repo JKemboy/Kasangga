@@ -68,7 +68,7 @@ export default function LogoutProvider({ children }) {
             id="logout-description"
             className="mt-2 text-base leading-snug text-[#52618b]"
           >
-            You will need to sign in again to access your CampusTutor account.
+            You will need to sign in again to access your Kasangga account.
           </p>
           <p className="mt-3 text-sm leading-snug text-[#52618b]">
             Your saved services, schedules, messages, and session records will

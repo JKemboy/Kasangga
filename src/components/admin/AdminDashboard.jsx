@@ -33,7 +33,6 @@ import {
   TriangleAlert,
   ChartNoAxesCombined,
   Settings,
-  GraduationCap,
   LogOut,
   Search,
   Bell,
@@ -173,10 +172,7 @@ export default function AdminDashboardPage() {
         )}
         <aside className={`osas-sidebar ${open ? "is-open" : ""}`}>
           <div className="osas-brand">
-            <GraduationCap size={32} />
-            <span>
-              Campus<span>Tutor</span>
-            </span>
+            <img src="/images/kasangga-logo.png" alt="Kasangga" />
             <button
               className="ml-auto md:hidden"
               aria-label="Close navigation"

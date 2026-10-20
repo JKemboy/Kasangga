@@ -5,7 +5,6 @@ import {
   Bookmark,
   CalendarDays,
   CircleHelp,
-  GraduationCap,
   LayoutDashboard,
   ChevronDown,
   CircleUserRound,
@@ -120,14 +119,7 @@ export default function LearnerDashboard({
           ref={headerRef}
           className="flex h-[clamp(44px,9dvh,76px)] shrink-0 items-center bg-[#004727] px-5"
         >
-          <GraduationCap
-            className="h-[clamp(16px,3vw,24px)] w-[clamp(16px,3vw,24px)] text-[#ffc107]"
-            strokeWidth={1.9}
-            aria-hidden="true"
-          />
-          <span className="ml-2 text-[clamp(13px,2.4vw,19px)] font-semibold tracking-[-.6px] text-white">
-            Campus<span className="text-[#ffc107]">Tutor</span>
-          </span>
+          <img src="/images/kasangga-logo.png" alt="Kasangga" className="h-[clamp(30px,6dvh,52px)] w-auto max-w-[190px] object-contain object-left" />
           <button
             type="button"
             aria-label="Close navigation"

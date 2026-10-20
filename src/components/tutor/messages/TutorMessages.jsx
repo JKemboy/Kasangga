@@ -96,7 +96,7 @@ export default function TutorMessages() {
             <div className="mt-3 flex gap-3 rounded-md bg-[#effcf5] px-4 py-3 text-xs text-[#53627b]">
               <Info className="h-6 w-6 shrink-0 text-[#087542]" />
               <p>
-                Keep your communication within CampusTutor for your safety.
+                Keep your communication within Kasangga for your safety.
                 <br />
                 Do not share personal contact information.
               </p>

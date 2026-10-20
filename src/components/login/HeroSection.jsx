@@ -30,8 +30,7 @@ export default function HeroSection() {
           <h2 className="text-[clamp(1.8rem,7vw,2.75rem)] font-extrabold leading-[1.08] tracking-tight sm:text-[42px] md:text-[49px] lg:text-[40px]">
             Welcome to
             <br />
-            <span>Campus</span>
-            <span className="text-[#ffc107]">Tutor</span>
+            <span>Kasangga</span>
           </h2>
           <p className="mt-2 max-w-[390px] text-[11px] leading-[1.4] text-white/90 sm:mt-3 sm:text-[14px] lg:mt-4 lg:text-[16px] lg:leading-[1.55]">
             Your peer-to-peer tutoring platform

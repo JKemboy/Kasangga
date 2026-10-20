@@ -59,7 +59,7 @@ export default function AuthProvider({ children }) {
     if (!session) return;
     if (!isCsuEmail(session.user.email)) {
       setError(
-        "Only @carsu.edu.ph accounts can access CampusTutor. Sign out and choose your CSU Google account.",
+        "Only @carsu.edu.ph accounts can access Kasangga. Sign out and choose your CSU Google account.",
       );
       return;
     }

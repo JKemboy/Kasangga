@@ -30,6 +30,13 @@
   color: white;
   letter-spacing: -1px;
 }
+.osas-brand > img {
+  display: block;
+  width: 184px;
+  max-height: 60px;
+  object-fit: contain;
+  object-position: left center;
+}
 .osas-brand > span > span {
   color: #ffd200;
 }

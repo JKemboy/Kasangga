@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Upload, ShieldCheck, Plus, Trash2 } from "lucide-react";
 import { Modal, button, primary, input } from "./ui.jsx";
 import {

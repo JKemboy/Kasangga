@@ -178,7 +178,7 @@ export default function AdminPayments() {
             Payments &amp; Transactions <CreditCard size={23} />
           </h1>
           <p>
-            Monitor CampusTutor payments processed through GCash via PayMongo.
+            Monitor Kasangga payments processed through GCash via PayMongo.
           </p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Star } from "lucide-react";
 import { Modal, Avatar, Badge, button, primary } from "./ui.jsx";
 import { money, hour, time } from "./data.js";

@@ -129,7 +129,7 @@ export function Profile({
                 Tutor Role: Verified / Active
               </span>
               <p className="mt-1 text-[11px] text-[#344675]">
-                Approved by CampusTutor Admin
+                Approved by Kasangga Admin
               </p>
             </div>
           </div>
@@ -138,7 +138,7 @@ export function Profile({
             <div className="max-w-xs text-xs leading-[1.5]">
               <p className="mb-1 font-medium">System-managed</p>
               <p>
-                Your verification and role status are managed by CampusTutor and
+                Your verification and role status are managed by Kasangga and
                 cannot be edited.
               </p>
             </div>
@@ -261,7 +261,7 @@ export function Profile({
           <p className="mt-2 flex items-center gap-2 rounded-md bg-[#edf8f1] px-3 py-2 text-[11px] leading-4 text-green-900">
             <LockKeyhole className="h-4 w-4 shrink-0" />
             Verification, role status, rating, and completed-session totals are
-            managed by CampusTutor and cannot be edited.
+            managed by Kasangga and cannot be edited.
           </p>
         </section>
       </section>

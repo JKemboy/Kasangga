@@ -152,7 +152,7 @@ export default function OsasCases({ settings }) {
             Case Review <ShieldCheck size={23} className="text-green-800" />
           </h1>
           <p>
-            Review institutional cases referred through CampusTutor while
+            Review institutional cases referred through Kasangga while
             preserving due process and impartial assessment.
           </p>
         </div>

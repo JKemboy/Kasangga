@@ -388,7 +388,7 @@ export default function UserDetails({
                       setForm({ ...form, ack: e.target.checked })
                     }
                   />
-                  I understand this changes CampusTutor account access.
+                  I understand this changes Kasangga account access.
                 </label>
               </>
             ) : (

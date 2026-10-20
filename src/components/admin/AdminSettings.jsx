@@ -232,7 +232,7 @@ export default function AdminSettings({ config, onSave }) {
                 <Settings />
                 Platform Configuration
               </h2>
-              {fixed("Platform Name", "CampusTutor")}
+              {fixed("Platform Name", "Kasangga")}
               {fixed("Timezone", "Asia/Manila (UTC+08:00)")}
               {fixed("CSU Email Verification", "Required by platform authentication")}
               <div className="ad-setting-row">

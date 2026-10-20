@@ -1,4 +1,4 @@
-﻿import { ExternalLink, MapPin, Video } from "lucide-react";
+import { ExternalLink, MapPin, Video } from "lucide-react";
 import { hour, time } from "./data.js";
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import "./sessions.css";

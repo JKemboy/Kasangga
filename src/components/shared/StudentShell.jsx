@@ -8,7 +8,7 @@ import { notificationDestination } from "../tutor/workspace/notificationTargets.
 import { useLogout } from "./LogoutProvider.jsx";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, LogOut, Menu, Bell, MessageCircle } from "lucide-react";
+import { LogOut, Menu, Bell, MessageCircle } from "lucide-react";
 import { Avatar } from "../tutor/workspace/ui.jsx";
 export default function StudentShell({
   role,
@@ -61,14 +61,8 @@ export default function StudentShell({
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-[230px] flex-col bg-[#00542f] text-white transition-transform md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex h-[76px] shrink-0 items-center gap-2 bg-[#003e24] px-5">
-          <GraduationCap className="h-8 w-8 text-amber-400" />
-          <span className="text-xl font-semibold">
-            Campus
-            <span className="text-amber-400">
-              {role === "tutor" ? "Tutor" : "Learner"}
-            </span>
-          </span>
+        <div className="flex h-[76px] shrink-0 items-center bg-[#003e24] px-5">
+          <img src="/images/kasangga-logo.png" alt="Kasangga" className="h-[52px] w-auto max-w-full object-contain object-left" />
         </div>
         <div className="mx-4 my-3 flex rounded-lg bg-black/15 text-xs">
           <button

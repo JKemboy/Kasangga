@@ -1,2 +1,2 @@
-﻿export const adminAlerts = [];
+export const adminAlerts = [];
 export const adminThreads = [];

@@ -97,7 +97,7 @@ export default function OsasPolicies({ settings }) {
             <Shield size={23} className="text-green-800" />
           </h1>
           <p>
-            Access institutional guidelines relevant to CampusTutor cases,
+            Access institutional guidelines relevant to Kasangga cases,
             student conduct, clearance, evidence, and case handling.
           </p>
         </div>

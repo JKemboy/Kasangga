@@ -74,7 +74,7 @@ export default function AdminSupportInbox() {
     catch (cause) { setError(cause.message); }
     finally { setBusy(false); }
   }
-  const fullName = (thread) => [thread?.user?.first_name, thread?.user?.last_name].filter(Boolean).join(" ") || "CampusTutor user";
+  const fullName = (thread) => [thread?.user?.first_name, thread?.user?.last_name].filter(Boolean).join(" ") || "Kasangga user";
   return (
     <div className="booking-chat tutor-booking-chat admin-support-chat">
       <h1>Messages</h1>

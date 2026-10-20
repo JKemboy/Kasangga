@@ -1,4 +1,4 @@
-﻿export const SUBJECTS = {
+export const SUBJECTS = {
   Programming: ["Python Basics", "Java", "Problem Solving"],
   "Web Development": ["HTML & CSS", "JavaScript", "React"],
   "Database Systems": ["SQL", "Database Design", "Normalization"],

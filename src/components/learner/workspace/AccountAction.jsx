@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Download, Trash2 } from "lucide-react";
 import "./account-actions.css";
 export default function AccountAction({ kind, email, onClose, onRequest }) {
@@ -20,7 +20,7 @@ export default function AccountAction({ kind, email, onClose, onRequest }) {
       <h2>{deleting ? "Delete account?" : "Request a copy of your data"}</h2>
       <p>
         {deleting ? (
-          "Account deletion removes your CampusTutor profile, saved tutors and reviews. Paid session and incident records may be retained under institutional policy. Type DELETE to confirm your request."
+          "Account deletion removes your Kasangga profile, saved tutors and reviews. Paid session and incident records may be retained under institutional policy. Type DELETE to confirm your request."
         ) : (
           <>
             Request a copy of your profile, sessions, messages and payment

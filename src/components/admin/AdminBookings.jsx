@@ -136,7 +136,7 @@ export default function AdminBookings() {
           <h1>
             Bookings Monitoring <CalendarDays size={22} />
           </h1>
-          <p>Monitor CampusTutor tutoring bookings and session statuses.</p>
+          <p>Monitor Kasangga tutoring bookings and session statuses.</p>
         </div>
       </div>
       <div className="ad-cards">

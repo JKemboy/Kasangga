@@ -1,10 +1,10 @@
-// Learner dashboard summary: fetches discoverable tutors, applies recommendations, and links metrics to learner sections.
+// Learner dashboard overview: live tutor recommendations and account-linked shortcuts.
+import { useEffect, useState } from "react";
+import { CalendarDays, Bookmark, Star, Heart } from "lucide-react";
 import { savedService } from "../../../services/savedTutors.js";
 import { courseRecommendations } from "../../../services/tutorRecommendations.js";
 import { listDiscoverableTutors } from "../../../services/tutorServices.js";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
-import { useEffect, useState } from "react";
-import { Users, CalendarDays, Bookmark, Star, Heart } from "lucide-react";
 import { button, primary, input } from "../../tutor/workspace/ui.jsx";
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import "./overview.css";
@@ -16,27 +16,24 @@ export default function LearnerOverview({ go }) {
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [subject, setSubject] = useState("");
-  const [category, setCategory] = useState("");
-  const [sort, setSort] = useState("relevance");
+  const [availability, setAvailability] = useState("");
+  const [rating, setRating] = useState("");
+  const [price, setPrice] = useState("");
 
   useEffect(() => {
     let active = true;
-    let request = 0;
-
     async function load() {
-      const current = ++request;
       setLoading(true);
       setError("");
       try {
         const records = await listDiscoverableTutors();
-        if (active && current === request) setTutors(records);
+        if (active) setTutors(records);
       } catch (loadError) {
-        if (active && current === request) setError(loadError.message);
+        if (active) setError(loadError.message);
       } finally {
-        if (active && current === request) setLoading(false);
+        if (active) setLoading(false);
       }
     }
-
     load();
     window.addEventListener("focus", load);
     return () => {
@@ -45,65 +42,45 @@ export default function LearnerOverview({ go }) {
     };
   }, [retry]);
 
-  const categories = {
-    STEM: ["Mathematics", "Science"],
-    "IT & Computer Science": ["Computer Science"],
-    Others: ["Other"],
-  };
   const program = work.data.profile.program || "";
   const recommended = courseRecommendations(tutors, program);
   const rows = recommended
-    .flatMap((t) =>
-      t.courseServices.map((service) =>
-        savedService({ ...t, courseServices: [service] }, service),
-      ),
-    )
-    .filter((tutor) =>
-      tutor.courseServices.some(
-        (service) =>
-          (!subject ||
-            [service.name, service.subtitle, ...service.topics]
-              .join(" ")
-              .toLowerCase()
-              .includes(subject.toLowerCase())) &&
-          (!category ||
-            (categories[category] || [category]).includes(service.category)),
-      ),
-    )
-    .sort((a, b) =>
-      sort === "rate"
-        ? a.rate - b.rate
-        : sort === "rating"
-          ? b.rating - a.rating
-          : b.courseScore - a.courseScore || b.rating - a.rating,
-    );
+    .flatMap((tutor) => tutor.courseServices.map((service) => savedService({ ...tutor, courseServices: [service] }, service)))
+    .filter((tutor) => tutor.courseServices.some((service) => {
+      const matchesSubject = !subject || [service.name, service.subtitle, ...(service.topics || [])].join(" ").toLowerCase().includes(subject.toLowerCase());
+      const matchesAvailability = !availability || (tutor.types || []).includes(availability);
+      const matchesRating = !rating || (Number(tutor.rating) || 0) >= Number(rating);
+      const matchesPrice = !price || (price === "low" ? service.rate <= 350 : price === "mid" ? service.rate > 350 && service.rate <= 500 : service.rate > 500);
+      return matchesSubject && matchesAvailability && matchesRating && matchesPrice;
+    }))
+    .sort((a, b) => b.courseScore - a.courseScore || (b.rating || 0) - (a.rating || 0));
 
-  function toggle(tutor) {
-    work.toggleSave(tutor);
-  }
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(today.getDate() - today.getDay());
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+  const upcomingSessions = work.data.sessions.filter((session) => {
+    const startsAt = new Date(session.startAt);
+    return session.lifecycle === "Upcoming" && startsAt >= weekStart && startsAt < weekEnd;
+  }).length;
+  const averageRating = work.data.reviews.length
+    ? (work.data.reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / work.data.reviews.length).toFixed(1)
+    : "—";
+  const clearFilters = () => { setSubject(""); setAvailability(""); setRating(""); setPrice(""); };
 
   return (
     <section className="lo-overview">
-      <h1>Welcome back! 👋</h1>
-      <p>Let's continue your learning journey.</p>
       <div className="lo-metrics">
         {[
-          [Users, tutors.length, "Available Tutors", () => go("find-tutor")],
-          [CalendarDays, "View", "Upcoming Sessions", () => go("sessions")],
-          [
-            Bookmark,
-            work.data.saved.length,
-            "Saved Tutors",
-            () => go("saved-tutors"),
-          ],
-          [Star, "Not rated", "Average Tutor Rating", () => go("reviews")],
-        ].map(([Icon, value, label, action], index) => (
-          <button key={label} onClick={action}>
-            <Icon className={index % 2 ? "gold" : ""} />
-            <span>
-              <b>{loading && index === 0 ? "…" : value}</b>
-              <small>{label}</small>
-            </span>
+          [CalendarDays, loading ? "…" : upcomingSessions, "Upcoming Sessions", "This week", () => go("sessions")],
+          [Bookmark, work.data.saved.length, "Saved Tutors", "View your list", () => go("saved-tutors")],
+          [Star, averageRating, "Average Rating", "Your sessions", () => go("reviews")],
+        ].map(([Icon, value, label, detail, action], index) => (
+          <button key={label} onClick={action} className={index !== 1 ? "lo-metric-warm" : ""}>
+            <Icon className={index === 1 ? "" : "gold"} />
+            <span><b>{value}</b><small>{label}</small><small>{detail}</small></span>
           </button>
         ))}
       </div>
@@ -111,193 +88,59 @@ export default function LearnerOverview({ go }) {
       <section className="lo-panel">
         <h2>Find the perfect tutor for you</h2>
         <div className="lo-filters">
-          <label>
-            Subject
-            <select
-              className={input}
-              value={subject}
-              onChange={(event) => setSubject(event.target.value)}
-            >
+          <label>Subject
+            <select className={input} value={subject} onChange={(event) => setSubject(event.target.value)}>
               <option value="">All Subjects</option>
-              {[
-                ...new Set(
-                  tutors.flatMap((tutor) => tutor.subjects.split(", ")),
-                ),
-              ]
-                .filter(Boolean)
-                .map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
+              {[...new Set(tutors.flatMap((tutor) => tutor.services.flatMap((service) => [service.name, service.subtitle]).filter(Boolean)))].sort().map((value) => <option key={value}>{value}</option>)}
             </select>
           </label>
-          <label>
-            Level
-            <select className={input} defaultValue="College" disabled>
-              <option>College</option>
+          <label>Availability
+            <select className={input} value={availability} onChange={(event) => setAvailability(event.target.value)}>
+              <option value="">All Availability</option><option value="Online">Online</option><option value="In-person">In-person</option>
             </select>
           </label>
-          <label>
-            Availability
-            <select className={input} defaultValue="All Availability" disabled>
-              <option>All Availability</option>
+          <label>Ratings
+            <select className={input} value={rating} onChange={(event) => setRating(event.target.value)}>
+              <option value="">All Ratings</option><option value="4">4.0 and up</option><option value="4.5">4.5 and up</option>
             </select>
           </label>
-          <label>
-            Sort by
-            <select
-              className={input}
-              value={sort}
-              onChange={(event) => setSort(event.target.value)}
-            >
-              <option value="relevance">Course Relevance</option>
-              <option value="rating">Highest Rated</option>
-              <option value="rate">Lowest Rate</option>
+          <label>Price
+            <select className={input} value={price} onChange={(event) => setPrice(event.target.value)}>
+              <option value="">All Prices</option><option value="low">₱350 / hour or less</option><option value="mid">₱351–₱500 / hour</option><option value="high">Over ₱500 / hour</option>
             </select>
           </label>
-        </div>
-        <p>Popular Subjects</p>
-        <div className="lo-chips">
-          {[
-            "Programming",
-            "Calculus",
-            "Physics",
-            "Chemistry",
-            "Statistics",
-            "Accounting",
-            "English",
-            "Filipino",
-          ].map((value) => (
-            <button
-              className={button}
-              aria-pressed={subject === value}
-              key={value}
-              onClick={() => setSubject(subject === value ? "" : value)}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
-        <p>Tutor Categories</p>
-        <div className="lo-chips">
-          {[
-            "STEM",
-            "IT & Computer Science",
-            "Business",
-            "Languages",
-            "Education",
-            "Others",
-          ].map((value) => (
-            <button
-              className={button}
-              aria-pressed={category === value}
-              key={value}
-              onClick={() => setCategory(category === value ? "" : value)}
-            >
-              {value}
-            </button>
-          ))}
-          <button
-            className={button}
-            onClick={() => {
-              setSubject("");
-              setCategory("");
-            }}
-          >
-            Reset
-          </button>
         </div>
       </section>
 
       <div className="lo-title">
-        <h2>Recommended Tutors</h2>
-        <button className={button} onClick={() => go("find-tutor")}>
-          View all tutors →
-        </button>
+        <div><h2>Recommended Tutors</h2><p>Highly rated tutors ready to help you succeed.</p></div>
+        <button className={button} onClick={() => go("find-tutor")}>View all tutors <span aria-hidden="true">›</span></button>
       </div>
-      <p className="text-sm text-slate-600">
-        {program
-          ? `Services related to your program: ${program}`
-          : "Add your course/program in your profile to get relevant tutor recommendations."}
-      </p>
       {loading && <p role="status">Loading recommended tutors...</p>}
-      {error && (
-        <p role="alert" className="text-sm text-red-700">
-          {error}{" "}
-          <button
-            className="underline"
-            onClick={() => setRetry((value) => value + 1)}
-          >
-            Retry
-          </button>
-        </p>
-      )}
-      {!loading && !error && (
-        <div className="lo-tutors">
-          {rows.slice(0, 4).map((tutor) => (
-            <article key={tutor.serviceId}>
-              <button
-                className="lo-save"
-                aria-label={`Save ${tutor.name}`}
-                aria-pressed={work.isSaved(tutor)}
-                disabled={work.savedLoading || work.isSaving(tutor)}
-                onClick={() => toggle(tutor)}
-              >
-                <Heart
-                  size={18}
-                  fill={work.isSaved(tutor) ? "#087542" : "none"}
-                />
-              </button>
-              <PortalAvatar
-                name={tutor.name}
-                userId={tutor.avatarUserId}
-                className="lo-avatar overflow-hidden"
-              />
-              <h3>{tutor.name}</h3>
-              <p>
-                {tutor.courseServices.map((service) => service.name).join(", ")}
-              </p>
-              <span className="text-amber-500">
-                ★ {tutor.rating || "No ratings yet"}
-              </span>
-              <strong>₱{tutor.rate.toLocaleString()} / hour</strong>
-              <div>
-                <button
-                  className={button}
-                  onClick={() => work.open("profile", tutor)}
-                >
-                  View Profile
-                </button>
-                <button
-                  className={primary}
-                  onClick={() => work.open("book", tutor)}
-                >
-                  Book Now
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-      {!loading && !error && !rows.length && (
-        <p>
-          No course-related services match your current profile and filters. You
-          can explore all services in Find a Tutor.{" "}
-          {(subject || category) && (
-            <button
-              className="underline"
-              onClick={() => {
-                setSubject("");
-                setCategory("");
-              }}
-            >
-              Reset filters
+      {error && <p role="alert" className="text-sm text-red-700">{error} <button className="underline" onClick={() => setRetry((value) => value + 1)}>Retry</button></p>}
+      {!loading && !error && <div className="lo-tutors">
+        {rows.slice(0, 4).map((tutor) => (
+          <article key={tutor.serviceId}>
+            <span className={`lo-status ${(tutor.types || []).includes("Online") ? "online" : "offline"}`}>• {(tutor.types || []).includes("Online") ? "Online" : "Offline"}</span>
+            <button className="lo-save" aria-label={`Save ${tutor.name}`} aria-pressed={work.isSaved(tutor)} disabled={work.savedLoading || work.isSaving(tutor)} onClick={() => work.toggleSave(tutor)}>
+              <Heart size={18} fill={work.isSaved(tutor) ? "#087542" : "none"} />
             </button>
-          )}
-        </p>
-      )}
-      <p className="lo-help">
-        Live tutor profiles and services are loaded from the database.
-      </p>
+            <PortalAvatar name={tutor.name} userId={tutor.avatarUserId} className="lo-avatar overflow-hidden" />
+            <h3>{tutor.name}</h3>
+            <p>{tutor.courseServices.map((service) => service.name).join(", ")}</p>
+            <span className="lo-rating">★ <span>{tutor.rating || "No ratings yet"}</span></span>
+            <strong>₱{tutor.rate.toLocaleString()} <span>/ hour</span></strong>
+            <div>
+              <button className={button} onClick={() => work.open("profile", tutor)}>View Profile</button>
+              <button className={primary} onClick={() => work.open("book", tutor)}>Book Now</button>
+            </div>
+          </article>
+        ))}
+      </div>}
+      {!loading && !error && !rows.length && <p className="lo-empty">
+        {program ? "No recommended tutors match these filters." : "Add your course or program to your profile to see relevant tutor recommendations."}{" "}
+        {(subject || availability || rating || price) && <button className="underline" onClick={clearFilters}>Reset filters</button>}
+      </p>}
     </section>
   );
 }

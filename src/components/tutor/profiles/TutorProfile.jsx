@@ -1,4 +1,4 @@
-﻿import {
+import {
   Award,
   BadgeCheck,
   BookOpen,
@@ -212,7 +212,7 @@ export default function TutorProfile() {
                   </div>
                   <p className="mt-3 text-[10px] font-medium leading-5 text-[#173a80]">
                     Your identity and credentials have been verified by
-                    CampusTutor.
+                    Kasangga.
                   </p>
                   <p className="mt-5 text-[11px] font-medium text-[#253455]">
                     Date Approved

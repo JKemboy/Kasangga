@@ -90,7 +90,7 @@ export default function AdminReports({ users, services, go }) {
             Reports &amp; Analytics <ChartNoAxesCombined size={22} />
           </h1>
           <p>
-            Monitor CampusTutor usage, services, bookings, and transaction
+            Monitor Kasangga usage, services, bookings, and transaction
             trends.
           </p>
         </div>

@@ -109,7 +109,7 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
         ) && <p>No attachments recorded.</p>}
         <h3>Formal OSAS case</h3>
         <section>
-          <b>Referral from CampusTutor Admin</b>
+          <b>Referral from Kasangga Admin</b>
           <p>
             {r.referral}. OSAS decides whether a formal case is needed. A
             referral is not a finding.

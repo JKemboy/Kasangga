@@ -101,7 +101,7 @@ export default function AdminOverview({
       <div className="osas-heading">
         <div>
           <h1>Admin Overview</h1>
-          <p>Monitor CampusTutor platform operations and recent activity.</p>
+          <p>Monitor Kasangga platform operations and recent activity.</p>
         </div>
       </div>
       <div className="ao-metrics">

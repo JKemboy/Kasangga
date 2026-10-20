@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Star } from "lucide-react";
 import { Avatar, button, primary, input } from "../../tutor/workspace/ui.jsx";
 import { sessionInfo } from "./SessionDialog.jsx";

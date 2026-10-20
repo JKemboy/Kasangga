@@ -75,8 +75,8 @@ export default function SecurityFlow({ mode, onClose }) {
     try {
       const { data, error: enrollError } = await getSupabaseClient().auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: "CampusTutor authenticator",
-        issuer: "CampusTutor",
+        friendlyName: "Kasangga authenticator",
+        issuer: "Kasangga",
       });
       if (enrollError) throw enrollError;
       setEnrollment(data);

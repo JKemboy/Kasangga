@@ -563,7 +563,7 @@ export default function BookingMessages({
               <p className="chat-safety">
                 <Info size={25} />
                 <span>
-                  Keep your communication within CampusTutor for your safety.
+                  Keep your communication within Kasangga for your safety.
                   <br />
                   Do not share personal contact information.
                 </span>

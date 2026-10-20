@@ -289,7 +289,7 @@ export default function ChatDetails({ chat, mode, close, role }) {
                     </a>
                   )}
                 </div>
-                <small>CampusTutor has no built-in video or voice calls.</small>
+                <small>Kasangga has no built-in video or voice calls.</small>
                 <h4 className="chat-section-heading">
                   Payment allocation
                   {data.payment_details?.method

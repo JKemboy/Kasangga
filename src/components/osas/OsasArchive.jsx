@@ -105,7 +105,7 @@ export default function OsasArchive({ settings }) {
             Case Archive <Archive size={23} className="text-green-800" />
           </h1>
           <p>
-            Resolved and closed institutional CampusTutor cases retained for
+            Resolved and closed institutional Kasangga cases retained for
             authorized reference and accountability.
           </p>
         </div>

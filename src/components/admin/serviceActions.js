@@ -1,4 +1,4 @@
-﻿export function moderateService(
+export function moderateService(
   service,
   action,
   reason = "",

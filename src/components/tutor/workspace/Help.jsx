@@ -46,7 +46,7 @@ const guides = [
   ],
   [
     "Cancellation & Refund Policy",
-    "Cancellation does not automatically guarantee a refund. Refund eligibility is reviewed separately under CampusTutor policy.",
+    "Cancellation does not automatically guarantee a refund. Refund eligibility is reviewed separately under Kasangga policy.",
     "Use Session Details to cancel a local demo session. No real refund is initiated.",
   ],
   [
@@ -66,7 +66,7 @@ const guides = [
   ],
   [
     "Contact Support",
-    "Need technical or account help? Contact the CampusTutor support team.",
+    "Need technical or account help? Contact the Kasangga support team.",
     "Support hours: Monday – Friday · 8:00 AM–5:00 PM",
   ],
 ];
@@ -180,7 +180,7 @@ export default function Help({ update, go, args = {} }) {
     <div className="help-reference">
       <Heading
         title="Help & Safety"
-        subtitle="Find guidance for tutoring, payments, conduct, and safe use of CampusTutor."
+        subtitle="Find guidance for tutoring, payments, conduct, and safe use of Kasangga."
       />
       <label className="help-reference-search">
         <Search size={19} />
@@ -248,7 +248,7 @@ export default function Help({ update, go, args = {} }) {
           )}
           <p className="help-reference-note">
             <Info size={16} />
-            CampusTutor provides internal text only messaging. Online sessions
+            Kasangga provides internal text only messaging. Online sessions
             use external Google Meet or Zoom links.
           </p>
         </div>

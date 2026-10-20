@@ -1,4 +1,4 @@
-﻿import {
+import {
   CalendarCheck,
   ChartNoAxesCombined,
   ChevronLeft,

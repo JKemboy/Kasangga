@@ -1,4 +1,4 @@
-﻿export function reportRows({
+export function reportRows({
   filters,
   accounts,
   offerings,
@@ -58,7 +58,7 @@ export function reportHtml(rows) {
           "'": "&#39;",
         })[c],
     );
-  return `<!doctype html><html><head><meta charset="utf-8"><title>CampusTutor Reports and Analytics</title><style>@page{size:A4;margin:15mm}body{font:12px Arial;color:#17212b}h1{color:#00542f;font-size:22px}table{width:100%;border-collapse:collapse}th,td{padding:8px;text-align:left;border:1px solid #dce3df}th{background:#edf6f0}thead{display:table-header-group}tr{break-inside:avoid}@media print{button{display:none}}</style></head><body><h1>Reports &amp; Analytics</h1><p>Database records. Financial amounts are in PHP. Filters apply as displayed in the dashboard: college to linked accounts, service to its bookings and transactions, booking status to bookings and transactions.</p><button onclick="window.print()">Print / Save as PDF</button><table><thead><tr>${rows[0].map((v) => `<th>${escape(v)}</th>`).join("")}</tr></thead><tbody>${rows
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Kasangga Reports and Analytics</title><style>@page{size:A4;margin:15mm}body{font:12px Arial;color:#17212b}h1{color:#00542f;font-size:22px}table{width:100%;border-collapse:collapse}th,td{padding:8px;text-align:left;border:1px solid #dce3df}th{background:#edf6f0}thead{display:table-header-group}tr{break-inside:avoid}@media print{button{display:none}}</style></head><body><h1>Reports &amp; Analytics</h1><p>Database records. Financial amounts are in PHP. Filters apply as displayed in the dashboard: college to linked accounts, service to its bookings and transactions, booking status to bookings and transactions.</p><button onclick="window.print()">Print / Save as PDF</button><table><thead><tr>${rows[0].map((v) => `<th>${escape(v)}</th>`).join("")}</tr></thead><tbody>${rows
     .slice(1)
     .map((r) => `<tr>${r.map((v) => `<td>${escape(v)}</td>`).join("")}</tr>`)
     .join("")}</tbody></table></body></html>`;

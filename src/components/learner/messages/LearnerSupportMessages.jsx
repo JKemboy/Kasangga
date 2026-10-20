@@ -66,7 +66,7 @@ export default function LearnerSupportMessages() {
       } else {
         const thread = await createSupportConversation({
           userId: user.id,
-          subject: "CampusTutor Support",
+          subject: "Kasangga Support",
           category: "General Support",
           message: draft,
         });
@@ -83,17 +83,17 @@ export default function LearnerSupportMessages() {
   return (
     <div className="booking-chat tutor-booking-chat learner-booking-chat">
       <h1>Messages</h1>
-      <p className="chat-subtitle">Chat with CampusTutor support. Replies from the admin team appear here.</p>
+      <p className="chat-subtitle">Chat with Kasangga support. Replies from the admin team appear here.</p>
       <div className="chat-columns">
         <aside className="chat-sidebar">
           <h2 className="tutor-conversations-title">Conversations</h2>
           <div className="chat-search"><label><Search size={18} /><input type="search" aria-label="Search conversations" placeholder="Search conversations..." value={query} onChange={(event) => setQuery(event.target.value)} /></label></div>
           <div className="chat-conversations">
             <button type="button" className={`chat-person ${!active ? "selected" : ""}`} onClick={() => setSelected("")}>
-              <span className="chat-avatar">CT</span><span className="chat-person-copy"><strong>CampusTutor Support</strong><small>Start a support message</small><small className="chat-muted">Admin support</small></span>
+              <span className="chat-avatar">KS</span><span className="chat-person-copy"><strong>Kasangga Support</strong><small>Start a support message</small><small className="chat-muted">Admin support</small></span>
             </button>
             {filtered.map((thread) => <button key={thread.id} type="button" className={`chat-person ${selected === thread.id ? "selected" : ""}`} onClick={() => setSelected(thread.id)}>
-              <span className="chat-avatar">CT</span><span className="chat-person-copy"><strong>CampusTutor Support</strong><small>{thread.subject}</small><small className="chat-muted">{thread.status} · {thread.category}</small></span><span className="chat-person-meta"><small>{new Date(thread.updated_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila" })}</small></span>
+              <span className="chat-avatar">KS</span><span className="chat-person-copy"><strong>Kasangga Support</strong><small>{thread.subject}</small><small className="chat-muted">{thread.status} · {thread.category}</small></span><span className="chat-person-meta"><small>{new Date(thread.updated_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila" })}</small></span>
             </button>)}
             {!filtered.length && threads.length > 0 && query && <p className="chat-empty">No matching conversations.</p>}
             <button type="button" className="chat-person" onClick={() => work.message({ name: "" })}>
@@ -101,14 +101,14 @@ export default function LearnerSupportMessages() {
             </button>
           </div>
         </aside>
-        <section className="chat-main" aria-label="CampusTutor support chat">
-          <header className="chat-header"><span className="chat-avatar">CT</span><div className="chat-header-copy"><h2>CampusTutor Support</h2><div className="chat-peer-status"><span>{active?.status === "resolved" ? "Resolved" : "Admin support"}</span></div><p>{active?.subject || "Send a message to contact the admin team."}</p><small>{active?.category || "Support messages are private to you and admin."}</small></div></header>
+        <section className="chat-main" aria-label="Kasangga support chat">
+          <header className="chat-header"><span className="chat-avatar">KS</span><div className="chat-header-copy"><h2>Kasangga Support</h2><div className="chat-peer-status"><span>{active?.status === "resolved" ? "Resolved" : "Admin support"}</span></div><p>{active?.subject || "Send a message to contact the admin team."}</p><small>{active?.category || "Support messages are private to you and admin."}</small></div></header>
           {error && <p role="alert" className="chat-error">{error}</p>}
           <div className="chat-history" role="log" aria-label="Support messages">
-            {messages.map((message) => { const mine = message.sender_id === user?.id; return <article key={message.id} className={`chat-message ${mine ? "mine" : ""}`}>{!mine && <span className="chat-avatar">CT</span>}<div className="chat-bubble"><p>{message.message}</p><small>{mine ? "You" : "CampusTutor Admin"} · {stamp(message.created_at)}</small></div>{mine && <span className="chat-avatar">{initials([user?.user_metadata?.first_name, user?.user_metadata?.last_name].filter(Boolean).join(" ") || "You")}</span>}</article>; })}
+            {messages.map((message) => { const mine = message.sender_id === user?.id; return <article key={message.id} className={`chat-message ${mine ? "mine" : ""}`}>{!mine && <span className="chat-avatar">KS</span>}<div className="chat-bubble"><p>{message.message}</p><small>{mine ? "You" : "Kasangga Admin"} · {stamp(message.created_at)}</small></div>{mine && <span className="chat-avatar">{initials([user?.user_metadata?.first_name, user?.user_metadata?.last_name].filter(Boolean).join(" ") || "You")}</span>}</article>; })}
             {!messages.length && <p className="chat-empty">{active ? "No messages in this conversation yet." : "Type a message below to contact support."}</p>}
           </div>
-          <form onSubmit={submit} className="chat-composer"><div className="chat-compose-row"><div className="chat-compose-input"><input value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={5000} placeholder="Type your message..." aria-label="Message CampusTutor Support" disabled={busy} /></div><button className="chat-send" aria-label="Send message" disabled={busy || !draft.trim()}><Send size={22} /></button></div><p className="tutor-chat-note">Internal text messaging only · Admin support can see and reply to this conversation.</p></form>
+          <form onSubmit={submit} className="chat-composer"><div className="chat-compose-row"><div className="chat-compose-input"><input value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={5000} placeholder="Type your message..." aria-label="Message Kasangga Support" disabled={busy} /></div><button className="chat-send" aria-label="Send message" disabled={busy || !draft.trim()}><Send size={22} /></button></div><p className="tutor-chat-note">Internal text messaging only · Admin support can see and reply to this conversation.</p></form>
         </section>
       </div>
     </div>

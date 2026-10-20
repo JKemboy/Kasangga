@@ -1,4 +1,4 @@
-﻿import {
+import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,

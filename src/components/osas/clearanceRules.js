@@ -1,4 +1,4 @@
-﻿export function clearanceOptions(record, cases) {
+export function clearanceOptions(record, cases) {
   const relevant = cases.filter((c) => c.studentUserId === record.userId);
   const hold =
     (record.holds || []).some((h) => h.hold_status === "active") ||

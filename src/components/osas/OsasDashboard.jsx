@@ -36,7 +36,6 @@ import {
   Download,
   FileText,
   Flag,
-  GraduationCap,
   IdCard,
   Info,
   LayoutDashboard,
@@ -276,10 +275,7 @@ function OsasDashboardContent() {
       )}
       <aside className={`osas-sidebar ${mobile ? "is-open" : ""}`}>
         <div className="osas-brand">
-          <GraduationCap size={32} />
-          <span>
-            Campus<span>Tutor</span>
-          </span>
+          <img src="/images/kasangga-logo.png" alt="Kasangga" />
           <button
             aria-label="Close navigation"
             className="ml-auto md:hidden"
@@ -448,7 +444,7 @@ function OsasDashboardContent() {
                   <ShieldCheck size={23} className="text-green-800" />
                 </h1>
                 <p>
-                  Review relevant CampusTutor case records when determining
+                  Review relevant Kasangga case records when determining
                   student clearance status under authorized institutional
                   procedures.
                 </p>

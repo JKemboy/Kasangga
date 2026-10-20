@@ -294,7 +294,7 @@ export default function SessionDetails({
               )}
             </div>
             <p className="session-muted">
-              CampusTutor has no built-in video or voice calls.
+              Kasangga has no built-in video or voice calls.
             </p>
           </>
         )}
@@ -389,8 +389,8 @@ export default function SessionDetails({
                 </div>
               </div>
               <p>
-                This session runs on {s.provider}, outside CampusTutor.
-                CampusTutor has no built-in video or voice calls.
+                This session runs on {s.provider}, outside Kasangga.
+                Kasangga has no built-in video or voice calls.
               </p>
               {url ? (
                 <a
@@ -485,7 +485,7 @@ export default function SessionDetails({
               {action === "incident" && (
                 <>
                   <p className="session-muted">
-                    Reports go to CampusTutor Admin. Conduct concerns are
+                    Reports go to Kasangga Admin. Conduct concerns are
                     referred to OSAS.
                   </p>
                   <Field label="Booking">

@@ -394,7 +394,7 @@ Deno.serve(async (req: Request) => {
                 quantity: 1,
               },
             ],
-            description: `CampusTutor Booking #${savedBooking.booking_id}`,
+            description: `Kasangga Booking #${savedBooking.booking_id}`,
             success_url: `${appUrl}/?payment=success`,
             cancel_url: `${appUrl}/?payment=cancelled`,
           },

@@ -690,7 +690,7 @@ export default function TutorApplication({ onClose }) {
         <>
           <h1>Apply as Tutor</h1>
           <p className="ta-subtitle">
-            An authorized CampusTutor Admin reviews your application before
+            An authorized Kasangga Admin reviews your application before
             Tutor capability is added to your account.
           </p>
           <div className="ta-card">
@@ -713,7 +713,7 @@ export default function TutorApplication({ onClose }) {
               {statusView ? (
                 <>
                   <p className="ta-notice">
-                    Application submitted to CampusTutor. Your application
+                    Application submitted to Kasangga. Your application
                     status is shown below.
                   </p>
                   {rows([
@@ -739,13 +739,13 @@ export default function TutorApplication({ onClose }) {
                   {step === 0 && (
                     <>
                       <p className="ta-muted">
-                        This information comes from your existing CampusTutor
+                        This information comes from your existing Kasangga
                         account.
                       </p>
                       <div className="ta-notice">
                         <ShieldCheck size={22} />
                         <div>
-                          <strong>From your CampusTutor account</strong>
+                          <strong>From your Kasangga account</strong>
                           <p>
                             Institutional details cannot be changed here.
                             Contact the University Registrar to correct your
@@ -900,7 +900,7 @@ export default function TutorApplication({ onClose }) {
                           maxLength={300}
                           value={draft.motivation}
                           onChange={(e) => patch("motivation", e.target.value)}
-                          placeholder="Why do you want to become a CampusTutor Tutor?"
+                          placeholder="Why do you want to become a Kasangga Tutor?"
                         />
                         <small>
                           {draft.motivation.length}/300 · at least 20 characters
@@ -1003,7 +1003,7 @@ export default function TutorApplication({ onClose }) {
                       </label>
                       <p className="ta-muted">
                         Your application and uploaded documents will be
-                        submitted to CampusTutor for Admin review.
+                        submitted to Kasangga for Admin review.
                       </p>
                     </>
                   )}

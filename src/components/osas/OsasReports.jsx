@@ -176,7 +176,7 @@ export default function OsasReports({ rows, settings }) {
           </h1>
           <p>
             Review institutional trends and accountability information derived
-            from CampusTutor records.
+            from Kasangga records.
           </p>
         </div>
         <button

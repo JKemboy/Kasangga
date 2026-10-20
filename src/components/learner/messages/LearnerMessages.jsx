@@ -1,11 +1,11 @@
-// Messages: switches between tutor conversations and the persistent CampusTutor Support conversation.
+// Messages: switches between tutor conversations and the persistent Kasangga Support conversation.
 import BookingMessages from "../../shared/BookingMessages.jsx";
 import LearnerSupportMessages from "./LearnerSupportMessages.jsx";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { chatTutorProfile } from "../../../services/chatTutorProfile.js";
 export default function LearnerMessages() {
   const work = useLearnerWorkspace();
-  const supportSelected = work.data.activeThread === "CampusTutor Support";
+  const supportSelected = work.data.activeThread === "Kasangga Support";
   return (
     <div>
       <nav aria-label="Message conversations" className="mx-auto flex max-w-[1400px] gap-2 px-4 pt-3 lg:px-5">
@@ -20,10 +20,10 @@ export default function LearnerMessages() {
         <button
           type="button"
           aria-pressed={supportSelected}
-          onClick={() => work.message({ name: "CampusTutor Support" })}
+          onClick={() => work.message({ name: "Kasangga Support" })}
           className={`rounded-md border px-3 py-2 text-xs font-semibold ${supportSelected ? "border-green-700 bg-green-50 text-green-800" : "border-slate-200 bg-white text-slate-600"}`}
         >
-          CampusTutor Support
+          Kasangga Support
         </button>
       </nav>
       {supportSelected ? (
