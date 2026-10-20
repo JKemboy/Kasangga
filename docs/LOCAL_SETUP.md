@@ -23,6 +23,8 @@
     -npm audit fix
     -npm install-scripts approve --all
 
+-npm run build
+
 -npm.cmd run dev
 
 
