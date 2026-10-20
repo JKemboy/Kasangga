@@ -3,12 +3,15 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { createBatchPayment } from "./batch.ts";
 import { discardUnpaidCheckouts } from "./discard.ts";
 
+const allowedOrigins = new Set([
+  "http://localhost:5173",
+  "https://kasangga-test.vercel.app",
+]);
+
 Deno.serve(async (req: Request) => {
-  const origin = req.headers.get("Origin");
-  const allowedOrigins = new Set([
-    "http://localhost:5173",
-    "https://kasangga-test.vercel.app",
-  ]);
+  const requestOrigin = req.headers.get("Origin");
+  const allowedOrigin =
+    requestOrigin && allowedOrigins.has(requestOrigin) ? requestOrigin : null;
   const corsHeaders = new Headers({
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type, x-supabase-api-version",
@@ -16,8 +19,8 @@ Deno.serve(async (req: Request) => {
     Vary: "Origin",
   });
 
-  if (origin && allowedOrigins.has(origin)) {
-    corsHeaders.set("Access-Control-Allow-Origin", origin);
+  if (allowedOrigin) {
+    corsHeaders.set("Access-Control-Allow-Origin", allowedOrigin);
   }
 
   function jsonResponse(body: Record<string, unknown>, status = 200) {
@@ -45,7 +48,7 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   const paymongoSecretKey = Deno.env.get("PAYMONGO_SECRET_KEY");
-  const appUrl = Deno.env.get("APP_URL");
+  const appUrl = (allowedOrigin ?? Deno.env.get("APP_URL"))?.replace(/\/+$/, "");
 
   if (
     !supabaseUrl ||
