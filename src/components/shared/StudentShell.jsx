@@ -1,3 +1,5 @@
+import { loadMyTutorApplication } from "../../services/tutorApplications.js";
+import { Modal, button, primary } from "../tutor/workspace/ui.jsx";
 import PortalAvatar from "./PortalAvatar.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import useChatPresence from "../../services/useChatPresence.js";
@@ -6,9 +8,9 @@ import HeaderInbox from "./HeaderInbox.jsx";
 import { useLearnerWorkspace } from "../learner/workspace/LearnerWorkspace.jsx";
 import { notificationDestination } from "../tutor/workspace/notificationTargets.js";
 import { useLogout } from "./LogoutProvider.jsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Menu, Bell, MessageCircle } from "lucide-react";
+import { LogOut, Menu, Bell, MessageCircle, ChevronDown } from "lucide-react";
 import { Avatar } from "../tutor/workspace/ui.jsx";
 export default function StudentShell({
   role,
@@ -41,6 +43,29 @@ export default function StudentShell({
 
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [tutorPrompt, setTutorPrompt] = useState(false);
+  const [application, setApplication] = useState(null);
+  const [applicationError, setApplicationError] = useState("");
+  const [applicationLoading, setApplicationLoading] = useState(false);
+  useEffect(() => {
+    if (!tutorPrompt) return;
+    let active = true;
+    setApplicationLoading(true);
+    setApplicationError("");
+    loadMyTutorApplication(auth.user.id)
+      .then((result) => {
+        if (active) setApplication(result);
+      })
+      .catch((error) => {
+        if (active) setApplicationError(error.message);
+      })
+      .finally(() => {
+        if (active) setApplicationLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [tutorPrompt, auth.user.id]);
   function select(id) {
     go(id);
     setOpen(false);
@@ -62,7 +87,11 @@ export default function StudentShell({
         className={`fixed inset-y-0 left-0 z-40 flex w-[230px] flex-col bg-[#00542f] text-white transition-transform md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-[76px] shrink-0 items-center bg-[#003e24] px-5">
-          <img src="/images/kasangga-logo.png" alt="Kasangga" className="h-[52px] w-auto max-w-full object-contain object-left" />
+          <img
+            src="/images/kasangga-logo.png"
+            alt="Kasangga"
+            className="h-[52px] w-auto max-w-full object-contain object-left"
+          />
         </div>
         <div className="mx-4 my-3 flex rounded-lg bg-black/15 text-xs">
           <button
@@ -77,14 +106,12 @@ export default function StudentShell({
             Learner
           </button>
           <button
-            disabled={profileRestricted || !auth?.roles.includes("tutor")}
-            title={
-              !auth?.roles.includes("tutor")
-                ? "Tutor approval required"
-                : undefined
-            }
             aria-pressed={role === "tutor"}
-            onClick={() => navigate("/tutor-dashboard")}
+            onClick={() =>
+              auth?.roles.includes("tutor") && !profileRestricted
+                ? navigate("/tutor-dashboard")
+                : setTutorPrompt(true)
+            }
             className={`flex-1 rounded-lg py-2 ${role === "tutor" ? "bg-amber-400 font-semibold text-black" : ""}`}
           >
             Tutor
@@ -230,6 +257,53 @@ export default function StudentShell({
           </button>
         </div>
       </header>
+      {tutorPrompt && (
+        <Modal title="Apply as Tutor" onClose={() => setTutorPrompt(false)}>
+          {applicationLoading ? (
+            <p role="status" className="py-4 text-sm">
+              Checking your application...
+            </p>
+          ) : (
+            <>
+              <p className="py-4 text-sm">
+                {profileRestricted
+                  ? "Complete your learner profile before applying as a tutor."
+                  : application
+                    ? "Your tutor application is " +
+                      application.status +
+                      ". Tutor access becomes available after approval."
+                    : "Share your knowledge with fellow students. Submit an application to become a tutor."}
+              </p>
+              {applicationError && (
+                <p role="alert" className="mb-3 text-sm text-red-700">
+                  {applicationError}
+                </p>
+              )}
+              <div className="flex justify-between gap-3">
+                <button
+                  className={button}
+                  onClick={() => setTutorPrompt(false)}
+                >
+                  Stay as Learner
+                </button>
+                <button
+                  className={primary}
+                  onClick={() => {
+                    setTutorPrompt(false);
+                    select(profileRestricted ? "profile" : "application");
+                  }}
+                >
+                  {profileRestricted
+                    ? "Complete Profile"
+                    : application
+                      ? "View Application"
+                      : "Apply as Tutor"}
+                </button>
+              </div>
+            </>
+          )}
+        </Modal>
+      )}
     </>
   );
 }
