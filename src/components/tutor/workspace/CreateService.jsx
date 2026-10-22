@@ -1,3 +1,5 @@
+import { loadMyTutorApplication } from "../../../services/tutorApplications.js";
+import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { MAX_SERVICE_RATE, formatServiceDate } from "../../../services/serviceFormOptions.js";
 // Service editor: builds a tutor service and topic schedule; save callbacks enforce booking-aware edit restrictions.
 import { useEffect, useState } from "react";
@@ -36,6 +38,33 @@ export default function CreateService({
   onClose,
   service = null,
 }) {
+  const auth = useAuth();
+  const [expertise, setExpertise] = useState([]);
+  const [expertiseLoading, setExpertiseLoading] = useState(true);
+  const [expertiseError, setExpertiseError] = useState("");
+  useEffect(() => {
+    let active = true;
+    loadMyTutorApplication(auth.user.id)
+      .then((application) => {
+        if (!active) return;
+        const subjects =
+          application?.status === "Approved" ? application.subjects : [];
+        const fallback = String(data.profile?.expertise || "")
+          .split(/[,;\n]/)
+          .map((value) => value.trim())
+          .filter(Boolean);
+        setExpertise([...new Set(subjects.length ? subjects : fallback)]);
+      })
+      .catch((error) => {
+        if (active) setExpertiseError(error.message);
+      })
+      .finally(() => {
+        if (active) setExpertiseLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [auth.user.id, data.profile?.expertise]);
   const [name, setName] = useState(service?.name || "");
   const [description, setDescription] = useState(service?.description || "");
   const [schedule, setSchedule] = useState({
@@ -272,7 +301,9 @@ export default function CreateService({
   };
   async function submit(e) {
     e.preventDefault();
-    if (saving || scheduleLoading || scheduleError) return;
+    if (saving || scheduleLoading || scheduleError || expertiseLoading) return;
+    if (expertiseError) return setError(expertiseError);
+    if (!expertise.includes(name)) return setError("Choose a service title from your subject expertise.");
     const result = validateTopicService(
       { name, description, topicDetails: topics },
       data.services,
@@ -355,14 +386,39 @@ export default function CreateService({
       >
         <fieldset disabled={saving} className="service-form-fields">
           <Field label="Service title / Subject">
-            <input
+            <select
               className={input}
               required
-              maxLength={200}
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Calculus 1"
-            />
+              disabled={expertiseLoading || !!expertiseError}
+              onChange={(event) => setName(event.target.value)}
+            >
+              <option value="">
+                {expertiseLoading
+                  ? "Loading your expertise..."
+                  : "Choose a subject from your expertise"}
+              </option>
+              {name && !expertise.includes(name) && (
+                <option value={name} disabled>
+                  {name} (choose a current expertise)
+                </option>
+              )}
+              {expertise.map((subject) => (
+                <option key={subject} value={subject}>
+                  {subject}
+                </option>
+              ))}
+            </select>
+            {expertiseError && (
+              <p role="alert" className="text-xs text-red-700">
+                {expertiseError}
+              </p>
+            )}
+            {!expertiseLoading && !expertiseError && !expertise.length && (
+              <p role="alert" className="text-xs text-amber-800">
+                Add your subject expertise in Profile before creating a service.
+              </p>
+            )}
           </Field>
           <Field label="Description">
             <textarea
