@@ -183,16 +183,20 @@ export default function LearnerFindTutor({ query = "" }) {
         <div className="flex items-center gap-2 text-xs text-[#637191]">
           View{" "}
           <button
+            type="button"
             aria-label="Grid view"
+            aria-pressed={!list}
             onClick={() => setList(false)}
-            className="grid h-7 w-8 place-items-center rounded-md bg-[#087542] text-white"
+            className={`grid h-7 w-8 place-items-center rounded-md border ${!list ? "bg-[#087542] text-white" : "border-[#dfe5ed]"}`}
           >
             <Grid2X2 className="h-5 w-5" />
           </button>
           <button
+            type="button"
             aria-label="List view"
+            aria-pressed={list}
             onClick={() => setList(true)}
-            className="grid h-7 w-8 place-items-center rounded-md border border-[#dfe5ed]"
+            className={`grid h-7 w-8 place-items-center rounded-md border ${list ? "bg-[#087542] text-white" : "border-[#dfe5ed]"}`}
           >
             <List className="h-5 w-5" />
           </button>
@@ -211,7 +215,7 @@ export default function LearnerFindTutor({ query = "" }) {
           return (
             <article
               key={service.id}
-              className="relative rounded-xl border border-[#e0e7f0] bg-white px-3 pb-2 pt-6 text-center"
+              className={`relative rounded-xl border border-[#e0e7f0] bg-white px-3 pb-2 pt-8 ${list ? "grid items-center gap-4 text-left md:grid-cols-[90px_minmax(0,1fr)_220px]" : "text-center"}`}
             >
               <span className="absolute left-2 top-2 rounded-full bg-[#dff8e8] px-2 py-0.5 text-xs text-[#087542]">
                 {service.type === "Both" ? "Online / In-person" : service.type}
@@ -229,53 +233,58 @@ export default function LearnerFindTutor({ query = "" }) {
                   fill={work.isSaved(bookmark) ? "#087542" : "none"}
                 />
               </button>
-              <PortalAvatar
-                name={name}
-                userId={tutor.avatarUserId}
-                className="mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-[linear-gradient(145deg,#e5e7eb,#cbd5e1)] text-base font-bold text-[#405276]"
-              />
-              <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#dff8e8] px-2 py-0.5 text-xs font-semibold text-[#087542]">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Verified
+              <div>
+                <PortalAvatar
+                  name={name}
+                  userId={tutor.avatarUserId}
+                  className="mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-[linear-gradient(145deg,#e5e7eb,#cbd5e1)] text-base font-bold text-[#405276]"
+                />
+                <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#dff8e8] px-2 py-0.5 text-xs font-semibold text-[#087542]">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Verified
+                </div>
               </div>
-              <h2 className="mt-2 text-sm font-bold">{service.name}</h2>
-              <p className="mt-1 text-xs font-semibold">{name}</p>
-              <p className="text-xs text-[#566584]">{degree}</p>
-              <p className="mt-1 min-h-7 text-xs leading-4 text-[#637191]">
-                {service.subtitle}
-              </p>
-              <p className="mt-1 text-xs text-[#637191]">
-                <Star className="mr-1 inline h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
-                {rating || "No ratings yet"}
-              </p>
-              <p className="mt-1 text-sm font-bold text-[#087542]">
-                {"\u20b1"}
-                {service.rate.toLocaleString()}
-                <span className="font-normal text-[#637191]"> / hour</span>
-              </p>
-              <p className="my-2 text-xs text-slate-500">
-                {service.category} / {service.level}
-              </p>
-              <div className="mt-1 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => work.open("profile", tutor)}
-                  className="h-7 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
-                >
-                  View Profile
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    work.open("book", {
-                      ...tutor,
-                      selectedService: service.name,
-                    })
-                  }
-                  className="h-7 rounded-md bg-[#087542] text-xs font-semibold text-white"
-                >
-                  Book Now
-                </button>
+              <div>
+                <h2 className="mt-2 text-sm font-bold">{service.name}</h2>
+                <p className="mt-1 text-xs font-semibold">{name}</p>
+                <p className="text-xs text-[#566584]">{degree}</p>
+                <p className="mt-1 min-h-7 text-xs leading-4 text-[#637191]">
+                  {service.subtitle}
+                </p>
+                <p className="mt-1 text-xs text-[#637191]">
+                  <Star className="mr-1 inline h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
+                  {rating || "No ratings yet"}
+                </p>
+              </div>
+              <div>
+                <p className="mt-1 text-sm font-bold text-[#087542]">
+                  {"\u20b1"}
+                  {service.rate.toLocaleString()}
+                  <span className="font-normal text-[#637191]"> / hour</span>
+                </p>
+                <p className="my-2 text-xs text-slate-500">
+                  {service.category} / {service.level}
+                </p>
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => work.open("profile", bookmark)}
+                    className="h-7 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
+                  >
+                    View Profile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      work.open("book", {
+                        ...bookmark,
+                      })
+                    }
+                    className="h-7 rounded-md bg-[#087542] text-xs font-semibold text-white"
+                  >
+                    Book Now
+                  </button>
+                </div>
               </div>
             </article>
           );
