@@ -16,3 +16,14 @@ export function chooseBookingType(sessions, key, type, allowedTypes) {
       : session,
   );
 }
+
+export function selectedBookingService(tutor) {
+  const services = tutor.services || [];
+  return (
+    services.find(
+      (service) => String(service.id) === String(tutor.serviceId),
+    ) ||
+    services.find((service) => service.name === tutor.selectedService) ||
+    services[0]
+  );
+}

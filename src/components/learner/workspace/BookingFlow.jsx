@@ -13,6 +13,7 @@ import { listBookableAvailability } from "../../../services/tutorAvailability.js
 import { availableBookingTimes } from "../../../services/availabilityTimes.js";
 import {
   bookingTotal,
+  selectedBookingService,
   chooseBookingType,
 } from "../../../services/bookingSelection.js";
 import {
@@ -44,10 +45,12 @@ const labels = [
 ];
 export default function BookingFlow({ tutor: record, onComplete, onClose }) {
   const tutor = tutorProfile(record);
-  const [step, setStep] = useState(1),
+  const initialService = selectedBookingService(tutor);
+  const [step, setStep] = useState(2),
     [draft, setDraft] = useState({
       sessions: [],
-      service: tutor.selectedService || "",
+      service: initialService?.name || "",
+      serviceId: initialService?.id || "",
       topic: "",
       date: "",
       duration: "1",
@@ -101,7 +104,9 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
       active = false;
     };
   }, [record]);
-  const selected = services.find((s) => s.name === draft.service),
+  const selected = services.find(
+      (s) => String(s.id) === String(draft.serviceId),
+    ),
     topicConfig = selected?.topicDetails?.find(
       (topic) => topic.name === draft.topic,
     ),
@@ -333,7 +338,7 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
     step === 1
       ? !!selected
       : step === 2
-        ? !!draft.topic.trim() && !topicsLoading && !topicsError
+        ? !!selected && !!draft.topic.trim() && !topicsLoading && !topicsError
         : step === 3
           ? draft.sessions.length > 0 &&
             !availabilityLoading &&
@@ -415,18 +420,21 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
         </span>
       </header>
       <ol className="booking-steps">
-        {labels.map((label, i) => (
-          <li
-            key={label}
-            className={
-              step === i + 1 ? "active" : step > i + 1 ? "complete" : ""
-            }
-            aria-current={step === i + 1 ? "step" : undefined}
-          >
-            <span>{step > i + 1 ? "✓" : i + 1}</span>
-            {label}
-          </li>
-        ))}
+        {labels.slice(1).map((label, index) => {
+          const i = index + 1;
+          return (
+            <li
+              key={label}
+              className={
+                step === i + 1 ? "active" : step > i + 1 ? "complete" : ""
+              }
+              aria-current={step === i + 1 ? "step" : undefined}
+            >
+              <span>{step > i + 1 ? "✓" : index + 1}</span>
+              {label}
+            </li>
+          );
+        })}
       </ol>
       <div className="booking-content">
         {step === 6 && checkoutCleaning && (
@@ -452,42 +460,12 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
         {topicsLoading && (
           <p role="status">Loading topic rates and schedules...</p>
         )}
-        {step === 1 && (
-          <>
-            <h3>Select a subject or service</h3>
-            <p className="booking-muted">
-              Choose what you would like to learn with {tutor.name}.
-            </p>
-            <div className="booking-options">
-              {services.map((s) => (
-                <label
-                  key={s.name}
-                  className={draft.service === s.name ? "chosen" : ""}
-                >
-                  <input
-                    type="radio"
-                    name="service"
-                    checked={draft.service === s.name}
-                    onChange={() => change("service", s.name)}
-                  />
-                  <span>
-                    <strong>{s.name}</strong>
-                    <small>
-                      {Array.isArray(s.topics) && s.topics.length
-                        ? `${s.topics.length} topics: ${s.topics.slice(0, 3).join(", ")}`
-                        : "Choose a specific topic next"}
-                    </small>
-                  </span>
-                  <b>{cash(Number(s.rate || tutor.rate) || 0)}/hr</b>
-                </label>
-              ))}
-            </div>
-          </>
-        )}
         {step === 2 && (
           <>
-            <h3>Choose a specific topic</h3>
-            <p className="booking-muted">{draft.service}</p>
+            <h3>
+              {[draft.service, selected?.subtitle].filter(Boolean).join(" - ")}
+            </h3>
+            <p className="booking-muted">Choose a specific topic</p>
             {topics.length ? (
               <div className="booking-options">
                 {topics.map((t) => (
@@ -983,10 +961,10 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
               className={button}
               onClick={() => {
                 setError("");
-                step === 1 ? onClose() : setStep(step - 1);
+                step === 2 ? onClose() : setStep(step - 1);
               }}
             >
-              {step === 1 ? "Cancel" : "Back"}
+              {step === 2 ? "Cancel" : "Back"}
             </button>
             {result ? (
               <button
