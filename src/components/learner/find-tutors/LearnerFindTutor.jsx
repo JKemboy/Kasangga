@@ -32,7 +32,7 @@ const Select = ({ label, value, onChange, options = [] }) => (
   </label>
 );
 
-export default function LearnerFindTutor() {
+export default function LearnerFindTutor({ query = "" }) {
   const work = useLearnerWorkspace();
   const [tutors, setTutors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,9 +55,13 @@ export default function LearnerFindTutor() {
       }
     }
     load();
+    const timer = window.setInterval(load, 30000);
+    window.addEventListener("campustutor:services-changed", load);
     window.addEventListener("focus", load);
     return () => {
       active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("campustutor:services-changed", load);
       window.removeEventListener("focus", load);
     };
   }, [retry]);
@@ -69,7 +73,19 @@ export default function LearnerFindTutor() {
   const rows = tutors
     .flatMap((tutor) => tutor.services.map((service) => ({ tutor, service })))
     .filter(
-      ({ service: s }) =>
+      ({ tutor, service: s }) =>
+        (!query.trim() ||
+          [
+            tutor.name,
+            tutor.program,
+            s.name,
+            s.subtitle,
+            s.category,
+            ...(s.topics || []),
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(query.trim().toLowerCase())) &&
         (subject === "All Subjects" ||
           [s.name, s.subtitle, ...s.topics]
             .join(" ")
@@ -264,7 +280,9 @@ export default function LearnerFindTutor() {
           );
         })}
       </div>
-      {(subject !== "All Subjects" || level !== "All Levels" || availability !== "All Availability") && (
+      {(subject !== "All Subjects" ||
+        level !== "All Levels" ||
+        availability !== "All Availability") && (
         <button
           className="mt-2 text-xs text-green-800"
           onClick={() => {

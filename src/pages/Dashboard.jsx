@@ -1,3 +1,4 @@
+import LearnerSearch from "../components/learner/workspace/LearnerSearch.jsx";
 import AccountSettings from "../components/shared/AccountSettings.jsx";
 import LearnerWorkspace from "../components/learner/workspace/LearnerWorkspace.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
@@ -17,7 +18,6 @@ import LearnerNotifications from "../components/learner/notifications/LearnerNot
 export default function Dashboard() {
   const [view, setView] = useState("dashboard");
   const [viewArgs, setViewArgs] = useState({});
-  const [search, setSearch] = useState("");
   function navigate(nextView, args = {}) {
     setView(nextView);
     setViewArgs(args);
@@ -31,40 +31,7 @@ export default function Dashboard() {
           nav={learnerNav}
           view={view}
           go={navigate}
-          searchContent={
-            <div className="relative w-full max-w-lg">
-              <input
-                aria-label="Search learner sections"
-                placeholder="Search learner sections..."
-                className="h-8 w-full rounded-md border border-slate-200 px-3 text-xs"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-              {search.trim() && (
-                <div className="absolute mt-1 w-full rounded border bg-white p-2 shadow-lg">
-                  {learnerNav
-                    .filter(([, label]) =>
-                      label.toLowerCase().includes(search.toLowerCase()),
-                    )
-                    .map(([id, label]) => (
-                      <button
-                        key={id}
-                        className="block w-full p-2 text-left text-xs hover:bg-green-50"
-                        onClick={() => {
-                          navigate(id);
-                          setSearch("");
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  {!learnerNav.some(([, label]) =>
-                    label.toLowerCase().includes(search.toLowerCase()),
-                  ) && <p className="p-2 text-xs">No matching sections.</p>}
-                </div>
-              )}
-            </div>
-          }
+          searchContent={<LearnerSearch go={navigate} />}
         />
         <main
           id="messages"
@@ -78,7 +45,12 @@ export default function Dashboard() {
           {view === "application" && (
             <TutorApplication onClose={() => setView("profile")} />
           )}
-          {view === "find-tutor" && <LearnerFindTutor />}
+          {view === "find-tutor" && (
+            <LearnerFindTutor
+              key={viewArgs.query || ""}
+              query={viewArgs.query || ""}
+            />
+          )}
           {view === "help-support" && <LearnerHelpSupport />}
           {view === "sessions" && <LearnerSessions args={viewArgs} />}
           {view === "saved-tutors" && <LearnerSavedTutors />}
