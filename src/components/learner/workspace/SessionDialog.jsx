@@ -58,7 +58,7 @@ export default function SessionDialog({
   onRequest,
 }) {
   const r = sessionInfo(record);
-  const bookingStatus = r.status === "Completed" ? "Done" : r.status;
+  const bookingStatus = r.status;
   const [reason, setReason] = useState(""),
     [notes, setNotes] = useState(""),
     [ack, setAck] = useState(false),
@@ -101,6 +101,7 @@ export default function SessionDialog({
     r.canManage && !["Completed", "Cancelled"].includes(r.lifecycle);
   const link = meetingUrl(r.link);
   async function submitAction() {
+    if (busy) return;
     setBusy(true);
     setActionError("");
     try {
@@ -327,6 +328,7 @@ export default function SessionDialog({
             </label>
           </>
         )}
+        {kind === "cancel" && actionError && <p role="alert" className="mt-3 text-sm text-red-700">{actionError}</p>}
       </div>
       <footer className="ls-footer">
         {kind === "details" ? (

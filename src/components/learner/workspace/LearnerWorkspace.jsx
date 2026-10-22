@@ -1,3 +1,5 @@
+import { meetingUrl } from "../../tutor/workspace/sessionActions.js";
+import { cancelLearnerSession } from "../../../services/learnerSessionActions.js";
 import PaymentReturn from "./PaymentReturn.jsx";
 // Learner workspace provider: coordinates learner profile, saved tutors, sessions, reviews, messages, and dialogs for all learner sections.
 import { listLearnerSessions } from "../../../services/learnerSessions.js";
@@ -35,7 +37,6 @@ import {
   input,
 } from "../../tutor/workspace/ui.jsx";
 import { useInteractions } from "../../shared/InteractionProvider.jsx";
-import { meetingUrl } from "../../tutor/workspace/sessionActions.js";
 
 const Context = createContext(null);
 export const useLearnerWorkspace = () => useContext(Context);
@@ -315,7 +316,9 @@ export default function LearnerWorkspace({ children, go }) {
                 ? "booking"
                 : dialog.kind === "details"
                   ? "session-drawer"
-                  : ["report", "review"].includes(dialog.kind)
+                  : ["report", "review", "cancel", "meeting"].includes(
+                        dialog.kind,
+                      )
                     ? "session-modal"
                     : ["data", "delete"].includes(dialog.kind)
                       ? "account"
@@ -326,6 +329,7 @@ export default function LearnerWorkspace({ children, go }) {
               profile: "Tutor Profile",
               book: "Book a Session",
               details: "Session Details",
+              cancel: "Cancel Session",
               meeting: "Open External Meeting",
               report: "Report an Issue",
               review:
@@ -356,7 +360,7 @@ export default function LearnerWorkspace({ children, go }) {
           {dialog.kind === "book" && (
             <BookingFlow tutor={r} onClose={closeDialog} />
           )}
-          {dialog.kind === "details" && (
+          {["details", "cancel"].includes(dialog.kind) && (
             <SessionDialog
               key={dialog.kind}
               kind={dialog.kind}
@@ -368,6 +372,19 @@ export default function LearnerWorkspace({ children, go }) {
               onClose={closeDialog}
               onOpen={open}
               onMessage={message}
+              onCancel={async ({ reason, notes }) => {
+                await cancelLearnerSession(r, {
+                  reason,
+                  notes,
+                  acknowledged: true,
+                });
+                window.dispatchEvent(new Event("campustutor:sessions-changed"));
+                await refreshReviews();
+                closeDialog();
+                toast(
+                  "Session cancelled. Refund eligibility will be reviewed separately.",
+                );
+              }}
             />
           )}
           {dialog.kind === "meeting" && (

@@ -368,7 +368,21 @@ export default function LearnerSessions({ args = {} }) {
                     <Flag className="mr-2 inline h-4 w-4" />
                     Report an Issue
                   </button>
-
+                  {canManage && lifecycle === "Upcoming" && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        act(
+                          "cancel",
+                          records.find((session) => session.id === id),
+                        )
+                      }
+                      className="min-h-6 rounded-md border border-red-200 px-1 py-0.5 text-xs font-semibold text-red-700"
+                    >
+                      <XCircle className="mr-2 inline h-4 w-4" />
+                      Cancel Session
+                    </button>
+                  )}
                   <button
                     onClick={() =>
                       act(
