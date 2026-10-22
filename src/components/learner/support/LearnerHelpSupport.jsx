@@ -378,13 +378,6 @@ export default function LearnerHelpSupport() {
               >
                 Message Kasangga Support
               </button>
-              <button
-                type="button"
-                className={button + " mt-2 block"}
-                onClick={() => go("settings")}
-              >
-                Open Settings
-              </button>
             </section>
             <button
               type="button"

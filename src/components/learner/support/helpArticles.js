@@ -52,12 +52,12 @@ export const helpArticles = [
     category: "Account & Security",
     title: "How do I change my password?",
     steps: [
-      "Open Settings from the account dropdown or sidebar.",
-      "Enter your new password and confirm it by entering it again. Use at least eight characters.",
-      "Save the change and wait for confirmation. Keep your password private and log out of shared devices.",
+      "Kasangga uses your CSU Google account for sign-in. Manage its password through your Google account.",
+      "Follow the security instructions provided by Google or your university account administrator.",
+      "Keep your password private and log out of shared devices.",
     ],
-    view: "settings",
-    action: "Open Settings",
+    view: "profile",
+    action: "Open Profile",
   },
   {
     id: "identity-correction",
@@ -100,7 +100,7 @@ export const helpArticles = [
     category: "Getting Started",
     title: "How do I use the dashboard?",
     steps: [
-      "Use the sidebar to open Find a Tutor, My Sessions, Messages, Saved Tutors, Reviews, Profile or Settings.",
+      "Use the sidebar to open Find a Tutor, My Sessions, Messages, Saved Tutors, Reviews, Profile or Help & Support.",
       "Search the top bar for tutors, subjects, topics, sessions and sections. Choose a result or submit your search to browse matching tutors.",
       "Some features remain locked until your learner profile is complete. Tutor features require an approved tutor application.",
     ],
@@ -272,11 +272,11 @@ export const helpArticles = [
     title: "How do I update my account or password?",
     steps: [
       "Open Profile to update the available editable fields. Name, Student ID and email are locked; contact an authorized university administrator for corrections to those records.",
-      "Open Settings to change your password. Enter the new password twice and save the change.",
+      "Manage your CSU Google account password through Google or your university account administrator.",
       "Use Logout when leaving a shared device. Never share your password, verification codes or GCash credentials.",
     ],
-    view: "settings",
-    action: "Open Settings",
+    view: "profile",
+    action: "Open Profile",
   },
   {
     id: "report-issue",
