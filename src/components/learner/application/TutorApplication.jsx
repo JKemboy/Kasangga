@@ -690,8 +690,8 @@ export default function TutorApplication({ onClose }) {
         <>
           <h1>Apply as Tutor</h1>
           <p className="ta-subtitle">
-            An authorized Kasangga Admin reviews your application before
-            Tutor capability is added to your account.
+            An authorized Kasangga Admin reviews your application before Tutor
+            capability is added to your account.
           </p>
           <div className="ta-card">
             <ol className="ta-steps">
@@ -713,8 +713,8 @@ export default function TutorApplication({ onClose }) {
               {statusView ? (
                 <>
                   <p className="ta-notice">
-                    Application submitted to Kasangga. Your application
-                    status is shown below.
+                    Application submitted to Kasangga. Your application status
+                    is shown below.
                   </p>
                   {rows([
                     ["Application ID", draft.id],
@@ -758,7 +758,7 @@ export default function TutorApplication({ onClose }) {
                           <label key={key}>
                             {label}
                             <div className="ta-locked">
-                              <input readOnly value={account[key]} />
+                              <input disabled readOnly value={account[key]} />
                               <LockKeyhole size={14} />
                             </div>
                           </label>
