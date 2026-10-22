@@ -1,3 +1,4 @@
+import { earningsDateOptions, matchesEarningsDate } from "../../../services/earningsFilters.js";
 // Earnings: presents tutor earnings and payment records supplied by the tutor workspace data/services.
 import { TransactionDetails } from "./SessionDetails.jsx";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -81,6 +82,7 @@ export default function Earnings({ data, go, args = {} }) {
   );
   const [query, setQuery] = useState(args.transactionId || args.query || "");
   const [status, setStatus] = useState("All");
+  const [datePeriod, setDatePeriod] = useState("All dates");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const tableHeadRef = useRef(null);
@@ -101,6 +103,7 @@ export default function Earnings({ data, go, args = {} }) {
     return (
       (s.status === "Completed" || !!s.transferredAt) &&
       terms.every((term) => searchable.includes(term)) &&
+      matchesEarningsDate(s.date, datePeriod) &&
       (status === "All" ||
         (status === "Transferred" ? !!s.transferredAt : s.payment === status))
     );
@@ -165,6 +168,7 @@ export default function Earnings({ data, go, args = {} }) {
   function clearFilters() {
     setQuery("");
     setStatus("All");
+    setDatePeriod("All dates");
     setPage(1);
   }
 
@@ -304,6 +308,23 @@ export default function Earnings({ data, go, args = {} }) {
               </button>
             )}
           </div>
+          <label className="relative min-w-40 flex-1 sm:w-44">
+            <span className="sr-only">Date</span>
+            <select
+              aria-label="Transaction date"
+              value={datePeriod}
+              onChange={(event) => {
+                setDatePeriod(event.target.value);
+                setPage(1);
+              }}
+              className="h-9 w-full appearance-none rounded-md border border-[#dce4ef] bg-white pl-3 pr-8 text-xs outline-none focus:border-green-700"
+            >
+              {earningsDateOptions.map((period) => (
+                <option key={period}>{period}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-3 h-3.5 w-3.5 text-[#455780]" />
+          </label>
           <div className="relative min-w-40 flex-1 sm:w-44">
             <select
               aria-label="Payment status"
