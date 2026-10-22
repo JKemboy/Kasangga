@@ -1,4 +1,9 @@
-import { earningsDateOptions, matchesEarningsDate } from "../../../services/earningsFilters.js";
+import {
+  earningsDateOptions,
+  matchesEarningsDate,
+  payoutStatusOptions,
+  payoutStatus,
+} from "../../../services/earningsFilters.js";
 // Earnings: presents tutor earnings and payment records supplied by the tutor workspace data/services.
 import { TransactionDetails } from "./SessionDetails.jsx";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -83,6 +88,10 @@ export default function Earnings({ data, go, args = {} }) {
   const [query, setQuery] = useState(args.transactionId || args.query || "");
   const [status, setStatus] = useState("All");
   const [datePeriod, setDatePeriod] = useState("All dates");
+  const [serviceId, setServiceId] = useState("All");
+  const selectedService = data.services.find(
+    (service) => String(service.id) === serviceId,
+  );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const tableHeadRef = useRef(null);
@@ -104,8 +113,11 @@ export default function Earnings({ data, go, args = {} }) {
       (s.status === "Completed" || !!s.transferredAt) &&
       terms.every((term) => searchable.includes(term)) &&
       matchesEarningsDate(s.date, datePeriod) &&
-      (status === "All" ||
-        (status === "Transferred" ? !!s.transferredAt : s.payment === status))
+      (serviceId === "All" ||
+        (s.serviceId != null
+          ? String(s.serviceId) === serviceId
+          : s.service === selectedService?.name)) &&
+      (status === "All" || (status === "Transferred" ? !!s.transferredAt : s.payment === status))
     );
   });
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -121,8 +133,7 @@ export default function Earnings({ data, go, args = {} }) {
     (_, i) => firstPageButton + i,
   );
   const paidResults =
-    status === "Paid" ||
-    (rows.length > 0 && rows.every((s) => s.payment === "Paid"));
+    rows.length > 0 && rows.every((s) => s.payment === "Paid");
 
   useLayoutEffect(() => {
     let measuredWidth = 0;
@@ -169,6 +180,7 @@ export default function Earnings({ data, go, args = {} }) {
     setQuery("");
     setStatus("All");
     setDatePeriod("All dates");
+    setServiceId("All");
     setPage(1);
   }
 
@@ -325,6 +337,26 @@ export default function Earnings({ data, go, args = {} }) {
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 top-3 h-3.5 w-3.5 text-[#455780]" />
           </label>
+          <label className="relative min-w-40 flex-1 sm:w-44">
+            <span className="sr-only">Services</span>
+            <select
+              aria-label="Transaction service"
+              value={serviceId}
+              onChange={(event) => {
+                setServiceId(event.target.value);
+                setPage(1);
+              }}
+              className="h-9 w-full appearance-none rounded-md border border-[#dce4ef] bg-white pl-3 pr-8 text-xs outline-none focus:border-green-700"
+            >
+              <option value="All">All Services</option>
+              {data.services.map((service) => (
+                <option key={service.id} value={String(service.id)}>
+                  {service.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-3 h-3.5 w-3.5 text-[#455780]" />
+          </label>
           <div className="relative min-w-40 flex-1 sm:w-44">
             <select
               aria-label="Payment status"
@@ -477,11 +509,17 @@ export default function Earnings({ data, go, args = {} }) {
           <CreditCard className="h-7 w-7 text-slate-400" />
           <p className="text-sm font-semibold">No transactions found</p>
           <p className="text-xs text-[#455780]">
-            {query || status !== "All"
-              ? "Try another search or payment status."
+            {query ||
+            status !== "All" ||
+            datePeriod !== "All dates" ||
+            serviceId !== "All"
+              ? "Try another search, date, service or payout status."
               : "Completed sessions and transferred payouts will appear here."}
           </p>
-          {(query || status !== "All") && (
+          {(query ||
+            status !== "All" ||
+            datePeriod !== "All dates" ||
+            serviceId !== "All") && (
             <button type="button" className={button} onClick={clearFilters}>
               Clear filters
             </button>
