@@ -1,4 +1,4 @@
-import {useLogout} from "../../shared/LogoutProvider.jsx";
+import { useLogout } from "../../shared/LogoutProvider.jsx";
 import { useRef, useState } from "react";
 import {
   Bell,
@@ -12,7 +12,6 @@ import {
   Menu,
   MessageCircle,
   Search,
-  Settings,
   Star,
   UserRound,
   UsersRound,
@@ -34,7 +33,7 @@ const tutorNavigation = [
 
 const accountNavigation = [
   { label: "Profile", icon: UserRound },
-  { label: "Settings", icon: Settings },
+
   { label: "Help & Support", icon: CircleHelp },
 ];
 
@@ -78,13 +77,13 @@ export default function TutorDashboard({
   onOpenSchedule,
   onOpenReviews,
   onOpenStudents,
-  onOpenSettings,
+
   onOpenHelpSupport,
   onOpenAvailability,
   onOpenEarnings,
   activeView,
 }) {
- const requestLogout = useLogout();
+  const requestLogout = useLogout();
 
   const [open, setOpen] = useState(false);
   const [activeTopMenu, setActiveTopMenu] = useState(null);
@@ -126,7 +125,11 @@ export default function TutorDashboard({
           ref={headerRef}
           className="flex h-[clamp(44px,9dvh,76px)] shrink-0 items-center bg-[#004727] px-5"
         >
-          <img src="/images/kasangga-logo.png" alt="Kasangga" className="h-[clamp(30px,6dvh,52px)] w-auto max-w-[190px] object-contain object-left" />
+          <img
+            src="/images/kasangga-logo.png"
+            alt="Kasangga"
+            className="h-[clamp(30px,6dvh,52px)] w-auto max-w-[190px] object-contain object-left"
+          />
           <button
             type="button"
             aria-label="Close navigation"
@@ -234,7 +237,7 @@ export default function TutorDashboard({
                     active:
                       {
                         Profile: "profile",
-                        Settings: "settings",
+
                         "Help & Support": "help-support",
                       }[item.label] === activeView,
                   }}
@@ -244,22 +247,20 @@ export default function TutorDashboard({
                           onOpenHelpSupport?.();
                           setOpen(false);
                         }
-                      : item.label === "Settings"
+                      : item.label === "Profile"
                         ? () => {
-                            onOpenSettings?.();
+                            onOpenProfile?.();
                             setOpen(false);
                           }
-                        : item.label === "Profile"
-                          ? () => {
-                              onOpenProfile?.();
-                              setOpen(false);
-                            }
-                          : undefined
+                        : undefined
                   }
                 />
               ))}
               <div className="mx-2 my-[clamp(2px,1.2dvh,10px)] h-px bg-[#60a982]/20" />
-              <NavigationItem item={{ label: "Logout", icon: LogOut }} onClick={requestLogout} />
+              <NavigationItem
+                item={{ label: "Logout", icon: LogOut }}
+                onClick={requestLogout}
+              />
             </nav>
           </div>
         </div>
@@ -375,18 +376,10 @@ export default function TutorDashboard({
             </button>
             <button
               type="button"
-              onClick={() => {
-                onOpenSettings?.();
-                setActiveTopMenu(null);
-              }}
-              className="w-full px-3 py-2 text-left text-[11px] text-slate-700 hover:bg-slate-50"
+              className="w-full border-t border-slate-100 px-3 py-2 text-left text-[11px] text-red-600 hover:bg-red-50"
+              onClick={requestLogout}
             >
-              Settings
-            </button>
-            <button
-              type="button"
-              className="w-full border-t border-slate-100 px-3 py-2 text-left text-[11px] text-red-600 hover:bg-red-50" onClick={requestLogout}>
- Logout
+              Logout
             </button>
           </div>
         )}

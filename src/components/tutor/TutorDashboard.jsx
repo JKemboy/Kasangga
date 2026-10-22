@@ -1,5 +1,4 @@
 import MyReports from "./workspace/MyReports.jsx";
-import AccountSettings from "../shared/AccountSettings.jsx";
 // Tutor portal coordinator: loads tutor profile, services, availability, class schedule, and sessions, then routes to each tutor section.
 import { tutorScheduleReady } from "./workspace/scheduleAccess.js";
 import { loadTutorInformation } from "../../services/tutorInformation.js";
@@ -452,7 +451,7 @@ export default function TutorDashboardPage() {
                 </button>
               </div>
             )}
-            {view === "settings" && <AccountSettings />}
+
             {notice && (
               <div
                 role="status"
