@@ -1,3 +1,4 @@
+import { MAX_SERVICE_RATE } from "../../../services/serviceFormOptions.js";
 import { parseDate } from "./schedule.js";
 
 export function validateTopicService(source, services = [], editingId = null) {
@@ -35,10 +36,10 @@ export function validateTopicService(source, services = [], editingId = null) {
     if (
       !/^\d+(?:\.\d{1,2})?$/.test(String(topic.rate)) ||
       Number(topic.rate) < 1 ||
-      Number(topic.rate) > 10000
+      Number(topic.rate) > MAX_SERVICE_RATE
     )
       return {
-        error: `${label}: enter a rate between PHP 1 and PHP 10,000 with up to two decimals.`,
+        error: `${label}: enter a rate between PHP 1 and PHP 250 with up to two decimals.`,
       };
     if (
       !topic.types.length ||

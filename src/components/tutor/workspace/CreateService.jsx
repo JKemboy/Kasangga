@@ -1,3 +1,4 @@
+import { MAX_SERVICE_RATE, formatServiceDate } from "../../../services/serviceFormOptions.js";
 // Service editor: builds a tutor service and topic schedule; save callbacks enforce booking-aware edit restrictions.
 import { useEffect, useState } from "react";
 import { Plus, Check, X, Trash2 } from "lucide-react";
@@ -426,17 +427,28 @@ export default function CreateService({
                   </Field>
                   <Field label="Hourly rate (PHP) *">
                     <input
-                      className={input}
+                      className={
+                        input +
+                        (Number(topic.rate) > MAX_SERVICE_RATE
+                          ? " !border-red-600 !bg-red-50 !text-red-700 ring-1 ring-red-600"
+                          : "")
+                      }
+                      aria-invalid={Number(topic.rate) > MAX_SERVICE_RATE}
                       type="number"
                       required
                       min="1"
-                      max="10000"
+                      max={MAX_SERVICE_RATE}
                       step="0.01"
                       value={topic.rate}
-                      placeholder="e.g., 350"
+                      placeholder="e.g., 150"
                       disabled={topic.availability.some(isBooked)}
                       onChange={(e) => patch(topic.key, "rate", e.target.value)}
                     />
+                    {Number(topic.rate) > MAX_SERVICE_RATE && (
+                      <p role="alert" className="text-xs text-red-700">
+                        Rate must be PHP 250 or below per hour.
+                      </p>
+                    )}
                   </Field>
                   <fieldset>
                     <legend>Session type *</legend>
