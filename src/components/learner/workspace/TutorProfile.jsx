@@ -198,7 +198,13 @@ export default function TutorProfile({
       <section>
         <h4>Expertise</h4>
         <div className="ltp-chips">
-          {chips(t.expertise || t.subjects).map((v) => (
+          {[
+            ...new Set(
+              t.services
+                .flatMap((service) => [service.name, service.subtitle])
+                .filter(Boolean),
+            ),
+          ].map((v) => (
             <span key={v}>{v}</span>
           ))}
         </div>
@@ -206,70 +212,84 @@ export default function TutorProfile({
       <section>
         <h4>Services and topics</h4>
         <div className="ltp-services">
-          {t.services.map((service) => (
-            <div className="ltp-service" key={service.id || service.name}>
-              <div>
-                <strong>{service.name}</strong>
-                <small>{service.category || t.category}</small>
-                <b>
-                  {service.rate || t.rate
-                    ? `₱${service.rate || t.rate} / hour`
-                    : "Rate unavailable"}
-                </b>
-                <button
-                  className={button}
-                  onClick={() =>
-                    onBook({ ...t, selectedService: service.name })
-                  }
-                >
-                  Book this service
-                </button>
-                {service.id && (
+          {t.services.map((service) => {
+            const serviceReviews = reviews.entries.filter((review) =>
+              review.serviceId
+                ? String(review.serviceId) === String(service.id)
+                : review.service === service.name,
+            );
+            const serviceRating = serviceReviews.length
+              ? serviceReviews.reduce((sum, review) => sum + review.rating, 0) /
+                serviceReviews.length
+              : null;
+            return (
+              <div className="ltp-service" key={service.id || service.name}>
+                <div>
+                  <strong>{service.name}</strong>
+                  <small>
+                    {service.subtitle || service.category || t.category}
+                  </small>
+                  <small>
+                    Session type:{" "}
+                    {service.type === "Both"
+                      ? "Online / In-person"
+                      : service.type || "Not provided"}
+                  </small>
+                  <small>
+                    <Star size={13} className="inline text-amber-500" />{" "}
+                    {reviewsLoading
+                      ? "Loading rating..."
+                      : reviewsError
+                        ? "Rating unavailable"
+                        : serviceRating != null
+                          ? serviceRating.toFixed(1) +
+                            " / 5 (" +
+                            serviceReviews.length +
+                            " reviews)"
+                          : "No ratings yet"}
+                  </small>
+                  <b>
+                    {service.rate || t.rate
+                      ? `₱${service.rate || t.rate} / hour`
+                      : "Rate unavailable"}
+                  </b>
                   <button
                     className={button}
-                    disabled={saving || savingFor(savedService(t, service))}
-                    aria-pressed={savedFor(savedService(t, service))}
-                    onClick={() => onSave(savedService(t, service))}
+                    onClick={() => onBook(savedService(t, service))}
                   >
-                    <Bookmark
-                      size={15}
-                      fill={
-                        savedFor(savedService(t, service)) ? "#087542" : "none"
-                      }
-                    />
-                    {savedFor(savedService(t, service))
-                      ? "Saved"
-                      : "Save service"}
+                    Book this service
                   </button>
-                )}
+                  {service.id && (
+                    <button
+                      className={button}
+                      disabled={saving || savingFor(savedService(t, service))}
+                      aria-pressed={savedFor(savedService(t, service))}
+                      onClick={() => onSave(savedService(t, service))}
+                    >
+                      <Bookmark
+                        size={15}
+                        fill={
+                          savedFor(savedService(t, service))
+                            ? "#087542"
+                            : "none"
+                        }
+                      />
+                      {savedFor(savedService(t, service))
+                        ? "Saved"
+                        : "Save service"}
+                    </button>
+                  )}
+                </div>
+                <div className="ltp-topics">
+                  {chips(service.topics).map((topic) => (
+                    <span key={topic}>{topic}</span>
+                  ))}
+                </div>
               </div>
-              <div className="ltp-topics">
-                {chips(service.topics).map((topic) => (
-                  <span key={topic}>{topic}</span>
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
-      <dl className="ltp-details">
-        {[
-          ["Session types", chips(t.types).join(", ") || "Ask the tutor"],
-          [
-            "Online platform",
-            t.platform
-              ? `${t.platform} (external link shared after booking)`
-              : "Ask the tutor",
-          ],
-          ["In-person location", t.location || "Ask the tutor"],
-          ["Levels", chips(t.levels).join(", ") || "Not provided"],
-        ].map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
       <section>
         <h4>Weekly availability</h4>
         {t.weeklyAvailability ? (

@@ -46,6 +46,7 @@ export async function listTutorReviews(
       day: "numeric",
     }),
     service: row.service_title,
+    serviceId: row.service_id == null ? null : String(row.service_id),
     topic: row.topic,
   }));
   return {
