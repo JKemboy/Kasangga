@@ -54,6 +54,10 @@ export default function TutorApplication({ onClose }) {
     year: work.data.profile.year || "",
   };
   const [draft, setDraft] = useState(() => ({
+    courseCode: "",
+    courseDescription: "",
+    gcashName: "",
+    gcashNumber: "",
     subjects: [],
     topics: {},
     bio: "",
@@ -69,7 +73,7 @@ export default function TutorApplication({ onClose }) {
   const [step, setStep] = useState(0),
     [complete, setComplete] = useState(false),
     [statusView, setStatusView] = useState(false),
-    [custom, setCustom] = useState({}),
+    [newSubject, setNewSubject] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(""),
     [progress, setProgress] = useState("");
@@ -139,15 +143,6 @@ export default function TutorApplication({ onClose }) {
         topics,
         certified: false,
       };
-    });
-  }
-  function toggleTopic(subject, topic) {
-    const old = draft.topics[subject] || [];
-    patch("topics", {
-      ...draft.topics,
-      [subject]: old.includes(topic)
-        ? old.filter((t) => t !== topic)
-        : [...old, topic],
     });
   }
   async function saveDraft() {
@@ -361,7 +356,12 @@ export default function TutorApplication({ onClose }) {
     }
   }
   async function next() {
+    if (busy) return;
     setError("");
+    if (step === 1 && newSubject.trim())
+      return setError(
+        "Click Add to include the subject you entered before continuing.",
+      );
     if (step === 1 && tutoringError(draft))
       return setError(tutoringError(draft));
     if (step === 2 && documentsError(draft.documents))
@@ -633,6 +633,10 @@ export default function TutorApplication({ onClose }) {
           if (draft.status === "Rejected") {
             setApplicationId(null);
             setDraft({
+              courseCode: "",
+              courseDescription: "",
+              gcashName: "",
+              gcashNumber: "",
               subjects: [],
               topics: {},
               bio: "",
@@ -768,87 +772,95 @@ export default function TutorApplication({ onClose }) {
                   )}
                   {step === 1 && (
                     <>
-                      <label>
-                        Subjects / Areas of Expertise{" "}
-                        <small> · choose one or more</small>
+                      <div className="ta-notice blue">
+                        <Info size={22} />
+                        <p>
+                          Add each subject you can tutor. Enter the course code
+                          and description that match your academic records.
+                          Complete your bio, motivation and payout details.
+                          Configure session types and levels when creating a
+                          service after approval.
+                        </p>
+                      </div>
+                      <div className="ta-fields">
+                        <label>
+                          Course Code *
+                          <input
+                            maxLength={50}
+                            placeholder="e.g. IT 101"
+                            value={draft.courseCode || ""}
+                            onChange={(e) =>
+                              patch("courseCode", e.target.value)
+                            }
+                          />
+                        </label>
+                        <label>
+                          Course Description *
+                          <textarea
+                            maxLength={1000}
+                            placeholder="e.g. Introduction to Computing: fundamentals and applications."
+                            value={draft.courseDescription || ""}
+                            onChange={(e) =>
+                              patch("courseDescription", e.target.value)
+                            }
+                          />
+                        </label>
+                      </div>
+                      <label htmlFor="application-subject">
+                        Subjects / Areas of Expertise *
                       </label>
+                      <div className="ta-add">
+                        <input
+                          id="application-subject"
+                          maxLength={100}
+                          list="application-subject-options"
+                          value={newSubject}
+                          placeholder="Enter or choose a subject"
+                          onChange={(e) => setNewSubject(e.target.value)}
+                        />
+                        <datalist id="application-subject-options">
+                          {Object.keys(SUBJECTS).map((subject) => (
+                            <option key={subject} value={subject} />
+                          ))}
+                        </datalist>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const subject = newSubject.trim();
+                            if (!subject)
+                              return setError(
+                                "Enter a subject before clicking Add.",
+                              );
+                            if (
+                              draft.subjects.some(
+                                (item) =>
+                                  item.toLowerCase() === subject.toLowerCase(),
+                              )
+                            )
+                              return setError("That subject is already added.");
+                            if (draft.subjects.length >= 20)
+                              return setError("Add up to 20 subjects.");
+                            patch("subjects", [...draft.subjects, subject]);
+                            setNewSubject("");
+                          }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                      <p className="ta-muted">
+                        Click Add for each subject. Click its chip to remove it.
+                        Attach matching grades in the next step.
+                      </p>
                       <div className="ta-chips">
-                        {Object.keys(SUBJECTS).map((s) => (
+                        {draft.subjects.map((subject) => (
                           <button
                             type="button"
-                            key={s}
-                            aria-pressed={draft.subjects.includes(s)}
-                            onClick={() => toggleSubject(s)}
+                            key={subject}
+                            aria-label={"Remove " + subject}
+                            onClick={() => toggleSubject(subject)}
                           >
-                            {s}
+                            {subject} &times;
                           </button>
-                        ))}
-                      </div>
-                      <label>Specific Skills / Topics</label>
-                      {!draft.subjects.length && (
-                        <p className="ta-muted">
-                          Choose a subject first to add its topics.
-                        </p>
-                      )}
-                      <div className="ta-topic-grid">
-                        {draft.subjects.map((s) => (
-                          <section className="ta-topic" key={s}>
-                            <strong>{s}</strong>
-                            <small>
-                              {" "}
-                              · {(draft.topics[s] || []).length} selected
-                            </small>
-                            <div className="ta-chips">
-                              {[
-                                ...new Set([
-                                  ...SUBJECTS[s],
-                                  ...(draft.topics[s] || []),
-                                ]),
-                              ].map((t) => (
-                                <button
-                                  type="button"
-                                  key={t}
-                                  aria-pressed={
-                                    draft.topics[s]?.includes(t) || false
-                                  }
-                                  onClick={() => toggleTopic(s, t)}
-                                >
-                                  {t}
-                                </button>
-                              ))}
-                            </div>
-                            <div className="ta-add">
-                              <input
-                                aria-label={`Another ${s} topic`}
-                                maxLength={80}
-                                value={custom[s] || ""}
-                                placeholder={`Add another ${s} topic`}
-                                onChange={(e) =>
-                                  setCustom({ ...custom, [s]: e.target.value })
-                                }
-                              />
-                              <button
-                                type="button"
-                                disabled={!custom[s]?.trim()}
-                                onClick={() => {
-                                  const t = custom[s].trim();
-                                  if (
-                                    !draft.topics[s]?.some(
-                                      (v) =>
-                                        v.toLowerCase() === t.toLowerCase(),
-                                    )
-                                  )
-                                    patch("topics", {
-                                      ...draft.topics,
-                                      [s]: [...(draft.topics[s] || []), t],
-                                    });
-                                  setCustom({ ...custom, [s]: "" });
-                                }}
-                              >
-                                + Add
-                              </button>
-                            </div>
-                          </section>
                         ))}
                       </div>
                       <div className="ta-fields">
@@ -881,18 +893,51 @@ export default function TutorApplication({ onClose }) {
                           </label>
                         ))}
                       </div>
-                      <label>Preferred Session Type</label>
-                      <div className="ta-chips">
-                        {["Online", "In-Person", "Both"].map((t) => (
-                          <button
-                            type="button"
-                            key={t}
-                            aria-pressed={draft.type === t}
-                            onClick={() => patch("type", t)}
-                          >
-                            {t}
-                          </button>
-                        ))}
+                      <h3>Payout Details</h3>
+                      <p className="ta-muted">
+                        Use your own registered GCash account for Admin payout
+                        reference. This does not enable automatic transfers.
+                        Payout details are not shown on public tutor cards.
+                      </p>
+                      <div className="ta-fields">
+                        <label>
+                          GCash Account Name *
+                          <input
+                            maxLength={150}
+                            value={draft.gcashName || ""}
+                            onChange={(e) => patch("gcashName", e.target.value)}
+                            placeholder="Name registered with GCash"
+                          />
+                        </label>
+                        <label>
+                          GCash Number *
+                          <div className="ta-add">
+                            <span>+63</span>
+                            <input
+                              type="tel"
+                              inputMode="numeric"
+                              maxLength={10}
+                              value={(draft.gcashNumber || "").replace(
+                                /^\+63/,
+                                "",
+                              )}
+                              placeholder="9XXXXXXXXX"
+                              onChange={(e) => {
+                                let digits = e.target.value.replace(/\D/g, "");
+                                if (digits.startsWith("0"))
+                                  digits = digits.slice(1);
+                                patch(
+                                  "gcashNumber",
+                                  digits ? "+63" + digits.slice(0, 10) : "",
+                                );
+                              }}
+                            />
+                          </div>
+                          <small>
+                            10 digits starting with 9. Double-check your account
+                            name and number.
+                          </small>
+                        </label>
                       </div>
                       <label>
                         Reason for Applying / Motivation
@@ -939,6 +984,17 @@ export default function TutorApplication({ onClose }) {
                             </div>
                           </div>
                         )}
+                      <div className="ta-notice blue">
+                        <Info size={22} />
+                        <p>
+                          Required: a current-semester COR and grades that
+                          support your added subjects or expertise. CSU ID
+                          upload is not required here. Awards are optional;
+                          select up to 10 PDF, JPG or PNG files, at most 10 MB
+                          each. Continue checks for missing documents and shows
+                          a warning.
+                        </p>
+                      </div>
                       {documents(false)}
                       <div className="ta-notice blue">
                         <Info size={22} />
@@ -968,18 +1024,12 @@ export default function TutorApplication({ onClose }) {
                         </header>
                         {rows([
                           ["Subjects", draft.subjects.join(", ")],
-                          [
-                            "Specific topics",
-                            draft.subjects
-                              .map(
-                                (s) =>
-                                  `${s}: ${(draft.topics[s] || []).join(", ") || "None selected"}`,
-                              )
-                              .join("; "),
-                          ],
+                          ["Course code", draft.courseCode],
+                          ["Course description", draft.courseDescription],
+                          ["GCash account name", draft.gcashName],
+                          ["GCash number", draft.gcashNumber],
                           ["Tutor bio", draft.bio],
                           ["Experience", draft.experience],
-                          ["Session type", draft.type],
                           ["Reason for applying", draft.motivation],
                         ])}
                       </section>
@@ -1035,20 +1085,7 @@ export default function TutorApplication({ onClose }) {
                         ? "Check the certification box."
                         : ""}
                 </small>
-                <button
-                  className="ta-primary"
-                  disabled={
-                    !!busy ||
-                    (step === 1
-                      ? !!tutoringError(draft)
-                      : step === 2
-                        ? !!documentsError(draft.documents)
-                        : step === 3
-                          ? !!applicationError(draft)
-                          : false)
-                  }
-                  onClick={next}
-                >
+                <button className="ta-primary" disabled={!!busy} onClick={next}>
                   {step === 3 ? "Save Tutor Application" : "Continue"}
                 </button>
               </footer>
