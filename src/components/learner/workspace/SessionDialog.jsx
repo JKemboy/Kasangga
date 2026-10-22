@@ -1,5 +1,6 @@
+import SessionDetailRows from "../../shared/SessionDetailRows.jsx";
 import { useEffect, useState } from "react";
-import { Info, TriangleAlert } from "lucide-react";
+import { Info, TriangleAlert, Video } from "lucide-react";
 import {
   Avatar,
   Badge,
@@ -118,7 +119,7 @@ export default function SessionDialog({
       <div className="ls-content">
         {kind === "details" ? (
           <>
-            <div className="ls-tutor">
+            <div className="session-person">
               <Avatar name={r.name} />
               <div>
                 <strong>{r.name}</strong>
@@ -126,67 +127,73 @@ export default function SessionDialog({
               </div>
               <Badge>{bookingStatus}</Badge>
             </div>
-            <Rows
+            <SessionDetailRows
               rows={[
                 ["Booking ID", r.bookingId],
                 ["Tutor", r.name],
-                ["Service", r.service],
+                ["Service", r.course || r.service],
                 ["Specific Topic", r.topic],
                 ["Date", r.date],
                 ["Time", r.time],
-                ["Duration", `${r.duration} hours`],
-                ["Session Type", r.type],
+                ["Duration", Math.round(Number(r.duration) * 60) + " min"],
                 [
-                  r.type === "Online" ? "Meeting platform" : "Location",
-                  r.platform,
+                  "Session Type",
+                  [r.type, r.type === "Online" ? r.platform : r.venue]
+                    .filter(Boolean)
+                    .join(" - "),
                 ],
-                ...(r.type === "Online"
-                  ? [
-                      [
-                        "Meeting link",
-                        link && !active ? (
-                          <span className="text-slate-500">
-                            {link} (no longer active)
-                          </span>
-                        ) : link ? (
-                          <a
-                            href={link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {link}
-                          </a>
-                        ) : (
-                          "Not shared yet"
-                        ),
-                      ],
-                    ]
-                  : []),
-                ["Rate", r.rate ? `${cash(r.rate)} / hour` : "Not available"],
                 ["Amount", cash(r.amount)],
-                ["Booking Status", bookingStatus],
+                [
+                  "Booking Status",
+                  <Badge key="booking">{bookingStatus}</Badge>,
+                ],
                 [
                   "Payment Status",
                   <Badge key="payment">{r.paymentStatus}</Badge>,
                 ],
-                ["Payment method", r.paymentMethod],
-                ["Transaction ID", r.transactionId],
-                ["Booked on", r.bookedOn],
-                ...(r.review
-                  ? [
-                      [
-                        "Your review",
-                        <div>
-                          <span className="text-amber-500">
-                            {"\u2605".repeat(Number(r.review.rating))}
-                          </span>
-                          <p>{r.review.text}</p>
-                        </div>,
-                      ],
-                    ]
-                  : []),
               ]}
             />
+            {r.type === "Online" && (
+              <>
+                <h3 className="session-section-title">External meeting</h3>
+                <div className="session-meeting">
+                  <Video />
+                  <div>
+                    <strong>{r.platform || "Meeting platform"}</strong>
+                    <p>{link || "Meeting link not provided yet."}</p>
+                  </div>
+                  {active && (
+                    <button
+                      className={primary}
+                      onClick={() => onOpen("meeting", record)}
+                    >
+                      Open External Meeting
+                    </button>
+                  )}
+                </div>
+                <p className="session-muted">
+                  Kasangga has no built-in video or voice calls.
+                </p>
+              </>
+            )}
+            <h3 className="session-section-title">Payment</h3>
+            <SessionDetailRows
+              rows={[
+                ["Rate", r.rate ? cash(r.rate) + " / hour" : "Not available"],
+                ["Payment method", r.paymentMethod || "Not provided"],
+                ["Transaction ID", r.transactionId || "Not available"],
+                ["Booked on", r.bookedOn || "Not available"],
+              ]}
+            />
+            {r.review && (
+              <>
+                <h3 className="session-section-title">Your review</h3>
+                <p className="text-amber-500">
+                  {"\u2605".repeat(Number(r.review.rating))}
+                </p>
+                <p>{r.review.text}</p>
+              </>
+            )}
           </>
         ) : kind === "cancel" ? (
           <>
@@ -328,7 +335,11 @@ export default function SessionDialog({
             </label>
           </>
         )}
-        {kind === "cancel" && actionError && <p role="alert" className="mt-3 text-sm text-red-700">{actionError}</p>}
+        {kind === "cancel" && actionError && (
+          <p role="alert" className="mt-3 text-sm text-red-700">
+            {actionError}
+          </p>
+        )}
       </div>
       <footer className="ls-footer">
         {kind === "details" ? (
@@ -336,6 +347,14 @@ export default function SessionDialog({
             <button className={button} onClick={() => onOpen("report", record)}>
               Report an Issue
             </button>
+            {active && r.lifecycle === "Upcoming" && (
+              <button
+                className="ls-danger"
+                onClick={() => onOpen("cancel", record)}
+              >
+                Cancel Session
+              </button>
+            )}
             {r.canManage && (
               <button
                 className={button}

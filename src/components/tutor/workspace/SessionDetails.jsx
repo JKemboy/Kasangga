@@ -1,4 +1,5 @@
 import ExternalMeeting from "../../shared/ExternalMeeting.jsx";
+import Details from "../../shared/SessionDetailRows.jsx";
 import EvidencePicker from "../../shared/EvidencePicker.jsx";
 import { useRef, useState } from "react";
 import { ExternalLink, MessageCircle, Video, ShieldCheck } from "lucide-react";
@@ -18,18 +19,6 @@ const dateLabel = (value) =>
     year: "numeric",
   });
 const range = (s) => `${time(hour(s.start))} – ${time(hour(s.end))}`;
-function Details({ rows }) {
-  return (
-    <dl className="session-detail-grid">
-      {rows.map(([label, value]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{value ?? "Not available"}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 function Allocation({ session: s }) {
   const amounts =
     s.allocation ||
@@ -240,10 +229,7 @@ export default function SessionDetails({
         }
       >
         <div className="session-person">
-          <Avatar
-            name={s.learner}
-            userId={s.learnerUserId || s.learnerId}
-          />
+          <Avatar name={s.learner} userId={s.learnerUserId || s.learnerId} />
           <div>
             <strong>{s.learner}</strong>
             {s.program && <p>{s.program}</p>}
@@ -464,8 +450,8 @@ export default function SessionDetails({
               {action === "incident" && (
                 <>
                   <p className="session-muted">
-                    Reports go to Kasangga Admin. Conduct concerns are
-                    referred to OSAS.
+                    Reports go to Kasangga Admin. Conduct concerns are referred
+                    to OSAS.
                   </p>
                   <Field label="Booking">
                     <input

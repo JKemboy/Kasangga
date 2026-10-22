@@ -6,11 +6,10 @@ dialog.learner-session-drawer {
   max-height: calc(100dvh - 24px);
 }
 dialog.learner-session-drawer {
-  margin: 0 0 0 auto;
-  height: 100dvh;
-  max-height: 100dvh;
-  width: min(590px, 100vw);
-  border-radius: 0;
+  margin: auto;
+  max-height: calc(100dvh - 48px);
+  width: min(580px, calc(100vw - 32px));
+  border-radius: 14px;
 }
 .learner-session-modal[open],
 .learner-session-drawer[open] {
@@ -167,4 +166,10 @@ dialog.learner-session-drawer {
   .ls-footer {
     padding: 12px;
   }
+}
+
+.learner-session-drawer .ls-content {
+  padding: 10px 18px;
+  font-size: 13px;
+  line-height: 1.5;
 }
