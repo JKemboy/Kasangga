@@ -23,7 +23,7 @@ import {
 } from "../../../services/tutorApplicationStorage.js";
 import {
   SUBJECTS,
-  DOCUMENTS,
+  documentSlots,
   tutoringError,
   documentsError,
   applicationError,
@@ -172,20 +172,20 @@ export default function TutorApplication({ onClose }) {
     }
     onClose();
   }
-  async function upload(kind, file) {
+  async function upload(kind, file, slot = kind) {
     if (!file) return;
     const invalid = scheduleFileError(file);
     if (invalid) return setError(invalid.replace("class schedule", "document"));
     setError("");
-    setBusy(kind);
+    setBusy(slot);
     setProgress("Uploading document to secure storage…");
     const abort = new AbortController();
     controller.current = abort;
-    const previous = draftRef.current.documents[kind];
+    const previous = draftRef.current.documents[slot];
     let storagePath = "";
     setDocumentChecks((checks) => {
       const next = { ...checks };
-      delete next[kind];
+      delete next[slot];
       return next;
     });
     try {
@@ -205,6 +205,7 @@ export default function TutorApplication({ onClose }) {
         return;
       }
       const metadata = {
+        documentType: kind,
         storagePath,
         name: file.name,
         type: file.type,
@@ -213,7 +214,7 @@ export default function TutorApplication({ onClose }) {
       };
       const next = {
         ...draftRef.current,
-        documents: { ...draftRef.current.documents, [kind]: metadata },
+        documents: { ...draftRef.current.documents, [slot]: metadata },
         certified: false,
       };
       setDraft(next);
@@ -245,7 +246,7 @@ export default function TutorApplication({ onClose }) {
         if (mounted.current)
           setDocumentChecks((checks) => ({
             ...checks,
-            [kind]: {
+            [slot]: {
               ...verification,
               fields: extractTutorCredentialFields(
                 kind,
@@ -262,7 +263,7 @@ export default function TutorApplication({ onClose }) {
         if (mounted.current)
           setDocumentChecks((checks) => ({
             ...checks,
-            [kind]: { error: ocrError.message || "Could not read this file." },
+            [slot]: { error: ocrError.message || "Could not read this file." },
           }));
       }
       if (previous?.storagePath && previous.storagePath !== storagePath) {
@@ -433,7 +434,7 @@ export default function TutorApplication({ onClose }) {
     </dl>
   );
   const documents = (review) =>
-    DOCUMENTS.map((doc) => (
+    documentSlots(draft.documents).map((doc) => (
       <section
         className={`ta-document ${draft.documents[doc.id] ? "uploaded" : ""}`}
         key={doc.id}
@@ -447,7 +448,7 @@ export default function TutorApplication({ onClose }) {
             </span>
             <p>{doc.description} PDF, JPG or PNG, up to 10 MB.</p>
           </div>
-          {!review && (
+          {!review && !doc.uploaded && (
             <label className="ta-upload">
               {draft.documents[doc.id] ? "Replace" : "Upload"}
               <input
@@ -455,10 +456,28 @@ export default function TutorApplication({ onClose }) {
                 aria-label={`Upload ${doc.title}`}
                 disabled={!!busy}
                 type="file"
+                multiple={doc.id === "awards"}
                 accept="image/png,image/jpeg,application/pdf"
-                onChange={(e) => {
-                  upload(doc.id, e.target.files?.[0]);
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
                   e.target.value = "";
+                  if (doc.id === "awards") {
+                    const count = Object.keys(
+                      draftRef.current.documents,
+                    ).filter(
+                      (key) => key === "awards" || key.startsWith("awards_"),
+                    ).length;
+                    if (count + files.length > 10)
+                      return setError(
+                        "Upload up to 10 award or certificate files.",
+                      );
+                    for (const file of files)
+                      await upload(
+                        "awards",
+                        file,
+                        "awards_" + crypto.randomUUID(),
+                      );
+                  } else await upload(doc.id, files[0]);
                 }}
               />
             </label>
