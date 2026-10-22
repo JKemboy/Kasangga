@@ -110,14 +110,16 @@ export default function Earnings({ data, go, args = {} }) {
       .join(" ")
       .toLowerCase();
     return (
-      (s.status === "Completed" || !!s.transferredAt) &&
+      (s.payment === "Paid" ||
+        !!s.transferredAt ||
+        payoutStatus(s) === "On Hold") &&
       terms.every((term) => searchable.includes(term)) &&
       matchesEarningsDate(s.date, datePeriod) &&
       (serviceId === "All" ||
         (s.serviceId != null
           ? String(s.serviceId) === serviceId
           : s.service === selectedService?.name)) &&
-      (status === "All" || (status === "Transferred" ? !!s.transferredAt : s.payment === status))
+      (status === "All" || payoutStatus(s) === status)
     );
   });
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -359,7 +361,7 @@ export default function Earnings({ data, go, args = {} }) {
           </label>
           <div className="relative min-w-40 flex-1 sm:w-44">
             <select
-              aria-label="Payment status"
+              aria-label="Payout status"
               className="h-9 w-full appearance-none rounded-md border border-[#dce4ef] bg-white pl-3 pr-8 text-xs font-medium outline-none focus:border-green-700 focus:ring-1 focus:ring-green-700"
               value={status}
               onChange={(e) => {
@@ -367,9 +369,9 @@ export default function Earnings({ data, go, args = {} }) {
                 setPage(1);
               }}
             >
-              {["All", "Paid", "Transferred"].map((value) => (
+              {payoutStatusOptions.map((value) => (
                 <option key={value} value={value}>
-                  Payment Status: {value}
+                  Payout Status: {value}
                 </option>
               ))}
             </select>
@@ -446,7 +448,7 @@ export default function Earnings({ data, go, args = {} }) {
                   ))}
                   <td className="px-1.5 py-1.5">
                     <PaymentBadge status={s.payment} />
-                    {s.transferredAt && <PaymentBadge status="Transferred" />}
+                    <PaymentBadge status={payoutStatus(s)} />
                   </td>
                 </tr>
               );
@@ -471,7 +473,7 @@ export default function Earnings({ data, go, args = {} }) {
                   {s.transaction || "Transaction pending"}
                 </h3>
                 <PaymentBadge status={s.payment} />
-                {s.transferredAt && <PaymentBadge status="Transferred" />}
+                <PaymentBadge status={payoutStatus(s)} />
               </div>
               <p className="break-all text-[11px] text-[#455780]">
                 Booking: {s.booking || "—"}
