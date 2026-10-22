@@ -192,6 +192,25 @@ export function Profile({
                 </div>
               ))}
               <div className="grid gap-1 sm:grid-cols-[29%_minmax(0,1fr)] sm:gap-3">
+                <dt className="font-medium text-[#344675]">
+                  Services / Subjects
+                </dt>
+                <dd className="flex flex-wrap gap-1.5">
+                  {data.services.length
+                    ? data.services.map((service) => (
+                        <span
+                          key={service.id}
+                          className="rounded-md bg-[#e6f6ec] px-2.5 py-1 font-semibold text-green-950"
+                        >
+                          {[service.name, service.subtitle]
+                            .filter(Boolean)
+                            .join(" - ")}
+                        </span>
+                      ))
+                    : "No services added yet."}
+                </dd>
+              </div>
+              <div className="grid gap-1 sm:grid-cols-[29%_minmax(0,1fr)] sm:gap-3">
                 <dt className="font-medium text-[#344675]">Topics / Skills</dt>
                 <dd className="flex min-w-0 flex-wrap gap-1.5">
                   {p.skills

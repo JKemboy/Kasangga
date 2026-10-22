@@ -259,6 +259,7 @@ export default function TutorDashboardPage() {
   async function persistService(values, id) {
     requireSchedule();
     const service = await saveTutorService(values, id);
+    window.dispatchEvent(new Event("campustutor:services-changed"));
     request.current++;
     setServicesLoading(false);
     setServicesError("");
