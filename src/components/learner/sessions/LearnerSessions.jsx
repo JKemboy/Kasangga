@@ -16,9 +16,11 @@ import {
   Star,
   Video,
   View,
+  Flag,
+  XCircle,
 } from "lucide-react";
 
-const tabs = ["Upcoming", "Ongoing", "Done"];
+const tabs = ["Upcoming", "Ongoing", "Completed"];
 
 export default function LearnerSessions({ args = {} }) {
   const work = useLearnerWorkspace();
@@ -61,8 +63,8 @@ export default function LearnerSessions({ args = {} }) {
     });
   }
   const [activeTab, setActiveTab] = useState(
-    args.tab === "Completed"
-      ? "Done"
+    args.tab === "Done"
+      ? "Completed"
       : tabs.includes(args.tab)
         ? args.tab
         : "Upcoming",
@@ -91,13 +93,12 @@ export default function LearnerSessions({ args = {} }) {
   }));
   const visibleSessions = filterSessions(
     liveRecords,
-    activeTab === "Done" ? "Completed" : activeTab,
+    activeTab,
     selectedDate,
     selectedStatus,
   );
   const tabCount = liveRecords.filter(
-    (session) =>
-      session.lifecycle === (activeTab === "Done" ? "Completed" : activeTab),
+    (session) => session.lifecycle === activeTab,
   ).length;
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-3 lg:px-5">
@@ -137,11 +138,10 @@ export default function LearnerSessions({ args = {} }) {
             >
               {tab} (
               {
-                liveRecords.filter(
-                  (session) =>
-                    session.lifecycle === (tab === "Done" ? "Completed" : tab),
-                ).length
+                liveRecords.filter((session) => session.lifecycle === tab)
+                  .length
               }
+              )
             </button>
           ))}
         </nav>
@@ -322,7 +322,7 @@ export default function LearnerSessions({ args = {} }) {
                 </span>
                 {lifecycle === "Completed" && (
                   <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                    Done
+                    Completed
                   </span>
                 )}
               </div>
