@@ -8,7 +8,6 @@ import {
   Star,
   Bell,
   UserRound,
-  Settings,
   CircleHelp,
 } from "lucide-react";
 // Keep learner sidebar entries in one registry so labels, icons, and section
@@ -22,6 +21,6 @@ export const learnerNav = [
   ["reviews", "My Reviews", Star],
   ["notifications", "Notifications", Bell],
   ["profile", "Profile", UserRound],
-  ["settings", "Settings", Settings],
+
   ["help-support", "Help & Support", CircleHelp],
 ];

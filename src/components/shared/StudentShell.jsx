@@ -89,8 +89,7 @@ export default function StudentShell({
   }
   const locked = (id) =>
     (tutorScheduleRestricted && !["dashboard", "availability"].includes(id)) ||
-    (profileRestricted &&
-      !["dashboard", "settings", "help-support"].includes(id));
+    (profileRestricted && !["dashboard", "help-support"].includes(id));
   return (
     <>
       {open && (
@@ -283,7 +282,7 @@ export default function StudentShell({
               >
                 {[
                   ["profile", "Profile"],
-                  ["settings", "Settings"],
+
                   [
                     role === "tutor" ? "help" : "help-support",
                     "Help & Support",

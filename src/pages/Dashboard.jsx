@@ -1,5 +1,4 @@
 import LearnerSearch from "../components/learner/workspace/LearnerSearch.jsx";
-import AccountSettings from "../components/shared/AccountSettings.jsx";
 import LearnerWorkspace from "../components/learner/workspace/LearnerWorkspace.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
 import TutorApplication from "../components/learner/application/TutorApplication.jsx";
@@ -41,7 +40,7 @@ export default function Dashboard() {
           {view === "dashboard" && <LearnerOverview go={setView} />}
           {view === "messages" && <LearnerMessages />}
           {view === "profile" && <LearnerProfile />}
-          {view === "settings" && <AccountSettings />}
+
           {view === "application" && (
             <TutorApplication onClose={() => setView("profile")} />
           )}
