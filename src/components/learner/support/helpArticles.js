@@ -1,5 +1,77 @@
 export const helpArticles = [
   {
+    id: "about-kasangga",
+    category: "Getting Started",
+    title: "What is Kasangga?",
+    steps: [
+      "Kasangga connects CSU learners with student tutors offering academic subjects and services.",
+      "Use your learner account to discover tutors, book sessions, pay through the available checkout and manage your learning activities.",
+      "Students who want to tutor can apply through Profile. Tutor access becomes available after Admin approval.",
+    ],
+    view: "dashboard",
+    action: "Open Dashboard",
+  },
+  {
+    id: "switch-roles",
+    category: "Getting Started",
+    title: "How do I switch between Learner and Tutor?",
+    steps: [
+      "Use the Learner and Tutor tabs in the sidebar to switch roles.",
+      "If you have an approved tutor role, the Tutor tab opens your tutor dashboard.",
+      "If you are not approved yet, the Tutor tab shows your application status or an Apply as Tutor card. Complete the application and wait for Admin review.",
+    ],
+    view: "profile",
+    action: "Open Profile",
+  },
+  {
+    id: "verified-tutor",
+    category: "Finding a Tutor",
+    title: "What does Verified mean?",
+    steps: [
+      "A Verified Tutor has passed the tutor application review performed by an authorized Admin.",
+      "Read the tutor profile, subjects, service details and reviews before choosing a service. Verification does not guarantee a particular academic result.",
+      "Report a session-related concern through Report an Issue on the affected booking.",
+    ],
+    view: "find-tutor",
+    action: "Find a Tutor",
+  },
+  {
+    id: "call-tutor",
+    category: "Messages",
+    title: "Can I call my tutor?",
+    steps: [
+      "Kasangga supports text conversations for booking coordination. It does not provide built-in video or voice calls.",
+      "For a booked online session, open My Sessions and choose Open External Meeting to use the meeting platform provided by the tutor.",
+      "If you need a meeting link or have a scheduling question, message the tutor through the relevant booking conversation.",
+    ],
+    view: "messages",
+    action: "Open Messages",
+  },
+  {
+    id: "change-password",
+    category: "Account & Security",
+    title: "How do I change my password?",
+    steps: [
+      "Open Settings from the account dropdown or sidebar.",
+      "Enter your new password and confirm it by entering it again. Use at least eight characters.",
+      "Save the change and wait for confirmation. Keep your password private and log out of shared devices.",
+    ],
+    view: "settings",
+    action: "Open Settings",
+  },
+  {
+    id: "identity-correction",
+    category: "Account & Security",
+    title: "How do I change my Student ID or email?",
+    steps: [
+      "Your name, Student ID and email are locked in Profile and the tutor application because they identify your student account.",
+      "Contact Kasangga Support to explain the correction you need. Include the relevant account details without sharing passwords or verification codes.",
+      "An authorized administrator must review corrections to institutional identity records. Other editable profile details can be updated in Profile.",
+    ],
+    view: "support",
+    action: "Message Kasangga Support",
+  },
+  {
     id: "contact-support",
     category: "Account & Security",
     title: "How do I contact Kasangga Support?",
@@ -38,7 +110,7 @@ export const helpArticles = [
   {
     id: "find-tutor",
     category: "Finding a Tutor",
-    title: "How do I find a tutor for my subject?",
+    title: "How do I filter tutors?",
     steps: [
       "Open Find a Tutor or choose View all tutors on the dashboard.",
       "Use Subject, Session Type, Ratings and Price filters to narrow the list. Switch between list and grid using the View buttons.",
@@ -112,7 +184,7 @@ export const helpArticles = [
   {
     id: "reschedule",
     category: "Booking Sessions",
-    title: "How do I request a schedule change?",
+    title: "Can I reschedule a session?",
     steps: [
       "Message your tutor using the relevant booking to discuss a different time. Where a Request Reschedule action is available, choose an offered slot and provide your reason.",
       "A request does not immediately change your booking. Keep the current schedule until the other participant accepts and the updated time is saved.",
@@ -136,7 +208,7 @@ export const helpArticles = [
   {
     id: "pending-payment",
     category: "Payments",
-    title: "I paid but cannot see my booking. What should I do?",
+    title: "Why is my payment Pending?",
     steps: [
       "Allow time for payment verification when you return from PayMongo. Use Retry verification if the confirmation card asks you to retry.",
       "Check My Sessions for the corresponding booking and inspect the payment status. Avoid paying again while the original payment is still being verified.",
@@ -218,7 +290,19 @@ export const helpArticles = [
     view: "sessions",
     action: "Open My Sessions",
   },
-];
+].sort((a, b) => {
+  const categories = [
+    "Getting Started",
+    "Finding a Tutor",
+    "Booking Sessions",
+    "Payments",
+    "Messages",
+    "Tutor Application",
+    "Reviews",
+    "Account & Security",
+  ];
+  return categories.indexOf(a.category) - categories.indexOf(b.category);
+});
 
 export function filterHelpArticles(
   articles,
