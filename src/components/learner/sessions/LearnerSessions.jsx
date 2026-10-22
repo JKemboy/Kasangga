@@ -304,14 +304,6 @@ export default function LearnerSessions({ args = {} }) {
                   <MapPin className="mr-1 inline h-3.5 w-3.5 text-[#087542]" />
                   {venue}
                 </p>
-                {mode === "Online" && link && (
-                  <p className="text-xs text-blue-600">
-                    <a href={link} target="_blank" rel="noopener noreferrer">
-                      Open meeting link{" "}
-                      <ExternalLink className="inline h-3.5 w-3.5" />
-                    </a>
-                  </p>
-                )}
               </div>
               <div className="text-center">
                 <p className="text-base font-bold">{price}</p>
@@ -342,7 +334,8 @@ export default function LearnerSessions({ args = {} }) {
                       {mode === "Online" && (
                         <Video className="mr-2 inline h-4 w-4" />
                       )}
-                      Join Session <ExternalLink className="inline h-4 w-4" />
+                      Open External Meeting{" "}
+                      <ExternalLink className="inline h-4 w-4" />
                     </button>
                   )}
                   {canManage && (
@@ -362,6 +355,20 @@ export default function LearnerSessions({ args = {} }) {
                       Message Tutor
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      act(
+                        "report",
+                        records.find((session) => session.id === id),
+                      )
+                    }
+                    className="min-h-6 rounded-md border border-[#dfe5ed] px-1 py-0.5 text-xs font-semibold"
+                  >
+                    <Flag className="mr-2 inline h-4 w-4" />
+                    Report an Issue
+                  </button>
+
                   <button
                     onClick={() =>
                       act(
