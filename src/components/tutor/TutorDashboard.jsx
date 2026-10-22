@@ -413,7 +413,9 @@ export default function TutorDashboardPage() {
                 className="relative w-full max-w-lg"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  setSearching(true);
+                  if (view === "sessions" && search.trim())
+                    go("sessions", { query: search.trim() });
+                  else setSearching(true);
                 }}
               >
                 <input

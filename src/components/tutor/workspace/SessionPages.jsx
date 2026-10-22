@@ -75,10 +75,10 @@ export function Sessions({
     [type, setType] = useState("All"),
     [tab, setTab] = useState(
       initialSession?.lifecycle === "Completed"
-        ? "Done"
+        ? "Completed"
         : ["Upcoming", "Ongoing", "Completed", "Done"].includes(args.tab)
-          ? args.tab === "Completed"
-            ? "Done"
+          ? args.tab === "Done"
+            ? "Completed"
             : args.tab
           : "Upcoming",
     ),
@@ -101,13 +101,18 @@ export function Sessions({
         ? "Ongoing"
         : "Awaiting Completion";
   };
-  const rows = data.sessions.filter(
+  const records = data.sessions.map((session) => ({
+    ...session,
+    lifecycle: lifecycleFor(session),
+  }));
+  const inTab = (session, name) =>
+    session.lifecycle === name ||
+    (name === "Ongoing" && session.lifecycle === "Awaiting Completion");
+  const rows = records.filter(
     (s) =>
       (!args.serviceId || s.serviceId === String(args.serviceId)) &&
       s.payment === "Paid" &&
-      (tab === "Done"
-        ? lifecycleFor(s) === "Completed"
-        : lifecycleFor(s) === tab) &&
+      inTab(s, tab) &&
       (type === "All" || s.type === type) &&
       matches(s, query),
   );
@@ -118,26 +123,6 @@ export function Sessions({
         subtitle="View and manage your tutoring sessions."
       />
       <div className="session-search-row">
-        <button
-          type="button"
-          onClick={refreshSessions}
-          disabled={sessionsLoading}
-        >
-          Refresh sessions
-        </button>
-        <label className="session-search-box">
-          <Search size={17} />
-          <input
-            aria-label="Search sessions"
-            className={input}
-            placeholder="Search sessions..."
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-          />
-        </label>
         <label className="session-filter">
           <ListFilter size={17} />
           <select
@@ -157,7 +142,7 @@ export function Sessions({
         </label>
       </div>
       <nav className="session-tabs" aria-label="Session status">
-        {["Upcoming", "Ongoing", "Done"].map((t) => (
+        {["Upcoming", "Ongoing", "Completed"].map((t) => (
           <button
             key={t}
             aria-pressed={tab === t}
@@ -166,7 +151,17 @@ export function Sessions({
               setPage(1);
             }}
           >
-            {t}
+            {t} (
+            {
+              records.filter(
+                (session) =>
+                  session.payment === "Paid" &&
+                  (!args.serviceId ||
+                    session.serviceId === String(args.serviceId)) &&
+                  inTab(session, t),
+              ).length
+            }
+            )
           </button>
         ))}
       </nav>
@@ -186,6 +181,19 @@ export function Sessions({
           setAction(nextAction);
         }}
       />
+      {sessionsError && (
+        <p role="alert" className="text-sm text-red-700">
+          {sessionsError}
+          <button
+            type="button"
+            className="ml-2 underline"
+            onClick={refreshSessions}
+          >
+            Retry
+          </button>
+        </p>
+      )}
+      {sessionsLoading && <p role="status">Loading sessions...</p>}
       <Empty show={!sessionsLoading && !sessionsError && !rows.length} />
       {rows.length > 5 && (
         <Pager count={rows.length} page={page} setPage={setPage} />
@@ -196,6 +204,7 @@ export function Sessions({
       </div>
       {selected && (
         <SessionDetails
+          key={selected.id + action}
           data={data}
           go={go}
           sessionId={selected.id}
