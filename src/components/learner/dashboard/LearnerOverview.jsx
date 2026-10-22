@@ -1,6 +1,6 @@
 // Learner dashboard overview: live tutor recommendations and account-linked shortcuts.
 import { useEffect, useState } from "react";
-import { CalendarDays, Bookmark, Star, Heart } from "lucide-react";
+import { CalendarDays, Bookmark, Star } from "lucide-react";
 import { savedService } from "../../../services/savedTutors.js";
 import { courseRecommendations } from "../../../services/tutorRecommendations.js";
 import { listDiscoverableTutors } from "../../../services/tutorServices.js";
@@ -157,7 +157,7 @@ export default function LearnerOverview({ go }) {
                 disabled={work.savedLoading || work.isSaving(tutor)}
                 onClick={() => work.toggleSave(tutor)}
               >
-                <Heart
+                <Bookmark
                   size={18}
                   fill={work.isSaved(tutor) ? "#087542" : "none"}
                 />

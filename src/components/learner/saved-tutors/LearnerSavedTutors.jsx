@@ -5,7 +5,7 @@ import { filterSavedTutors } from "./savedTutorFilters.js";
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import {
   BadgeCheck,
-  BookMarked,
+  Bookmark,
   BookOpen,
   CalendarDays,
   Clock3,
@@ -74,7 +74,7 @@ export default function LearnerSavedTutors() {
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-lg bg-[#effaf3] px-3 py-2 text-xs text-[#075d34]">
-          <BookMarked className="h-5 w-5 fill-[#087542] text-[#087542]" />
+          <Bookmark className="h-5 w-5 fill-[#087542] text-[#087542]" />
           <span>
             <b className="block">Your saved tutors are only visible to you.</b>
             <span className="text-[#566584]">
@@ -199,7 +199,7 @@ export default function LearnerSavedTutors() {
                 onClick={() => work.toggleSave(tutor)}
                 className="absolute right-2 top-2 text-[#087542]"
               >
-                <BookMarked className="h-5 w-5 fill-[#087542]" />
+                <Bookmark className="h-5 w-5 fill-[#087542]" />
               </button>
               <PortalAvatar
                 name={name}
@@ -257,7 +257,7 @@ export default function LearnerSavedTutors() {
       </div>
       <section className="mt-3 flex flex-wrap items-center justify-center gap-3 rounded-xl bg-[linear-gradient(145deg,#effaf3,#f8fdf9)] px-3 py-3 text-center sm:text-left">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#dff8e8] text-[#087542]">
-          <BookMarked className="h-5 w-5" />
+          <Bookmark className="h-5 w-5" />
         </span>
         <div>
           <h2 className="text-sm font-bold">

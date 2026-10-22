@@ -11,7 +11,7 @@ import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import { useState, useEffect } from "react";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import {
-  BookOpen,
+  Bookmark,
   CheckCircle2,
   ChevronDown,
   Grid2X2,
@@ -228,7 +228,7 @@ export default function LearnerFindTutor({ query = "" }) {
                 onClick={() => work.toggleSave(bookmark)}
                 className="absolute right-2 top-2 text-[#087542]"
               >
-                <BookOpen
+                <Bookmark
                   className="h-4 w-4"
                   fill={work.isSaved(bookmark) ? "#087542" : "none"}
                 />
