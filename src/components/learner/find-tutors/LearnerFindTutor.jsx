@@ -1,3 +1,9 @@
+import {
+  ratingOptions,
+  priceOptions,
+  matchesRating,
+  matchesPrice,
+} from "../../../services/tutorFilters.js";
 // Find a Tutor: loads published tutor services, supports search/filtering, and opens profile, booking, save, or message actions.
 import { savedService } from "../../../services/savedTutors.js";
 import { listDiscoverableTutors } from "../../../services/tutorServices.js";
@@ -66,9 +72,9 @@ export default function LearnerFindTutor({ query = "" }) {
     };
   }, [retry]);
   const [subject, setSubject] = useState("All Subjects"),
-    [level, setLevel] = useState("All Levels"),
+    [ratingFilter, setRatingFilter] = useState("All Ratings"),
     [availability, setAvailability] = useState("All Availability"),
-    [sort, setSort] = useState("Highest Rated"),
+    [price, setPrice] = useState("All Prices"),
     [list, setList] = useState(false);
   const rows = tutors
     .flatMap((tutor) => tutor.services.map((service) => ({ tutor, service })))
@@ -91,18 +97,13 @@ export default function LearnerFindTutor({ query = "" }) {
             .join(" ")
             .toLowerCase()
             .includes(subject.toLowerCase())) &&
-        (level === "All Levels" ||
-          s.level === level ||
-          s.level === "All Levels") &&
+        matchesRating(tutor.rating, ratingFilter) &&
+        matchesPrice(s.rate, price) &&
         (availability === "All Availability" ||
           s.type === availability ||
           s.type === "Both"),
     )
-    .sort((a, b) =>
-      sort === "Lowest Rate"
-        ? a.service.rate - b.service.rate
-        : (b.tutor.rating || 0) - (a.tutor.rating || 0),
-    );
+    .sort((a, b) => (b.tutor.rating || 0) - (a.tutor.rating || 0));
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-3 lg:px-5">
       <h1 className="text-2xl font-bold tracking-[-1px] text-[#101828]">
@@ -137,22 +138,22 @@ export default function LearnerFindTutor({ query = "" }) {
             ]}
           />
           <Select
-            label="Level"
-            value={level}
-            onChange={setLevel}
-            options={["All Levels", "College"]}
-          />
-          <Select
             label="Session Type"
             value={availability}
             onChange={setAvailability}
             options={["All Availability", "Online", "In-person"]}
           />
           <Select
-            label="Sort By"
-            value={sort}
-            onChange={setSort}
-            options={["Highest Rated", "Lowest Rate"]}
+            label="Ratings"
+            value={ratingFilter}
+            onChange={setRatingFilter}
+            options={ratingOptions}
+          />
+          <Select
+            label="Price"
+            value={price}
+            onChange={setPrice}
+            options={priceOptions}
           />
         </div>
       </section>
@@ -281,13 +282,15 @@ export default function LearnerFindTutor({ query = "" }) {
         })}
       </div>
       {(subject !== "All Subjects" ||
-        level !== "All Levels" ||
+        ratingFilter !== "All Ratings" ||
+        price !== "All Prices" ||
         availability !== "All Availability") && (
         <button
           className="mt-2 text-xs text-green-800"
           onClick={() => {
             setSubject("All Subjects");
-            setLevel("All Levels");
+            setRatingFilter("All Ratings");
+            setPrice("All Prices");
             setAvailability("All Availability");
           }}
         >
