@@ -78,7 +78,8 @@ export default function LearnerHelpSupport() {
   function go(view) {
     setArticle(null);
     setContact(false);
-    work.go(view);
+    if (view === "support") work.message({ name: "Kasangga Support" });
+    else work.go(view);
   }
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-3 lg:px-5">

@@ -1,5 +1,17 @@
 export const helpArticles = [
   {
+    id: "contact-support",
+    category: "Account & Security",
+    title: "How do I contact Kasangga Support?",
+    steps: [
+      "Choose Contact Support, then Message Kasangga Support, or open Messages and select the Kasangga Support conversation.",
+      "Write a clear message about the issue. Include the affected page, relevant booking reference and what you expected to happen. Send the message to start or continue your private support conversation.",
+      "Return to Kasangga Support in Messages to read Admin replies. Do not share passwords, OTPs or GCash MPINs. For a session incident, use Report an Issue on the affected session.",
+    ],
+    view: "support",
+    action: "Message Kasangga Support",
+  },
+  {
     id: "complete-profile",
     category: "Getting Started",
     title: "How do I complete my learner profile?",
