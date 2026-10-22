@@ -1,3 +1,5 @@
+import { useAuth } from "../../../auth/AuthProvider.jsx";
+import { createSupportConversation } from "../../../services/supportInbox.js";
 import { useState } from "react";
 import { Send } from "lucide-react";
 import { Modal, Field, button, primary, input } from "./ui.jsx";
@@ -10,45 +12,56 @@ const topics = [
   "Other",
 ];
 
-export default function ContactSupport({ update, onClose }) {
+export default function ContactSupport({ onClose }) {
+  const { user } = useAuth();
+  const [busy, setBusy] = useState(false);
   const [topic, setTopic] = useState("");
   const [message, setMessage] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const valid = topics.includes(topic) && message.trim().length >= 15;
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
-    if (!valid || saved) return;
+    if (busy || saved) return;
+    if (!valid)
+      return setError(
+        "Choose a topic and describe the issue in at least 15 characters.",
+      );
     setError("");
+    setBusy(true);
     try {
-      const result = update((data) => ({
-        ...data,
-        reports: [
-          ...(data.reports || []),
-          {
-            id: crypto.randomUUID(),
-            type: "support",
-            subject: topic,
-            details: message.trim(),
-            created: new Date().toISOString(),
-          },
-        ],
-      }));
-      if (result === false)
-        throw new Error("Could not save your request. Please try again.");
+      await createSupportConversation({
+        userId: user.id,
+        subject: topic,
+        category: topic,
+        message: message.trim(),
+      });
       setSaved(true);
-    } catch {
-      setError("Could not save your request. Please try again.");
+    } catch (error) {
+      setError(
+        error.message ||
+          "Could not send your support request. Please try again.",
+      );
+    } finally {
+      setBusy(false);
     }
   }
   return (
     <Modal
       title="Contact Support"
       subtitle="Technical or account help"
-      onClose={onClose}
+      onClose={(event) => {
+        if (busy) event?.preventDefault();
+        else onClose();
+      }}
       footer={
         <>
-          <button type="button" className={button} onClick={onClose}>
+          <button
+            type="button"
+            className={button}
+            disabled={busy}
+            onClick={onClose}
+          >
             {saved ? "Close" : "Cancel"}
           </button>
           {!saved && (
@@ -56,10 +69,10 @@ export default function ContactSupport({ update, onClose }) {
               className={primary}
               type="submit"
               form="contact-support-form"
-              disabled={!valid}
+              disabled={busy}
             >
               <Send size={15} />
-              Save Support Draft
+              {busy ? "Sending..." : "Send Support Request"}
             </button>
           )}
         </>
@@ -72,7 +85,7 @@ export default function ContactSupport({ update, onClose }) {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             required
-            disabled={saved}
+            disabled={saved || busy}
           >
             <option value="">Select a topic</option>
             {topics.map((value) => (
@@ -88,7 +101,7 @@ export default function ContactSupport({ update, onClose }) {
             onChange={(e) => setMessage(e.target.value)}
             maxLength={3000}
             required
-            disabled={saved}
+            disabled={saved || busy}
             placeholder="Describe the problem and what you expected to happen."
             aria-describedby="support-message-length"
           />
@@ -101,12 +114,12 @@ export default function ContactSupport({ update, onClose }) {
           can review it and refer conduct concerns to OSAS.
         </p>
         <p className="text-[11px] text-slate-500">
-          Support delivery is not connected. Request saving is not connected
-          only.
+          Your request is sent to the Kasangga Admin support inbox. Do not
+          include passwords, OTPs or GCash MPINs.
         </p>
         {saved && (
           <p role="status" className="text-xs text-green-800">
-            Draft not connected to the database. It has not been sent.
+            Your support request was sent to the Admin team.
           </p>
         )}
         {error && (
