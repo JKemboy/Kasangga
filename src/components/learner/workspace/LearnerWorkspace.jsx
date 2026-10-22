@@ -1,4 +1,4 @@
-import { meetingUrl } from "../../tutor/workspace/sessionActions.js";
+import ExternalMeeting from "../../shared/ExternalMeeting.jsx";
 import { cancelLearnerSession } from "../../../services/learnerSessionActions.js";
 import PaymentReturn from "./PaymentReturn.jsx";
 // Learner workspace provider: coordinates learner profile, saved tutors, sessions, reviews, messages, and dialogs for all learner sections.
@@ -388,24 +388,18 @@ export default function LearnerWorkspace({ children, go }) {
             />
           )}
           {dialog.kind === "meeting" && (
-            <div className="space-y-3 text-sm">
-              <p>This session runs outside Kasangga.</p>
-              {meetingUrl(r.link) ? (
-                <a
-                  className={primary}
-                  href={meetingUrl(r.link)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open Meeting
-                </a>
-              ) : (
-                <p>No meeting link is available. Contact your tutor.</p>
-              )}
-              <button className={button} onClick={() => setDialog(null)}>
-                Close
-              </button>
-            </div>
+            <ExternalMeeting
+              service={r.course || r.subject}
+              person={r.name}
+              date={r.date}
+              time={r.time}
+              platform={r.platform || r.venue}
+              link={r.link}
+              active={
+                r.canManage && !["Completed", "Cancelled"].includes(r.lifecycle)
+              }
+              onClose={closeDialog}
+            />
           )}
           {dialog.kind === "report" && (
             <LearnerReport

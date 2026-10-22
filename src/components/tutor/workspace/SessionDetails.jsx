@@ -1,3 +1,4 @@
+import ExternalMeeting from "../../shared/ExternalMeeting.jsx";
 import EvidencePicker from "../../shared/EvidencePicker.jsx";
 import { useRef, useState } from "react";
 import { ExternalLink, MessageCircle, Video, ShieldCheck } from "lucide-react";
@@ -376,38 +377,16 @@ export default function SessionDetails({
           }
         >
           {action === "meeting" ? (
-            <div className="space-y-4">
-              <div className="session-meeting">
-                <ExternalLink />
-                <div>
-                  <strong>
-                    {s.service} · {s.learner}
-                  </strong>
-                  <p>
-                    {dateLabel(s.date)} · {range(s)}
-                  </p>
-                </div>
-              </div>
-              <p>
-                This session runs on {s.provider}, outside Kasangga.
-                Kasangga has no built-in video or voice calls.
-              </p>
-              {url ? (
-                <a
-                  className={primary}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open {s.provider}
-                </a>
-              ) : (
-                <p role="status">No meeting link has been provided.</p>
-              )}
-              <button className={button} onClick={() => changeAction("")}>
-                Cancel
-              </button>
-            </div>
+            <ExternalMeeting
+              service={s.service}
+              person={s.learner}
+              date={dateLabel(s.date)}
+              time={range(s)}
+              platform={s.provider}
+              link={s.meetingUrl || s.link}
+              active={active}
+              onClose={() => changeAction("")}
+            />
           ) : action === "complete" ? (
             <div className="space-y-3">
               <p>
