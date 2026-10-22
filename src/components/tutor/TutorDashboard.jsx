@@ -1,3 +1,4 @@
+import MyReports from "./workspace/MyReports.jsx";
 import AccountSettings from "../shared/AccountSettings.jsx";
 // Tutor portal coordinator: loads tutor profile, services, availability, class schedule, and sessions, then routes to each tutor section.
 import { tutorScheduleReady } from "./workspace/scheduleAccess.js";
@@ -31,6 +32,7 @@ import {
   Boxes,
   CalendarDays,
   CalendarClock,
+  Flag,
   MessageCircle,
   Wallet,
   Bell,
@@ -55,6 +57,7 @@ const nav = [
   ["earnings", "Earnings", Wallet],
   ["notifications", "Notifications", Bell],
   ["profile", "Profile", UserRound],
+  ["reports", "My Reports", Flag],
   ["help", "Help & Safety", ShieldQuestion],
 ];
 export default function TutorDashboardPage() {
@@ -527,6 +530,7 @@ export default function TutorDashboardPage() {
               {view === "notifications" && <Notifications {...props} />}
               {view === "profile" && <Profile {...props} />}
               {view === "help" && <Help {...props} />}
+              {view === "reports" && <MyReports {...props} />}
             </div>
           </div>
         </main>
