@@ -21,35 +21,49 @@ const categories = [
   [
     Rocket,
     "Getting Started",
-    "Set up your profile and explore your dashboard.",
+    "Learn the basics of using Kasangga as a learner.",
   ],
   [
     Search,
     "Finding a Tutor",
-    "Search, filter, compare and save tutor services.",
+    "How to search, filter, and choose the right tutor.",
   ],
   [
     CalendarDays,
     "Booking Sessions",
-    "Book, join and manage your tutoring sessions.",
+    "How to book, cancel, or manage your tutoring sessions.",
   ],
   [
     CircleDollarSign,
     "Payments",
-    "GCash checkout, verification and payment records.",
+    "Learn about GCash payments via PayMongo, transaction status, and receipts.",
   ],
-  [MessageCircle, "Messages", "Find the conversation for your booking."],
+  [
+    MessageCircle,
+    "Messages",
+    "Learn how to message tutors and manage conversations.",
+  ],
   [
     UserRound,
     "Tutor Application",
-    "Requirements, documents and application status.",
+    "Information for students who want to become tutors.",
   ],
-  [Star, "Reviews", "Rate completed sessions and manage your feedback."],
+  [Star, "Reviews", "How reviews work and how to leave feedback."],
   [
     ShieldCheck,
     "Account & Security",
-    "Profile changes, passwords and issue reports.",
+    "Manage your account, password, and security settings.",
   ],
+];
+const categoryStyles = [
+  "bg-[#e5f5eb] text-[#006838]",
+  "bg-[#e5f5eb] text-[#006838]",
+  "bg-[#e7efff] text-[#1762ed]",
+  "bg-[#fff2d8] text-[#e89b00]",
+  "bg-[#fff7df] text-[#e89b00]",
+  "bg-[#eee8ff] text-[#7744ed]",
+  "bg-[#fce6f4] text-[#ed2996]",
+  "bg-[#edf0f3] text-[#536170]",
 ];
 const popular = [
   "book-session",
@@ -87,10 +101,9 @@ export default function LearnerHelpSupport() {
         Help &amp; Support
       </h1>
       <p className="mt-1 text-xs text-[#566584]">
-        Find step-by-step answers about your account, tutors, sessions and
-        payments.
+        Find answers to common questions or contact our support team.
       </p>
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,1fr)] xl:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
         <div className="min-w-0">
           <label className="relative block">
             <span className="sr-only">Search help articles</span>
@@ -171,23 +184,28 @@ export default function LearnerHelpSupport() {
           ) : (
             <>
               <h2 className="mb-3 mt-4 text-base font-bold">Help Categories</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {categories.map(([Icon, name, description]) => (
+              <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                {categories.map(([Icon, name, description], index) => (
                   <button
                     type="button"
                     key={name}
                     onClick={() => browse(name)}
                     className={
                       panel +
-                      " flex items-center gap-3 text-left hover:border-green-600"
+                      " flex min-h-[104px] items-center gap-4 text-left hover:border-green-600"
                     }
                   >
-                    <span className="rounded-full bg-green-50 p-3 text-green-800">
-                      <Icon className="h-5 w-5" />
+                    <span
+                      className={
+                        "grid h-16 w-16 shrink-0 place-items-center rounded-full " +
+                        categoryStyles[index]
+                      }
+                    >
+                      <Icon className="h-7 w-7" />
                     </span>
                     <span>
                       <strong className="block text-sm">{name}</strong>
-                      <span className="mt-1 block text-xs text-slate-500">
+                      <span className="mt-1 block text-xs leading-5 text-[#435d7e]">
                         {description}
                       </span>
                     </span>
@@ -195,36 +213,6 @@ export default function LearnerHelpSupport() {
                   </button>
                 ))}
               </div>
-              <section className={panel + " mt-4"}>
-                <h2 className="mb-2 font-semibold">
-                  Frequently Asked Questions
-                </h2>
-                {[
-                  "pending-payment",
-                  "meeting",
-                  "application-status",
-                  "account-security",
-                ].map((id) => {
-                  const item = helpArticles.find((entry) => entry.id === id);
-                  return (
-                    <details key={id} className="border-t py-3 text-xs">
-                      <summary className="cursor-pointer font-semibold text-green-900">
-                        {item.title}
-                      </summary>
-                      <p className="mt-2 leading-5 text-slate-600">
-                        {item.steps[0]}
-                      </p>
-                      <button
-                        className={button + " mt-2"}
-                        type="button"
-                        onClick={() => setArticle(item)}
-                      >
-                        Read full article
-                      </button>
-                    </details>
-                  );
-                })}
-              </section>
             </>
           )}
           <div className="mt-4 flex gap-3 rounded-lg bg-blue-50 p-4 text-xs">
@@ -241,19 +229,24 @@ export default function LearnerHelpSupport() {
           </div>
         </div>
         <aside className="space-y-4">
-          <section className="rounded-lg bg-green-50 p-4 text-center">
-            <Headphones className="mx-auto h-8 w-8 text-green-800" />
+          <section className="rounded-xl border border-[#dfede3] bg-[#f2faf5] px-5 py-6 text-center">
+            <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-white text-green-800">
+              <Headphones className="h-7 w-7" />
+            </span>
             <h2 className="mt-3 font-bold">Need More Help?</h2>
             <p className="mt-2 text-xs leading-5 text-slate-600">
-              Choose the help route for your booking, payment or account
-              concern.
+              Can't find what you're looking for? Our support team is here to
+              help.
             </p>
             <button
               type="button"
               onClick={() => setContact(true)}
-              className={primary + " mt-3 w-full"}
+              className={
+                primary +
+                " mt-4 flex min-h-11 w-full items-center justify-center gap-2"
+              }
             >
-              Contact Support
+              <MessageCircle size={16} /> Contact Support
             </button>
           </section>
           <section className={panel}>
@@ -266,9 +259,9 @@ export default function LearnerHelpSupport() {
                     type="button"
                     key={id}
                     onClick={() => setArticle(item)}
-                    className="flex items-start gap-2 text-left text-xs text-green-900 hover:underline"
+                    className="flex items-start gap-3 text-left text-sm text-[#0645d9] hover:underline"
                   >
-                    <FileText className="h-4 w-4 shrink-0" />
+                    <FileText className="h-[18px] w-[18px] shrink-0 text-green-800" />
                     {item.title}
                   </button>
                 );
@@ -277,7 +270,7 @@ export default function LearnerHelpSupport() {
             <button
               type="button"
               onClick={() => browse()}
-              className={button + " mt-4 w-full"}
+              className={button + " mt-5 min-h-11 w-full"}
             >
               View All Articles
             </button>
