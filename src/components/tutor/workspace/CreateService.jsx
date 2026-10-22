@@ -37,23 +37,30 @@ export default function CreateService({
 }) {
   const [name, setName] = useState(service?.name || "");
   const [description, setDescription] = useState(service?.description || "");
+  const [schedule, setSchedule] = useState({
+    slots: data.slots || [],
+    classes: confirmedClasses(data),
+    bookings: data.sessions || [],
+  });
   const [topics, setTopics] = useState(() =>
     service?.topicDetails?.length
       ? service.topicDetails.map((topic) => ({
           ...topic,
           key: crypto.randomUUID(),
           availability: (data.slots || [])
-            .filter((slot) => slot.topicId === topic.id)
+            .filter((slot) => String(slot.topicId) === String(topic.id))
             .flatMap((slot) => {
               const bookings = (schedule.bookings || []).filter(
                 (booking) =>
-                  (!booking.service_id && !booking.serviceId ||
+                  ((!booking.service_id && !booking.serviceId) ||
                     String(booking.service_id || booking.serviceId) ===
                       String(service.id)) &&
                   String(booking.date || booking.session_date).slice(0, 10) ===
                     slot.date &&
                   ["pending", "confirmed", "completed"].includes(
-                    String(booking.status || booking.booking_status).toLowerCase(),
+                    String(
+                      booking.status || booking.booking_status,
+                    ).toLowerCase(),
                   ),
               );
               const rows = Array.from(
@@ -108,11 +115,6 @@ export default function CreateService({
   );
   const [saving, setSaving] = useState(false),
     [error, setError] = useState("");
-  const [schedule, setSchedule] = useState({
-    slots: data.slots || [],
-    classes: confirmedClasses(data),
-    bookings: data.sessions || [],
-  });
   const [scheduleLoading, setScheduleLoading] = useState(true),
     [scheduleError, setScheduleError] = useState("");
   const [refresh, setRefresh] = useState(0);
@@ -170,9 +172,9 @@ export default function CreateService({
   const bookingCountFor = (row) =>
     (schedule.bookings || []).filter(
       (booking) =>
-          (!booking.service_id && !booking.serviceId ||
-            String(booking.service_id || booking.serviceId) ===
-              String(service?.id || "")) &&
+        ((!booking.service_id && !booking.serviceId) ||
+          String(booking.service_id || booking.serviceId) ===
+            String(service?.id || "")) &&
         String(booking.date || booking.session_date || "").slice(0, 10) ===
           row.date &&
         Number(String(booking.start || booking.start_time).slice(0, 2)) +
@@ -187,7 +189,7 @@ export default function CreateService({
   const bookedSlot = (row) =>
     (schedule.bookings || []).find(
       (booking) =>
-        (!booking.service_id && !booking.serviceId ||
+        ((!booking.service_id && !booking.serviceId) ||
           String(booking.service_id || booking.serviceId) ===
             String(service?.id || "")) &&
         String(booking.date || booking.session_date || "").slice(0, 10) ===
@@ -516,185 +518,195 @@ export default function CreateService({
                   {groupTopicDates(topic.availability).map((group) => {
                     const groupBooked = group.rows.some(isBooked);
                     return (
-                    <div className="service-date-group" key={group.key}>
-                      <div className="service-date-picker">
-                        <Field label="Date">
-                          <input
-                            type="date"
-                            className={input}
-                            required
-                            value={group.date}
-                            disabled={scheduleLoading || !!scheduleError || groupBooked}
-                            onChange={(e) =>
-                              moveDate(topic, group, e.target.value)
-                            }
-                          />
-                        </Field>
-                        <button
-                          type="button"
-                          className="service-remove-date"
-                          disabled={groupBooked}
-                          onClick={() =>
-                            patch(
-                              topic.key,
-                              "availability",
-                              topic.availability.filter(
-                                (row) =>
-                                  !group.rows.some(
-                                    (item) => item.key === row.key,
-                                  ),
-                              ),
-                            )
-                          }
-                        >
-                          <Trash2 size={12} /> Remove this date
-                        </button>
-                        {group.repeat && <small>Repeats weekly</small>}
-                        {groupBooked && <small>Booked time is locked</small>}
-                      </div>
-                      <div className="service-date-times">
-                        {group.rows.map((row) => {
-                          const choices = optionsFor(row),
-                            valid = choices.includes(row.start);
-                          return (
-                            <div className="service-group-time" key={row.key}>
-                              <select
-                                className={input}
-                                aria-label={
-                                  "Start time on " +
-                                  (group.date || "selected date")
-                                }
-                                required
-                                disabled={
-                                  !group.date ||
-                                  scheduleLoading ||
-                                  !!scheduleError ||
-                                  isBooked(row) ||
-                                  !choices.length
-                                }
-                                value={valid ? formatTimeInput(row.start) : ""}
-                                onChange={(e) =>
-                                  patchTime(
-                                    topic,
-                                    row.key,
-                                    hour(e.target.value),
-                                  )
-                                }
-                              >
-                                <option value="" disabled>
-                                  {!group.date
-                                    ? "Select a date"
-                                    : !choices.length
-                                      ? "No free times"
-                                      : "Choose a free time"}
-                                </option>
-                                {choices.map((start) => (
-                                  <option
-                                    key={start}
-                                    value={formatTimeInput(start)}
-                                  >
-                                    {time(start)}
-                                  </option>
-                                ))}
-                              </select>
-                              <select
-                                className={input}
-                                aria-label={
-                                  "Duration on " +
-                                  (group.date || "selected date")
-                                }
-                                value={row.duration || row.end - row.start || 1}
-                                disabled={
-                                  !group.date ||
-                                  scheduleLoading ||
-                                  !!scheduleError ||
-                                  isBooked(row) ||
-                                  !Number.isFinite(row.start)
-                                }
-                                onChange={(e) =>
-                                  patchDuration(
-                                    topic,
-                                    row.key,
-                                    Number(e.target.value),
-                                  )
-                                }
-                              >
-                                {[1, 2].map((duration) => (
-                                  <option
-                                    key={duration}
-                                    value={duration}
-                                    disabled={
-                                      !optionsFor({
-                                        ...row,
-                                        duration,
-                                      }).includes(row.start)
-                                    }
-                                  >
-                                    {duration}{" "}
-                                    {duration === 1 ? "hour" : "hours"}
-                                  </option>
-                                ))}
-                              </select>
-                              <span className="service-time-end">
-                                {valid ? "to " + time(row.end) : "Choose time"}
-                              </span>
-                              <span
-                                className={
-                                  valid
-                                    ? "service-slot-valid"
-                                    : "create-service-hint"
-                                }
-                              >
-                                {valid ? (
-                                  <>
-                                    <Check size={14} /> No conflicts
-                                  </>
-                                ) : group.date ? (
-                                  "Choose another free time or date"
-                                ) : (
-                                  "Select a date first"
-                                )}
-                              </span>
-                              <button
-                                type="button"
-                                aria-label="Remove time"
-                                disabled={isBooked(row)}
-                                onClick={() =>
-                                  patch(
-                                    topic.key,
-                                    "availability",
-                                    topic.availability.filter(
-                                      (item) => item.key !== row.key,
+                      <div className="service-date-group" key={group.key}>
+                        <div className="service-date-picker">
+                          <Field label="Date">
+                            <input
+                              type="date"
+                              className={input}
+                              required
+                              value={group.date}
+                              disabled={
+                                scheduleLoading ||
+                                !!scheduleError ||
+                                groupBooked
+                              }
+                              onChange={(e) =>
+                                moveDate(topic, group, e.target.value)
+                              }
+                            />
+                          </Field>
+                          <button
+                            type="button"
+                            className="service-remove-date"
+                            disabled={groupBooked}
+                            onClick={() =>
+                              patch(
+                                topic.key,
+                                "availability",
+                                topic.availability.filter(
+                                  (row) =>
+                                    !group.rows.some(
+                                      (item) => item.key === row.key,
                                     ),
-                                  )
-                                }
-                              >
-                                <X size={15} />
-                              </button>
-                            </div>
-                          );
-                        })}
-                        <button
-                          type="button"
-                          className={button}
-                          disabled={
-                            !group.date ||
-                            scheduleLoading ||
-                            !!scheduleError ||
-                            group.rows.some(isBooked) ||
-                            topic.availability.length >= 20 ||
-                            !optionsFor({
-                              ...newDate(),
-                              date: group.date,
-                              repeat: group.repeat,
-                            }).length
-                          }
-                          onClick={() => addTime(topic, group)}
-                        >
-                          <Plus size={14} /> Add time on this date
-                        </button>
+                                ),
+                              )
+                            }
+                          >
+                            <Trash2 size={12} /> Remove this date
+                          </button>
+                          {group.repeat && <small>Repeats weekly</small>}
+                          {groupBooked && <small>Booked time is locked</small>}
+                        </div>
+                        <div className="service-date-times">
+                          {group.rows.map((row) => {
+                            const choices = optionsFor(row),
+                              valid = choices.includes(row.start);
+                            return (
+                              <div className="service-group-time" key={row.key}>
+                                <select
+                                  className={input}
+                                  aria-label={
+                                    "Start time on " +
+                                    (group.date || "selected date")
+                                  }
+                                  required
+                                  disabled={
+                                    !group.date ||
+                                    scheduleLoading ||
+                                    !!scheduleError ||
+                                    isBooked(row) ||
+                                    !choices.length
+                                  }
+                                  value={
+                                    valid ? formatTimeInput(row.start) : ""
+                                  }
+                                  onChange={(e) =>
+                                    patchTime(
+                                      topic,
+                                      row.key,
+                                      hour(e.target.value),
+                                    )
+                                  }
+                                >
+                                  <option value="" disabled>
+                                    {!group.date
+                                      ? "Select a date"
+                                      : !choices.length
+                                        ? "No free times"
+                                        : "Choose a free time"}
+                                  </option>
+                                  {choices.map((start) => (
+                                    <option
+                                      key={start}
+                                      value={formatTimeInput(start)}
+                                    >
+                                      {time(start)}
+                                    </option>
+                                  ))}
+                                </select>
+                                <select
+                                  className={input}
+                                  aria-label={
+                                    "Duration on " +
+                                    (group.date || "selected date")
+                                  }
+                                  value={
+                                    row.duration || row.end - row.start || 1
+                                  }
+                                  disabled={
+                                    !group.date ||
+                                    scheduleLoading ||
+                                    !!scheduleError ||
+                                    isBooked(row) ||
+                                    !Number.isFinite(row.start)
+                                  }
+                                  onChange={(e) =>
+                                    patchDuration(
+                                      topic,
+                                      row.key,
+                                      Number(e.target.value),
+                                    )
+                                  }
+                                >
+                                  {[1, 2].map((duration) => (
+                                    <option
+                                      key={duration}
+                                      value={duration}
+                                      disabled={
+                                        !optionsFor({
+                                          ...row,
+                                          duration,
+                                        }).includes(row.start)
+                                      }
+                                    >
+                                      {duration}{" "}
+                                      {duration === 1 ? "hour" : "hours"}
+                                    </option>
+                                  ))}
+                                </select>
+                                <span className="service-time-end">
+                                  {valid
+                                    ? "to " + time(row.end)
+                                    : "Choose time"}
+                                </span>
+                                <span
+                                  className={
+                                    valid
+                                      ? "service-slot-valid"
+                                      : "create-service-hint"
+                                  }
+                                >
+                                  {valid ? (
+                                    <>
+                                      <Check size={14} /> No conflicts
+                                    </>
+                                  ) : group.date ? (
+                                    "Choose another free time or date"
+                                  ) : (
+                                    "Select a date first"
+                                  )}
+                                </span>
+                                <button
+                                  type="button"
+                                  aria-label="Remove time"
+                                  disabled={isBooked(row)}
+                                  onClick={() =>
+                                    patch(
+                                      topic.key,
+                                      "availability",
+                                      topic.availability.filter(
+                                        (item) => item.key !== row.key,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <X size={15} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <button
+                            type="button"
+                            className={button}
+                            disabled={
+                              !group.date ||
+                              scheduleLoading ||
+                              !!scheduleError ||
+                              group.rows.some(isBooked) ||
+                              topic.availability.length >= 20 ||
+                              !optionsFor({
+                                ...newDate(),
+                                date: group.date,
+                                repeat: group.repeat,
+                              }).length
+                            }
+                            onClick={() => addTime(topic, group)}
+                          >
+                            <Plus size={14} /> Add time on this date
+                          </button>
+                        </div>
                       </div>
-                    </div>
                     );
                   })}
                   <div className="service-availability-actions">
