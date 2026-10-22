@@ -588,10 +588,22 @@ export default function CreateService({
                     return (
                       <div className="service-date-group" key={group.key}>
                         <div className="service-date-picker">
-                          <Field label="Date">
+                          <div className="relative rounded-md focus-within:ring-2 focus-within:ring-green-700">
+                            <span
+                              className={
+                                input +
+                                " pointer-events-none block min-h-9 pr-6"
+                              }
+                            >
+                              {formatServiceDate(group.date)}
+                            </span>
                             <input
                               type="date"
-                              className={input}
+                              aria-label="Choose session date"
+                              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                              onClick={(event) =>
+                                event.currentTarget.showPicker?.()
+                              }
                               required
                               value={group.date}
                               disabled={
@@ -603,7 +615,7 @@ export default function CreateService({
                                 moveDate(topic, group, e.target.value)
                               }
                             />
-                          </Field>
+                          </div>
                           <button
                             type="button"
                             className="service-remove-date"
