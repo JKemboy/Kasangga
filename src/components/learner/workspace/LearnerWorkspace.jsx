@@ -1,3 +1,4 @@
+import PaymentReturn from "./PaymentReturn.jsx";
 // Learner workspace provider: coordinates learner profile, saved tutors, sessions, reviews, messages, and dialogs for all learner sections.
 import { listLearnerSessions } from "../../../services/learnerSessions.js";
 import { portalApi } from "../../../services/portalApi.js";
@@ -304,6 +305,7 @@ export default function LearnerWorkspace({ children, go }) {
         </div>
       )}
       {children}
+      <PaymentReturn />
       {dialog && dialog.kind !== "application" && (
         <Modal
           size={

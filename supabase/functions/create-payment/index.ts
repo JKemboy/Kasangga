@@ -48,7 +48,10 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   const paymongoSecretKey = Deno.env.get("PAYMONGO_SECRET_KEY");
-  const appUrl = (allowedOrigin ?? Deno.env.get("APP_URL"))?.replace(/\/+$/, "");
+  const appUrl = (allowedOrigin ?? Deno.env.get("APP_URL"))?.replace(
+    /\/+$/,
+    "",
+  );
 
   if (
     !supabaseUrl ||
@@ -407,8 +410,8 @@ Deno.serve(async (req: Request) => {
               },
             ],
             description: `Kasangga Booking #${savedBooking.booking_id}`,
-            success_url: `${appUrl}/?payment=success`,
-            cancel_url: `${appUrl}/?payment=cancelled`,
+            success_url: `${appUrl}/learner-dashboard?payment=success&booking_ids=${savedBooking.booking_id}`,
+            cancel_url: `${appUrl}/learner-dashboard?payment=cancelled`,
           },
         },
       }),

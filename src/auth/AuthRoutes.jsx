@@ -37,7 +37,13 @@ export function ProtectedRoute({ role, children }) {
       </p>
     );
   if (!auth.session)
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return (
+      <Navigate
+        to="/login"
+        state={{ from: location.pathname, search: location.search }}
+        replace
+      />
+    );
   if (auth.error) return <AccountNotice message={auth.error} />;
   const privilegedHome = privilegedAccountHome(auth.roles);
   if (privilegedHome && role !== privilegedAccountRole(auth.roles))
@@ -79,6 +85,12 @@ export function LoginRoute({ children }) {
     );
   const allowed = auth.roles.some((r) => requested === `/${r}-dashboard`);
   return (
-    <Navigate to={allowed ? requested : accountHome(auth.roles)} replace />
+    <Navigate
+      to={
+        (allowed ? requested : accountHome(auth.roles)) +
+        (allowed ? location.state?.search || "" : "")
+      }
+      replace
+    />
   );
 }

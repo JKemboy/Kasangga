@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
 import AdminDashboard from "../components/admin/AdminDashboard.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
 import Login from "../pages/Login.jsx";
@@ -8,8 +8,19 @@ import TutorDashboard from "../components/tutor/TutorDashboard.jsx";
 import Register from "../pages/Register.jsx";
 import { LoginRoute, ProtectedRoute } from "../auth/AuthRoutes.jsx";
 
+function RootRedirect() {
+  const location = useLocation();
+  const payment = new URLSearchParams(location.search).get("payment");
+  return (
+    <Navigate
+      to={(payment ? "/learner-dashboard" : "/login") + location.search}
+      replace
+    />
+  );
+}
+
 const router = createBrowserRouter([
-  { path: "/", element: <Navigate to="/login" replace /> },
+  { path: "/", element: <RootRedirect /> },
   {
     path: "/register",
     element: (
