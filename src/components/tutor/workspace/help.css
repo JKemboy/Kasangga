@@ -214,3 +214,73 @@
   width: 19px;
   height: 19px;
 }
+
+.help-reference-grid {
+  gap: 20px;
+}
+.help-reference-column {
+  gap: 14px;
+}
+.help-reference-card {
+  padding: 16px;
+  gap: 18px;
+  border-radius: 11px;
+}
+.help-reference-icon {
+  width: 46px;
+  height: 46px;
+  background: #e6f4eb;
+}
+.help-reference-icon > svg {
+  width: 24px;
+  height: 24px;
+}
+.help-reference-content h2 {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0;
+}
+.help-reference-content p,
+.help-guide-list {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.help-guide-list {
+  list-style: disc;
+  padding-left: 20px;
+  margin-top: 8px;
+  color: #435879;
+}
+.help-guide-list li + li {
+  margin-top: 3px;
+}
+.help-faq-list {
+  gap: 8px;
+}
+.help-faq-list details {
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.help-faq-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #006d3d;
+}
+.help-contact {
+  min-height: 44px;
+  background: #005c30;
+}
+.help-shares {
+  padding: 10px 0;
+}
+.help-shares b {
+  font-size: 24px;
+  line-height: 30px;
+}
+.help-reference-note {
+  font-size: 12px;
+}
