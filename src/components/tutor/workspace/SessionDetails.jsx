@@ -123,6 +123,7 @@ export default function SessionDetails({
   const [actionOptions] = useState([]),
     [actionLoading, setActionLoading] = useState(false),
     [actionError, setActionError] = useState("");
+  const [acknowledged, setAcknowledged] = useState(false);
   const [reason, setReason] = useState(""),
     [kind, setKind] = useState(""),
     [slot, setSlot] = useState(""),
@@ -133,6 +134,11 @@ export default function SessionDetails({
     options = actionOptions;
 
   const changeAction = (value) => {
+    if (!value && initialAction) {
+      onClose();
+      return;
+    }
+    setAcknowledged(false);
     if (value === "incident" && action !== "incident")
       reportKey.current = crypto.randomUUID();
     setAction(value);
@@ -161,6 +167,11 @@ export default function SessionDetails({
   }
   async function submit(e) {
     e.preventDefault();
+    if (actionLoading) return;
+    if (action === "cancel" && (!acknowledged || !kind || !reason.trim()))
+      return setFeedback(
+        "Choose a reason, explain it and acknowledge the cancellation policy.",
+      );
     setActionLoading(true);
     setActionError("");
     try {
@@ -169,7 +180,7 @@ export default function SessionDetails({
         await chatRequest("cancel_chat_session", {
           p_booking_id: Number(s.id),
           p_reason: `${kind}: ${reason.trim()}`,
-          p_acknowledged: true,
+          p_acknowledged: acknowledged,
         });
       } else if (action === "reschedule") {
         if (!chosen) throw new Error("Select an available time.");
@@ -207,111 +218,111 @@ export default function SessionDetails({
   }
   return (
     <>
-      <Modal
-        size="drawer"
-        title="Session Details"
-        subtitle={s.booking || s.id}
-        onClose={onClose}
-        footer={
-          <>
-            <button className={button} onClick={() => changeAction("incident")}>
-              Report an Issue
-            </button>
-            {s.type === "Online" && active && (
-              <button
-                className={primary}
-                onClick={() => changeAction("meeting")}
-              >
-                Open External Meeting
-              </button>
-            )}
-          </>
-        }
-      >
-        <div className="session-person">
-          <Avatar name={s.learner} userId={s.learnerUserId || s.learnerId} />
-          <div>
-            <strong>{s.learner}</strong>
-            {s.program && <p>{s.program}</p>}
-          </div>
-          {s.status === "Confirmed" &&
-            ["Paid", "Partially Refunded"].includes(s.payment) && (
+      {!initialAction && action !== "meeting" && (
+        <Modal
+          size="drawer"
+          title="Session Details"
+          subtitle={s.booking || s.id}
+          onClose={onClose}
+          footer={
+            <>
               <button
                 className={button}
-                onClick={() => go("messages", { learner: s.learner })}
+                onClick={() => changeAction("incident")}
               >
-                <MessageCircle size={16} /> Message Learner
+                Report an Issue
               </button>
-            )}
-        </div>
-        <Details
-          rows={[
-            ["Booking ID", s.booking || s.id],
-            ["Learner", s.learner],
-            ["Service", s.service],
-            ["Specific Topic", s.topic],
-            ["Date", dateLabel(s.date)],
-            ["Time", range(s)],
-            [
-              "Duration",
-              `${Math.round((hour(s.end) - hour(s.start)) * 60)} min`,
-            ],
-            ["Session Type", `${s.type} · ${s.provider}`],
-            ["Amount", money(s.amount)],
-            ["Booking Status", <Badge>{s.status}</Badge>],
-            ["Payment Status", <Badge>{s.payment}</Badge>],
-          ]}
-        />
-        {s.type === "Online" && (
-          <>
-            <h3 className="session-section-title">External meeting</h3>
-            <div className="session-meeting">
-              <Video />
-              <div>
-                <strong>{s.provider}</strong>
-                <p>{url || "Meeting link not provided yet."}</p>
-              </div>
-              {active && (
-                <button
-                  className={primary}
-                  onClick={() => changeAction("meeting")}
-                >
-                  Open External Meeting
-                </button>
-              )}
+              {s.status === "Confirmed" &&
+                ["Paid", "Partially Refunded"].includes(s.payment) && (
+                  <button
+                    className={button}
+                    onClick={() =>
+                      go("messages", { learner: s.learner, bookingId: s.id })
+                    }
+                  >
+                    <MessageCircle size={16} />
+                    Message Learner
+                  </button>
+                )}
+            </>
+          }
+        >
+          <div className="session-person">
+            <Avatar name={s.learner} userId={s.learnerUserId || s.learnerId} />
+            <div>
+              <strong>{s.learner}</strong>
+              {s.program && <p>{s.program}</p>}
             </div>
-            <p className="session-muted">
-              Kasangga has no built-in video or voice calls.
-            </p>
-          </>
-        )}
-        <h3 className="session-section-title">Payment allocation</h3>
-        <Allocation session={s} />
-        <Details
-          rows={[
-            [
-              "Transaction",
-              s.transaction ? (
-                <button
-                  className="text-green-800 font-semibold"
-                  onClick={() => setTransaction(true)}
-                >
-                  {s.transaction}
-                </button>
-              ) : (
-                "Not available"
-              ),
-            ],
-            [
-              "Earnings status",
-              s.status === "Completed"
-                ? "Included in completed session earnings"
-                : "Counted once the session is completed",
-            ],
-          ]}
-        />
-        {!action && feedback && <p role="status">{feedback}</p>}
-      </Modal>
+          </div>
+          <Details
+            rows={[
+              ["Booking ID", s.booking || s.id],
+              ["Learner", s.learner],
+              ["Service", s.service],
+              ["Specific Topic", s.topic],
+              ["Date", dateLabel(s.date)],
+              ["Time", range(s)],
+              [
+                "Duration",
+                `${Math.round((hour(s.end) - hour(s.start)) * 60)} min`,
+              ],
+              ["Session Type", `${s.type} · ${s.provider}`],
+              ["Amount", money(s.amount)],
+              ["Booking Status", <Badge>{s.status}</Badge>],
+              ["Payment Status", <Badge>{s.payment}</Badge>],
+            ]}
+          />
+          {s.type === "Online" && (
+            <>
+              <h3 className="session-section-title">External meeting</h3>
+              <div className="session-meeting">
+                <Video />
+                <div>
+                  <strong>{s.provider}</strong>
+                  <p>{url || "Meeting link not provided yet."}</p>
+                </div>
+                {active && (
+                  <button
+                    className={primary}
+                    onClick={() => changeAction("meeting")}
+                  >
+                    Open External Meeting
+                  </button>
+                )}
+              </div>
+              <p className="session-muted">
+                Kasangga has no built-in video or voice calls.
+              </p>
+            </>
+          )}
+          <h3 className="session-section-title">Payment allocation</h3>
+          <Allocation session={s} />
+          <Details
+            rows={[
+              [
+                "Transaction",
+                s.transaction ? (
+                  <button
+                    className="text-green-800 font-semibold"
+                    onClick={() => setTransaction(true)}
+                  >
+                    {s.transaction}
+                  </button>
+                ) : (
+                  "Not available"
+                ),
+              ],
+              [
+                "Earnings status",
+                s.status === "Completed"
+                  ? "Included in completed session earnings"
+                  : "Counted once the session is completed",
+              ],
+            ]}
+          />
+          {!action && feedback && <p role="status">{feedback}</p>}
+        </Modal>
+      )}
       {transaction && (
         <TransactionDetails
           session={s}
@@ -327,7 +338,9 @@ export default function SessionDetails({
               ? "Mark Session Completed"
               : action === "incident"
                 ? "Report an Issue"
-                : `Open ${s.provider}?`
+                : action === "cancel"
+                  ? "Cancel Session"
+                  : `Open ${s.provider || "External Meeting"}?`
           }
           subtitle={`${s.booking || s.id} · ${s.service} · ${s.learner}`}
           onClose={() => changeAction("")}
@@ -346,6 +359,8 @@ export default function SessionDetails({
                   className={primary}
                   disabled={
                     actionLoading ||
+                    (action === "cancel" &&
+                      (!kind || !reason.trim() || !acknowledged)) ||
                     (action === "incident" &&
                       (!kind || reason.trim().length < 20 || !files.length))
                   }
@@ -356,7 +371,9 @@ export default function SessionDetails({
                       ? "Done Session"
                       : action === "incident"
                         ? "Submit Report"
-                        : "Submit Report"}
+                        : action === "cancel"
+                          ? "Cancel Session"
+                          : "Submit Report"}
                 </button>
               </>
             ) : null
@@ -524,6 +541,17 @@ export default function SessionDetails({
                   }
                 />
               </Field>
+              {action === "cancel" && (
+                <label className="flex items-start gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={acknowledged}
+                    onChange={(event) => setAcknowledged(event.target.checked)}
+                  />
+                  I understand that cancellation does not automatically
+                  guarantee a refund.
+                </label>
+              )}
               {action !== "cancel" && (
                 <p className="session-muted">
                   {reason.trim().length}/{action === "incident" ? 20 : 10}{" "}
