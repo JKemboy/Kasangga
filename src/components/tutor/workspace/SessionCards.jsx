@@ -122,7 +122,7 @@ export default function SessionCards({
                 className={`session-status ${s.status === "Pending" ? "pending" : ""}`}
               >
                 {s.lifecycle === "Completed"
-                  ? "Done"
+                  ? "Completed"
                   : s.lifecycle === "Awaiting Completion"
                     ? "Ongoing · mark complete"
                     : s.lifecycle || s.status}
@@ -141,19 +141,36 @@ export default function SessionCards({
                         Message Learner
                       </button>
                     )}
-                  {s.status === "Confirmed" && s.payment === "Paid" && (
-                    <button
-                      onClick={() => onAction(s, "complete")}
-                      disabled={!sessionEnded}
-                      title={
-                        sessionEnded
-                          ? "Mark this session as completed"
-                          : "Available after the scheduled session end"
-                      }
-                    >
-                      Done Session
-                    </button>
-                  )}
+                  {s.status === "Confirmed" &&
+                    s.payment === "Paid" &&
+                    s.lifecycle !== "Upcoming" && (
+                      <button
+                        onClick={() => onAction(s, "complete")}
+                        disabled={!sessionEnded}
+                        title={
+                          sessionEnded
+                            ? "Mark this session as completed"
+                            : "Available after the scheduled session end"
+                        }
+                      >
+                        Done Session
+                      </button>
+                    )}
+                  <button type="button" onClick={() => onAction(s, "incident")}>
+                    Report an Issue
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {s.lifecycle === "Upcoming" &&
+                    s.status === "Confirmed" &&
+                    s.payment === "Paid" && (
+                      <button
+                        type="button"
+                        onClick={() => onAction(s, "cancel")}
+                      >
+                        Cancel Session
+                      </button>
+                    )}
                 </div>
                 {s.type === "Online" && s.status === "Confirmed" && (
                   <button
