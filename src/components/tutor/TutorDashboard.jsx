@@ -62,6 +62,7 @@ const nav = [
 ];
 export default function TutorDashboardPage() {
   const auth = useAuth();
+  const [selectedDashboardMetric, setSelectedDashboardMetric] = useState(null);
   const [data, setData] = useState(() => ({
       ...structuredClone(seed),
       services: [],
@@ -512,7 +513,12 @@ export default function TutorDashboardPage() {
             <div key={`${view}-${revision}`}>
               {view === "dashboard" && (
                 <fieldset disabled={scheduleLocked} className="contents">
-                  <Overview {...props} saveService={persistService} />
+                  <Overview
+                    {...props}
+                    saveService={persistService}
+                    selectedMetric={selectedDashboardMetric}
+                    onSelectMetric={setSelectedDashboardMetric}
+                  />
                 </fieldset>
               )}
               {view === "services" && (
