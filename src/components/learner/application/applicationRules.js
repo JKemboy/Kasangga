@@ -19,14 +19,15 @@ export const DOCUMENTS = [
     id: "enrollment",
     title: "Certificate of Registration (COR) / Current Enrollment Proof",
     required: true,
-    description: "Supports current enrollment and academic details.",
+    description:
+      "Upload your COR or enrollment proof for the current semester. It must show your current enrollment and academic details.",
   },
   {
     id: "grades",
     title: "Grade Evidence / Academic Record",
     required: true,
     description:
-      "Include relevant courses and grades for your selected subjects.",
+      "Attach grades or academic records for courses relevant to the services or subject expertise you selected in this application.",
   },
   {
     id: "awards",
