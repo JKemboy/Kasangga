@@ -1,3 +1,7 @@
+import {
+  tutorNotificationCategories,
+  tutorNotificationCategory,
+} from "../../../services/tutorNotificationCategories.js";
 // Tutor Notifications: displays tutor notifications and routes actionable items to their related workspace section.
 import { useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
@@ -89,7 +93,7 @@ export default function Notifications({ data, update, go, args = {} }) {
       n.title,
       n.text,
       n.detail,
-      n.category,
+      tutorNotificationCategory(n),
       n.time,
       timestamp(n.time).label,
     ]
@@ -97,7 +101,7 @@ export default function Notifications({ data, update, go, args = {} }) {
       .toLowerCase();
     return (
       terms.every((term) => searchable.includes(term)) &&
-      (category === "All" || n.category === category) &&
+      (category === "All" || tutorNotificationCategory(n) === category) &&
       (tab === "All" || (tab === "Read" ? n.read : !n.read))
     );
   });
@@ -237,9 +241,7 @@ export default function Notifications({ data, update, go, args = {} }) {
             }}
           >
             <option value="All">All Notifications</option>
-            {[
-              ...new Set(notifications.map((n) => n.category).filter(Boolean)),
-            ].map((c) => (
+            {tutorNotificationCategories.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
