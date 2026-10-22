@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { money } from "./data.js";
 import { button } from "./ui.jsx";
-import { SERVICE_CATEGORIES } from "./serviceRules.js";
 
 const control =
   "h-9 w-full rounded-md border border-[#dce4ef] bg-white px-3 text-xs text-[#18233d] outline-none focus:border-green-700 focus:ring-1 focus:ring-green-700";
@@ -136,7 +135,7 @@ export default function Services({
       ? args.status
       : "All",
   );
-  const [category, setCategory] = useState("All");
+  const [sessionType, setSessionType] = useState("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [edit, setEdit] = useState(openCreate ? {} : null);
@@ -161,7 +160,9 @@ export default function Services({
     return (
       terms.every((term) => text.includes(term)) &&
       (status === "All" || s.status === status) &&
-      (category === "All" || s.category === category)
+      (sessionType === "All" ||
+        s.type === sessionType ||
+        (sessionType !== "Both" && s.type === "Both"))
     );
   });
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -201,7 +202,7 @@ export default function Services({
   function clearFilters() {
     setQuery("");
     setStatus("All");
-    setCategory("All");
+    setSessionType("All");
     setPage(1);
   }
 
@@ -362,22 +363,17 @@ export default function Services({
           ))}
         </Select>
         <Select
-          label="Service category"
-          value={category}
-          onChange={(e) => {
-            setCategory(e.target.value);
+          label="Service session type"
+          value={sessionType}
+          onChange={(event) => {
+            setSessionType(event.target.value);
             setPage(1);
           }}
         >
-          <option value="All">All Categories</option>
-          {[
-            ...new Set([
-              ...(category === "All" ? [] : [category]),
-              ...data.services.map((s) => s.category),
-            ]),
-          ].map((value) => (
-            <option key={value}>{value}</option>
-          ))}
+          <option value="All">All Session Type</option>
+          <option value="Online">Online</option>
+          <option value="In-person">In-person</option>
+          <option value="Both">Both</option>
         </Select>
       </div>
       <p className="flex items-start gap-2 text-[11px] leading-4 text-[#455780]">
@@ -552,10 +548,10 @@ export default function Services({
           </h2>
           <p className="text-xs text-[#455780]">
             {data.services.length
-              ? "Try another search, status, or category."
+              ? "Try another search, status, or session type."
               : "Add a subject, rate, and session type to get started."}
           </p>
-          {(query || status !== "All" || category !== "All") && (
+          {(query || status !== "All" || sessionType !== "All") && (
             <button type="button" className={button} onClick={clearFilters}>
               Clear filters
             </button>
