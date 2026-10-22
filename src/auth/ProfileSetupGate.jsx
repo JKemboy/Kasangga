@@ -1,4 +1,7 @@
-import { collegeProgramMap, findCollege } from "../services/collegeProgramMap.js";
+import {
+  collegeProgramMap,
+  findCollege,
+} from "../services/collegeProgramMap.js";
 import { applyIdFields } from "../services/studentIdOcr.js";
 import StudentIdUpload from "./StudentIdUpload.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
@@ -25,6 +28,17 @@ import {
 import LearnerWorkspace from "../components/learner/workspace/LearnerWorkspace.jsx";
 import LearnerHelpSupport from "../components/learner/support/LearnerHelpSupport.jsx";
 
+const studyInterests = [
+  "Mathematics",
+  "Science",
+  "English",
+  "Filipino",
+  "History",
+  "Programming",
+  "Engineering",
+  "Business",
+];
+
 export default function ProfileSetupGate({ children }) {
   const auth = useAuth();
   const restricted =
@@ -36,6 +50,33 @@ function Setup() {
   const [view, setView] = useState("dashboard");
   const [open, setOpen] = useState(true);
   const [values, setValues] = useState(() => profileValues(auth.profile));
+  const initialInterests = values.interests
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const [selectedInterests, setSelectedInterests] = useState(() =>
+    initialInterests.filter((item) => studyInterests.includes(item)),
+  );
+  const [otherInterest, setOtherInterest] = useState(() =>
+    initialInterests
+      .filter((item) => !studyInterests.includes(item))
+      .join(", "),
+  );
+  const [includeOther, setIncludeOther] = useState(() =>
+    initialInterests.some((item) => !studyInterests.includes(item)),
+  );
+  const updateInterests = (selected, other, enabled) => {
+    setSelectedInterests(selected);
+    setOtherInterest(other);
+    setIncludeOther(enabled);
+    setValues((previous) => ({
+      ...previous,
+      interests: [
+        ...selected,
+        ...(enabled && other.trim() ? [other.trim()] : []),
+      ].join(", "),
+    }));
+  };
   const [busy, setBusy] = useState(false);
   const [ocrBusy, setOcrBusy] = useState(false);
   const [idReviewed, setIdReviewed] = useState(false);
@@ -51,14 +92,20 @@ function Setup() {
   async function save(e) {
     e.preventDefault();
     if (busy || ocrBusy) return;
+    if (includeOther && !otherInterest.trim())
+      return setError("Specify your other study interests.");
+    const issue = profileError(values, verified);
+    if (issue) return setError(issue);
+    if (!/^\+639\d{9}$/.test(values.phone))
+      return setError(
+        "Enter a valid Philippine mobile number: +63 followed by 10 digits starting with 9.",
+      );
     if (!extractionAttempted || !idImage)
       return setError("Upload and extract your Student ID before saving.");
     if (!idReviewed)
       return setError(
         "Review and confirm your Student ID details before saving.",
       );
-    const issue = profileError(values, verified);
-    if (issue) return setError(issue);
     setBusy(true);
     setError("");
     try {
@@ -168,48 +215,32 @@ function Setup() {
             else setOpen(false);
           }}
           footer={
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="text-[11px] text-slate-500">
-                {!extractionAttempted
-                  ? "Extract your Student ID to continue."
-                  : !idReviewed
-                    ? "Review and confirm your ID details to continue."
-                    : profileError(values, verified) ||
-                      (!idImage && "Keep the ID image selected to continue.")}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={busy || ocrBusy}
-                  className={button}
-                  onClick={() => {
-                    setView("dashboard");
-                    setOpen(false);
-                  }}
-                >
-                  Back to Dashboard
-                </button>
-                {extractionAttempted &&
-                  !!idImage &&
-                  idReviewed &&
-                  !profileError(values, verified) && (
-                    <button
-                      type="submit"
-                      form="learner-profile-setup"
-                      disabled={busy || ocrBusy}
-                      className={primary}
-                    >
-                      {busy
-                        ? "Uploading ID and saving..."
-                        : "Save and Continue"}
-                    </button>
-                  )}
-              </div>
+            <div className="flex w-full items-center justify-between gap-3">
+              <button
+                type="button"
+                disabled={busy || ocrBusy}
+                className={button}
+                onClick={() => {
+                  setView("dashboard");
+                  setOpen(false);
+                }}
+              >
+                Back to Dashboard
+              </button>
+              <button
+                type="submit"
+                form="learner-profile-setup"
+                disabled={busy || ocrBusy}
+                className={primary + " ml-auto"}
+              >
+                {busy ? "Uploading ID and saving..." : "Save and Continue"}
+              </button>
             </div>
           }
         >
           <form
             id="learner-profile-setup"
+            noValidate
             onSubmit={save}
             className="space-y-4 text-[#27344f]"
           >
@@ -253,7 +284,38 @@ function Setup() {
                       {verified ? "Verified" : "Not verified"}
                     </span>
                   </label>
-                  {field("phone", "Phone Number", 20)}
+                  <label className="block text-xs font-medium">
+                    Phone Number <span className="text-red-600">*</span>
+                    <div className="mt-1 flex items-center overflow-hidden rounded-md border border-slate-200 bg-white">
+                      <span className="border-r border-slate-200 bg-slate-50 px-3 py-1.5 text-xs">
+                        +63
+                      </span>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
+                        aria-label="Philippine mobile number"
+                        required
+                        maxLength={10}
+                        placeholder="9XXXXXXXXX"
+                        value={values.phone.replace(/^\+63|^0/, "")}
+                        onChange={(e) => {
+                          let digits = e.target.value.replace(/\D/g, "");
+                          if (digits.startsWith("63") && digits.length > 10)
+                            digits = digits.slice(2);
+                          if (digits.startsWith("0")) digits = digits.slice(1);
+                          setValues({
+                            ...values,
+                            phone: digits ? "+63" + digits.slice(0, 10) : "",
+                          });
+                        }}
+                        className={input + " border-0"}
+                      />
+                    </div>
+                    <span className="mt-1 block text-[11px] text-slate-500">
+                      Enter 10 digits starting with 9.
+                    </span>
+                  </label>
                 </fieldset>
                 <fieldset
                   disabled={busy || ocrBusy}
@@ -275,11 +337,70 @@ function Setup() {
                       className={input + " mt-1"}
                     />
                   </label>
-                  {field(
-                    "interests",
-                    "Study Interests / Preferred Subjects (comma-separated)",
-                    1000,
-                  )}
+                  <fieldset className="space-y-2">
+                    <legend className="text-xs font-medium">
+                      Student Interests <span className="text-red-600">*</span>
+                    </legend>
+                    <div className="grid grid-cols-2 gap-2">
+                      {studyInterests.map((interest) => (
+                        <label
+                          key={interest}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          <input
+                            type="checkbox"
+                            className="accent-green-800"
+                            checked={selectedInterests.includes(interest)}
+                            onChange={(e) =>
+                              updateInterests(
+                                e.target.checked
+                                  ? [...selectedInterests, interest]
+                                  : selectedInterests.filter(
+                                      (item) => item !== interest,
+                                    ),
+                                otherInterest,
+                                includeOther,
+                              )
+                            }
+                          />
+                          {interest}
+                        </label>
+                      ))}
+                      <label className="flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          className="accent-green-800"
+                          checked={includeOther}
+                          onChange={(e) =>
+                            updateInterests(
+                              selectedInterests,
+                              otherInterest,
+                              e.target.checked,
+                            )
+                          }
+                        />
+                        Others
+                      </label>
+                    </div>
+                    {includeOther && (
+                      <label className="block text-xs font-medium">
+                        Please specify <span className="text-red-600">*</span>
+                        <input
+                          required
+                          maxLength={500}
+                          value={otherInterest}
+                          onChange={(e) =>
+                            updateInterests(
+                              selectedInterests,
+                              e.target.value,
+                              includeOther,
+                            )
+                          }
+                          className={input + " mt-1"}
+                        />
+                      </label>
+                    )}
+                  </fieldset>
                 </fieldset>
                 <fieldset
                   disabled={busy || ocrBusy}
