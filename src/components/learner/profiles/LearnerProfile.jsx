@@ -26,6 +26,7 @@ const Field = ({
   editable = false,
   onChange,
   managed = false,
+  disabled = false,
 }) => (
   <label className="block text-xs font-medium text-[#37456a]">
     <span>{label}</span>
@@ -33,6 +34,7 @@ const Field = ({
       <small className="ml-2 text-slate-500">Managed by CarSU records</small>
     )}
     <input
+      disabled={disabled}
       readOnly={!editable}
       value={value}
       onChange={onChange}
@@ -276,9 +278,13 @@ export default function LearnerProfile() {
               {controls("personal")}
             </div>
             <div className="mt-2 space-y-2">
-              <Field label="Full Name" value={profile.name || ""} />
-              <Field label="Student ID" value={profile.studentId || ""} />
-              <Field label="Email Address" value={profile.email} />
+              <Field label="Full Name" value={profile.name || ""} disabled />
+              <Field
+                label="Student ID"
+                value={profile.studentId || ""}
+                disabled
+              />
+              <Field label="Email Address" value={profile.email} disabled />
               <p className="text-xs text-green-700">
                 {auth.user.email_confirmed_at ? "Verified" : "Not verified"}
               </p>
