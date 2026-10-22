@@ -43,10 +43,26 @@ export default function StudentShell({
 
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [tutorPrompt, setTutorPrompt] = useState(false);
   const [application, setApplication] = useState(null);
   const [applicationError, setApplicationError] = useState("");
   const [applicationLoading, setApplicationLoading] = useState(false);
+  const accountRef = useRef(null);
+  useEffect(() => {
+    const close = (event) => {
+      if (!accountRef.current?.contains(event.target)) setAccountOpen(false);
+    };
+    const escape = (event) => {
+      if (event.key === "Escape") setAccountOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", escape);
+    };
+  }, []);
   useEffect(() => {
     if (!tutorPrompt) return;
     let active = true;
@@ -67,6 +83,7 @@ export default function StudentShell({
     };
   }, [tutorPrompt, auth.user.id]);
   function select(id) {
+    setAccountOpen(false);
     go(id);
     setOpen(false);
   }
@@ -242,19 +259,56 @@ export default function StudentShell({
               }
             />
           )}
-          <button
-            className="flex items-center gap-2"
-            onClick={() => select("profile")}
-            aria-label="Open profile"
-          >
-            <PortalAvatar name={name} role={role} />
-            <span className="hidden text-left text-xs lg:block">
-              <b>{name}</b>
-              <span className="block text-slate-500">
-                {role === "tutor" ? "Tutor" : "Learner"}
+          <div className="relative" ref={accountRef}>
+            <button
+              className="flex items-center gap-2"
+              onClick={() => setAccountOpen((value) => !value)}
+              aria-expanded={accountOpen}
+              aria-controls="account-dropdown"
+              aria-label="Open account menu"
+            >
+              <PortalAvatar name={name} role={role} />
+              <span className="hidden text-left text-xs lg:block">
+                <b>{name}</b>
+                <span className="block text-slate-500">
+                  {role === "tutor" ? "Tutor" : "Learner"}
+                </span>
               </span>
-            </span>
-          </button>
+              <ChevronDown size={14} />
+            </button>
+            {accountOpen && (
+              <div
+                id="account-dropdown"
+                className="absolute right-0 top-full mt-3 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+              >
+                {[
+                  ["profile", "Profile"],
+                  ["settings", "Settings"],
+                  [
+                    role === "tutor" ? "help" : "help-support",
+                    "Help & Support",
+                  ],
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => select(id)}
+                    className="block w-full px-4 py-2 text-left text-xs hover:bg-green-50"
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setAccountOpen(false);
+                    requestLogout();
+                  }}
+                  className="block w-full border-t px-4 py-2 text-left text-xs text-red-700 hover:bg-red-50"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       {tutorPrompt && (
