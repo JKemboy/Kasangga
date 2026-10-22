@@ -108,69 +108,47 @@ export default function LearnerHelpSupport() {
           </label>
           {showArticles ? (
             <>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <h2
-                  ref={resultsHeading}
-                  tabIndex={-1}
-                  className="text-base font-bold"
-                >
-                  {query.trim() ? "Search Results" : "All Help Articles"}
-                </h2>
-                <button
-                  type="button"
-                  className={button}
-                  onClick={() => {
-                    setLibrary(false);
-                    setQuery("");
-                    setCategory("All Categories");
-                  }}
-                >
-                  <ArrowLeft className="mr-1 inline h-3 w-3" />
-                  Help Categories
-                </button>
-              </div>
-              <label className="mt-3 block text-xs font-medium">
-                Filter by category
-                <select
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value)}
-                  className="ml-2 rounded border border-slate-200 bg-white p-2"
-                >
-                  <option>All Categories</option>
-                  {categories.map(([, name]) => (
-                    <option key={name}>{name}</option>
-                  ))}
-                </select>
-              </label>
-              <p
-                role="status"
-                aria-live="polite"
-                className="my-3 text-xs text-slate-500"
+              <button
+                type="button"
+                className="mb-6 mt-4 inline-flex items-center gap-1 text-sm font-medium text-[#006b3c] hover:underline"
+                onClick={() => {
+                  setLibrary(false);
+                  setQuery("");
+                  setCategory("All Categories");
+                }}
               >
-                {results.length} article{results.length === 1 ? "" : "s"} found
+                <ArrowLeft size={15} />
+                All help categories
+              </button>
+              <h2
+                ref={resultsHeading}
+                tabIndex={-1}
+                className="mb-4 text-base font-bold"
+              >
+                {query.trim()
+                  ? "Search results"
+                  : category === "All Categories"
+                    ? "All articles"
+                    : category}
+              </h2>
+              <p role="status" aria-live="polite" className="sr-only">
+                {results.length} articles found
               </p>
-              <div className="space-y-2">
+              <div className="rounded-xl border border-[#e1e7ef] bg-white px-4 py-2">
                 {results.map((item) => (
                   <button
                     type="button"
                     key={item.id}
                     onClick={() => setArticle(item)}
-                    className={
-                      panel +
-                      " flex w-full items-start gap-3 text-left hover:border-green-600"
-                    }
+                    className="group flex min-h-10 w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-1 py-2 text-left hover:bg-green-50 focus-visible:outline-green-700 sm:flex-nowrap"
                   >
-                    <FileText className="mt-1 h-5 w-5 shrink-0 text-green-800" />
-                    <span>
-                      <small className="text-green-800">{item.category}</small>
-                      <strong className="mt-1 block text-sm">
-                        {item.title}
-                      </strong>
-                      <span className="mt-1 block text-xs text-slate-500">
-                        {item.steps[0]}
-                      </span>
+                    <FileText className="h-[18px] w-[18px] shrink-0 text-[#006b3c]" />
+                    <span className="min-w-0 flex-1 text-sm text-[#0645d9] group-hover:underline">
+                      {item.title}
                     </span>
-                    <ArrowRight className="ml-auto h-4 w-4 shrink-0" />
+                    <span className="ml-auto text-xs text-[#728093] sm:shrink-0">
+                      {item.category}
+                    </span>
                   </button>
                 ))}
               </div>
