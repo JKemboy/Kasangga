@@ -30,6 +30,7 @@ import {
   Home,
   Boxes,
   CalendarDays,
+  CalendarClock,
   MessageCircle,
   Wallet,
   Bell,
@@ -48,7 +49,7 @@ import { input, matches } from "./workspace/ui.jsx";
 const nav = [
   ["dashboard", "Dashboard", Home],
   ["services", "My Services", Boxes],
-  ["availability", "Availability & Schedule", CalendarDays],
+  ["availability", "Availability & Schedule", CalendarClock],
   ["sessions", "My Sessions", CalendarDays],
   ["messages", "Messages", MessageCircle],
   ["earnings", "Earnings", Wallet],
