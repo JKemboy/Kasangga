@@ -23,6 +23,7 @@ import { time } from "./data.js";
 import "./schedule-review.css";
 const blank = () => ({
   id: crypto.randomUUID(),
+  manual: true,
   code: "",
   name: "",
   day: "",
@@ -165,7 +166,10 @@ export default function ScheduleUpload({
       const next = {
         ...result.metadata,
         confidence: result.confidence,
-        rows: parseScheduleRows(result.text),
+        rows: parseScheduleRows(result.text).map((row) => ({
+          ...row,
+          manual: false,
+        })),
       };
       setDraft(next);
       setStage("review");
@@ -182,6 +186,7 @@ export default function ScheduleUpload({
     }
   }
   function patch(id, key, value) {
+    if (!rows.find((row) => row.id === id)?.manual) return;
     setDraft({
       ...draft,
       rows: rows.map((r) =>
@@ -442,9 +447,9 @@ export default function ScheduleUpload({
                 {draft.storagePath
                   ? "Original file saved in private schedule storage."
                   : "Upload the original file before confirming."}{" "}
-                Confirmed class rows are saved to your database. Check and edit
-                the recognized course number, descriptive title, time, days, and
-                room before confirming.
+                Imported rows are locked and cannot be edited or deleted. You
+                may add missing classes and remove only rows you manually added
+                before confirmation.
               </p>
             </section>
             <div className="schedule-summary">
@@ -460,8 +465,10 @@ export default function ScheduleUpload({
               meetings are removed.
             </p>
             <p className="session-muted">
-              Compare every row with your official file. Highlighted fields need
-              checking. Edit a highlighted field to clear its flag.
+              Compare every row with your official file. If an imported row is
+              incorrect, choose a clearer or corrected file and extract it
+              again. Only manually added rows can be changed or removed before
+              confirmation.
             </p>
             <div className="flex gap-2">
               <button className={button} onClick={openSource}>
@@ -541,6 +548,7 @@ export default function ScheduleUpload({
                             {key === "day" ? (
                               <select
                                 aria-label={`Days row ${i + 1}`}
+                                disabled={!r.manual}
                                 className={input}
                                 value={r.day}
                                 onChange={(e) =>
@@ -560,6 +568,7 @@ export default function ScheduleUpload({
                                   aria-label={`Start time row ${i + 1}`}
                                   className={input}
                                   type="time"
+                                  disabled={!r.manual}
                                   value={r.start}
                                   onChange={(e) =>
                                     patch(r.id, "start", e.target.value)
@@ -570,6 +579,7 @@ export default function ScheduleUpload({
                                   aria-label={`End time row ${i + 1}`}
                                   className={input}
                                   type="time"
+                                  disabled={!r.manual}
                                   value={r.end}
                                   onChange={(e) =>
                                     patch(r.id, "end", e.target.value)
@@ -579,6 +589,7 @@ export default function ScheduleUpload({
                             ) : (
                               <input
                                 aria-label={`${key} row ${i + 1}`}
+                                disabled={!r.manual}
                                 className={input}
                                 type="text"
                                 value={r[key]}
@@ -612,8 +623,15 @@ export default function ScheduleUpload({
                       ))}
                       <td>
                         <button
+                          disabled={!r.manual}
+                          title={
+                            r.manual
+                              ? "Remove your added row"
+                              : "Imported classes cannot be removed"
+                          }
                           aria-label={`Remove class row ${i + 1}`}
                           onClick={() => {
+                            if (!r.manual) return;
                             setDraft({
                               ...draft,
                               rows: rows.filter((v) => v.id !== r.id),
