@@ -1,5 +1,5 @@
 import { getSupabaseClient } from "./supabaseClient.js";
-import { DOCUMENTS } from "../components/learner/application/applicationRules.js";
+import { applicationDocuments } from "../components/learner/application/applicationRules.js";
 
 const statusLabels = {
   pending: "Pending",
@@ -16,8 +16,11 @@ function applicationView(row, user, verificationDocuments = []) {
   const details = row.application_details || {};
   const documents = Object.fromEntries(
     verificationDocuments.map((document) => [
-      document.document_type,
+      document.document_type === "awards"
+        ? "awards_" + document.document_id
+        : document.document_type,
       {
+        documentType: document.document_type,
         storagePath: document.file_path,
         name: document.file_name || document.file_path.split("/").at(-1),
         type: document.mime_type || "",
@@ -61,6 +64,10 @@ function applicationView(row, user, verificationDocuments = []) {
     rejectionReason: row.rejection_reason || "",
     history: row.review_history || [],
     subjects: details.subjects || [],
+    courseCode: details.courseCode || "",
+    courseDescription: details.courseDescription || "",
+    gcashName: details.gcashName || "",
+    gcashNumber: details.gcashNumber || "",
     topics: details.topics || {},
     bio: details.bio || "",
     experience: details.experience || "",
@@ -122,15 +129,9 @@ export async function submitTutorApplication(
   client = getSupabaseClient(),
 ) {
   const user = await requireSessionUser(userId, client);
-  const documents = DOCUMENTS.filter(
-    (document) => draft.documents?.[document.id]?.storagePath,
-  ).map((document) => ({
-    document_type: document.id,
-    file_path: draft.documents[document.id].storagePath,
-    file_name: draft.documents[document.id].name,
-    mime_type: draft.documents[document.id].type,
-  }));
+  const documents = applicationDocuments(draft.documents);
   const details = {
+    applicationVersion: 2,
     name: account.name,
     studentId: account.studentId,
     email: account.email,
@@ -138,10 +139,12 @@ export async function submitTutorApplication(
     program: account.program,
     year: account.year,
     subjects: draft.subjects,
-    topics: draft.topics,
+    courseCode: draft.courseCode?.trim(),
+    courseDescription: draft.courseDescription?.trim(),
+    gcashName: draft.gcashName?.trim(),
+    gcashNumber: draft.gcashNumber,
     bio: draft.bio,
     experience: draft.experience,
-    sessionType: draft.type,
     motivation: draft.motivation,
     certified: draft.certified,
   };

@@ -10,12 +10,6 @@ export const SUBJECTS = {
 };
 export const DOCUMENTS = [
   {
-    id: "studentId",
-    title: "Caraga State University Student ID",
-    required: true,
-    description: "Verifies your CSU student identity.",
-  },
-  {
     id: "enrollment",
     title: "Certificate of Registration (COR) / Current Enrollment Proof",
     required: true,
@@ -34,16 +28,24 @@ export const DOCUMENTS = [
     title: "Relevant Certificates / Awards",
     required: false,
     description:
-      "Additional evidence of expertise, training or academic achievement.",
+      "Upload up to 10 certificates or awards. Select multiple files at once; each file must be 10 MB or less.",
   },
 ];
 export function tutoringError(draft) {
-  if (!draft.subjects?.length || draft.subjects.some((s) => !SUBJECTS[s]))
-    return "Choose at least one subject.";
+  if (!draft.subjects?.length)
+    return "Add at least one subject or area of expertise using the Add button.";
+  if (!draft.courseCode?.trim())
+    return "Enter the course code (for example, IT 101).";
+  if (!draft.courseDescription?.trim())
+    return "Enter the course description for your subject expertise.";
+  if (draft.courseCode.length > 50 || draft.courseDescription.length > 1000)
+    return "Course code must be at most 50 characters and description at most 1000 characters.";
+  if (!draft.gcashName?.trim())
+    return "Enter the account name registered with your GCash account.";
+  if (!/^\+639\d{9}$/.test(draft.gcashNumber || ""))
+    return "Enter a valid GCash number: +63 followed by 10 digits starting with 9.";
   if (draft.bio?.trim().length < 30 || !draft.bio || draft.bio.length > 400)
     return "Write a bio of 30–400 characters.";
-  if (!["Online", "In-Person", "Both"].includes(draft.type))
-    return "Choose a session type.";
   if (
     !draft.motivation ||
     draft.motivation.trim().length < 20 ||
@@ -59,7 +61,7 @@ export function documentsError(documents) {
       !documents[d.id]?.storagePath &&
       !documents[d.id]?.storageId,
   )
-    ? "Upload Student ID, enrollment proof and grade evidence."
+    ? "Upload your current-semester COR or enrollment proof and grade evidence relevant to your subjects."
     : "";
 }
 export function applicationError(draft) {
@@ -68,4 +70,33 @@ export function applicationError(draft) {
     documentsError(draft.documents || {}) ||
     (!draft.certified ? "Check the certification box." : "")
   );
+}
+
+export function documentSlots(documents = {}) {
+  return DOCUMENTS.flatMap((document) =>
+    document.id === "awards"
+      ? [
+          document,
+          ...Object.keys(documents)
+            .filter((key) => key.startsWith("awards_"))
+            .map((key) => ({
+              ...document,
+              id: key,
+              kind: "awards",
+              uploaded: true,
+            })),
+        ]
+      : [document],
+  );
+}
+export function applicationDocuments(documents = {}) {
+  return Object.entries(documents)
+    .filter(([, document]) => document?.storagePath)
+    .map(([key, document]) => ({
+      document_type:
+        document.documentType || (key.startsWith("awards_") ? "awards" : key),
+      file_path: document.storagePath,
+      file_name: document.name,
+      mime_type: document.type,
+    }));
 }

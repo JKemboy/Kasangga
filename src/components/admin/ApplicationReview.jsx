@@ -112,8 +112,11 @@ export default function ApplicationReview({
     ["Program", r.program],
     ["Year Level", r.year],
     ["Submitted Date", dateLabel(r.date)],
-    ["Application type", r.type || "New Tutor"],
-    ["Subject", r.subject],
+    ["Course Code", r.courseCode],
+    ["Course Description", r.courseDescription],
+    ["GCash Account Name", r.gcashName],
+    ["GCash Number", r.gcashNumber],
+    ["Subjects", r.subjects?.join(", ")],
     [
       "Current roles",
       account ? (account.tutor ? "Learner, Tutor" : "Learner") : null,
@@ -171,10 +174,14 @@ export default function ApplicationReview({
                 }`,
               }),
           });
-          const verification = analyzeTutorCredential(kind, extracted.text, {
-            name: r.name || account?.name,
-            studentId: r.studentId || account?.studentId,
-          });
+          const verification = analyzeTutorCredential(
+            doc.documentType || kind,
+            extracted.text,
+            {
+              name: r.name || account?.name,
+              studentId: r.studentId || account?.studentId,
+            },
+          );
           setOcrResults((previous) => ({
             ...previous,
             [key]: {

@@ -1,7 +1,7 @@
 // Application Status: renders the learner's current tutor-application state and any review feedback.
 import { useEffect, useRef } from "react";
 import { ArrowLeft, Check, Info } from "lucide-react";
-import { DOCUMENTS } from "./applicationRules.js";
+import { DOCUMENTS, documentSlots } from "./applicationRules.js";
 const date = (value) =>
   value && !Number.isNaN(new Date(value).getTime())
     ? new Date(value).toLocaleDateString("en-US", {
@@ -227,19 +227,12 @@ export default function ApplicationStatus({
                   "Subjects / Areas of Expertise",
                   application.subjects?.join(", "),
                 ],
-                [
-                  "Specific Skills / Topics",
-                  application.subjects?.map((s) => (
-                    <div key={s}>
-                      <strong>{s}:</strong>{" "}
-                      {(application.topics?.[s] || []).join(", ") ||
-                        "None selected"}
-                    </div>
-                  )),
-                ],
+                ["Course Code", application.courseCode],
+                ["Course Description", application.courseDescription],
+                ["GCash Account Name", application.gcashName],
+                ["GCash Number", application.gcashNumber],
                 ["Tutor Bio", application.bio],
                 ["Tutoring Experience", application.experience],
-                ["Preferred Session Type", application.type],
                 ["Reason for Applying", application.motivation],
               ]}
             />
@@ -247,38 +240,45 @@ export default function ApplicationStatus({
           <section className="ta-status-card">
             <h2>Uploaded Documents</h2>
             <Details
-              items={DOCUMENTS.map((d) => [
-                d.title,
-                docs[d.id] ? (
-                  <>
-                    <button
-                      className="ta-document-link"
-                      onClick={() => onDocument(docs[d.id])}
-                    >
-                      {docs[d.id].name}
-                    </button>
-                    <span className="ta-file-type">
-                      {" "}
-                      ·{" "}
-                      {docs[d.id].type === "application/pdf"
-                        ? "PDF document"
-                        : docs[d.id].type === "image/png"
-                          ? "PNG image"
-                          : "JPG image"}
-                    </span>
-                    <span className="ta-status-pill warning">
-                      Manual Review by Admin
-                    </span>
-                    {docs[d.id].error && (
-                      <p className="ta-muted">{docs[d.id].error}</p>
-                    )}
-                  </>
-                ) : d.required ? (
-                  "Not uploaded"
-                ) : (
-                  "Not provided (optional)"
-                ),
-              ])}
+              items={documentSlots(docs)
+                .filter(
+                  (d) =>
+                    d.id !== "awards" ||
+                    docs.awards ||
+                    !Object.keys(docs).some((key) => key.startsWith("awards_")),
+                )
+                .map((d) => [
+                  d.title,
+                  docs[d.id] ? (
+                    <>
+                      <button
+                        className="ta-document-link"
+                        onClick={() => onDocument(docs[d.id])}
+                      >
+                        {docs[d.id].name}
+                      </button>
+                      <span className="ta-file-type">
+                        {" "}
+                        ·{" "}
+                        {docs[d.id].type === "application/pdf"
+                          ? "PDF document"
+                          : docs[d.id].type === "image/png"
+                            ? "PNG image"
+                            : "JPG image"}
+                      </span>
+                      <span className="ta-status-pill warning">
+                        Manual Review by Admin
+                      </span>
+                      {docs[d.id].error && (
+                        <p className="ta-muted">{docs[d.id].error}</p>
+                      )}
+                    </>
+                  ) : d.required ? (
+                    "Not uploaded"
+                  ) : (
+                    "Not provided (optional)"
+                  ),
+                ])}
             />
           </section>
           {error && (
