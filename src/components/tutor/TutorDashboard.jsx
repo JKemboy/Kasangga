@@ -2,10 +2,7 @@ import MyReports from "./workspace/MyReports.jsx";
 import AccountSettings from "../shared/AccountSettings.jsx";
 // Tutor portal coordinator: loads tutor profile, services, availability, class schedule, and sessions, then routes to each tutor section.
 import { tutorScheduleReady } from "./workspace/scheduleAccess.js";
-import {
-  loadTutorInformation,
-  saveTutorInformation,
-} from "../../services/tutorInformation.js";
+import { loadTutorInformation } from "../../services/tutorInformation.js";
 import { listTutorSessions } from "../../services/tutorSessions.js";
 import { sessionLifecycle } from "../../services/sessionLifecycle.js";
 import {
@@ -107,21 +104,6 @@ export default function TutorDashboardPage() {
       window.removeEventListener("focus", refreshTutorInformation);
     };
   }, [refreshTutorInformation]);
-  async function persistTutorInformation(values) {
-    // Each section calls these dashboard callbacks so account data is saved
-    // once through the matching Supabase service and then refreshed in memory.
-    requireSchedule();
-    const info = await saveTutorInformation(values);
-    profileRequest.current++;
-    setData((previous) => ({
-      ...previous,
-      profile: { ...previous.profile, ...info },
-    }));
-    setProfileLoading(false);
-    setTutorProfileError("");
-    setNotice("Tutor information saved.");
-    return info;
-  }
   const [servicesLoading, setServicesLoading] = useState(true);
   const [servicesError, setServicesError] = useState("");
   const request = useRef(0);
@@ -358,7 +340,6 @@ export default function TutorDashboardPage() {
     profileLoading,
     tutorProfileError,
     refreshTutorInformation,
-    saveTutorInformation: persistTutorInformation,
     sessionsLoading,
     sessionsError,
     refreshSessions,

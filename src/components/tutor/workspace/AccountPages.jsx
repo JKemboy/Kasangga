@@ -1,35 +1,15 @@
-// Tutor account sections: connects Messages to booking chat and renders editable profile information from the tutor workspace.
+// Tutor account sections: messages and read-only information from the approved application.
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import BookingMessages from "../../shared/BookingMessages.jsx";
-import SessionDetails from "./SessionDetails.jsx";
-import { time, hour } from "./data.js";
-import { useInteractions } from "../../shared/InteractionProvider.jsx";
-import { useEffect, useRef, useState } from "react";
 import {
-  ExternalLink,
-  Info,
-  Send,
   CalendarDays,
   Check,
   LockKeyhole,
-  Pencil,
   ShieldCheck,
   Star,
   UserRound,
 } from "lucide-react";
-import {
-  Heading,
-  Panel,
-  Avatar,
-  Badge,
-  Modal,
-  Field,
-  button,
-  primary,
-  input,
-  matches,
-  Empty,
-} from "./ui.jsx";
+import { Badge } from "./ui.jsx";
 export function Messages({ args = {} }) {
   return (
     <BookingMessages
@@ -42,32 +22,10 @@ export function Messages({ args = {} }) {
 export { default as Notifications } from "./Notifications.jsx";
 export function Profile({
   data,
-  saveTutorInformation,
   profileLoading,
   tutorProfileError,
   refreshTutorInformation,
 }) {
-  const [editing, setEditing] = useState(false);
-  const [profileError, setProfileError] = useState("");
-  const [profileSaving, setProfileSaving] = useState(false);
-  const { confirm } = useInteractions();
-  const dirty = useRef(false);
-  async function closeProfile() {
-    if (profileSaving) return;
-    if (
-      !dirty.current ||
-      (await confirm({
-        title: "Discard your changes?",
-        message: "Your bio, expertise and topics return to the saved version.",
-        accept: "Discard Changes",
-        cancel: "Keep Editing",
-        danger: true,
-      }))
-    ) {
-      setEditing(false);
-      dirty.current = false;
-    }
-  }
   const p = data.profile;
   const fields = [
     ["name", "Full Name"],
@@ -86,20 +44,10 @@ export function Profile({
               Tutor Profile
             </h1>
             <p className="mt-0.5 text-xs text-[#001ca8]">
-              View and manage your student and tutor information.
+              View your student information and approved tutor application
+              details.
             </p>
           </div>
-          <button
-            className="inline-flex items-center gap-2 rounded-md border border-green-700 bg-white px-3 py-2 text-xs font-semibold text-green-800 hover:bg-green-50"
-            disabled={profileLoading || !!tutorProfileError}
-            onClick={() => {
-              setProfileError("");
-              setEditing(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-            Edit Profile
-          </button>
         </div>
         <section
           aria-label="Tutor profile summary"
@@ -178,55 +126,43 @@ export function Profile({
             <h2 className="mb-2 text-sm font-bold tracking-tight text-black">
               Tutor Information
             </h2>
-            <dl className="space-y-2">
-              {[
-                ["Tutor Bio", p.bio],
-                ["Expertise Summary", p.expertise],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="grid gap-0.5 sm:grid-cols-[29%_minmax(0,1fr)] sm:gap-3"
-                >
-                  <dt className="font-medium text-[#344675]">{label}</dt>
-                  <dd className="min-w-0 break-words">{value}</dd>
-                </div>
-              ))}
-              <div className="grid gap-1 sm:grid-cols-[29%_minmax(0,1fr)] sm:gap-3">
-                <dt className="font-medium text-[#344675]">
-                  Services / Subjects
-                </dt>
-                <dd className="flex flex-wrap gap-1.5">
-                  {data.services.length
-                    ? data.services.map((service) => (
-                        <span
-                          key={service.id}
-                          className="rounded-md bg-[#e6f6ec] px-2.5 py-1 font-semibold text-green-950"
-                        >
-                          {[service.name, service.subtitle]
-                            .filter(Boolean)
-                            .join(" - ")}
-                        </span>
-                      ))
-                    : "No services added yet."}
-                </dd>
-              </div>
-              <div className="grid gap-1 sm:grid-cols-[29%_minmax(0,1fr)] sm:gap-3">
-                <dt className="font-medium text-[#344675]">Topics / Skills</dt>
-                <dd className="flex min-w-0 flex-wrap gap-1.5">
-                  {p.skills
-                    .split(",")
-                    .filter((skill) => skill.trim())
-                    .map((skill, i) => (
-                      <span
-                        key={i}
-                        className="max-w-full break-words rounded-md bg-[#e6f6ec] px-2.5 py-1 font-semibold text-green-950"
-                      >
-                        {skill.trim()}
-                      </span>
-                    ))}
-                </dd>
-              </div>
-            </dl>
+            <p className="mb-3 flex items-center gap-2 text-[11px] text-slate-500">
+              <LockKeyhole size={14} />
+              Read-only information from your approved tutor application.
+            </p>
+            {!profileLoading && !tutorProfileError && (
+              <dl className="space-y-2">
+                {[
+                  ["Tutor Bio", p.bio],
+                  ["Subjects / Areas of Expertise", p.expertise],
+                  ...(p.skills ? [["Topics / Skills", p.skills]] : []),
+                  [
+                    "Course Code",
+                    p.approvedApplication?.courseCode || "Not provided",
+                  ],
+                  [
+                    "Course Description",
+                    p.approvedApplication?.courseDescription || "Not provided",
+                  ],
+                  [
+                    "Tutoring Experience",
+                    p.approvedApplication?.experience || "Not provided",
+                  ],
+                  [
+                    "Reason for Applying",
+                    p.approvedApplication?.motivation || "Not provided",
+                  ],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="grid gap-0.5 sm:grid-cols-[29%_minmax(0,1fr)] sm:gap-3"
+                  >
+                    <dt className="font-medium text-[#344675]">{label}</dt>
+                    <dd className="min-w-0 break-words">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
           </section>
         </div>
         <section className="rounded-lg border border-[#e0e7f0] bg-white p-3">
@@ -284,82 +220,6 @@ export function Profile({
           </p>
         </section>
       </section>
-      {editing && (
-        <Modal title="Edit Profile" onClose={closeProfile}>
-          <form
-            className="space-y-3"
-            onChange={() => {
-              dirty.current = true;
-            }}
-            onSubmit={async (e) => {
-              if (profileSaving) {
-                e.preventDefault();
-                return;
-              }
-              e.preventDefault();
-              const values = Object.fromEntries(new FormData(e.currentTarget));
-              if (values.bio.trim().length < 30)
-                return setProfileError(
-                  "Write at least 30 characters in your bio.",
-                );
-              if (values.expertise.trim().length < 5)
-                return setProfileError(
-                  "Add an expertise summary of at least 5 characters.",
-                );
-              if (!values.skills.trim())
-                return setProfileError("Add at least one topic or skill.");
-              setProfileSaving(true);
-              setProfileError("");
-              try {
-                await saveTutorInformation(values);
-              } catch (error) {
-                setProfileError(error.message);
-                return;
-              } finally {
-                setProfileSaving(false);
-              }
-              dirty.current = false;
-              setProfileError("");
-              setEditing(false);
-            }}
-          >
-            {[
-              // Academic identity is managed by the university.
-
-              ["bio", "Tutor Bio"],
-              ["expertise", "Expertise Summary"],
-              ["skills", "Topics / Skills (comma separated)"],
-            ].map(([key, label]) => (
-              <Field
-                key={key}
-                label={label}
-                name={key}
-                type={key === "email" ? "email" : "text"}
-                required
-                disabled={profileSaving}
-                maxLength={key === "bio" ? 1000 : 300}
-                defaultValue={p[key]}
-              />
-            ))}
-            {profileError && (
-              <p role="alert" className="text-xs text-red-600">
-                {profileError}
-              </p>
-            )}
-            <button className={primary} disabled={profileSaving}>
-              {profileSaving ? "Saving..." : "Save Profile"}
-            </button>
-            <button
-              type="button"
-              className={button}
-              disabled={profileSaving}
-              onClick={closeProfile}
-            >
-              Cancel
-            </button>
-          </form>
-        </Modal>
-      )}
     </>
   );
 }
