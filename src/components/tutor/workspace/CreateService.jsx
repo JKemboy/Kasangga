@@ -1,6 +1,12 @@
+import {
+  CSU_MEETING_PLACES,
+  MAX_SERVICE_RATE,
+  formatServiceDate,
+  splitMeetingLocation,
+  combineMeetingLocation,
+} from "../../../services/serviceFormOptions.js";
 import { loadMyTutorApplication } from "../../../services/tutorApplications.js";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
-import { MAX_SERVICE_RATE, formatServiceDate } from "../../../services/serviceFormOptions.js";
 // Service editor: builds a tutor service and topic schedule; save callbacks enforce booking-aware edit restrictions.
 import { useEffect, useState } from "react";
 import { Plus, Check, X, Trash2 } from "lucide-react";
@@ -303,7 +309,22 @@ export default function CreateService({
     e.preventDefault();
     if (saving || scheduleLoading || scheduleError || expertiseLoading) return;
     if (expertiseError) return setError(expertiseError);
-    if (!expertise.includes(name)) return setError("Choose a service title from your subject expertise.");
+    if (!expertise.includes(name))
+      return setError("Choose a service title from your subject expertise.");
+    for (const topic of topics) {
+      if (
+        topic.types.includes("In-person") &&
+        !topic.availability.some(isBooked)
+      ) {
+        const location = splitMeetingLocation(topic.location);
+        if (!location.place || !location.details.trim())
+          return setError(
+            "Choose a CSU meeting place and describe the exact location for " +
+              (topic.name || "each in-person topic") +
+              ".",
+          );
+      }
+    }
     const result = validateTopicService(
       { name, description, topicDetails: topics },
       data.services,
@@ -552,19 +573,74 @@ export default function CreateService({
                     </Field>
                   )}
                   {topic.types.includes("In-person") && (
-                    <Field label="Meeting place *">
-                      <input
-                        className={input}
-                        required
-                        maxLength={300}
-                        value={topic.location}
-                        placeholder="e.g., CCIS Building, Computer Lab 1"
-                        disabled={topic.availability.some(isBooked)}
-                        onChange={(e) =>
-                          patch(topic.key, "location", e.target.value)
-                        }
-                      />
-                    </Field>
+                    <div className="space-y-2">
+                      <Field label="CSU building / common place *">
+                        <select
+                          className={input}
+                          required
+                          value={
+                            topic.meetingPlace ??
+                            splitMeetingLocation(topic.location).place
+                          }
+                          disabled={topic.availability.some(isBooked)}
+                          onChange={(event) => {
+                            const details =
+                              topic.locationDetails ??
+                              splitMeetingLocation(topic.location).details;
+                            patch(
+                              topic.key,
+                              "meetingPlace",
+                              event.target.value,
+                            );
+                            patch(
+                              topic.key,
+                              "location",
+                              combineMeetingLocation(
+                                event.target.value,
+                                details,
+                              ),
+                            );
+                          }}
+                        >
+                          <option value="">Choose a CSU meeting place</option>
+                          {CSU_MEETING_PLACES.map((place) => (
+                            <option key={place}>{place}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Exact location description *">
+                        <textarea
+                          className={input}
+                          required
+                          maxLength={200}
+                          placeholder="e.g., second floor, table beside the main entrance"
+                          value={
+                            topic.locationDetails ??
+                            splitMeetingLocation(topic.location).details
+                          }
+                          disabled={topic.availability.some(isBooked)}
+                          onChange={(event) => {
+                            const place =
+                              topic.meetingPlace ??
+                              splitMeetingLocation(topic.location).place;
+                            patch(
+                              topic.key,
+                              "locationDetails",
+                              event.target.value,
+                            );
+                            patch(
+                              topic.key,
+                              "location",
+                              combineMeetingLocation(place, event.target.value),
+                            );
+                          }}
+                        />
+                      </Field>
+                      <p className="create-service-hint">
+                        Describe the floor, room or landmark. Use a public
+                        meeting area and check building access.
+                      </p>
+                    </div>
                   )}
                 </div>
                 <div className="service-availability-heading">
