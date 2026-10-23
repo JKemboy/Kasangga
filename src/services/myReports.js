@@ -20,3 +20,27 @@ export async function listMyReports(client = getSupabaseClient()) {
     received: rows.filter((row) => row.reported_against === uid),
   };
 }
+
+// Report alerts are derived from Supabase records; no browser persistence.
+export function receivedReportNotifications(reports, stored = []) {
+  const existing = new Set(
+    stored
+      .filter((n) => n.entityType === "incident_reports")
+      .map((n) => String(n.entityId)),
+  );
+  return reports
+    .filter((report) => !existing.has(String(report.report_id)))
+    .map((report) => ({
+      id: `report-received-${report.report_id}`,
+      kind: "report",
+      category: "Safety and Reports",
+      notificationType: "incident_received",
+      entityType: "incident_reports",
+      entityId: String(report.report_id),
+      title: "Report received",
+      text: `A report was submitted about booking #${report.booking_id || "N/A"}. View My Reports for details and review status.`,
+      time: report.submitted_at,
+      view: "reports",
+      args: { tab: "received", reportId: String(report.report_id) },
+    }));
+}

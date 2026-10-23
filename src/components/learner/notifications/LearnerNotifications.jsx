@@ -17,6 +17,7 @@ import {
 
 const filters = [
   [Bell, "All Notifications"],
+  [Info, "Safety and Reports"],
   [Mail, "Unread"],
   [CalendarDays, "Sessions"],
   [BriefcaseBusiness, "Payments"],
@@ -106,7 +107,11 @@ export default function LearnerNotifications() {
                         ),
                         bookingId: notification.bookingId,
                       });
-                    else work.go("sessions", notification?.args || {});
+                    else
+                      work.go(
+                        notification?.view || "sessions",
+                        notification?.args || {},
+                      );
                   }}
                   className={`flex w-full items-center gap-2 border-b border-[#e7edf3] px-3 py-2 text-left last:border-b-0 ${unread ? "bg-[#f3fbf6]" : ""}`}
                 >

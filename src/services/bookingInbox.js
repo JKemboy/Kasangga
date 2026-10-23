@@ -1,3 +1,4 @@
+import { listMyReports, receivedReportNotifications } from "./myReports.js";
 import { listChats } from "./bookingMessages.js";
 import { listLearnerSessions } from "./learnerSessions.js";
 import { listTutorSessions } from "./tutorSessions.js";
@@ -36,9 +37,10 @@ function makeSessionNotification(session, role) {
 }
 
 export async function loadBookingInbox(role, userId) {
-  const [chats, sessions] = await Promise.all([
+  const [chats, sessions, reports] = await Promise.all([
     listChats(role),
     role === "tutor" ? listTutorSessions() : listLearnerSessions(),
+    userId ? listMyReports() : Promise.resolve({ received: [] }),
   ]);
   const confirmedSessions = sessions.filter((session) => {
     const state = sessionState(session, role);
@@ -127,23 +129,29 @@ export async function loadBookingInbox(role, userId) {
         time: row.created_at,
         read: row.is_read,
         category:
-          entity === "services"
-            ? "Services"
-            : entity === "payments"
-              ? "Payments"
-              : "System",
+          entity === "incident_reports"
+            ? "Safety and Reports"
+            : entity === "services"
+              ? "Services"
+              : entity === "payments"
+                ? "Payments"
+                : "System",
         view:
-          entity === "services"
-            ? "services"
-            : entity === "bookings"
-              ? "sessions"
-              : "notifications",
+          entity === "incident_reports"
+            ? "reports"
+            : entity === "services"
+              ? "services"
+              : entity === "bookings"
+                ? "sessions"
+                : "notifications",
         args:
-          entity === "services"
-            ? { serviceId: id }
-            : entity === "bookings"
-              ? { sessionId: id }
-              : { notificationId: `notification-${row.notification_id}` },
+          entity === "incident_reports"
+            ? { reportId: id }
+            : entity === "services"
+              ? { serviceId: id }
+              : entity === "bookings"
+                ? { sessionId: id }
+                : { notificationId: `notification-${row.notification_id}` },
       };
     });
   }
@@ -151,6 +159,7 @@ export async function loadBookingInbox(role, userId) {
     threads,
     notifications: [
       ...stored,
+      ...receivedReportNotifications(reports.received, stored),
       ...transfers,
       ...chatNotifications,
       ...sessionNotifications,

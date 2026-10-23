@@ -1,4 +1,5 @@
 const destinationLabels = {
+  reports: "View My Reports",
   dashboard: "Open dashboard",
   services: "View service",
   availability: "View schedule",
