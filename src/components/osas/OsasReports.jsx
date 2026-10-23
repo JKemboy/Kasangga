@@ -71,6 +71,7 @@ const group = (records, key) =>
 export default function OsasReports({ rows, settings }) {
   const database = useOsasDatabase();
   const sessions = database.records?.sessions || [];
+  const [selectedMetric, setSelectedMetric] = useState(null);
   const [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
     [academic, setAcademic] = useState(""),
@@ -275,6 +276,7 @@ export default function OsasReports({ rows, settings }) {
             setSemester("");
             setCaseStatus("");
             setIncident("");
+            setSelectedMetric(null);
           }}
         >
           Reset
@@ -301,7 +303,14 @@ export default function OsasReports({ rows, settings }) {
             ),
           ],
         ].map(([Icon, value, label, records], i) => (
-          <button key={label} onClick={() => show(label, records)}>
+          <button
+            key={label}
+            aria-pressed={selectedMetric === label}
+            onClick={() => {
+              setSelectedMetric(label);
+              show(label, records);
+            }}
+          >
             <span
               style={{
                 background: ["#00663a", "#ffb900", "#0875ff", "#8729e7"][i % 4],

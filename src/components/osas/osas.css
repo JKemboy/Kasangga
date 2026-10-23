@@ -935,6 +935,11 @@
   text-align: left;
   min-width: 0;
 }
+.or-metrics button[aria-pressed="true"] {
+  border-color: #087542;
+  background: #edf7f2;
+  box-shadow: 0 0 0 2px #087542;
+}
 .or-metrics button > span {
   display: grid;
   place-items: center;
