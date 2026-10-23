@@ -72,7 +72,6 @@ export default function ServiceMenu({ service, onSelect, options }) {
               options || [
                 [UserRound, "View tutor account", "account"],
                 [CalendarDays, "View bookings", "bookings"],
-                [Pencil, "Request changes", "Request Changes"],
                 ...(service.status === "Active"
                   ? [[Ban, "Suspend service", "Suspend Service"]]
                   : service.status === "Suspended"
