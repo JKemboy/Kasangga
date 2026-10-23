@@ -63,3 +63,9 @@ test("surfaces rejected saves without pretending success", async () => {
     /Policy changed/,
   );
 });
+
+test("rejects adding a policy before calling Supabase", async () => {
+  let called = false;
+  await assert.rejects(() => saveAdminPolicy({ ...policy, policyId: null }, { rpc: async () => { called = true; } }), /Adding policies is disabled/);
+  assert.equal(called, false);
+});

@@ -46,6 +46,10 @@ export function validatePolicy(value) {
 }
 
 export async function saveAdminPolicy(value, client = getSupabaseClient()) {
+  if (!Number.isSafeInteger(value?.policyId) || value.policyId < 1)
+    throw new Error(
+      "Choose an existing policy to edit. Adding policies is disabled.",
+    );
   validatePolicy(value);
   const { data, error } = await client.rpc("save_admin_policy", {
     p_id: value.policyId || null,
