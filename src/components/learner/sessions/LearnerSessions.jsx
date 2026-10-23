@@ -363,7 +363,7 @@ export default function LearnerSessions({ args = {} }) {
                         records.find((session) => session.id === id),
                       )
                     }
-                    className="min-h-6 rounded-md border border-[#dfe5ed] px-1 py-0.5 text-xs font-semibold"
+                    className="report-issue-button min-h-6 rounded-md border border-[#dfe5ed] px-1 py-0.5 text-xs font-semibold"
                   >
                     <Flag className="mr-2 inline h-4 w-4" />
                     Report an Issue

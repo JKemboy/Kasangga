@@ -95,3 +95,15 @@ body {
     font-size: 0.67rem;
   }
 }
+
+/* Shared report action across learner and tutor cards, details and chat. */
+button.report-issue-button {
+  border-color: #b91c1c;
+  background-color: #b91c1c;
+  color: #fff;
+}
+button.report-issue-button:hover {
+  border-color: #991b1b;
+  background-color: #991b1b;
+  color: #fff;
+}

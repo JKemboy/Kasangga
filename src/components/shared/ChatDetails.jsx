@@ -339,7 +339,7 @@ export default function ChatDetails({ chat, mode, close, role }) {
             {tutorSession && (
               <button
                 type="button"
-                className="chat-outline"
+                className="report-issue-button chat-outline"
                 onClick={() => setReportOpen(true)}
               >
                 Report an Issue

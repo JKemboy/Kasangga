@@ -344,7 +344,10 @@ export default function SessionDialog({
       <footer className="ls-footer">
         {kind === "details" ? (
           <>
-            <button className={button} onClick={() => onOpen("report", record)}>
+            <button
+              className={button + " report-issue-button"}
+              onClick={() => onOpen("report", record)}
+            >
               Report an Issue
             </button>
             {active && r.lifecycle === "Upcoming" && (

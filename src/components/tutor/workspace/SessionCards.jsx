@@ -156,7 +156,11 @@ export default function SessionCards({
                         Done Session
                       </button>
                     )}
-                  <button type="button" onClick={() => onAction(s, "incident")}>
+                  <button
+                    className="report-issue-button"
+                    type="button"
+                    onClick={() => onAction(s, "incident")}
+                  >
                     Report an Issue
                   </button>
                 </div>

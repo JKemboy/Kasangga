@@ -227,7 +227,7 @@ export default function SessionDetails({
           footer={
             <>
               <button
-                className={button}
+                className={button + " report-issue-button"}
                 onClick={() => changeAction("incident")}
               >
                 Report an Issue
