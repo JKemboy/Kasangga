@@ -2,7 +2,6 @@ import { collegeProgramMap } from "../../services/collegeProgramMap.js";
 // Admin catalogs: renders tutor verification and service moderation tables with their record-review actions.
 import { statusClass } from "../shared/statusColors.js";
 import ServiceDetails from "./ServiceDetails.jsx";
-import ServiceMenu from "./ServiceMenu.jsx";
 import UserDetails from "./UserDetails.jsx";
 import UserExport from "./UserExport.jsx";
 import { serviceCsv } from "./serviceActions.js";
@@ -13,8 +12,6 @@ import { useState } from "react";
 import {
   ShieldCheck,
   BriefcaseBusiness,
-  Search,
-  Filter,
   Download,
   MoreHorizontal,
   Eye,
@@ -63,8 +60,6 @@ export default function AdminCatalog({
       ]
     : ["Active", "Inactive", "Suspended", "Archived"];
   const [status, setStatus] = useState(""),
-    [query, setQuery] = useState(""),
-    [filter, setFilter] = useState(false),
     [groupFilter, setGroupFilter] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
@@ -96,7 +91,7 @@ export default function AdminCatalog({
         .filter((v) => typeof v !== "object")
         .join(" ")
         .toLowerCase()
-        .includes((verification ? searchQuery : query).trim().toLowerCase()),
+        .includes(searchQuery.trim().toLowerCase()),
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),
@@ -172,7 +167,10 @@ export default function AdminCatalog({
       ];
   return (
     <section
-      className={"ad-page " + (verification ? "admin-tutor-verification" : "")}
+      className={
+        "ad-page " +
+        (verification ? "admin-tutor-verification" : "admin-service-management")
+      }
     >
       <div className="osas-heading">
         <div>
@@ -195,11 +193,10 @@ export default function AdminCatalog({
         {metrics.map(([label, n, value], i) => (
           <button
             key={label}
-            aria-pressed={verification ? status === value : undefined}
+            aria-pressed={status === value}
             onClick={() => {
               setStatus(value);
-              setQuery("");
-              if (verification) onQueryChange("");
+              onQueryChange("");
               setGroupFilter("");
               setPage(1);
             }}
@@ -272,93 +269,27 @@ export default function AdminCatalog({
           </select>
         </div>
       ) : (
-        <div className="ad-toolbar">
-          <div className="au-tabs">
-            {["", ...statuses].map((s) => (
-              <button
-                key={s}
-                aria-pressed={status === s}
-                onClick={() => {
-                  setStatus(s);
-                  setPage(1);
-                }}
-              >
-                {s || (verification ? "All Applications" : "All Services")}
-              </button>
-            ))}
-          </div>
-          <label className="osas-search">
-            <Search size={15} />
-            <input
-              aria-label={`Search ${kind}`}
-              placeholder={
-                verification
-                  ? "Search application ID, name, or student ID..."
-                  : "Search services, subject, or tutor..."
-              }
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setPage(1);
-              }}
-            />
-          </label>
-          <button
-            className={button}
-            aria-expanded={filter}
-            onClick={() => setFilter(!filter)}
-          >
-            <Filter size={14} />
-            Filter
-          </button>
-          {!verification && (
-            <UserExport
-              kind="services"
-              rows={filtered}
-              onCsv={exportServices}
-              onNotice={setNotice}
-            />
-          )}
-        </div>
-      )}
-      {!verification && filter && (
-        <div className="ad-filter-row">
-          <label>
-            {verification ? "College" : "Service title / Subject"}
-            <select
-              className={input}
-              aria-label={
-                verification
-                  ? "Catalog college"
-                  : "Catalog service title / Subject"
-              }
-              value={groupFilter}
-              onChange={(e) => {
-                setGroupFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">All</option>
-              {[
-                ...new Set(rows.map((r) => (verification ? r.college : r.id))),
-              ].map((c) => (
-                <option key={c} value={c}>
-                  {verification ? c : rows.find((r) => r.id === c)?.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            className={button}
-            onClick={() => {
-              setStatus("");
-              setGroupFilter("");
-              setQuery("");
+        <div className="ad-toolbar flex-wrap">
+          <select
+            aria-label="Service status"
+            className={input}
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value);
               setPage(1);
             }}
           >
-            Reset filters
-          </button>
+            <option value="">All Services</option>
+            <option value="Active">Active</option>
+            <option value="Suspended">Suspended</option>
+            <option value="inactiveGroup">Inactive / Archived</option>
+          </select>
+          <UserExport
+            kind="services"
+            rows={filtered}
+            onCsv={exportServices}
+            onNotice={setNotice}
+          />
         </div>
       )}
       {verification &&
@@ -480,7 +411,7 @@ export default function AdminCatalog({
                   )}
                   <td>{pill(r.status)}</td>
                   <td>
-                    <div className="ad-actions">
+                    <div className="ad-actions flex-wrap">
                       <button
                         className={
                           verification &&
@@ -505,10 +436,34 @@ export default function AdminCatalog({
                         )}
                       </button>
                       {!verification && (
-                        <ServiceMenu
-                          service={r}
-                          onSelect={(action) => serviceOption(r, action)}
-                        />
+                        <>
+                          <button
+                            type="button"
+                            className={button + " text-red-700"}
+                            disabled={
+                              !["Active", "Suspended"].includes(r.status)
+                            }
+                            onClick={() =>
+                              serviceOption(
+                                r,
+                                r.status === "Suspended"
+                                  ? "Lift Suspension"
+                                  : "Suspend Service",
+                              )
+                            }
+                          >
+                            {r.status === "Suspended"
+                              ? "Lift Suspension"
+                              : "Suspend"}
+                          </button>
+                          <button
+                            type="button"
+                            className={button}
+                            onClick={() => serviceOption(r, "account")}
+                          >
+                            Tutor Account
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>
@@ -550,7 +505,7 @@ export default function AdminCatalog({
       <p className="ad-help">
         {verification
           ? "Supporting documents require manual review."
-          : "Tutor-created services and topic schedules come from the database. Moderation is saved with an audit record; change requests create a tutor notification."}
+          : "Tutor-created services and topic schedules come from the database. Moderation is saved with an audit record. View each service to inspect its bookings."}
       </p>
       {selected && verification && (
         <ApplicationReview
@@ -578,13 +533,10 @@ export default function AdminCatalog({
           key={selected.id + serviceAction}
           service={rows.find((r) => r.id === selected.id) || selected}
           initialAction={
-            ["Request Changes", "Suspend Service", "Lift Suspension"].includes(
-              serviceAction,
-            )
+            ["Suspend Service", "Lift Suspension"].includes(serviceAction)
               ? serviceAction
               : ""
           }
-          showBookings={serviceAction === "bookings"}
           onTutor={() => serviceOption(selected, "account")}
           onSave={(updated) =>
             onUpdate(rows.map((r) => (r.id === updated.id ? updated : r)))

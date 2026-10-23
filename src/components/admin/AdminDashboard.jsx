@@ -240,7 +240,9 @@ export default function AdminDashboardPage() {
             onSubmit={(e) => {
               e.preventDefault();
               setModal(null);
-              if (view !== "Tutor Verification") {
+              if (
+                !["Tutor Verification", "Service Management"].includes(view)
+              ) {
                 setView("User Management");
                 setQuery(search);
               }
@@ -376,6 +378,8 @@ export default function AdminDashboardPage() {
                 updateApplication(updated, status)
               }
               onDocument={loadApplicationDocument}
+              searchQuery={search}
+              onQueryChange={setSearch}
               kind="services"
               rows={services}
               onUpdate={(next) => persist("services", next)}
