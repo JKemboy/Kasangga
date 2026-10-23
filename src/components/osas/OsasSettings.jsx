@@ -117,18 +117,7 @@ export default function OsasSettings({ settings, onSave }) {
   async function save(e) {
     e.preventDefault();
     setError("");
-    if (
-      draft.contact.trim() &&
-      !/^\+?[\d ()-]{7,20}$/.test(draft.contact.trim())
-    ) {
-      setError("Enter a valid contact number (7–20 characters).");
-      return;
-    }
-    const next = normalizeSettings({
-      ...draft,
-      contact: draft.contact.trim(),
-      alternate: draft.alternate.trim(),
-    });
+    const next = normalizeSettings(draft);
     // The parent calls osas_save_record; show success only after that RPC and
     // its follow-up snapshot refresh both complete.
     try {
@@ -193,26 +182,6 @@ export default function OsasSettings({ settings, onSave }) {
               "Office / Department",
               "Office of Student Affairs and Services",
             )}
-            <label className="os-field">
-              <span>Contact Number</span>
-              <input
-                className={input}
-                value={draft.contact}
-                onChange={(e) => set("contact", e.target.value)}
-                type="tel"
-                maxLength={20}
-              />
-            </label>
-            <label className="os-field">
-              <span>Alternate Email</span>
-              <input
-                className={input}
-                value={draft.alternate}
-                onChange={(e) => set("alternate", e.target.value)}
-                type="email"
-                maxLength={254}
-              />
-            </label>
           </div>
         </section>
         <section className="os-card">
@@ -273,18 +242,6 @@ export default function OsasSettings({ settings, onSave }) {
             <ShieldCheck />
             3. Security
           </h2>
-          <div className="os-security-row">
-            <b>Password</b>
-            <span>Managed by institutional sign-in</span>
-            <button
-              type="button"
-              className={button}
-              onClick={() => setSecurity("Change Password")}
-            >
-              <LockKeyhole size={13} />
-              Change Password
-            </button>
-          </div>
           <div className="os-security-row">
             <b>Two-Factor Authentication</b>
             <span className="text-slate-500">Not connected</span>
