@@ -60,7 +60,7 @@ export default function AdminSettings({ config, onSave }) {
     return (
       <label className="ad-setting-row">
         <span>{label}</span>
-        <input className={input} value={value} readOnly />
+        <input className={input + " disabled:cursor-default disabled:opacity-100"} value={value} disabled />
       </label>
     );
   }
@@ -154,13 +154,12 @@ export default function AdminSettings({ config, onSave }) {
           {[
             ["Full Name", accountName],
             ["Email Address", auth?.user?.email || ""],
-            ["Contact Number", ""],
             ["Position", "System Administrator"],
             ["Department", "Information Technology Services"],
           ].map(([label, value]) => (
             <label className="ad-setting-row" key={label}>
               <span>{label}</span>
-              <input className={input} value={value} readOnly />
+              <input className={input + " disabled:cursor-default disabled:opacity-100"} value={value} disabled />
             </label>
           ))}
           <button
@@ -204,7 +203,7 @@ export default function AdminSettings({ config, onSave }) {
                 ].map(([l, v]) => (
                   <label key={l}>
                     {l}
-                    <input className={input} readOnly value={`${v}%`} />
+                    <input className={input + " disabled:cursor-default disabled:opacity-100"} disabled value={`${v}%`} />
                   </label>
                 ))}
               </div>
@@ -244,6 +243,11 @@ export default function AdminSettings({ config, onSave }) {
                   Manage Authenticator
                 </button>
               </div>
+              <p className="ad-help">
+                An authenticator app generates a 6-digit verification code for
+                account security. Set it up only when you want to use this extra
+                verification method.
+              </p>
               {fixed("Maintenance Mode", "Not configured for this deployment")}
               <hr />
               {toggle("Tutor Application Alerts", "tutorAlerts")}
