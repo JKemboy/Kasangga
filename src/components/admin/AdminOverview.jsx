@@ -27,7 +27,6 @@ export default function AdminOverview({
   go,
 }) {
   const [detail, setDetail] = useState(null);
-  const [selectedMetric, setSelectedMetric] = useState(null);
   const { database, saveRecord } = useAdminDatabase();
   const incidents = database?.incidents || [];
   const workspace = {
@@ -152,9 +151,7 @@ export default function AdminOverview({
         ].map(([Icon, value, label, hint, view], i) => (
           <button
             key={label}
-            aria-pressed={selectedMetric === label}
             onClick={() => {
-              setSelectedMetric(label);
               view
                 ? go(view)
                 : setDetail({ kind: i === 4 ? "bookings" : "financial" });
