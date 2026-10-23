@@ -1,3 +1,4 @@
+import AdminPolicies from "./AdminPolicies.jsx";
 import AdminNotifications from "./AdminNotifications.jsx";
 // Admin portal coordinator: loads the role-authorized Supabase snapshot, maintains the Admin inbox, and routes to each Admin section.
 import AdminCatalog from "./AdminCatalog.jsx";
@@ -57,6 +58,7 @@ const navigation = [
   ["Payments & Transactions", CreditCard],
   ["Incident Reports", TriangleAlert],
   ["Reports & Analytics", ChartNoAxesCombined],
+  ["Policies & Procedures", ShieldCheck],
   ["Notifications", Bell],
   ["Settings", Settings],
 ];
@@ -149,6 +151,7 @@ export default function AdminDashboardPage() {
         "Overview",
         "Settings",
         "Notifications",
+        "Policies & Procedures",
       ].includes(label)
     ) {
       setView(label);
@@ -334,7 +337,9 @@ export default function AdminDashboardPage() {
             />
           ) : // The view switch is the Admin section router. Section components
           // receive only the records and callbacks needed for their workflow.
-          view === "Notifications" ? (
+          view === "Policies & Procedures" ? (
+            <AdminPolicies />
+          ) : view === "Notifications" ? (
             <AdminNotifications
               rows={adminNotifications}
               error={notificationError}
