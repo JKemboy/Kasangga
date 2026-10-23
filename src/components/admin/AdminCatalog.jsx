@@ -1,3 +1,4 @@
+import { collegeProgramMap } from "../../services/collegeProgramMap.js";
 // Admin catalogs: renders tutor verification and service moderation tables with their record-review actions.
 import { statusClass } from "../shared/statusColors.js";
 import ServiceDetails from "./ServiceDetails.jsx";
@@ -34,6 +35,8 @@ function applicationDocumentKey(application) {
 }
 export default function AdminCatalog({
   kind,
+  searchQuery = "",
+  onQueryChange = () => {},
   rows,
   onUpdate,
   config,
@@ -75,7 +78,13 @@ export default function AdminCatalog({
         (status === "inactiveGroup"
           ? ["Inactive", "Archived"].includes(r.status)
           : r.status === status)) &&
-      (!groupFilter || (verification ? r.college : r.id) === groupFilter) &&
+      (!groupFilter ||
+        (verification
+          ? r.college === groupFilter ||
+            collegeProgramMap.some(
+              (c) => c.code === groupFilter && c.name === r.college,
+            )
+          : r.id === groupFilter)) &&
       [
         ...Object.values(r),
         ...(Array.isArray(r.topics)
@@ -87,7 +96,7 @@ export default function AdminCatalog({
         .filter((v) => typeof v !== "object")
         .join(" ")
         .toLowerCase()
-        .includes(query.trim().toLowerCase()),
+        .includes((verification ? searchQuery : query).trim().toLowerCase()),
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),
@@ -162,7 +171,9 @@ export default function AdminCatalog({
         ],
       ];
   return (
-    <section className="ad-page">
+    <section
+      className={"ad-page " + (verification ? "admin-tutor-verification" : "")}
+    >
       <div className="osas-heading">
         <div>
           <h1>
@@ -184,9 +195,11 @@ export default function AdminCatalog({
         {metrics.map(([label, n, value], i) => (
           <button
             key={label}
+            aria-pressed={verification ? status === value : undefined}
             onClick={() => {
               setStatus(value);
               setQuery("");
+              if (verification) onQueryChange("");
               setGroupFilter("");
               setPage(1);
             }}
@@ -215,55 +228,100 @@ export default function AdminCatalog({
           </button>
         ))}
       </div>
-      <div className="ad-toolbar">
-        <div className="au-tabs">
-          {["", ...statuses].map((s) => (
-            <button
-              key={s}
-              aria-pressed={status === s}
-              onClick={() => {
-                setStatus(s);
-                setPage(1);
-              }}
-            >
-              {s || (verification ? "All Applications" : "All Services")}
-            </button>
-          ))}
-        </div>
-        <label className="osas-search">
-          <Search size={15} />
-          <input
-            aria-label={`Search ${kind}`}
-            placeholder={
-              verification
-                ? "Search application ID, name, or student ID..."
-                : "Search services, subject, or tutor..."
-            }
-            value={query}
+      {verification ? (
+        <div className="ad-toolbar flex-wrap">
+          <select
+            aria-label="Application status"
+            className={input}
+            value={status}
             onChange={(e) => {
-              setQuery(e.target.value);
+              setStatus(e.target.value);
               setPage(1);
             }}
-          />
-        </label>
-        <button
-          className={button}
-          aria-expanded={filter}
-          onClick={() => setFilter(!filter)}
-        >
-          <Filter size={14} />
-          Filter
-        </button>
-        {!verification && (
-          <UserExport
-            kind="services"
-            rows={filtered}
-            onCsv={exportServices}
-            onNotice={setNotice}
-          />
-        )}
-      </div>
-      {filter && (
+          >
+            <option value="">All Applications</option>
+            {statuses.map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+          <select
+            aria-label="Application college"
+            className={input}
+            value={groupFilter}
+            onChange={(e) => {
+              setGroupFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Colleges</option>
+            {collegeProgramMap.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.code}
+              </option>
+            ))}
+            {[...new Set(rows.map((r) => r.college).filter(Boolean))]
+              .filter(
+                (c) =>
+                  !collegeProgramMap.some(
+                    (item) => item.code === c || item.name === c,
+                  ),
+              )
+              .map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+          </select>
+        </div>
+      ) : (
+        <div className="ad-toolbar">
+          <div className="au-tabs">
+            {["", ...statuses].map((s) => (
+              <button
+                key={s}
+                aria-pressed={status === s}
+                onClick={() => {
+                  setStatus(s);
+                  setPage(1);
+                }}
+              >
+                {s || (verification ? "All Applications" : "All Services")}
+              </button>
+            ))}
+          </div>
+          <label className="osas-search">
+            <Search size={15} />
+            <input
+              aria-label={`Search ${kind}`}
+              placeholder={
+                verification
+                  ? "Search application ID, name, or student ID..."
+                  : "Search services, subject, or tutor..."
+              }
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <button
+            className={button}
+            aria-expanded={filter}
+            onClick={() => setFilter(!filter)}
+          >
+            <Filter size={14} />
+            Filter
+          </button>
+          {!verification && (
+            <UserExport
+              kind="services"
+              rows={filtered}
+              onCsv={exportServices}
+              onNotice={setNotice}
+            />
+          )}
+        </div>
+      )}
+      {!verification && filter && (
         <div className="ad-filter-row">
           <label>
             {verification ? "College" : "Service title / Subject"}
@@ -306,8 +364,9 @@ export default function AdminCatalog({
       {verification &&
         rows.some((r) => !["Approved", "Rejected"].includes(r.status)) && (
           <p className="ad-banner">
-            Run all document checks, review the original files, then confirm
-            Information Match before approving an application.
+            Review the original documents and complete the manual review
+            checklist, or run OCR checks and confirm Information Match. Add
+            review notes before approving.
           </p>
         )}
       {notice && (

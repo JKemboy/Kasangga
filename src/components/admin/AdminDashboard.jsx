@@ -240,8 +240,10 @@ export default function AdminDashboardPage() {
             onSubmit={(e) => {
               e.preventDefault();
               setModal(null);
-              setView("User Management");
-              setQuery(search);
+              if (view !== "Tutor Verification") {
+                setView("User Management");
+                setQuery(search);
+              }
             }}
           >
             <Search size={16} />
@@ -354,6 +356,8 @@ export default function AdminDashboardPage() {
           ) : view === "Tutor Verification" ? (
             <AdminCatalog
               key="applications"
+              searchQuery={search}
+              onQueryChange={setSearch}
               kind="applications"
               rows={apps}
               onUpdate={updateApplication}
