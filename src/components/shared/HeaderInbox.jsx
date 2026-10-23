@@ -26,6 +26,7 @@ export default function HeaderInbox({
   role,
   notifications = [],
   threads = [],
+  showMessages = true,
   onRead,
   onNotification,
   onThread,
@@ -85,18 +86,20 @@ export default function HeaderInbox({
         <Bell size={22} />
         {unread > 0 && <span className="hi-count">{unread}</span>}
       </button>
-      <button
-        ref={messages}
-        className="hi-trigger"
-        aria-label="Messages"
-        aria-expanded={panel === "messages"}
-        onClick={() => setPanel(panel === "messages" ? null : "messages")}
-      >
-        <MessageCircle size={22} />
-        {unreadMessages > 0 && (
-          <span className="hi-count">{unreadMessages}</span>
-        )}
-      </button>
+      {showMessages && (
+        <button
+          ref={messages}
+          className="hi-trigger"
+          aria-label="Messages"
+          aria-expanded={panel === "messages"}
+          onClick={() => setPanel(panel === "messages" ? null : "messages")}
+        >
+          <MessageCircle size={22} />
+          {unreadMessages > 0 && (
+            <span className="hi-count">{unreadMessages}</span>
+          )}
+        </button>
+      )}
       {panel && (
         <section
           className="hi-panel"
