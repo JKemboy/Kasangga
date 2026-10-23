@@ -22,7 +22,7 @@ import OsasSettings, {
   loadSettings,
   normalizeSettings,
 } from "./OsasSettings.jsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Archive,
@@ -103,7 +103,26 @@ export default function OsasDashboardPage() {
 }
 function OsasDashboardContent() {
   const auth = useAuth();
-  const [submittedSearch, setSubmittedSearch] = useState("");
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountMenu = useRef(null);
+  useEffect(() => {
+    if (!accountOpen) return;
+    const outside = (event) => {
+      if (!accountMenu.current?.contains(event.target)) setAccountOpen(false);
+    };
+    const escape = (event) => {
+      if (event.key === "Escape") {
+        setAccountOpen(false);
+        accountMenu.current?.querySelector("button")?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [accountOpen]);
   const database = useOsasDatabase();
   const rows = database.records?.clearance || [];
   const requestLogout = useLogout();
@@ -143,12 +162,15 @@ function OsasDashboardContent() {
       ? "—"
       : settings.dateFormat === "iso"
         ? v
-        : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
-            timeZone: settings.timezone || "Asia/Manila",
-            month: settings.dateFormat === "short" ? "2-digit" : "short",
-            day: "numeric",
-            year: "numeric",
-          });
+        : new Date(v + "T12:00:00").toLocaleDateString(
+            settings.language || "en-PH",
+            {
+              timeZone: settings.timezone || "Asia/Manila",
+              month: settings.dateFormat === "short" ? "2-digit" : "short",
+              day: "numeric",
+              year: "numeric",
+            },
+          );
   const [mobile, setMobile] = useState(false),
     [query, setQuery] = useState(""),
     [global, setGlobal] = useState(""),
@@ -245,19 +267,36 @@ function OsasDashboardContent() {
   }
   function openNotification(notification) {
     if (notification.entityType === "cases") {
-      const record = database.records?.cases?.find(c => String(c.caseDatabaseId) === String(notification.entityId));
-      if (record) { setSelected(record); setModal("Case Record"); return; }
+      const record = database.records?.cases?.find(
+        (c) => String(c.caseDatabaseId) === String(notification.entityId),
+      );
+      if (record) {
+        setSelected(record);
+        setModal("Case Record");
+        return;
+      }
     }
-    if (notification.entityType === "clearance_reviews") { setView("Student Clearance Review"); return; }
-    if (notification.entityType === "policies") { setView("Policies & Procedures"); return; }
+    if (notification.entityType === "clearance_reviews") {
+      setView("Student Clearance Review");
+      return;
+    }
+    if (notification.entityType === "policies") {
+      setView("Policies & Procedures");
+      return;
+    }
     if (["incident_reports", "cases"].includes(notification.entityType)) {
-      setSubmittedSearch(notification.entityType === "incident_reports" ? `IR-${notification.entityId}` : String(notification.entityId));
+      setGlobal(
+        notification.entityType === "incident_reports"
+          ? `IR-${notification.entityId}`
+          : String(notification.entityId),
+      );
       setView("Case Review");
     }
   }
   function openNav(label) {
     if (label === "Messages") return;
-    setSubmittedSearch("");
+    setGlobal("");
+    setAccountOpen(false);
     setMobile(false);
     if (
       [
@@ -339,10 +378,16 @@ function OsasDashboardContent() {
           className="osas-global"
           onSubmit={(e) => {
             e.preventDefault();
-            setSubmittedSearch(global.trim());
-            setView("Case Review");
+            if (
+              ![
+                "Case Review",
+                "Policies & Procedures",
+                "Case Archive",
+              ].includes(view)
+            )
+              setView("Case Review");
             setPage(1);
-            setNotice("Showing matching student and case records.");
+            setNotice("Showing matching records.");
           }}
         >
           <Search size={16} />
@@ -364,22 +409,56 @@ function OsasDashboardContent() {
             onRead={database.markNotificationsRead}
             onNotification={openNotification}
           />
-          <button
-            className="flex items-center gap-2 text-left"
-            aria-label="Open account menu"
-            onClick={() => setModal("Account")}
-          >
-            <PortalAvatar role="osas" editable />
-            <span className="hidden sm:block">
-              <b className="block text-xs text-slate-900">
-                {[auth?.profile?.first_name, auth?.profile?.last_name]
-                  .filter(Boolean)
-                  .join(" ") || "OSAS Officer"}
-              </b>
-              <small>OSAS Case Officer</small>
-            </span>
-            <ChevronDown size={14} />
-          </button>
+          <div className="relative" ref={accountMenu}>
+            <button
+              type="button"
+              className="flex items-center gap-2 text-left"
+              aria-label="Open account menu"
+              aria-expanded={accountOpen}
+              aria-haspopup="menu"
+              onClick={() => setAccountOpen((open) => !open)}
+            >
+              <PortalAvatar role="osas" />
+              <span className="hidden sm:block">
+                <b className="block text-xs text-slate-900">
+                  {[auth?.profile?.first_name, auth?.profile?.last_name]
+                    .filter(Boolean)
+                    .join(" ") || "OSAS Officer"}
+                </b>
+                <small>OSAS Case Officer</small>
+              </span>
+              <ChevronDown size={14} />
+            </button>
+            {accountOpen && (
+              <div
+                role="menu"
+                aria-label="Account menu"
+                className="absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border bg-white py-1 shadow-lg"
+              >
+                {["Profile", "Settings", "Help & Support", "Logout"].map(
+                  (label) => (
+                    <button
+                      key={label}
+                      type="button"
+                      role="menuitem"
+                      className={
+                        "block w-full px-4 py-2 text-left text-sm hover:bg-green-50 " +
+                        (label === "Logout" ? "text-red-700" : "text-slate-700")
+                      }
+                      onClick={() => {
+                        setAccountOpen(false);
+                        if (label === "Logout") requestLogout();
+                        else if (label === "Settings") openNav("Settings");
+                        else setModal(label);
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </header>
       <main
@@ -408,7 +487,13 @@ function OsasDashboardContent() {
             onClearance={review}
           />
         ) : view === "Notifications" ? (
-          <OsasNotifications rows={notifications} loading={database.loading} error={database.error} onRead={database.markNotificationsRead} onOpen={openNotification} />
+          <OsasNotifications
+            rows={notifications}
+            loading={database.loading}
+            error={database.error}
+            onRead={database.markNotificationsRead}
+            onOpen={openNotification}
+          />
         ) : view === "Settings" ? (
           <OsasSettings
             settings={settings}
@@ -422,19 +507,28 @@ function OsasDashboardContent() {
         ) : view === "Reports & Analytics" ? (
           <OsasReports rows={rows} settings={settings} />
         ) : view === "Policies & Procedures" ? (
-          <OsasPolicies settings={settings} />
+          <OsasPolicies
+            settings={settings}
+            searchQuery={global}
+            onSearchChange={setGlobal}
+            hideSearch
+          />
         ) : [
             "Case Review",
             "Incident Monitoring",
             "Evidence Validation",
           ].includes(view) ? (
           <OsasCaseWorkspace
-            key={submittedSearch}
             settings={settings}
-            initialQuery={submittedSearch}
+            searchQuery={global}
+            onSearchChange={setGlobal}
           />
         ) : view === "Case Archive" ? (
-          <OsasArchive settings={settings} />
+          <OsasArchive
+            settings={settings}
+            searchQuery={global}
+            onSearchChange={setGlobal}
+          />
         ) : (
           <>
             <div className="text-[10px] text-slate-400">
@@ -447,9 +541,8 @@ function OsasDashboardContent() {
                   <ShieldCheck size={23} className="text-green-800" />
                 </h1>
                 <p>
-                  Review relevant Kasangga case records when determining
-                  student clearance status under authorized institutional
-                  procedures.
+                  Review relevant Kasangga case records when determining student
+                  clearance status under authorized institutional procedures.
                 </p>
               </div>
               <select
@@ -804,10 +897,44 @@ function OsasDashboardContent() {
                 Logout
               </button>
             </div>
-          ) : modal === "Account" || modal === "Settings" ? (
+          ) : modal === "Help & Support" ? (
+            <div className="space-y-3 text-sm">
+              <p>
+                Use Case Review to assess referrals, inspect evidence and record
+                case decisions. Review institutional guidance under Policies &
+                Procedures.
+              </p>
+              <p>
+                For account access or technical assistance, contact your
+                authorized Kasangga administrator. Include the page and
+                case/report reference; never share passwords or verification
+                codes.
+              </p>
+              <button
+                type="button"
+                className={button}
+                onClick={() => {
+                  setModal(null);
+                  openNav("Policies & Procedures");
+                }}
+              >
+                Open Policies & Procedures
+              </button>
+            </div>
+          ) : ["Profile", "Account", "Settings"].includes(modal) ? (
             <div className="space-y-3 text-xs">
               <p>
-                <b>OSAS Officer</b> · OSAS Case Officer
+                <PortalAvatar
+                  role="osas"
+                  editable
+                  className="mb-3 h-16 w-16 rounded-full"
+                />
+                <b>
+                  {[auth?.profile?.first_name, auth?.profile?.last_name]
+                    .filter(Boolean)
+                    .join(" ") || "OSAS Officer"}
+                </b>{" "}
+                · OSAS Case Officer
               </p>
               <p>
                 {auth?.user?.email}. Display preferences are available in
