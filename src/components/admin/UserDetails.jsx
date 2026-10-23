@@ -2,7 +2,7 @@ import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
 import ServiceDetails from "./ServiceDetails.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import { useEffect, useRef, useState } from "react";
-import { X, LockKeyhole, Ban, RotateCcw } from "lucide-react";
+import { X, Ban, RotateCcw } from "lucide-react";
 import {
   Modal,
   Avatar,
@@ -73,7 +73,7 @@ export function Panel({ title, subtitle, children, footer, onClose }) {
       <header>
         <div>
           <h2>{title}</h2>
-          <p>{subtitle}</p>
+          {subtitle && <p>{subtitle}</p>}
         </div>
         <button className={button} aria-label="Close details" onClick={onClose}>
           <X size={17} />
@@ -184,14 +184,14 @@ export default function UserDetails({
           {r.name} {pill(r.status)}
         </>
       }
-      subtitle={`${r.id} · ${r.email}`}
+
       onClose={onClose}
       footer={
         <>
           <div className="ud-actions">
             {r.status === "Suspended" ? (
               <button
-                className={primary}
+                className={primary + " ud-footer-action"}
                 onClick={() => open("Reactivate User")}
               >
                 <RotateCcw size={15} />
@@ -199,17 +199,8 @@ export default function UserDetails({
               </button>
             ) : (
               <>
-                {r.status === "Restricted" ? (
-                  <button
-                    className={button}
-                    onClick={() => open("Lift Restriction")}
-                  >
-                    <LockKeyhole size={15} />
-                    Lift Restriction
-                  </button>
-                ) : null}
                 <button
-                  className={`${button} text-red-600`}
+                  className={`${button} ud-footer-action text-red-600`}
                   onClick={() => open("Suspend User")}
                 >
                   <Ban size={15} />
@@ -218,7 +209,7 @@ export default function UserDetails({
               </>
             )}
           </div>
-          <button className={button} onClick={onClose}>
+          <button className={button + " ud-footer-action"} onClick={onClose}>
             Close
           </button>
         </>
@@ -301,16 +292,6 @@ export default function UserDetails({
           !relatedServices.length &&
           !relatedBookings.length && <p>None</p>}
       </div>
-      {!!history.length && (
-        <details>
-          <summary>Account history ({history.length})</summary>
-          {history.map((h, i) => (
-            <p key={i}>
-              {h.from} → {h.to}: {h.reason}
-            </p>
-          ))}
-        </details>
-      )}
       {notice && <p role="status">{notice}</p>}
       {action && (
         <Modal

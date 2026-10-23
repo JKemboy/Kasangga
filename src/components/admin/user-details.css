@@ -66,3 +66,14 @@
 .ud-form [role="alert"] {
   color: #b91c1c;
 }
+
+.admin-incident-details > footer .ud-footer-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 140px;
+  height: 36px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+}
