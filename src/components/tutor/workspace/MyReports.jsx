@@ -11,9 +11,11 @@ const date = (value) =>
         timeStyle: "short",
       })
     : "Not available";
-export default function MyReports({ go }) {
+export default function MyReports({ go, args = {} }) {
   const [reports, setReports] = useState({ created: [], received: [] });
-  const [tab, setTab] = useState("created");
+  const [tab, setTab] = useState(
+    args.tab === "received" ? "received" : "created",
+  );
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -33,14 +35,19 @@ export default function MyReports({ go }) {
   }, []);
   useEffect(() => {
     refresh();
+    const timer = setInterval(refresh, 15000);
     window.addEventListener("focus", refresh);
     window.addEventListener("campustutor:sessions-changed", refresh);
     return () => {
       request.current++;
+      clearInterval(timer);
       window.removeEventListener("focus", refresh);
       window.removeEventListener("campustutor:sessions-changed", refresh);
     };
   }, [refresh]);
+  useEffect(() => {
+    setTab(args.tab === "received" ? "received" : "created");
+  }, [args.tab]);
   const rows = reports[tab].filter((report) =>
     [
       report.report_id,

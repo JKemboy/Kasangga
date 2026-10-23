@@ -9,6 +9,7 @@ import {
   Bell,
   UserRound,
   CircleHelp,
+  Flag,
 } from "lucide-react";
 // Keep learner sidebar entries in one registry so labels, icons, and section
 // keys stay aligned with the LearnerDashboard navigation callbacks.
@@ -22,5 +23,6 @@ export const learnerNav = [
   ["notifications", "Notifications", Bell],
   ["profile", "Profile", UserRound],
 
+  ["reports", "My Reports", Flag],
   ["help-support", "Help & Support", CircleHelp],
 ];

@@ -1,3 +1,4 @@
+import MyReports from "../components/tutor/workspace/MyReports.jsx";
 import LearnerSearch from "../components/learner/workspace/LearnerSearch.jsx";
 import LearnerWorkspace from "../components/learner/workspace/LearnerWorkspace.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
@@ -54,6 +55,11 @@ export default function Dashboard() {
           {view === "sessions" && <LearnerSessions args={viewArgs} />}
           {view === "saved-tutors" && <LearnerSavedTutors />}
           {view === "reviews" && <LearnerReviews />}
+          {view === "reports" && (
+            <div className="p-4">
+              <MyReports go={navigate} args={viewArgs} />
+            </div>
+          )}
           {view === "notifications" && <LearnerNotifications />}
         </main>
       </div>
