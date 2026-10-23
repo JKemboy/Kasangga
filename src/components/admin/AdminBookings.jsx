@@ -1,3 +1,8 @@
+import {
+  bookingSessionType,
+  bookingPaymentStatus,
+  matchesBookingPayment,
+} from "../../services/bookingMonitoringFilters.js";
 // Bookings Monitoring: reads booking and payment details through the Admin database context.
 import { statusClass } from "../shared/statusColors.js";
 import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
@@ -9,7 +14,6 @@ import {
   CalendarDays,
   CheckCircle,
   X,
-  Search,
   Download,
   Eye,
   Info,
@@ -23,7 +27,10 @@ import {
 } from "../tutor/workspace/ui.jsx";
 import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./adminData.js";
-export default function AdminBookings() {
+export default function AdminBookings({
+  searchQuery = "",
+  onQueryChange = () => {},
+}) {
   const { database, saveRecord } = useAdminDatabase();
   const incidents = database?.incidents || [];
   const [incident, setIncident] = useState(null);
@@ -34,16 +41,27 @@ export default function AdminBookings() {
   const [status, setStatus] = useState(""),
     [type, setType] = useState(""),
     [payment, setPayment] = useState(""),
-    [query, setQuery] = useState(""),
     [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
     [dates, setDates] = useState(false),
     [notice, setNotice] = useState("");
-  const rows = [...workspace.sessions].sort((a, b) =>
-      b.date.localeCompare(a.date),
-    ),
+  const rows = workspace.sessions
+      .map((record) => {
+        const related =
+          database?.payments?.find(
+            (p) => String(p.id) === String(record.transaction),
+          ) ||
+          database?.payments?.findLast(
+            (p) => String(p.booking) === String(record.id),
+          );
+        return {
+          ...record,
+          paymentDisplay: bookingPaymentStatus(record, related),
+        };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date)),
     invalid = start && end && start > end;
   const filtered = invalid
     ? []
@@ -55,12 +73,12 @@ export default function AdminBookings() {
             (status === "scheduled"
               ? ["Upcoming", "Confirmed", "Pending"].includes(r.status)
               : r.status === status)) &&
-          (!type || r.type === type) &&
-          (!payment || r.payment === payment) &&
+          (!type || bookingSessionType(r.type) === type) &&
+          matchesBookingPayment(r.paymentDisplay, payment) &&
           [r.booking || r.id, r.learner, r.tutor, r.subject, r.service, r.topic]
             .join(" ")
             .toLowerCase()
-            .includes(query.trim().toLowerCase()),
+            .includes(searchQuery.trim().toLowerCase()),
       );
   const pages = Math.max(1, Math.ceil(filtered.length / 6)),
     current = Math.min(page, pages),
@@ -102,7 +120,7 @@ export default function AdminBookings() {
         r.type,
         r.amount,
         r.status,
-        r.payment,
+        r.paymentDisplay,
       ]),
     ]
       .map((row) =>
@@ -165,9 +183,10 @@ export default function AdminBookings() {
         ].map(([Icon, n, label, value], i) => (
           <button
             key={label}
+            aria-pressed={status === value}
             onClick={() => {
               change(setStatus, value);
-              setQuery("");
+              onQueryChange("");
               setType("");
               setPayment("");
             }}
@@ -186,24 +205,25 @@ export default function AdminBookings() {
           </button>
         ))}
       </div>
-      <div className="au-tabs">
-        {[
-          ["All Bookings", ""],
-          ["Upcoming / Pending", "scheduled"],
-          ["Confirmed", "Confirmed"],
-          ["Completed", "Completed"],
-          ["Cancelled", "Cancelled"],
-        ].map(([label, value]) => (
-          <button
-            key={label}
-            aria-pressed={status === value}
-            onClick={() => change(setStatus, value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
       <div className="ab-filters">
+        <select
+          aria-label="Booking status"
+          className={input}
+          value={status}
+          onChange={(e) => change(setStatus, e.target.value)}
+        >
+          {[
+            ["All Bookings", ""],
+            ["Upcoming / Pending", "scheduled"],
+            ["Confirmed", "Confirmed"],
+            ["Completed", "Completed"],
+            ["Cancelled", "Cancelled"],
+          ].map(([label, value]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
         <button
           className={button}
           aria-label="Booking date range"
@@ -220,7 +240,7 @@ export default function AdminBookings() {
           onChange={(e) => change(setType, e.target.value)}
         >
           <option value="">All Session Types</option>
-          {[...new Set(rows.map((r) => r.type))].map((v) => (
+          {["Online", "In Person"].map((v) => (
             <option key={v}>{v}</option>
           ))}
         </select>
@@ -230,27 +250,18 @@ export default function AdminBookings() {
           value={payment}
           onChange={(e) => change(setPayment, e.target.value)}
         >
-          <option value="">All Payment Statuses</option>
-          {[...new Set(rows.map((r) => r.payment))].map((v) => (
+          <option value="">All Payment Status</option>
+          {["Paid", "Refund Review", "Refunded", "Decline Refund"].map((v) => (
             <option key={v}>{v}</option>
           ))}
         </select>
-        <label className="osas-search">
-          <Search size={15} />
-          <input
-            aria-label="Search bookings"
-            placeholder="Search booking ID, learner, tutor, subject..."
-            value={query}
-            onChange={(e) => change(setQuery, e.target.value)}
-          />
-        </label>
         <button
           className={button}
           onClick={() => {
             setStatus("");
             setType("");
             setPayment("");
-            setQuery("");
+            onQueryChange("");
             setStart("");
             setEnd("");
             setPage(1);
@@ -264,6 +275,7 @@ export default function AdminBookings() {
           rows={filtered.map((r) => ({
             ...r,
             tutor: r.tutor,
+            payment: r.paymentDisplay,
           }))}
           onCsv={exportCsv}
           onNotice={setNotice}
@@ -331,7 +343,7 @@ export default function AdminBookings() {
                 </td>
                 <td>{money(r.amount)}</td>
                 <td>{badge(r.status)}</td>
-                <td>{badge(r.payment)}</td>
+                <td>{badge(r.paymentDisplay)}</td>
                 <td>
                   <button
                     className={button}
