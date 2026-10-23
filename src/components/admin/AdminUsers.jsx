@@ -1,26 +1,17 @@
+import { collegeProgramMap } from "../../services/collegeProgramMap.js";
 // User Management: searches and reviews user records, then sends authorized changes to the Admin database callbacks.
 import UserExport from "./UserExport.jsx";
 import UserDetails from "./UserDetails.jsx";
-import { useInteractions } from "../shared/InteractionProvider.jsx";
 import { useState } from "react";
 import {
   Users,
   UserCheck,
   UserX,
   GraduationCap,
-  Search,
-  Download,
   Eye,
-  Filter,
   ArrowRight,
 } from "lucide-react";
-import {
-  Modal,
-  button,
-  primary,
-  input,
-  Avatar,
-} from "../tutor/workspace/ui.jsx";
+import { button, input, Avatar } from "../tutor/workspace/ui.jsx";
 export default function AdminUsers({
   rows: allRows,
   onUpdate,
@@ -40,25 +31,25 @@ export default function AdminUsers({
       roles.some((role) => role === "learner" || role === "tutor")
     );
   });
-  const { confirm } = useInteractions();
 
   const [tab, setTab] = useState("All Users"),
     [college, setCollege] = useState(""),
     [role, setRole] = useState(""),
-    [filters, setFilters] = useState(false),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
-    [status, setStatus] = useState(""),
-    [reason, setReason] = useState(""),
-    [notice, setNotice] = useState(""),
-    [error, setError] = useState("");
+    [notice, setNotice] = useState("");
   const filtered = rows.filter(
     (r) =>
-      (tab === "All Users" ||
-        (tab === "Learner + Tutor" && r.tutor) ||
-        r.status === tab) &&
-      (!college || r.college === college) &&
-      (!role || r.roles?.includes(role.toLowerCase())) &&
+      (tab === "All Users" || r.status === tab) &&
+      (!college ||
+        r.college === college ||
+        collegeProgramMap.some(
+          (c) => c.code === college && c.name === r.college,
+        )) &&
+      (!role ||
+        (role === "Learner & Tutor"
+          ? r.tutor
+          : r.roles?.includes("learner") && !r.tutor)) &&
       `${r.id} ${r.name} ${r.email}`
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
@@ -74,9 +65,6 @@ export default function AdminUsers({
     });
   function open(r) {
     setSelected(r);
-    setStatus(r.status);
-    setReason("");
-    setError("");
   }
   function exportCsv() {
     const fields = [
@@ -148,15 +136,20 @@ export default function AdminUsers({
             rows.filter((r) => r.tutor).length,
             "Verified Tutors",
             "Accounts with an active tutor role",
-            "Learner + Tutor",
+            "Learner & Tutor",
           ],
         ].map(([Icon, count, label, hint, value], i) => (
           <button
             key={label}
+            aria-pressed={
+              value === "Learner & Tutor"
+                ? role === value
+                : !role && tab === value
+            }
             onClick={() => {
-              setTab(value);
+              setTab(value === "Learner & Tutor" ? "All Users" : value);
               setCollege("");
-              setRole("");
+              setRole(value === "Learner & Tutor" ? value : "");
               setQuery("");
               setPage(1);
             }}
@@ -177,96 +170,70 @@ export default function AdminUsers({
           </button>
         ))}
       </div>
-      <div className="au-toolbar">
-        <div className="au-tabs" aria-label="User status filters">
-          {[
-            "All Users",
-            "Active",
-            "Suspended",
-            "Restricted",
-            "Learner + Tutor",
-          ].map((t) => (
-            <button
-              key={t}
-              aria-pressed={tab === t}
-              onClick={() => {
-                setTab(t);
-                setPage(1);
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-        <label className="osas-search">
-          <Search size={16} />
-          <input
-            aria-label="Search users"
-            placeholder="Search by name, email, or student ID..."
-            value={query}
+      <div className="au-toolbar flex-wrap">
+        <label>
+          Users
+          <select
+            aria-label="Users"
+            className={input}
+            value={tab}
             onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-          />
-        </label>
-        <button
-          className={button + " flex items-center gap-2"}
-          aria-expanded={filters}
-          onClick={() => setFilters(!filters)}
-        >
-          <Filter size={14} />
-          Filter{college || role ? " •" : ""}
-        </button>
-        <UserExport rows={filtered} onCsv={exportCsv} onNotice={setNotice} />
-      </div>
-      {filters && (
-        <div className="au-filters">
-          <label>
-            College
-            <select
-              className={input}
-              value={college}
-              onChange={(e) => {
-                setCollege(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">All colleges</option>
-              {[...new Set(rows.map((r) => r.college))].map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Role
-            <select
-              className={input}
-              value={role}
-              onChange={(e) => {
-                setRole(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">All roles</option>
-              <option value="Tutor">Learner + Tutor</option>
-              <option value="Learner">Learner</option>
-            </select>
-          </label>
-          <button
-            className={button}
-            onClick={() => {
-              setCollege("");
-              setRole("");
-              setTab("All Users");
-              setQuery("");
+              setTab(e.target.value);
               setPage(1);
             }}
           >
-            Reset filters
-          </button>
-        </div>
-      )}
+            {["All Users", "Active", "Suspended"].map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          College
+          <select
+            aria-label="College"
+            className={input}
+            value={college}
+            onChange={(e) => {
+              setCollege(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Colleges</option>
+            {collegeProgramMap.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.code}
+              </option>
+            ))}
+            {[...new Set(rows.map((r) => r.college).filter(Boolean))]
+              .filter(
+                (c) =>
+                  !collegeProgramMap.some(
+                    (item) => item.code === c || item.name === c,
+                  ),
+              )
+              .map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+          </select>
+        </label>
+        <label>
+          Role
+          <select
+            aria-label="Role"
+            className={input}
+            value={role}
+            onChange={(e) => {
+              setRole(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Roles</option>
+            <option>Learner</option>
+            <option>Learner &amp; Tutor</option>
+          </select>
+        </label>
+        <UserExport rows={filtered} onCsv={exportCsv} onNotice={setNotice} />
+      </div>
       {notice && (
         <p role="status" className="text-xs text-green-800">
           {notice}

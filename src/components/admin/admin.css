@@ -1622,3 +1622,11 @@
     grid-column: 1/-1;
   }
 }
+
+.au-metrics button[aria-pressed="true"],
+.ao-metrics button[aria-pressed="true"] {
+  border-color: #087542;
+  background: #edf7f2;
+  box-shadow: 0 0 0 2px #087542;
+}
+.au-toolbar > label { display: grid; gap: 5px; min-width: 145px; }
