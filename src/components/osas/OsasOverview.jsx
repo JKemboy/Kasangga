@@ -29,6 +29,7 @@ export default function OsasOverview({
 }) {
   const database = useOsasDatabase();
   const caseRows = database.records?.cases || [];
+  const [selectedMetric, setSelectedMetric] = useState(null);
   const [month, setMonth] = useState(""),
     [detail, setDetail] = useState(null);
 
@@ -91,12 +92,15 @@ export default function OsasOverview({
   const date = (v) =>
     settings.dateFormat === "iso"
       ? v
-      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
-          timeZone: settings.timezone || "Asia/Manila",
-          month: settings.dateFormat === "short" ? "2-digit" : "short",
-          day: "numeric",
-          year: "numeric",
-        });
+      : new Date(v + "T12:00:00").toLocaleDateString(
+          settings.language || "en-PH",
+          {
+            timeZone: settings.timezone || "Asia/Manila",
+            month: settings.dateFormat === "short" ? "2-digit" : "short",
+            day: "numeric",
+            year: "numeric",
+          },
+        );
   const show = (title, items, clearanceAction = false) =>
     setDetail({
       title,
@@ -155,7 +159,11 @@ export default function OsasOverview({
         ].map(([Icon, items, title, hint, color]) => (
           <button
             key={title}
-            onClick={() => show(title, items, title === "Clearance Reviews")}
+            aria-pressed={selectedMetric === title}
+            onClick={() => {
+              setSelectedMetric(title);
+              show(title, items, title === "Clearance Reviews");
+            }}
           >
             <span style={{ background: color }}>
               <Icon size={25} />
