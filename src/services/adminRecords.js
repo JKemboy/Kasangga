@@ -331,80 +331,99 @@ export function mapAdminDatabase(input, now = new Date()) {
       };
     });
   const bookings = index(sessions, "id");
-  const payments = db.payments
-    .filter((p) => settled(p.payment_status))
-    .map((p) => {
-      const b = bookings.get(key(p.booking_id));
-      const requests = db.refunds
-        .filter((r) => key(r.payment_id) === key(p.payment_id))
-        .sort((a, b) => a.requested_at.localeCompare(b.requested_at));
-      const refund =
-        requests.find((r) => r.refund_status === "pending") || requests.at(-1);
-      const allocationRows = db.payment_allocations.filter(
-        (a) => key(a.payment_id) === key(p.payment_id),
-      );
-      const allocation = allocationRows.length
-        ? allocationRows.reduce(
-            (total, a) => ({
-              gross: amount(p.gross_amount),
-              tutor: total.tutor + amount(a.tutor_amount),
-              osas: total.osas + amount(a.osas_amount),
-              platform: total.platform + amount(a.platform_amount),
-              processingFee: total.processingFee + amount(a.processing_fee),
-              source: "Recorded allocation",
-            }),
-            { tutor: 0, osas: 0, platform: 0, processingFee: 0 },
-          )
-        : null;
-      const reviews = history("refunds", refund?.refund_id),
-        decision = reviews.at(-1);
-      return {
-        ...b,
-        id: key(p.payment_id),
-        booking: key(p.booking_id),
-        reference: p.transaction_reference,
-        paymongoReference: p.paymongo_payment_id,
-        checkoutId: p.paymongo_checkout_session_id,
-        method: label(p.payment_method),
-        amount: amount(p.gross_amount),
-        date: manilaDate(p.paid_at || p.created_at),
-        createdAt: p.created_at,
-        paidAt: p.paid_at,
-        time: p.paid_at
-          ? new Intl.DateTimeFormat("en-GB", {
-              timeZone: "Asia/Manila",
-              hour: "2-digit",
-              minute: "2-digit",
-              hourCycle: "h23",
-            }).format(new Date(p.paid_at))
-          : "",
-        receiptUrl: p.receipt_url,
-        transferredAt: p.transferred_at,
-        transferredBy: p.transferred_by ? fullName(p.transferred_by) : "",
-        transferReference: p.transfer_reference,
-        paymentStatus: p.payment_status,
-        payment:
-          refund?.refund_status === "pending"
-            ? "Refund Review"
-            : label(p.payment_status),
-        allocation,
-        refundId: refund?.refund_id,
-        refundStatus: refund?.refund_status,
-        refundAmount: amount(refund?.refund_amount),
-        refundReason: refund?.refund_reason,
-        refundRequestedAt: refund?.requested_at,
-        refundDecision:
-          refund &&
-          ["approved", "declined", "processed"].includes(refund.refund_status)
-            ? {
-                decision: label(refund.refund_status),
-                note: decision?.reason,
-                at: decision?.at || refund.processed_at,
-              }
-            : null,
-        history: reviews,
-      };
-    });
+  const transactionRecords = db.payments.map((p) => {
+    const rawBooking = db.bookings.find(
+      (record) => key(record.booking_id) === key(p.booking_id),
+    );
+    const service = listings.get(key(rawBooking?.service_id));
+    const b = bookings.get(key(p.booking_id)) || {
+      learnerId: rawBooking?.learner_id,
+      learner: fullName(rawBooking?.learner_id),
+      tutorUserId: service?.tutorUserId,
+      tutor: service?.tutor || "Unavailable",
+      serviceId: key(rawBooking?.service_id),
+      service:
+        rawBooking?.service_title_snapshot || service?.title || "Unavailable",
+      subject: rawBooking?.service_subject_snapshot || service?.title,
+      topic: rawBooking?.specific_topic || "",
+      status: label(rawBooking?.booking_status),
+      start: rawBooking?.start_time?.slice(0, 5),
+      end: rawBooking?.end_time?.slice(0, 5),
+      type: label(rawBooking?.session_type),
+    };
+    const requests = db.refunds
+      .filter((r) => key(r.payment_id) === key(p.payment_id))
+      .sort((a, b) => a.requested_at.localeCompare(b.requested_at));
+    const refund =
+      requests.find((r) => r.refund_status === "pending") || requests.at(-1);
+    const allocationRows = db.payment_allocations.filter(
+      (a) => key(a.payment_id) === key(p.payment_id),
+    );
+    const allocation = allocationRows.length
+      ? allocationRows.reduce(
+          (total, a) => ({
+            gross: amount(p.gross_amount),
+            tutor: total.tutor + amount(a.tutor_amount),
+            osas: total.osas + amount(a.osas_amount),
+            platform: total.platform + amount(a.platform_amount),
+            processingFee: total.processingFee + amount(a.processing_fee),
+            source: "Recorded allocation",
+          }),
+          { tutor: 0, osas: 0, platform: 0, processingFee: 0 },
+        )
+      : null;
+    const reviews = history("refunds", refund?.refund_id),
+      decision = reviews.at(-1);
+    return {
+      ...b,
+      id: key(p.payment_id),
+      booking: key(p.booking_id),
+      reference: p.transaction_reference,
+      paymongoReference: p.paymongo_payment_id,
+      checkoutId: p.paymongo_checkout_session_id,
+      method: label(p.payment_method),
+      amount: amount(p.gross_amount),
+      date: manilaDate(p.paid_at || p.created_at),
+      createdAt: p.created_at,
+      paidAt: p.paid_at,
+      time: p.paid_at
+        ? new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Asia/Manila",
+            hour: "2-digit",
+            minute: "2-digit",
+            hourCycle: "h23",
+          }).format(new Date(p.paid_at))
+        : "",
+      receiptUrl: p.receipt_url,
+      transferredAt: p.transferred_at,
+      transferredBy: p.transferred_by ? fullName(p.transferred_by) : "",
+      transferReference: p.transfer_reference,
+      paymentStatus: p.payment_status,
+      payment:
+        refund?.refund_status === "pending"
+          ? "Refund Review"
+          : label(p.payment_status),
+      allocation,
+      refundId: refund?.refund_id,
+      refundStatus: refund?.refund_status,
+      refundAmount: amount(refund?.refund_amount),
+      refundReason: refund?.refund_reason,
+      refundRequestedAt: refund?.requested_at,
+      refundDecision:
+        refund &&
+        ["approved", "declined", "processed"].includes(refund.refund_status)
+          ? {
+              decision: label(refund.refund_status),
+              note: decision?.reason,
+              at: decision?.at || refund.processed_at,
+            }
+          : null,
+      history: reviews,
+    };
+  });
+  const payments = transactionRecords.filter((record) =>
+    settled(record.paymentStatus),
+  );
   for (const booking of sessions)
     booking.allocation = payments.find(
       (p) => p.id === booking.transaction,
@@ -516,6 +535,7 @@ export function mapAdminDatabase(input, now = new Date()) {
     services,
     sessions,
     payments,
+    transactionRecords,
     incidents,
     config,
     audit,
