@@ -245,6 +245,7 @@ export default function AdminDashboardPage() {
                   "Tutor Verification",
                   "Service Management",
                   "Bookings Monitoring",
+                  "Payments & Transactions",
                 ].includes(view)
               ) {
                 setView("User Management");
@@ -412,7 +413,7 @@ export default function AdminDashboardPage() {
               onDocument={loadApplicationDocument}
             />
           ) : view === "Payments & Transactions" ? (
-            <AdminPayments />
+            <AdminPayments searchQuery={search} onQueryChange={setSearch} />
           ) : view === "Reports & Analytics" ? (
             <AdminReports users={rows} services={services} go={go} />
           ) : (
