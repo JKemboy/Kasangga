@@ -179,6 +179,7 @@ export function mapOsasRecords(db) {
       id: user?.student_id || r.user_id,
       userId: r.user_id,
       name: name(r.user_id),
+      college: user?.college || "",
       program: user?.program || user?.college || "",
       clearanceId: `CLR-${r.clearance_review_id}`,
       clearanceDatabaseId: r.clearance_review_id,
