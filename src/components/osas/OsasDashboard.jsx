@@ -1,4 +1,5 @@
 import OsasNotifications from "./OsasNotifications.jsx";
+import { collegeProgramMap } from "../../services/collegeProgramMap.js";
 // OSAS portal coordinator: loads the database snapshot, applies saved preferences, and routes clearance, case, policy, archive, and report sections.
 import OsasCaseWorkspace from "./OsasCaseWorkspace.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
@@ -175,8 +176,7 @@ function OsasDashboardContent() {
     [query, setQuery] = useState(""),
     [global, setGlobal] = useState(""),
     [status, setStatus] = useState(""),
-    [program, setProgram] = useState(""),
-    [caseStatus, setCaseStatus] = useState(""),
+    [college, setCollege] = useState(""),
     [requested, setRequested] = useState(""),
     [semester, setSemester] = useState(""),
     [page, setPage] = useState(1),
@@ -191,8 +191,9 @@ function OsasDashboardContent() {
   const filtered = rows.filter(
     (r) =>
       (!status || r.status === status) &&
-      (!program || r.program === program) &&
-      (!caseStatus || r.caseStatus === caseStatus) &&
+      (!college ||
+        r.college === college ||
+        collegeProgramMap.some((c) => c.code === college && c.name === r.college)) &&
       (!requested || r.requested === requested) &&
       (!semester || r.term === semester) &&
       `${r.id} ${r.name} ${r.program} ${r.caseId}`
@@ -623,24 +624,18 @@ function OsasDashboardContent() {
               </select>
               <select
                 className={input}
-                aria-label="College or program"
-                value={program}
-                onChange={(e) => change(setProgram, e.target.value)}
+                aria-label="College"
+                value={college}
+                onChange={(e) => change(setCollege, e.target.value)}
               >
-                <option value="">All Colleges / Programs</option>
-                {[...new Set(rows.map((r) => r.program))].map((p) => (
-                  <option key={p}>{p}</option>
+                <option value="">All Colleges</option>
+                {collegeProgramMap.map((c) => (
+                  <option key={c.code} value={c.code}>{c.code}</option>
                 ))}
-              </select>
-              <select
-                className={input}
-                aria-label="Case status"
-                value={caseStatus}
-                onChange={(e) => change(setCaseStatus, e.target.value)}
-              >
-                <option value="">All Case Statuses</option>
-                {[...new Set(rows.map((r) => r.caseStatus))].map((s) => (
-                  <option key={s}>{s}</option>
+                {[...new Set(rows.map((r) => r.college))].filter((value) =>
+                  value && !collegeProgramMap.some((c) => c.code === value || c.name === value)
+                ).map((value) => (
+                  <option key={value}>{value}</option>
                 ))}
               </select>
               <input
@@ -654,8 +649,7 @@ function OsasDashboardContent() {
                 className={button}
                 onClick={() => {
                   setStatus("");
-                  setProgram("");
-                  setCaseStatus("");
+                  setCollege("");
                   setRequested("");
                   setQuery("");
                   setGlobal("");
