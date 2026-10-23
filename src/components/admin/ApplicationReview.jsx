@@ -1,3 +1,4 @@
+import { approvalChecksComplete } from "../../services/applicationApproval.js";
 import ApplicationDecision from "./ApplicationDecision.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -41,6 +42,7 @@ export default function ApplicationReview({
     error: "",
     loading: false,
   });
+  const [openedPaths, setOpenedPaths] = useState([]);
   const [ocrResults, setOcrResults] = useState({});
   const [ocrBusy, setOcrBusy] = useState("");
   const [ocrProgress, setOcrProgress] = useState(null);
@@ -51,6 +53,18 @@ export default function ApplicationReview({
   const viewerRef = useRef(null);
   const final = ["Approved", "Rejected"].includes(r.status);
   const currentVerificationState = verificationState ?? localVerificationState;
+  const manual = currentVerificationState?.manualReview || {};
+  function updateManual(key, value) {
+    const next = {
+      ...currentVerificationState,
+      manualReview: { ...manual, [key]: value },
+    };
+    setLocalVerificationState(next);
+    onVerificationUpdate?.(next);
+  }
+  const canApprove =
+    approvalChecksComplete(r, currentVerificationState) &&
+    notes.trim().length >= 15;
   useEffect(() => {
     const dialog = ref.current;
     dialog.showModal();
@@ -272,9 +286,12 @@ export default function ApplicationReview({
         const blob = await onDocument(viewingDocument.doc);
         if (!blob) throw new Error("The document preview could not be loaded.");
         objectUrl = URL.createObjectURL(blob);
-        if (active)
+        if (active) {
           setDocumentPreview({ url: objectUrl, error: "", loading: false });
-        else URL.revokeObjectURL(objectUrl);
+          setOpenedPaths((paths) => [
+            ...new Set([...paths, viewingDocument.doc.storagePath]),
+          ]);
+        } else URL.revokeObjectURL(objectUrl);
       } catch (error) {
         if (active)
           setDocumentPreview({
@@ -336,6 +353,44 @@ export default function ApplicationReview({
         <div className="aar-columns">
           <section>
             <h3>Documents</h3>
+            {!final && (
+              <div className="my-3 space-y-2 rounded-lg border bg-green-50 p-3 text-xs">
+                <h4 className="font-semibold">Manual document review</h4>
+                <p>
+                  Open the original COR and grade evidence below, then mark each
+                  as reviewed. OCR is optional for manual approval.
+                </p>
+                {[
+                  [
+                    "identityConfirmed",
+                    "Applicant identity and student information match the documents.",
+                  ],
+                  [
+                    "currentEnrollment",
+                    "COR confirms enrollment for the current semester.",
+                  ],
+                  [
+                    "gradesRelevant",
+                    "Grade evidence supports the listed subject expertise.",
+                  ],
+                ].map(([key, label]) => (
+                  <label key={key} className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!manual[key]}
+                      disabled={busy}
+                      onChange={(e) => updateManual(key, e.target.checked)}
+                    />
+                    {label}
+                  </label>
+                ))}
+                <p>
+                  Add at least 15 characters of Admin Notes explaining your
+                  review. Complete both required document reviews before
+                  approval.
+                </p>
+              </div>
+            )}
             {!!docs.length && (
               <div className="aar-ocr-batch">
                 {r.status !== "Approved" && (
@@ -414,6 +469,42 @@ export default function ApplicationReview({
                       <Eye size={14} />
                       View document
                     </button>
+                    {!final &&
+                      DOCUMENTS.some(
+                        (item) => item.id === kind && item.required,
+                      ) && (
+                        <label className="mt-2 flex items-start gap-2 text-xs">
+                          <input
+                            type="checkbox"
+                            disabled={
+                              busy ||
+                              (!openedPaths.includes(doc.storagePath) &&
+                                !manual.reviewedPaths?.includes(
+                                  doc.storagePath,
+                                ))
+                            }
+                            checked={
+                              !!manual.reviewedPaths?.includes(doc.storagePath)
+                            }
+                            onChange={(e) =>
+                              updateManual(
+                                "reviewedPaths",
+                                e.target.checked
+                                  ? [
+                                      ...new Set([
+                                        ...(manual.reviewedPaths || []),
+                                        doc.storagePath,
+                                      ]),
+                                    ]
+                                  : (manual.reviewedPaths || []).filter(
+                                      (path) => path !== doc.storagePath,
+                                    ),
+                              )
+                            }
+                          />
+                          I reviewed this original document.
+                        </label>
+                      )}
                     {ocrErrors[`${kind}:${doc.storagePath}`] && (
                       <p className="text-red-700" role="alert">
                         {ocrErrors[`${kind}:${doc.storagePath}`]}
@@ -557,22 +648,18 @@ export default function ApplicationReview({
               </button>
               <button
                 className={primary}
-                disabled={
-                  busy ||
-                  currentVerificationState?.documentStatus !== "Complete" ||
-                  !currentVerificationState?.matchConfirmed
-                }
+                disabled={busy || !!ocrBusy || !canApprove}
                 onClick={() => setDecision("Approved")}
               >
                 <Check size={14} />
                 Approve Tutor
               </button>
             </div>
-            {(!currentVerificationState?.matchConfirmed ||
-              currentVerificationState?.documentStatus !== "Complete") && (
+            {!canApprove && (
               <p className="aar-review-gate" role="status">
-                Run all document checks and confirm Information Match beside the
-                check button before approving.
+                Complete manual review of both required documents (or OCR checks
+                and Information Match) and add at least 15 characters of Admin
+                Notes to enable approval.
               </p>
             )}
           </>

@@ -1,3 +1,7 @@
+import {
+  approvalChecksComplete as checksComplete,
+  manualReviewComplete,
+} from "../../services/applicationApproval.js";
 import { useState } from "react";
 import { Check, Info } from "lucide-react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
@@ -16,13 +20,13 @@ export function applicationDecision(
     throw new Error("Invalid review action.");
   if (decision === "Approved" && !reviewed)
     throw new Error("Confirm that you reviewed the documents.");
-  if (
-    decision === "Approved" &&
-    (verificationState.documentStatus !== "Complete" ||
-      !verificationState.matchConfirmed)
-  )
+  if (decision === "Approved" && !checksComplete(record, verificationState))
     throw new Error(
-      "Complete all document checks and confirm the information match before approval.",
+      "Complete manual document review or OCR checks and confirm the information match before approval.",
+    );
+  if (decision === "Approved" && (record.notes || "").trim().length < 15)
+    throw new Error(
+      "Enter at least 15 characters of Admin review notes before approving.",
     );
   if (decision !== "Approved" && reason.trim().length < 15)
     throw new Error("Enter at least 15 characters.");
@@ -38,7 +42,9 @@ export function applicationDecision(
         to: decision,
         reason:
           decision === "Approved"
-            ? "Document review acknowledged by Admin."
+            ? manualReviewComplete(record, verificationState)
+              ? "Manual review completed: original documents inspected; identity, current-semester enrollment and relevant grades confirmed."
+              : "OCR-assisted document review acknowledged by Admin."
             : reason.trim(),
         requestedChanges:
           decision === "Resubmission Required" ? [...fields] : [],
@@ -69,8 +75,8 @@ export default function ApplicationDecision({
       ? "Request Resubmission"
       : "Reject Application";
   const approvalChecksComplete =
-    verificationState?.documentStatus === "Complete" &&
-    verificationState?.matchConfirmed;
+    checksComplete(record, verificationState) &&
+    (record.notes || "").trim().length >= 15;
   const valid = approving
     ? reviewed && approvalChecksComplete
     : reason.trim().length >= 15 && (!resubmit || fields.length > 0);
@@ -116,8 +122,8 @@ export default function ApplicationDecision({
             </p>
             {!approvalChecksComplete && (
               <p role="status">
-                Run all document checks and confirm the information match from
-                the Tutor Verification table before approval.
+                Complete the review checklist and add at least 15 characters of
+                Admin review notes before approval.
               </p>
             )}
             <label className="aar-checkbox">
