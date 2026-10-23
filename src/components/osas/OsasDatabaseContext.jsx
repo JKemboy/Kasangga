@@ -73,8 +73,10 @@ export function OsasDatabaseProvider({ children }) {
         .in("notification_id", ids);
       if (error) throw error;
       await refresh();
+      return true;
     } catch (cause) {
       setError(cause.message || "Unable to mark notifications as read.");
+      return false;
     }
   }
   async function saveCase(record) {
