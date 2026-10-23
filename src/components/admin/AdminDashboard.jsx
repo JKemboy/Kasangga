@@ -1,3 +1,4 @@
+import AdminNotifications from "./AdminNotifications.jsx";
 // Admin portal coordinator: loads the role-authorized Supabase snapshot, maintains the Admin inbox, and routes to each Admin section.
 import AdminCatalog from "./AdminCatalog.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
@@ -56,6 +57,7 @@ const navigation = [
   ["Payments & Transactions", CreditCard],
   ["Incident Reports", TriangleAlert],
   ["Reports & Analytics", ChartNoAxesCombined],
+  ["Notifications", Bell],
   ["Settings", Settings],
 ];
 export default function AdminDashboardPage() {
@@ -146,11 +148,24 @@ export default function AdminDashboardPage() {
         "Messages",
         "Overview",
         "Settings",
+        "Notifications",
       ].includes(label)
     ) {
       setView(label);
       setModal(null);
     } else setModal(label);
+  }
+  async function readNotifications(ids) {
+    try {
+      await markAdminNotificationsRead(auth.user.id, ids);
+      setAdminNotifications((current) =>
+        current.map((item) =>
+          ids.includes(item.id) ? { ...item, read: true } : item,
+        ),
+      );
+    } catch (cause) {
+      setNotificationError(cause.message);
+    }
   }
   return (
     <AdminDatabaseContext.Provider
@@ -231,7 +246,10 @@ export default function AdminDashboardPage() {
               aria-label="Search admin records"
               placeholder="Search users, tutors, bookings, reports, or settings..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                if (view === "User Management") setQuery(e.target.value);
+              }}
             />
             <button aria-label="Search records">
               <Search size={16} />
@@ -243,18 +261,7 @@ export default function AdminDashboardPage() {
               notifications={visibleAdminNotifications}
               threads={adminThreads}
               inboxError={notificationError}
-              onRead={async (ids) => {
-                try {
-                  await markAdminNotificationsRead(auth.user.id, ids);
-                  setAdminNotifications((current) =>
-                    current.map((item) =>
-                      ids.includes(item.id) ? { ...item, read: true } : item,
-                    ),
-                  );
-                } catch (cause) {
-                  setNotificationError(cause.message);
-                }
-              }}
+              onRead={readNotifications}
               onNavigate={go}
             />
             <button
@@ -264,7 +271,13 @@ export default function AdminDashboardPage() {
             >
               <PortalAvatar role="admin" editable />
               <span className="hidden sm:block">
-                <b className="block text-xs text-slate-900">{auth.profile?.first_name ? [auth.profile.first_name, auth.profile.last_name].filter(Boolean).join(" ") : config.name}</b>
+                <b className="block text-xs text-slate-900">
+                  {auth.profile?.first_name
+                    ? [auth.profile.first_name, auth.profile.last_name]
+                        .filter(Boolean)
+                        .join(" ")
+                    : config.name}
+                </b>
                 <small>Administrator</small>
               </span>
               <ChevronDown size={14} />
@@ -319,8 +332,15 @@ export default function AdminDashboardPage() {
               config={config}
               go={go}
             />
-          // The view switch is the Admin section router. Section components
+          ) : // The view switch is the Admin section router. Section components
           // receive only the records and callbacks needed for their workflow.
+          view === "Notifications" ? (
+            <AdminNotifications
+              rows={adminNotifications}
+              error={notificationError}
+              onRead={readNotifications}
+              go={go}
+            />
           ) : view === "Settings" ? (
             <AdminSettings
               config={config}
@@ -396,7 +416,10 @@ export default function AdminDashboardPage() {
               rows={rows}
               onUpdate={(updated) => saveRecord("users", updated)}
               query={query}
-              setQuery={setQuery}
+              setQuery={(value) => {
+                setQuery(value);
+                setSearch(value);
+              }}
             />
           )}
         </main>
@@ -404,7 +427,13 @@ export default function AdminDashboardPage() {
           <Modal title="Administrator account" onClose={() => setModal(null)}>
             <div className="space-y-3 text-xs">
               <p>
-                <b>{auth.profile?.first_name ? [auth.profile.first_name, auth.profile.last_name].filter(Boolean).join(" ") : config.name}</b>
+                <b>
+                  {auth.profile?.first_name
+                    ? [auth.profile.first_name, auth.profile.last_name]
+                        .filter(Boolean)
+                        .join(" ")
+                    : config.name}
+                </b>
               </p>
               <p>{auth.profile?.csu_email || auth.user?.email}</p>
               <button className={button} onClick={() => go("Settings")}>
