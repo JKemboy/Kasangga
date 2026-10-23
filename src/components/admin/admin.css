@@ -1635,3 +1635,5 @@
 
 .admin-service-management .ad-cards button[aria-pressed="true"] { border-color: #087542; background: #edf7f2; box-shadow: 0 0 0 2px #087542; }
 .admin-service-management .ad-toolbar > select { width: auto; min-width: 190px; }
+
+.ab-bookings .ad-cards button[aria-pressed="true"] { border-color: #087542; background: #edf7f2; box-shadow: 0 0 0 2px #087542; }

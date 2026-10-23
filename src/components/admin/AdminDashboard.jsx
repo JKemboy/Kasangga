@@ -241,7 +241,11 @@ export default function AdminDashboardPage() {
               e.preventDefault();
               setModal(null);
               if (
-                !["Tutor Verification", "Service Management"].includes(view)
+                ![
+                  "Tutor Verification",
+                  "Service Management",
+                  "Bookings Monitoring",
+                ].includes(view)
               ) {
                 setView("User Management");
                 setQuery(search);
@@ -386,7 +390,7 @@ export default function AdminDashboardPage() {
               config={config}
             />
           ) : view === "Bookings Monitoring" ? (
-            <AdminBookings />
+            <AdminBookings searchQuery={search} onQueryChange={setSearch} />
           ) : view === "Messages" ? (
             <AdminSupportInbox />
           ) : view === "Incident Reports" ? (
