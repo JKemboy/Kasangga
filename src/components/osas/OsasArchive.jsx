@@ -7,7 +7,6 @@ import {
   CheckCircle,
   CalendarDays,
   ArrowRight,
-  Search,
   LockKeyhole,
   Info,
 } from "lucide-react";
@@ -17,11 +16,15 @@ import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 
 // Resolved cases appear here; final archival still enforces conditions and holds.
 
-export default function OsasArchive({ settings }) {
+export default function OsasArchive({
+  settings,
+  searchQuery = "",
+  onSearchChange = () => {},
+}) {
   const database = useOsasDatabase();
   const records = database.records?.archive || [];
-  const [query, setQuery] = useState(""),
-    [year, setYear] = useState(""),
+  const [selectedMetric, setSelectedMetric] = useState(null);
+  const [year, setYear] = useState(""),
     [type, setType] = useState(""),
     [outcome, setOutcome] = useState(""),
     [start, setStart] = useState(""),
@@ -50,7 +53,7 @@ export default function OsasArchive({ settings }) {
           [r.caseId, r.incident, r.student, r.type, r.outcome, r.officer]
             .join(" ")
             .toLowerCase()
-            .includes(query.trim().toLowerCase()),
+            .includes(searchQuery.trim().toLowerCase()),
       );
   const size = Number(settings.pageSize),
     pages = Math.max(1, Math.ceil(filtered.length / size)),
@@ -59,18 +62,23 @@ export default function OsasArchive({ settings }) {
   const date = (v) =>
     settings.dateFormat === "iso"
       ? v
-      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
-          timeZone: settings.timezone || "Asia/Manila",
-          month: settings.dateFormat === "short" ? "2-digit" : "short",
-          day: "numeric",
-          year: "numeric",
-        });
+      : new Date(v + "T12:00:00").toLocaleDateString(
+          settings.language || "en-PH",
+          {
+            timeZone: settings.timezone || "Asia/Manila",
+            month: settings.dateFormat === "short" ? "2-digit" : "short",
+            day: "numeric",
+            year: "numeric",
+          },
+        );
   function change(setter, value) {
     setter(value);
+    setSelectedMetric(null);
     setPage(1);
   }
   function reset() {
-    setQuery("");
+    onSearchChange("");
+    setSelectedMetric(null);
     setYear("");
     setType("");
     setOutcome("");
@@ -81,6 +89,7 @@ export default function OsasArchive({ settings }) {
   }
   function card(value) {
     reset();
+    setSelectedMetric(value);
     if (value === "all" || value === "resolved" || value === "month")
       setYear("");
     setScope(value === "resolved" || value === "month" ? value : "");
@@ -169,6 +178,7 @@ export default function OsasArchive({ settings }) {
         ].map(([Icon, count, label, hint, action, value, color]) => (
           <button
             key={value}
+            aria-pressed={selectedMetric === value}
             onClick={() => {
               const selectedYear = year || String(new Date().getFullYear());
               card(value);
@@ -193,15 +203,6 @@ export default function OsasArchive({ settings }) {
         ))}
       </div>
       <div className="oa-filters">
-        <label className="osas-search">
-          <Search size={16} />
-          <input
-            aria-label="Search archives"
-            placeholder="Search case ID, incident ID, student, or outcome..."
-            value={query}
-            onChange={(e) => change(setQuery, e.target.value)}
-          />
-        </label>
         <select
           className={input}
           aria-label="Archive incident type"

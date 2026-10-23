@@ -23,6 +23,9 @@ export default function OsasPolicies({
   policies: providedPolicies,
   onEdit,
   actions,
+  searchQuery,
+  onSearchChange,
+  hideSearch = false,
 }) {
   const database = useOsasDatabase();
   const policies = providedPolicies ?? database?.records?.policies ?? [];
@@ -65,7 +68,7 @@ export default function OsasPolicies({
           : p.effective && p.effective.startsWith(effective))) &&
       `${p.title} ${p.category} ${p.owner} ${p.id}`
         .toLowerCase()
-        .includes(query.trim().toLowerCase()),
+        .includes((searchQuery ?? query).trim().toLowerCase()),
   );
   const size = Number(settings.pageSize),
     pages = Math.max(1, Math.ceil(filtered.length / size)),
@@ -91,6 +94,7 @@ export default function OsasPolicies({
   }
   function reset() {
     setQuery("");
+    onSearchChange?.("");
     setCategory("");
     setStatus("");
     setOwner("");
@@ -199,15 +203,17 @@ export default function OsasPolicies({
           </button>
         ))}
       </div>
-      <label className="osas-search">
-        <Search size={17} />
-        <input
-          aria-label="Search policies"
-          placeholder="Search policies by title, category, or keyword..."
-          value={query}
-          onChange={(e) => change(setQuery, e.target.value)}
-        />
-      </label>
+      {!hideSearch && (
+        <label className="osas-search">
+          <Search size={17} />
+          <input
+            aria-label="Search policies"
+            placeholder="Search policies by title, category, or keyword..."
+            value={query}
+            onChange={(e) => change(setQuery, e.target.value)}
+          />
+        </label>
+      )}
       <div className="op-filters">
         <select
           aria-label="Policy category"

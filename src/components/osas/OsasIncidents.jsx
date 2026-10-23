@@ -23,6 +23,22 @@ import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 function Badge({ value }) {
   return <span className={statusClass(value, "oi-badge")}>{value}</span>;
 }
+export function matchesCaseStatus(value, filter) {
+  if (!filter) return true;
+  return (
+    {
+      New: ["New", "Open", "Awaiting OSAS Assessment"],
+      "Under Review": [
+        "Under Review",
+        "Under Institutional Review",
+        "Awaiting Evidence",
+        "Pending Completion",
+      ],
+      "Pending Decision": ["Pending Decision"],
+      Resolved: ["Resolved", "Closed / No Formal Case"],
+    }[filter]?.includes(value) || false
+  );
+}
 const scopeMatches = (r, scope) =>
   !scope ||
   (scope === "referred" && r.referral !== "Not Referred") ||
@@ -45,20 +61,18 @@ export default function OsasIncidents({
   settings,
   initialQuery = "",
   embedded = false,
+  searchQuery,
+  onSearchChange,
 }) {
   const database = useOsasDatabase();
   const cases = database.records?.cases || [];
   const incidents = (database.records?.incidents || []).filter((r) => {
     const linkedCase = cases.find((c) => c.caseId === r.caseId);
-    return linkedCase
-      ? !linkedCase.archived
-      : !["Resolved", "Closed / No Formal Case"].includes(r.status);
+    return linkedCase ? !linkedCase.archived : true;
   });
   const [month, setMonth] = useState(""),
     [query, setQuery] = useState(initialQuery),
-    [referral, setReferral] = useState(""),
     [type, setType] = useState(""),
-    [priority, setPriority] = useState(""),
     [date, setDate] = useState(""),
     [status, setStatus] = useState(""),
     [scope, setScope] = useState(""),
@@ -86,15 +100,13 @@ export default function OsasIncidents({
   const filtered = monthly.filter(
     (r) =>
       scopeMatches(r, scope) &&
-      (!referral || r.referral === referral) &&
       (!type || r.type === type) &&
-      (!priority || r.priority === priority) &&
       (!date || r.date === date) &&
-      (!status || r.status === status) &&
+      matchesCaseStatus(r.status, status) &&
       Object.values(r)
         .join(" ")
         .toLowerCase()
-        .includes(query.trim().toLowerCase()),
+        .includes((searchQuery ?? query).trim().toLowerCase()),
   );
   const size = Number(settings.pageSize),
     pages = Math.max(1, Math.ceil(filtered.length / size)),
@@ -103,12 +115,15 @@ export default function OsasIncidents({
   const formatDate = (v) =>
     settings.dateFormat === "iso"
       ? v
-      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
-          timeZone: settings.timezone || "Asia/Manila",
-          month: settings.dateFormat === "short" ? "2-digit" : "short",
-          day: "numeric",
-          year: "numeric",
-        });
+      : new Date(v + "T12:00:00").toLocaleDateString(
+          settings.language || "en-PH",
+          {
+            timeZone: settings.timezone || "Asia/Manila",
+            month: settings.dateFormat === "short" ? "2-digit" : "short",
+            day: "numeric",
+            year: "numeric",
+          },
+        );
   function change(setter, value) {
     setter(value);
     setPage(1);
@@ -116,9 +131,10 @@ export default function OsasIncidents({
   }
   function reset() {
     setQuery("");
-    setReferral("");
+    onSearchChange?.("");
+
     setType("");
-    setPriority("");
+
     setDate("");
     setStatus("");
     setScope("");
@@ -263,12 +279,12 @@ export default function OsasIncidents({
             key={key}
             aria-pressed={scope === key}
             onClick={() => {
-              setReferral("");
               setType("");
-              setPriority("");
+
               setDate("");
               setStatus("");
               setQuery("");
+              onSearchChange?.("");
               change(setScope, scope === key ? "" : key);
             }}
           >
@@ -290,18 +306,21 @@ export default function OsasIncidents({
         ))}
       </div>
       <div className="oi-toolbar">
-        <label className="osas-search">
-          <Search size={15} />
-          <input
-            aria-label="Search incidents"
-            placeholder="Search incident ID, booking ID, reporter, student, or keyword..."
-            value={query}
-            onChange={(e) => change(setQuery, e.target.value)}
-          />
-        </label>
-        {selectFilter("Referral Status", referral, setReferral, "referral")}
+        {!embedded && (
+          <label className="osas-search">
+            <Search size={15} />
+            <input
+              aria-label="Search incidents"
+              placeholder="Search incident ID, booking ID, reporter, student, or keyword..."
+              value={query}
+              onChange={(e) => {
+                change(setQuery, e.target.value);
+                onSearchChange?.(e.target.value);
+              }}
+            />
+          </label>
+        )}
         {selectFilter("Incident Type", type, setType, "type")}
-        {selectFilter("Priority", priority, setPriority, "priority")}
         <input
           aria-label="Submitted date"
           title="Submitted date"
@@ -310,7 +329,19 @@ export default function OsasIncidents({
           value={date}
           onChange={(e) => change(setDate, e.target.value)}
         />
-        {selectFilter("Current Status", status, setStatus, "status")}
+        <select
+          className={input}
+          aria-label="All Case Status"
+          value={status}
+          onChange={(e) => change(setStatus, e.target.value)}
+        >
+          <option value="">All Case Status</option>
+          {["New", "Under Review", "Pending Decision", "Resolved"].map(
+            (value) => (
+              <option key={value}>{value}</option>
+            ),
+          )}
+        </select>
         <button className={button} onClick={reset}>
           Reset
         </button>

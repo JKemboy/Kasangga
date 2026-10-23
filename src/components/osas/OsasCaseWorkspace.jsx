@@ -1,6 +1,15 @@
 import OsasIncidents from "./OsasIncidents.jsx";
-export default function OsasCaseWorkspace({ settings, initialQuery = "" }) {
+export default function OsasCaseWorkspace({
+  settings,
+  searchQuery = "",
+  onSearchChange,
+}) {
   return (
-    <OsasIncidents settings={settings} initialQuery={initialQuery} embedded />
+    <OsasIncidents
+      settings={settings}
+      searchQuery={searchQuery}
+      onSearchChange={onSearchChange}
+      embedded
+    />
   );
 }
