@@ -1,3 +1,4 @@
+import { matchesAdminTransaction } from "../../services/adminTransactionFilters.js";
 // Payments & Transactions: presents payment records and delegates allowed payment actions to database-backed services.
 import { markPaymentTransferred } from "../../services/adminDatabase.js";
 import {
@@ -16,10 +17,8 @@ import {
   Landmark,
   PieChart,
   Check,
-  Search,
   Download,
   CalendarDays,
-  Filter,
   Info,
 } from "lucide-react";
 import {
@@ -36,9 +35,12 @@ const initialTransactions = [];
 // Refund-review rows retain the original paid allocation, but are excluded from
 // settled earnings until the review is resolved. This is reference data only.
 const originalAllocation = paymentAllocation;
-export default function AdminPayments() {
+export default function AdminPayments({
+  searchQuery = "",
+  onQueryChange = () => {},
+}) {
   const { database, saveRecord, refresh } = useAdminDatabase();
-  const transactions = database?.payments || [];
+  const transactions = database?.transactionRecords || database?.payments || [];
   const [transferring, setTransferring] = useState(null),
     [transferred, setTransferred] = useState([]),
     [transferMessage, setTransferMessage] = useState(""),
@@ -74,11 +76,9 @@ export default function AdminPayments() {
     return saveRecord("refunds", updated);
   }
   const [status, setStatus] = useState(""),
-    [query, setQuery] = useState(""),
     [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
     [dateOpen, setDateOpen] = useState(false),
-    [filters, setFilters] = useState(false),
     [tutor, setTutor] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
@@ -92,14 +92,11 @@ export default function AdminPayments() {
   const totals = summarizePayments(period);
   const filtered = period.filter(
     (r) =>
-      (!status ||
-        (status === "Transferred"
-          ? !!r.transferredAt || transferred.includes(r.id)
-          : r.payment === status)) &&
+      matchesAdminTransaction(r, status, transferred) &&
       (!tutor || r.tutor === tutor) &&
       `${r.id} ${r.booking} ${r.learner} ${r.tutor}`
         .toLowerCase()
-        .includes(query.trim().toLowerCase()),
+        .includes(searchQuery.trim().toLowerCase()),
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),
@@ -177,9 +174,7 @@ export default function AdminPayments() {
           <h1>
             Payments &amp; Transactions <CreditCard size={23} />
           </h1>
-          <p>
-            Monitor Kasangga payments processed through GCash via PayMongo.
-          </p>
+          <p>Monitor Kasangga payments processed through GCash via PayMongo.</p>
         </div>
       </div>
       <div className="ap-metrics">
@@ -238,24 +233,42 @@ export default function AdminPayments() {
         ))}
       </div>
       <div className="ad-toolbar">
-        <div className="au-tabs">
-          {[
-            "",
-            "Paid",
-            "Transferred",
-            "Processing",
-            "Failed",
-            "Refund Review",
-            "Refunded",
-          ].map((s) => (
-            <button
-              key={s}
-              aria-pressed={status === s}
-              onClick={() => change(setStatus, s)}
-            >
-              {s || "All Transactions"}
-            </button>
-          ))}
+        <div className="ap-transaction-selects">
+          <select
+            aria-label="Transaction status"
+            className={input}
+            value={status}
+            onChange={(e) => change(setStatus, e.target.value)}
+          >
+            <option value="">All Transactions</option>
+            {[
+              "Paid",
+              "Transferred",
+              "Processing",
+              "Failed",
+              "Refund Review",
+              "Refunded",
+            ].map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+          <select
+            aria-label="Transaction tutor"
+            className={input}
+            value={tutor}
+            onChange={(e) => change(setTutor, e.target.value)}
+          >
+            <option value="">All Tutors</option>
+            {[
+              ...new Set(
+                transactions.map((record) => record.tutor).filter(Boolean),
+              ),
+            ]
+              .sort()
+              .map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+          </select>
         </div>
         <button
           className={button}
@@ -268,12 +281,18 @@ export default function AdminPayments() {
         </button>
         <span className="ap-method">GCash via PayMongo</span>
         <button
+          type="button"
           className={button}
-          aria-expanded={filters}
-          onClick={() => setFilters(!filters)}
+          onClick={() => {
+            setStatus("");
+            setTutor("");
+            onQueryChange("");
+            setStart("");
+            setEnd("");
+            setPage(1);
+          }}
         >
-          <Filter size={14} />
-          Filter
+          Reset filters
         </button>
         <UserExport
           kind="payments"
@@ -281,45 +300,6 @@ export default function AdminPayments() {
           onCsv={exportCsv}
           onNotice={setNotice}
         />
-      </div>
-      <div className="ap-search">
-        <label className="osas-search">
-          <Search size={15} />
-          <input
-            aria-label="Search transactions"
-            placeholder="Search transaction ID, booking ID, learner, or tutor..."
-            value={query}
-            onChange={(e) => change(setQuery, e.target.value)}
-          />
-        </label>
-        {filters && (
-          <>
-            <select
-              className={input}
-              aria-label="Transaction tutor"
-              value={tutor}
-              onChange={(e) => change(setTutor, e.target.value)}
-            >
-              <option value="">All tutors</option>
-              {[...new Set(transactions.map((r) => r.tutor))].map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-            <button
-              className={button}
-              onClick={() => {
-                setStatus("");
-                setTutor("");
-                setQuery("");
-                setStart("");
-                setEnd("");
-                setPage(1);
-              }}
-            >
-              Reset filters
-            </button>
-          </>
-        )}
       </div>
       {notice && (
         <p role="status" className="text-xs text-green-800">

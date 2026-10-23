@@ -1637,3 +1637,6 @@
 .admin-service-management .ad-toolbar > select { width: auto; min-width: 190px; }
 
 .ab-bookings .ad-cards button[aria-pressed="true"] { border-color: #087542; background: #edf7f2; box-shadow: 0 0 0 2px #087542; }
+
+.ap-transaction-selects { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ap-transaction-selects > select { width: auto; min-width: 160px; max-width: 200px; }
