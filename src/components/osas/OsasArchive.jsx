@@ -15,6 +15,25 @@ import { button, input } from "../tutor/workspace/ui.jsx";
 import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 
 // Resolved cases appear here; final archival still enforces conditions and holds.
+export function matchesArchiveResolution(record, filter) {
+  if (!filter) return true;
+  const outcome = String(record.outcome || "")
+    .trim()
+    .toLowerCase();
+  if (filter === "Resolved")
+    return (
+      outcome === "resolved" ||
+      String(record.status || "").toLowerCase() === "resolved"
+    );
+  if (filter === "Counselling Completed")
+    return [
+      "counselling completed",
+      "counseling completed",
+      "counseled",
+      "counselled",
+    ].includes(outcome);
+  return outcome === filter.toLowerCase();
+}
 
 export default function OsasArchive({
   settings,
@@ -44,7 +63,7 @@ export default function OsasArchive({
         (r) =>
           (!year || r.year === year) &&
           (!type || r.type === type) &&
-          (!outcome || r.outcome === outcome) &&
+          matchesArchiveResolution(r, outcome) &&
           (!start || r.archived >= start) &&
           (!end || r.archived <= end) &&
           (!scope ||
@@ -220,9 +239,14 @@ export default function OsasArchive({
           value={outcome}
           onChange={(e) => change(setOutcome, e.target.value)}
         >
-          <option value="">All Resolutions / Outcomes</option>
-          {records.map((r) => (
-            <option key={r.caseId}>{r.outcome}</option>
+          <option value="">All Resolutions</option>
+          {[
+            "Resolved",
+            "No Violation",
+            "Case Dismissed",
+            "Counselling Completed",
+          ].map((resolution) => (
+            <option key={resolution}>{resolution}</option>
           ))}
         </select>
         <button className={button} onClick={reset}>
