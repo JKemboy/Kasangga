@@ -6,16 +6,6 @@ import {
   saveAdminPolicy,
 } from "../../services/adminPolicies.js";
 
-const blank = {
-  title: "",
-  category: "",
-  version: "v1.0",
-  effective: "",
-  owner: "",
-  status: "Draft",
-  documentPath: "",
-  content: "",
-};
 export default function AdminPolicies() {
   const [rows, setRows] = useState([]),
     [loading, setLoading] = useState(true);
@@ -93,20 +83,10 @@ export default function AdminPolicies() {
         policies={rows}
         onEdit={edit}
         settings={{ pageSize: 8, timezone: "Asia/Manila", language: "en-PH" }}
-        actions={
-          <button
-            type="button"
-            className={primary}
-            disabled={loading || !!error}
-            onClick={() => edit(blank)}
-          >
-            Add Policy
-          </button>
-        }
       />
       {editing && (
         <Modal
-          title={editing.policyId ? "Edit Policy" : "Add Policy"}
+          title="Edit Policy"
           onClose={() => {
             if (!saving) setEditing(null);
           }}
