@@ -61,6 +61,7 @@ function Chart({ title, values, labels, color = "#00723d" }) {
 }
 export default function AdminReports({ users, services, go }) {
   const [notice, setNotice] = useState("");
+  const [selectedMetric, setSelectedMetric] = useState(null);
   const [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
     [college, setCollege] = useState(""),
@@ -235,7 +236,12 @@ export default function AdminReports({ users, services, go }) {
         ].map(([value, label, view]) => (
           <button
             key={label}
-            onClick={() => (view ? go(view) : setDetail(label))}
+            aria-pressed={selectedMetric === label}
+            onClick={() => {
+              setSelectedMetric(label);
+              if (view) go(view);
+              else setDetail(label);
+            }}
           >
             <b>{value}</b>
             <span>{label}</span>
