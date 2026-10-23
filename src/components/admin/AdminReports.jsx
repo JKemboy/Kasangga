@@ -187,7 +187,7 @@ export default function AdminReports({ users, services, go }) {
             <option value="">All Subjects</option>
             {services.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.title} - {s.tutor}
+                {s.title}
               </option>
             ))}
           </select>
