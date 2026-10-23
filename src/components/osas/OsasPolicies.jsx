@@ -33,7 +33,6 @@ export default function OsasPolicies({
     [category, setCategory] = useState(""),
     [status, setStatus] = useState(""),
     [owner, setOwner] = useState(""),
-    [effective, setEffective] = useState(""),
     [month, setMonth] = useState(""),
     [recent, setRecent] = useState(false),
     [page, setPage] = useState(1),
@@ -55,17 +54,18 @@ export default function OsasPolicies({
   const cutoffDay = cutoff.toISOString().slice(0, 10);
   const available = policies.filter((p) => p.updated <= endDay);
   const updated = (p) => p.updated >= cutoffDay && p.updated <= endDay;
-  const categories = [...new Set(policies.map((p) => p.category))];
+  const categories = [
+    ...new Set(policies.map((p) => p.category).filter(Boolean)),
+  ].sort();
   const filtered = available.filter(
     (p) =>
       (!category || p.category === category) &&
       (!status || p.status === status) &&
-      (!owner || p.owner === owner) &&
+      (!owner ||
+        String(p.owner || "")
+          .trim()
+          .toLowerCase() === owner.toLowerCase()) &&
       (!recent || updated(p)) &&
-      (!effective ||
-        (effective === "none"
-          ? !p.effective
-          : p.effective && p.effective.startsWith(effective))) &&
       `${p.title} ${p.category} ${p.owner} ${p.id}`
         .toLowerCase()
         .includes((searchQuery ?? query).trim().toLowerCase()),
@@ -98,7 +98,6 @@ export default function OsasPolicies({
     setCategory("");
     setStatus("");
     setOwner("");
-    setEffective("");
     setRecent(false);
     setMonth("");
     setPage(1);
@@ -227,47 +226,15 @@ export default function OsasPolicies({
           ))}
         </select>
         <select
-          aria-label="Policy status"
-          className={input}
-          value={status}
-          onChange={(e) => change(setStatus, e.target.value)}
-        >
-          <option value="">All Statuses</option>
-          {["Active", "Draft", "Archived"].map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
-        <select
           aria-label="Document owner"
           className={input}
           value={owner}
           onChange={(e) => change(setOwner, e.target.value)}
         >
           <option value="">All Document Owners</option>
-          {[...new Set(policies.map((p) => p.owner))].map((o) => (
+          {["OSLD", "System"].map((o) => (
             <option key={o}>{o}</option>
           ))}
-        </select>
-        <select
-          aria-label="Effective date"
-          className={input}
-          value={effective}
-          onChange={(e) => change(setEffective, e.target.value)}
-        >
-          <option value="">All Effective Dates</option>
-          {[
-            ...new Set(
-              policies.map((p) => p.effective?.slice(0, 4)).filter(Boolean),
-            ),
-          ]
-            .sort()
-            .reverse()
-            .map((year) => (
-              <option key={year} value={year}>
-                Effective in {year}
-              </option>
-            ))}
-          <option value="none">Not yet effective</option>
         </select>
         <button className={button} onClick={reset}>
           Reset filters
