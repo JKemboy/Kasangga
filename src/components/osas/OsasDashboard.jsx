@@ -1,3 +1,4 @@
+import OsasNotifications from "./OsasNotifications.jsx";
 // OSAS portal coordinator: loads the database snapshot, applies saved preferences, and routes clearance, case, policy, archive, and report sections.
 import OsasCaseWorkspace from "./OsasCaseWorkspace.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
@@ -41,7 +42,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  MessageCircle,
   Search,
   Settings,
   ShieldCheck,
@@ -71,6 +71,7 @@ const navigation = [
   ["Policies & Procedures", BookOpen],
   ["Case Archive", Archive],
   ["Reports & Analytics", ChartNoAxesCombined],
+  ["Notifications", Bell],
   ["Settings", Settings],
 ];
 
@@ -242,13 +243,27 @@ function OsasDashboardContent() {
     setter(value);
     setPage(1);
   }
+  function openNotification(notification) {
+    if (notification.entityType === "cases") {
+      const record = database.records?.cases?.find(c => String(c.caseDatabaseId) === String(notification.entityId));
+      if (record) { setSelected(record); setModal("Case Record"); return; }
+    }
+    if (notification.entityType === "clearance_reviews") { setView("Student Clearance Review"); return; }
+    if (notification.entityType === "policies") { setView("Policies & Procedures"); return; }
+    if (["incident_reports", "cases"].includes(notification.entityType)) {
+      setSubmittedSearch(notification.entityType === "incident_reports" ? `IR-${notification.entityId}` : String(notification.entityId));
+      setView("Case Review");
+    }
+  }
   function openNav(label) {
+    if (label === "Messages") return;
     setSubmittedSearch("");
     setMobile(false);
     if (
       [
         "Student Clearance Review",
         "Settings",
+        "Notifications",
         "Reports & Analytics",
         "Policies & Procedures",
         "Overview",
@@ -344,24 +359,10 @@ function OsasDashboardContent() {
         <div className="ml-auto flex items-center gap-4">
           <HeaderInbox
             role="osas"
+            showMessages={false}
             notifications={notifications}
             onRead={database.markNotificationsRead}
-            onNotification={(n) => {
-              if (n.entityType === "cases") {
-                const record = database.records.cases.find(
-                  (c) => c.caseDatabaseId === n.entityId,
-                );
-                if (record) {
-                  setSelected(record);
-                  setModal("Case Record");
-                }
-              } else if (n.entityType === "clearance_reviews") {
-                setView("Student Clearance Review");
-              } else {
-                setSubmittedSearch(`IR-${n.entityId}`);
-                setView("Case Review");
-              }
-            }}
+            onNotification={openNotification}
           />
           <button
             className="flex items-center gap-2 text-left"
@@ -406,6 +407,8 @@ function OsasDashboardContent() {
             }}
             onClearance={review}
           />
+        ) : view === "Notifications" ? (
+          <OsasNotifications rows={notifications} loading={database.loading} error={database.error} onRead={database.markNotificationsRead} onOpen={openNotification} />
         ) : view === "Settings" ? (
           <OsasSettings
             settings={settings}
@@ -814,7 +817,7 @@ function OsasDashboardContent() {
                 Logout
               </button>
             </div>
-          ) : modal === "Notifications" || modal === "Messages" ? (
+          ) : modal === "Notifications" ? (
             <p className="p-3 text-xs text-slate-500">
               No {modal.toLowerCase()} are connected to this account yet.
             </p>
