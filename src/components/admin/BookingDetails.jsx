@@ -31,6 +31,7 @@ export function paymentSplit(amount) {
 }
 export default function BookingDetails({
   record: r,
+  showRelatedTransaction = true,
   tutor,
   incidents = [],
   onClose,
@@ -44,7 +45,9 @@ export default function BookingDetails({
     return () => d.close();
   }, []);
   const badge = (value) => (
-    <span className={statusClass(value, "au-status")}>{value || "Unavailable"}</span>
+    <span className={statusClass(value, "au-status")}>
+      {value || "Unavailable"}
+    </span>
   );
   const booking = r.booking || r.id;
   const related = incidents.filter((i) => i.booking === booking);
@@ -277,14 +280,20 @@ export default function BookingDetails({
             or cancel bookings here.
           </span>
         )}
-        <button
-          className={button}
-          disabled={!r.transaction}
-          onClick={() => setTransaction(!transaction)}
-        >
-          {transaction ? <CalendarDays size={15} /> : <CreditCard size={15} />}
-          Related {transaction ? "Booking" : "Transaction"}
-        </button>
+        {showRelatedTransaction && (
+          <button
+            className={button}
+            disabled={!r.transaction}
+            onClick={() => setTransaction(!transaction)}
+          >
+            {transaction ? (
+              <CalendarDays size={15} />
+            ) : (
+              <CreditCard size={15} />
+            )}
+            Related {transaction ? "Booking" : "Transaction"}
+          </button>
+        )}
         <button className={primary} onClick={onClose}>
           Close
         </button>

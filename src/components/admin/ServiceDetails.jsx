@@ -12,12 +12,14 @@ export default function ServiceDetails({
   onSave,
   onClose,
   initialAction = "",
-  showBookings = false,
   onTutor,
 }) {
-  const [action, setAction] = useState(initialAction),
+  const [action, setAction] = useState(
+      ["Suspend Service", "Lift Suspension"].includes(initialAction)
+        ? initialAction
+        : "",
+    ),
     [message, setMessage] = useState(""),
-    [fields, setFields] = useState([]),
     [ack, setAck] = useState(false),
     [confirming, setConfirming] = useState(false),
     [error, setError] = useState(""),
@@ -28,14 +30,15 @@ export default function ServiceDetails({
     sessions: database?.sessions || [],
     profile: { name: "" },
   };
-  const bookings = workspace.sessions.filter((b) => b.serviceId === s.id);
+  const bookings = workspace.sessions.filter(
+    (b) => String(b.serviceId) === String(s.id),
+  );
   const latest = [...(s.history || [])]
     .reverse()
     .find((h) => h.to === "Suspended");
   function open(next) {
     setAction(next);
     setMessage("");
-    setFields([]);
     setAck(false);
     setConfirming(false);
     setError("");
@@ -46,14 +49,14 @@ export default function ServiceDetails({
     if (saving) return;
     setSaving(true);
     try {
-      const next = moderateService(s, action, message, fields, ack);
+      const next = moderateService(s, action, message, [], ack);
       if (action === "Suspend Service" && !confirming) {
         setConfirming(true);
         return;
       }
       if (!(await onSave(next)))
         throw new Error(
-          "This action is saved to the database yet. Nothing was saved.",
+          "The database did not confirm this action. Refresh and try again.",
         );
       setAction("");
       setNotice("Service review saved.");
@@ -63,11 +66,9 @@ export default function ServiceDetails({
       setSaving(false);
     }
   }
-  const request = action === "Request Changes",
-    suspend = action === "Suspend Service";
+  const suspend = action === "Suspend Service";
   const valid =
-    action === "Lift Suspension" ||
-    (message.trim().length >= 15 && (request ? fields.length > 0 : ack));
+    action === "Lift Suspension" || (message.trim().length >= 15 && ack);
   const facts = [
     [
       "Tutor",
@@ -89,20 +90,6 @@ export default function ServiceDetails({
     ["Session type", s.type],
     ["Location / platform", s.location || s.provider],
     ["Availability", s.availability],
-    [
-      "Bookings here",
-      bookings.length
-        ? bookings.map((b) => (
-            <button
-              className="block text-green-800"
-              key={b.id}
-              onClick={() => setBooking(b)}
-            >
-              {b.booking || b.id}
-            </button>
-          ))
-        : "None in available records",
-    ],
   ];
   return (
     <Panel
@@ -121,9 +108,6 @@ export default function ServiceDetails({
       footer={
         <>
           <div className="ud-actions">
-            <button className={button} onClick={() => open("Request Changes")}>
-              Request Changes
-            </button>
             {s.status === "Suspended" ? (
               <button
                 className={button}
@@ -137,7 +121,7 @@ export default function ServiceDetails({
                   className={`${button} text-red-600`}
                   onClick={() => open("Suspend Service")}
                 >
-                  Suspend Service
+                  Suspend
                 </button>
               )
             )}
@@ -150,7 +134,7 @@ export default function ServiceDetails({
     >
       <p className="aid-info">
         Tutor-owned content. Admin cannot edit the description, topics, rate or
-        availability; request changes from the Tutor instead.
+        availability.
       </p>
       <dl>
         {facts.map(([k, v]) => (
@@ -160,24 +144,57 @@ export default function ServiceDetails({
           </div>
         ))}
       </dl>
-      {showBookings && (
+      {
         <section>
           <h3>Bookings for this service</h3>
           {bookings.length ? (
-            bookings.map((b) => (
-              <button
-                className={button}
-                key={b.id}
-                onClick={() => setBooking(b)}
-              >
-                {b.booking || b.id} · {b.status}
-              </button>
-            ))
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr>
+                    {[
+                      "Booking",
+                      "Learner",
+                      "Date / Time",
+                      "Booking Status",
+                      "Payment Status",
+                      "Action",
+                    ].map((label) => (
+                      <th key={label} className="p-2">
+                        {label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookings.map((b) => (
+                    <tr key={b.id}>
+                      <td className="p-2">{b.booking || b.id}</td>
+                      <td className="p-2">{b.learner}</td>
+                      <td className="p-2">
+                        {dateLabel(b.date)} {b.start}?{b.end}
+                      </td>
+                      <td className="p-2">{b.status}</td>
+                      <td className="p-2">{b.payment}</td>
+                      <td className="p-2">
+                        <button
+                          type="button"
+                          className={button}
+                          onClick={() => setBooking(b)}
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <p>No matching bookings in the available records.</p>
           )}
         </section>
-      )}
+      }
       <h3>Description</h3>
       <p>{s.description || "Not provided"}</p>
       <h3>Topics, rates and schedules</h3>
@@ -232,40 +249,6 @@ export default function ServiceDetails({
           onClose={() => setAction("")}
         >
           <form className="ud-form" onSubmit={save}>
-            {request ? (
-              <>
-                <p className="aid-info">
-                  The Tutor makes the edits. Requests are saved to the database
-                  for the tutor to review.
-                </p>
-                <strong>What needs to change</strong>
-                <div className="ud-links">
-                  {[
-                    "Description",
-                    "Topics",
-                    "Rate",
-                    "Availability",
-                    "Title",
-                  ].map((f) => (
-                    <button
-                      type="button"
-                      key={f}
-                      className={fields.includes(f) ? primary : button}
-                      aria-pressed={fields.includes(f)}
-                      onClick={() =>
-                        setFields(
-                          fields.includes(f)
-                            ? fields.filter((v) => v !== f)
-                            : [...fields, f],
-                        )
-                      }
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : null}
             {action === "Lift Suspension" ? (
               <p>{s.title} becomes Active in the database.</p>
             ) : confirming ? (
@@ -278,20 +261,14 @@ export default function ServiceDetails({
             ) : (
               <>
                 <label>
-                  {request
-                    ? "Message to the tutor (required)"
-                    : "Suspension reason (required)"}
+                  Suspension reason (required)
                   <textarea
                     className={input}
                     rows={4}
                     maxLength={2000}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder={
-                      request
-                        ? "Describe what must change to meet platform policy."
-                        : "Which platform rule the listing breaks."
-                    }
+                    placeholder="Which platform rule the listing breaks."
                   />
                 </label>
                 <small>
@@ -326,13 +303,11 @@ export default function ServiceDetails({
                 className={primary + (suspend ? " !bg-red-600" : "")}
                 disabled={saving || !valid}
               >
-                {request
-                  ? "Save Request"
-                  : suspend
-                    ? confirming
-                      ? "Suspend Service"
-                      : "Continue"
-                    : "Lift Suspension"}
+                {suspend
+                  ? confirming
+                    ? "Suspend Service"
+                    : "Continue"
+                  : "Lift Suspension"}
               </button>
             </div>
           </form>
@@ -340,6 +315,7 @@ export default function ServiceDetails({
       )}
       {booking && (
         <BookingDetails
+          showRelatedTransaction={false}
           record={booking}
           tutor={s.tutor}
           onClose={() => setBooking(null)}
