@@ -246,6 +246,7 @@ export default function AdminDashboardPage() {
                   "Service Management",
                   "Bookings Monitoring",
                   "Payments & Transactions",
+                  "Incident Reports",
                 ].includes(view)
               ) {
                 setView("User Management");
@@ -396,6 +397,8 @@ export default function AdminDashboardPage() {
             <AdminSupportInbox />
           ) : view === "Incident Reports" ? (
             <AdminIncidents
+              searchQuery={search}
+              onQueryChange={setSearch}
               users={rows}
               applications={apps}
               services={services}

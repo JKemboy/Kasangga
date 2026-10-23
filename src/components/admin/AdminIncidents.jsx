@@ -17,7 +17,6 @@ import {
   Laptop,
   Users,
   Check,
-  Search,
   Download,
   MoreHorizontal,
   Info,
@@ -31,6 +30,8 @@ import {
 } from "../tutor/workspace/ui.jsx";
 import { dateLabel } from "./adminData.js";
 export default function AdminIncidents({
+  searchQuery = "",
+  onQueryChange = () => {},
   users = [],
   applications = [],
   services = [],
@@ -61,11 +62,9 @@ export default function AdminIncidents({
   }
 
   const rows = database?.incidents || [];
-  const [query, setQuery] = useState(""),
-    [type, setType] = useState(""),
+  const [type, setType] = useState(""),
     [status, setStatus] = useState(""),
     [referral, setReferral] = useState(""),
-    [priority, setPriority] = useState(""),
     [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
     [page, setPage] = useState(1),
@@ -85,11 +84,10 @@ export default function AdminIncidents({
           ? ["Pending Review", "Under Admin Review"].includes(r.status)
           : r.status === status)) &&
       (!referral || r.referral === referral) &&
-      (!priority || r.priority === priority) &&
       [r.id, r.booking, r.reporter, r.reported, r.type, r.issue]
         .join(" ")
         .toLowerCase()
-        .includes(query.trim().toLowerCase()),
+        .includes(searchQuery.trim().toLowerCase()),
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),
@@ -102,8 +100,7 @@ export default function AdminIncidents({
     setType("");
     setStatus("");
     setReferral("");
-    setPriority("");
-    setQuery("");
+    onQueryChange("");
     setPage(1);
   }
   function open(r) {
@@ -200,6 +197,19 @@ export default function AdminIncidents({
         ].map(([Icon, label, n, action], i) => (
           <button
             key={label}
+            aria-pressed={
+              [
+                !type && !status && !referral,
+                [
+                  "pendingGroup",
+                  "Pending Review",
+                  "Under Admin Review",
+                ].includes(status),
+                type === "Platform / Technical",
+                referral === "Referred to OSAS",
+                status === "Resolved by Admin",
+              ][i]
+            }
             onClick={() => {
               clear();
               action();
@@ -242,11 +252,6 @@ export default function AdminIncidents({
           "Not Yet Referred",
           "Referred to OSAS",
         ])}
-        {select("All Priorities", priority, setPriority, [
-          "High",
-          "Medium",
-          "Low",
-        ])}
         <label>
           From
           <input
@@ -269,21 +274,12 @@ export default function AdminIncidents({
         </label>
       </div>
       <div className="ad-toolbar">
-        <label className="osas-search">
-          <Search size={15} />
-          <input
-            aria-label="Search admin incidents"
-            placeholder="Search report ID, booking ID, reporter, reported user, or incident type..."
-            value={query}
-            onChange={(e) => change(setQuery, e.target.value)}
-          />
-        </label>
         <button
           className={button}
           onClick={() => {
             clear();
-            setStart("2026-05-01");
-            setEnd("2026-09-30");
+            setStart("");
+            setEnd("");
           }}
         >
           Reset filters
