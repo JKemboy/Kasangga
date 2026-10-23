@@ -18,8 +18,14 @@ import { Modal, button, input } from "../tutor/workspace/ui.jsx";
 
 import PolicyDetails from "./PolicyDetails.jsx";
 
-export default function OsasPolicies({ settings }) {
-  const policies = useOsasDatabase().records?.policies || [];
+export default function OsasPolicies({
+  settings,
+  policies: providedPolicies,
+  onEdit,
+  actions,
+}) {
+  const database = useOsasDatabase();
+  const policies = providedPolicies ?? database?.records?.policies ?? [];
   const [query, setQuery] = useState(""),
     [category, setCategory] = useState(""),
     [status, setStatus] = useState(""),
@@ -30,18 +36,20 @@ export default function OsasPolicies({ settings }) {
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
     [categoriesOpen, setCategoriesOpen] = useState(false);
-  const end = month
-    ? new Date(Number(month.slice(0, 4)), Number(month.slice(5)), 0)
-    : null;
-  const endDay = end
-    ? `${month}-${String(end.getDate()).padStart(2, "0")}`
-    : "9999-12-31";
-  const cutoff = end
-    ? new Date(end.getFullYear(), end.getMonth(), end.getDate() - 29)
-    : null;
-  const cutoffDay = cutoff
-    ? `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`
-    : "";
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const endDay = month
+    ? new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0))
+        .toISOString()
+        .slice(0, 10)
+    : today;
+  const cutoff = new Date(endDay + "T12:00:00Z");
+  cutoff.setUTCDate(cutoff.getUTCDate() - 29);
+  const cutoffDay = cutoff.toISOString().slice(0, 10);
   const available = policies.filter((p) => p.updated <= endDay);
   const updated = (p) => p.updated >= cutoffDay && p.updated <= endDay;
   const categories = [...new Set(policies.map((p) => p.category))];
@@ -68,12 +76,15 @@ export default function OsasPolicies({ settings }) {
       ? "—"
       : settings.dateFormat === "iso"
         ? v
-      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
-          timeZone: settings.timezone || "Asia/Manila",
-            month: settings.dateFormat === "short" ? "2-digit" : "short",
-            day: "numeric",
-            year: "numeric",
-          });
+        : new Date(v + "T12:00:00").toLocaleDateString(
+            settings.language || "en-PH",
+            {
+              timeZone: settings.timezone || "Asia/Manila",
+              month: settings.dateFormat === "short" ? "2-digit" : "short",
+              day: "numeric",
+              year: "numeric",
+            },
+          );
   function change(setter, value) {
     setter(value);
     setPage(1);
@@ -97,10 +108,11 @@ export default function OsasPolicies({ settings }) {
             <Shield size={23} className="text-green-800" />
           </h1>
           <p>
-            Access institutional guidelines relevant to Kasangga cases,
-            student conduct, clearance, evidence, and case handling.
+            Access institutional guidelines relevant to Kasangga cases, student
+            conduct, clearance, evidence, and case handling.
           </p>
         </div>
+        {actions}
         <label className="op-month">
           Record month
           <input
@@ -237,8 +249,18 @@ export default function OsasPolicies({ settings }) {
           onChange={(e) => change(setEffective, e.target.value)}
         >
           <option value="">All Effective Dates</option>
-          <option value="2026">Effective in 2026</option>
-          <option value="2024">Effective in 2024</option>
+          {[
+            ...new Set(
+              policies.map((p) => p.effective?.slice(0, 4)).filter(Boolean),
+            ),
+          ]
+            .sort()
+            .reverse()
+            .map((year) => (
+              <option key={year} value={year}>
+                Effective in {year}
+              </option>
+            ))}
           <option value="none">Not yet effective</option>
         </select>
         <button className={button} onClick={reset}>
@@ -350,9 +372,8 @@ export default function OsasPolicies({ settings }) {
         <div className="op-note">
           <Info size={18} />
           <p>
-            Demo reference catalog. Official policy documents are not attached.
-            These references support OSAS review; technical configuration
-            remains under authorized platform administration.
+            These policies support OSAS institutional review and case handling.
+            Policy records are maintained by authorized Admin users.
           </p>
         </div>
       )}
@@ -363,6 +384,14 @@ export default function OsasPolicies({ settings }) {
           date={date}
           onSelect={setSelected}
           onClose={() => setSelected(null)}
+          onEdit={
+            onEdit
+              ? () => {
+                  onEdit(selected);
+                  setSelected(null);
+                }
+              : undefined
+          }
         />
       )}
       {categoriesOpen && (

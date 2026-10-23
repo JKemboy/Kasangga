@@ -239,6 +239,7 @@ export function mapOsasRecords(db) {
     status: label(p.status),
     updated: day(p.updated_at),
     documentPath: p.document_path,
+    content: p.content || "",
   }));
   const sessions = db.financial_sessions.map((s) => ({
     ...s,

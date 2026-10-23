@@ -9,6 +9,7 @@ export default function PolicyDetails({
   date,
   onSelect,
   onClose,
+  onEdit,
 }) {
   const dialog = useRef(null);
   const titleId = useId();
@@ -82,8 +83,33 @@ export default function PolicyDetails({
             </p>
           </div>
         )}
+        {policy.status === "Draft" && (
+          <div className="policy-archived">
+            Draft under development. Not in effect and not citable in case
+            decisions.
+          </div>
+        )}
         <article className="policy-content">
-          {policy.documentPath && /^https:\/\//i.test(policy.documentPath) ? (
+          {policy.content ? (
+            policy.content.split(/\n\s*\n/).map((block, index) => {
+              if (block.startsWith("## "))
+                return <h3 key={index}>{block.slice(3)}</h3>;
+              if (block.split("\n").every((line) => line.startsWith("- ")))
+                return (
+                  <ul key={index}>
+                    {block.split("\n").map((line, i) => (
+                      <li key={i}>{line.slice(2)}</li>
+                    ))}
+                  </ul>
+                );
+              return (
+                <p key={index} className="whitespace-pre-wrap">
+                  {block}
+                </p>
+              );
+            })
+          ) : policy.documentPath &&
+            /^https:\/\//i.test(policy.documentPath) ? (
             <a
               href={policy.documentPath}
               target="_blank"
@@ -101,8 +127,15 @@ export default function PolicyDetails({
       </div>
       <footer>
         <small>
-          View-only. Policy documents are maintained by their document owner.
+          {onEdit
+            ? "Changes are saved to the shared policy catalog."
+            : "View-only. Policy documents are maintained by their document owner."}
         </small>
+        {onEdit && (
+          <button type="button" className="policy-done" onClick={onEdit}>
+            Edit Policy
+          </button>
+        )}
         <button type="button" className="policy-done" onClick={onClose}>
           Done
         </button>
