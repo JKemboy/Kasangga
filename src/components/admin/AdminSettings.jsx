@@ -162,13 +162,6 @@ export default function AdminSettings({ config, onSave }) {
               <input className={input + " disabled:cursor-default disabled:opacity-100"} value={value} disabled />
             </label>
           ))}
-          <button
-            type="button"
-            className={button}
-            onClick={() => setSecurity("Change Password")}
-          >
-            Change Password
-          </button>
           <p className="ad-help">
             These account details are managed by your institutional sign-in.
           </p>
