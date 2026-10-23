@@ -64,7 +64,8 @@ export function normalizeSettings(value = {}) {
 export function filterOsasNotifications(rows = [], settings = defaultSettings) {
   const enabled = settings.notifications || defaultSettings.notifications;
   return rows.filter((notification) => {
-    const text = `${notification.notificationType || ""} ${notification.title || ""} ${notification.text || ""}`.toLowerCase();
+    const text =
+      `${notification.notificationType || ""} ${notification.title || ""} ${notification.text || ""}`.toLowerCase();
     const index = text.includes("referral")
       ? 0
       : text.includes("priority") || text.includes("high-priority")
@@ -142,7 +143,7 @@ export default function OsasSettings({ settings, onSave }) {
       <label className="os-field">
         <span>{label}</span>
         <div className="os-locked">
-          <input value={value} readOnly aria-label={label} />
+          <input value={value} readOnly disabled aria-label={label} />
           <LockKeyhole size={12} />
         </div>
         {draft.tips && <small>Managed by authorized administration.</small>}
@@ -184,7 +185,10 @@ export default function OsasSettings({ settings, onSave }) {
           </div>
           <div className="os-fields">
             {locked("Position / Role", "OSAS Case Officer")}
-            {locked("Employee / Staff ID", "")}
+            {locked(
+              "Employee / Staff ID",
+              auth?.profile?.student_id || "Not assigned",
+            )}
             {locked(
               "Office / Department",
               "Office of Student Affairs and Services",
@@ -267,7 +271,7 @@ export default function OsasSettings({ settings, onSave }) {
         <section className="os-card">
           <h2>
             <ShieldCheck />
-            3. Security &amp; Password
+            3. Security
           </h2>
           <div className="os-security-row">
             <b>Password</b>
@@ -299,7 +303,8 @@ export default function OsasSettings({ settings, onSave }) {
           </div>
           <p className="os-help flex items-center gap-2">
             <Info size={13} />
-            Security changes require institutional identity verification.
+            An authenticator app generates a 6-digit code for additional sign-in
+            verification. Use Manage Security to set it up and verify the code.
           </p>
         </section>
         <section className="os-card">
