@@ -14,6 +14,7 @@ import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 import SecurityFlow from "../shared/SecurityFlow.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
+import AdminGcashQr from "./AdminGcashQr.jsx";
 export default function AdminSettings({ config, onSave }) {
   const { confirm } = useInteractions();
   const auth = useAuth();
@@ -125,7 +126,7 @@ export default function AdminSettings({ config, onSave }) {
         )}
       </div>
       <div className="au-tabs">
-        {["System Settings", "Account Settings"].map((t) => (
+        {["System Settings", "Account Settings", "GCash Payment Details"].map((t) => (
           <button
             type="button"
             key={t}
@@ -173,6 +174,8 @@ export default function AdminSettings({ config, onSave }) {
             These account details are managed by your institutional sign-in.
           </p>
         </section>
+      ) : tab === "GCash Payment Details" ? (
+        <AdminGcashQr />
       ) : (
         <div className="ad-settings-grid">
           <div>
