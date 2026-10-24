@@ -94,6 +94,7 @@ export default function useBookingInbox(role, userId) {
   }));
   return {
     notifications,
+    sessions: feed.sessions || [],
     threads: feed.threads,
     error,
     markRead,

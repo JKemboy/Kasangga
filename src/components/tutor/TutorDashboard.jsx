@@ -1,3 +1,4 @@
+import useSectionNavigation from "../shared/useSectionNavigation.js";
 import MyReports from "./workspace/MyReports.jsx";
 // Tutor portal coordinator: loads tutor profile, services, availability, class schedule, and sessions, then routes to each tutor section.
 import { tutorScheduleReady } from "./workspace/scheduleAccess.js";
@@ -56,7 +57,9 @@ const nav = [
   ["reports", "My Reports", Flag],
   ["help", "Help & Safety", ShieldQuestion],
 ];
+const tutorSections = nav.map(([id]) => id);
 export default function TutorDashboardPage() {
+  const [view, setView] = useSectionNavigation(tutorSections, "dashboard");
   const auth = useAuth();
   const [selectedDashboardMetric, setSelectedDashboardMetric] = useState(null);
   const [data, setData] = useState(() => ({
@@ -67,7 +70,6 @@ export default function TutorDashboardPage() {
         ...workspaceProfile(auth.profile, auth.user),
       },
     })),
-    [view, setView] = useState("dashboard"),
     [args, setArgs] = useState({}),
     [notice, setNotice] = useState(""),
     [search, setSearch] = useState(""),
@@ -124,11 +126,15 @@ export default function TutorDashboardPage() {
       );
   }
   useEffect(() => {
-    if (scheduleLocked && !["dashboard", "availability"].includes(view)) {
+    if (
+      !classScheduleLoading &&
+      scheduleLocked &&
+      !["dashboard", "availability"].includes(view)
+    ) {
       setView("dashboard");
       setArgs({});
     }
-  }, [scheduleLocked, view]);
+  }, [scheduleLocked, classScheduleLoading, view, setView]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState("");
   const sessionsRequest = useRef(0);

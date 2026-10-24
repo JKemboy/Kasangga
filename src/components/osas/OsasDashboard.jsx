@@ -1,4 +1,6 @@
+import useSectionNavigation from "../shared/useSectionNavigation.js";
 import OsasNotifications from "./OsasNotifications.jsx";
+import CountBadge from "../shared/CountBadge.jsx";
 import { collegeProgramMap } from "../../services/collegeProgramMap.js";
 // OSAS portal coordinator: loads the database snapshot, applies saved preferences, and routes clearance, case, policy, archive, and report sections.
 import OsasCaseWorkspace from "./OsasCaseWorkspace.jsx";
@@ -75,6 +77,7 @@ const navigation = [
   ["Notifications", Bell],
   ["Settings", Settings],
 ];
+const osasSections = navigation.map(([label]) => label);
 
 const dateLabel = (v) =>
   v
@@ -129,19 +132,19 @@ function OsasDashboardContent() {
   const requestLogout = useLogout();
 
   const navigate = useNavigate();
-  const [view, setView] = useState("Overview");
+  const [view, setView] = useSectionNavigation(osasSections, "Overview");
   useEffect(() => {
     const open = () => setView("Case Archive");
     window.addEventListener("campustutor:open-case-archive", open);
     return () =>
       window.removeEventListener("campustutor:open-case-archive", open);
-  }, []);
+  }, [setView]);
   useEffect(() => {
     const open = () => setView("Case Review");
     window.addEventListener("campustutor:open-evidence-validation", open);
     return () =>
       window.removeEventListener("campustutor:open-evidence-validation", open);
-  }, []);
+  }, [setView]);
   const [settings, setSettings] = useState(loadSettings);
   // Apply the latest server settings snapshot; local state is only a UI cache
   // and never a persistent settings store.
@@ -193,7 +196,9 @@ function OsasDashboardContent() {
       (!status || r.status === status) &&
       (!college ||
         r.college === college ||
-        collegeProgramMap.some((c) => c.code === college && c.name === r.college)) &&
+        collegeProgramMap.some(
+          (c) => c.code === college && c.name === r.college,
+        )) &&
       (!requested || r.requested === requested) &&
       (!semester || r.term === semester) &&
       `${r.id} ${r.name} ${r.program} ${r.caseId}`
@@ -352,6 +357,12 @@ function OsasDashboardContent() {
             >
               <Icon size={18} />
               <span>{label}</span>
+              {label === "Notifications" && (
+                <CountBadge
+                  count={notifications.filter((n) => !n.read).length}
+                  label="unread notifications"
+                />
+              )}
             </button>
           ))}
         </nav>
@@ -630,13 +641,21 @@ function OsasDashboardContent() {
               >
                 <option value="">All Colleges</option>
                 {collegeProgramMap.map((c) => (
-                  <option key={c.code} value={c.code}>{c.code}</option>
+                  <option key={c.code} value={c.code}>
+                    {c.code}
+                  </option>
                 ))}
-                {[...new Set(rows.map((r) => r.college))].filter((value) =>
-                  value && !collegeProgramMap.some((c) => c.code === value || c.name === value)
-                ).map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
+                {[...new Set(rows.map((r) => r.college))]
+                  .filter(
+                    (value) =>
+                      value &&
+                      !collegeProgramMap.some(
+                        (c) => c.code === value || c.name === value,
+                      ),
+                  )
+                  .map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
               </select>
               <input
                 className={input}

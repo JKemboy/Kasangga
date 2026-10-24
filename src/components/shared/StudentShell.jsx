@@ -5,6 +5,8 @@ import { useAuth } from "../../auth/AuthProvider.jsx";
 import useChatPresence from "../../services/useChatPresence.js";
 import useBookingInbox from "../../services/useBookingInbox.js";
 import HeaderInbox from "./HeaderInbox.jsx";
+import CountBadge from "./CountBadge.jsx";
+import { studentNavigationCounts } from "../../services/navigationCounts.js";
 import { useLearnerWorkspace } from "../learner/workspace/LearnerWorkspace.jsx";
 import { notificationDestination } from "../tutor/workspace/notificationTargets.js";
 import { useLogout } from "./LogoutProvider.jsx";
@@ -39,6 +41,7 @@ export default function StudentShell({
       .join(" ") || name;
   const learner = useLearnerWorkspace();
   const alerts = liveInbox.notifications;
+  const counts = studentNavigationCounts(role, liveInbox, learner?.data);
   const requestLogout = useLogout();
 
   const navigate = useNavigate();
@@ -161,6 +164,18 @@ export default function StudentShell({
                 <span className="ml-auto text-[10px] text-white/60">
                   Locked
                 </span>
+              )}
+              {!locked(id) && counts[id] !== undefined && (
+                <CountBadge
+                  count={counts[id]}
+                  label={
+                    id === "reviews"
+                      ? "sessions awaiting review"
+                      : id === "sessions"
+                        ? "active sessions"
+                        : `unread ${id}`
+                  }
+                />
               )}
             </button>
           ))}

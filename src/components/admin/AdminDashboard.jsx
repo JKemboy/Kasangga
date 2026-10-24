@@ -1,3 +1,4 @@
+import useSectionNavigation from "../shared/useSectionNavigation.js";
 import AdminPolicies from "./AdminPolicies.jsx";
 import AdminNotifications from "./AdminNotifications.jsx";
 // Admin portal coordinator: loads the role-authorized Supabase snapshot, maintains the Admin inbox, and routes to each Admin section.
@@ -7,7 +8,8 @@ import { saveAdminRecord } from "../../services/adminDatabase.js";
 import useAdminRecords from "./useAdminRecords.js";
 import { AdminDatabaseContext } from "./AdminDatabaseContext.jsx";
 import HeaderInbox from "../shared/HeaderInbox.jsx";
-import { adminThreads } from "../shared/headerInboxData.js";
+import CountBadge from "../shared/CountBadge.jsx";
+import { listSupportConversations } from "../../services/supportInbox.js";
 import { useLogout } from "../shared/LogoutProvider.jsx";
 import AdminBookings from "./AdminBookings.jsx";
 import AdminIncidents from "./AdminIncidents.jsx";
@@ -62,12 +64,14 @@ const navigation = [
   ["Notifications", Bell],
   ["Settings", Settings],
 ];
+const adminSections = navigation.map(([label]) => label);
 export default function AdminDashboardPage() {
   const requestLogout = useLogout();
   const auth = useAuth();
 
-  const [view, setView] = useState("Overview");
+  const [view, setView] = useSectionNavigation(adminSections, "Overview");
   const [adminNotifications, setAdminNotifications] = useState([]);
+  const [supportThreads, setSupportThreads] = useState([]);
   const [notificationError, setNotificationError] = useState("");
   const {
     database,
@@ -102,11 +106,40 @@ export default function AdminDashboardPage() {
       window.removeEventListener("focus", refresh);
     };
   }, [auth.user.id]);
+  useEffect(() => {
+    let alive = true;
+    async function refresh() {
+      try {
+        const rows = await listSupportConversations();
+        if (alive) setSupportThreads(rows);
+      } catch {
+        /* The Messages section reports support loading errors. */
+      }
+    }
+    refresh();
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [auth.user.id]);
   const visibleAdminNotifications = filterAdminNotifications(
     adminNotifications,
     config,
   );
   const appsLoading = !database && refreshing;
+  const navigationCounts = {
+    Notifications: visibleAdminNotifications.filter((n) => !n.read).length,
+    Messages: supportThreads.filter((t) => t.status === "open").length,
+    "Tutor Verification": apps.filter((a) =>
+      ["Pending", "Under Review"].includes(a.status),
+    ).length,
+    "Payments & Transactions": (database?.payments || []).filter(
+      (p) => p.paymentStatus === "paid" && !p.transferredAt,
+    ).length,
+  };
   const [verificationChecks, setVerificationChecks] = useState({}),
     [verificationError, setVerificationError] = useState("");
   async function updateApplication(record, status = null) {
@@ -212,6 +245,20 @@ export default function AdminDashboardPage() {
               >
                 <Icon size={18} />
                 <span>{label}</span>
+                {navigationCounts[label] !== undefined && (
+                  <CountBadge
+                    count={navigationCounts[label]}
+                    label={
+                      label === "Messages"
+                        ? "open support conversations"
+                        : label === "Tutor Verification"
+                          ? "applications awaiting review"
+                          : label === "Payments & Transactions"
+                            ? "payments awaiting transfer or review"
+                            : "unread notifications"
+                    }
+                  />
+                )}
               </button>
             ))}
           </nav>
@@ -272,7 +319,11 @@ export default function AdminDashboardPage() {
             <HeaderInbox
               role="admin"
               notifications={visibleAdminNotifications}
-              threads={adminThreads}
+              threads={supportThreads.map((thread) => ({
+                ...thread,
+                name: thread.subject,
+                last_message: thread.category,
+              }))}
               inboxError={notificationError}
               onRead={readNotifications}
               onNavigate={go}

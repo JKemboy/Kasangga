@@ -1,3 +1,4 @@
+import useSectionNavigation from "../components/shared/useSectionNavigation.js";
 import MyReports from "../components/tutor/workspace/MyReports.jsx";
 import LearnerSearch from "../components/learner/workspace/LearnerSearch.jsx";
 import LearnerWorkspace from "../components/learner/workspace/LearnerWorkspace.jsx";
@@ -15,8 +16,10 @@ import LearnerSavedTutors from "../components/learner/saved-tutors/LearnerSavedT
 import LearnerReviews from "../components/learner/reviews/LearnerReviews.jsx";
 import LearnerNotifications from "../components/learner/notifications/LearnerNotifications.jsx";
 
+const learnerSections = [...learnerNav.map(([id]) => id), "application"];
+
 export default function Dashboard() {
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useSectionNavigation(learnerSections, "dashboard");
   const [viewArgs, setViewArgs] = useState({});
   function navigate(nextView, args = {}) {
     setView(nextView);
