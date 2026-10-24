@@ -1,67 +1,75 @@
-# Transactional email setup
+# Gmail transactional email setup
 
-Implementation is separate from PayMongo. No browser secrets or local storage.
-The provider and sender must be configured before enabling this service.
+The worker reuses the existing Supabase Auth Gmail account:
+`leovinjozhsalarda@gmail.com`. Existing login/OTP settings remain unchanged.
+It connects to `smtp.gmail.com:465` using implicit TLS, since Edge Functions
+block outgoing port 587. See [Supabase limits](https://supabase.com/docs/guides/functions/limits)
+and [Nodemailer SMTP](https://nodemailer.com/smtp).
 
 ## Events
 
-| Recipient | Database event | Email |
-| --- | --- | --- |
-| Learner | Payment changes to paid | Payment received |
-| Learner | Booking becomes confirmed and paid | Booking confirmation |
-| Tutor | Booking becomes confirmed and paid | Booked session |
-| Both | 24 hours before the session in Asia/Manila | Session reminder |
-| Tutor | Paid payment has transferred_at recorded by Admin | Payment transferred |
+| Recipient | Database event                               | Email                |
+| --------- | -------------------------------------------- | -------------------- |
+| Learner   | Payment becomes paid                         | Payment received     |
+| Learner   | Booking becomes confirmed and paid           | Booking confirmation |
+| Tutor     | Booking becomes confirmed and paid           | Booked session       |
+| Both      | 24 hours before session, Asia/Manila         | Session reminder     |
+| Tutor     | Admin records transferred_at on paid payment | Payment transferred  |
 
-Reminders are checked every minute. Bookings made within 24 hours receive the
-confirmation only. Cancelled, completed, unpaid, refunded, rescheduled and already
-started bookings do not receive obsolete reminders. Payment transfers report the
-stored tutor allocation; no allocation is invented if it is unavailable.
+Reminders run every minute once scheduling is activated. Bookings made within
+24 hours get confirmation only. Cancelled, completed, unpaid, refunded,
+rescheduled or started sessions do not receive obsolete reminders. Historical
+bookings/payments are not backfilled. PayMongo handlers are unchanged.
 
-## Activation
+## Server secrets
 
-1. Configure a Resend account and verify your sender domain. This implementation
-   uses [Resend's send API](https://resend.com/docs/api-reference/emails/send-email).
-   Supabase Auth SMTP configuration alone does not send these transactional emails.
-2. Add **Edge Function secrets**, never `VITE_` environment variables:
-   `RESEND_API_KEY`, `EMAIL_FROM` (e.g. `Kasangga <notifications@your-verified-domain>`),
-   `EMAIL_WORKER_SECRET` (random, at least 32 characters), and `APP_URL`
-   (`https://kasangga-test.vercel.app`). Existing Supabase service credentials are
-   injected into the worker by Supabase. Do not alter the PayMongo secrets.
-3. Apply only `supabase/migrations/20261024000100_transactional_email_outbox.sql`
-   after review. It adds one private RLS-enabled outbox table, restricted helper
-   functions, and two event triggers; it does not rewrite existing tables or send
-   historical emails. Do not blindly push unrelated migrations.
-4. Deploy: `supabase functions deploy transactional-emails`.
-5. In Supabase Vault add `kasangga_email_worker_url` with the full function URL
-   `https://<project-ref>.supabase.co/functions/v1/transactional-emails`, and
-   `kasangga_email_worker_secret` with the same value as `EMAIL_WORKER_SECRET`.
-6. Run `supabase/setup/transactional_email_schedule.sql` to enable a once-per-minute
-   Cron job. The scheduler follows the [Supabase Cron/Edge Function pattern](https://supabase.com/docs/guides/functions/schedule-functions).
-   Only database administrators should have access to Vault and the HTTP queue.
+Supabase Auth SMTP credentials are not exposed to Edge Functions. Reusing the
+account requires separately setting these **Edge Function secrets**:
 
-## Verification and operations
+- `SMTP_HOST=smtp.gmail.com`
+- `SMTP_PORT=465`
+- `SMTP_USER=leovinjozhsalarda@gmail.com`
+- `SMTP_PASSWORD`: Gmail App Password, entered privately in Supabase Secrets.
+- `EMAIL_FROM=Kasangga <leovinjozhsalarda@gmail.com>`
+- `APP_URL=https://kasangga-test.vercel.app`
+- `EMAIL_WORKER_SECRET`: random, at least 32 characters; also stored in Vault.
 
-- Use an authorized test booking and test payment. Verify exactly one payment
-  receipt, one learner confirmation and one tutor booking email.
-- Use a future test session for the reminder; check both recipients and cancel a
-  second test session to verify its reminder is skipped.
-- Record a test transfer via the existing Admin flow; confirm the tutor email.
-- Inspect outbox status and provider logs. `sent` means accepted by the provider,
-  not guaranteed inbox delivery. Bounces are visible in provider logs.
-- Unique event keys prevent duplicate queue records. Atomic leases prevent normal
-  overlapping workers. Provider idempotency keys protect ambiguous timeout retries.
-  [Resend retains keys for 24 hours](https://resend.com/docs/dashboard/emails/idempotency-keys);
-  retries stop after eight attempts or 23 hours from first attempt. Failed jobs
-  require inspection before manual intervention; never blindly requeue old jobs.
-- To pause sending: `select cron.unschedule('kasangga-transactional-emails');`.
-  Existing booking/payment functionality remains independent of the email worker.
-- No authenticated browser user can read/write the queue or invoke its privileged
-  functions. The worker authenticates a dedicated server-only secret and reads no
-  recipient or message from the HTTP request body.
+Never put SMTP_PASSWORD in chat, Git, or VITE_ variables. Missing credentials
+return 503 without claiming jobs. The worker verifies SMTP login before claiming;
+authentication failure does not consume queued messages.
 
-## Local checks
+## Deployment
+
+1. Apply only `supabase/migrations/20261024000100_transactional_email_outbox.sql`.
+   It adds a private RLS-enabled queue and restricted event/claim functions.
+   Do not blindly push unrelated migrations.
+2. Deploy: `supabase functions deploy transactional-emails`.
+3. Set the secrets above. In Vault configure `kasangga_email_worker_url` with
+   `https://ywcryzbemmwsawzqybhg.supabase.co/functions/v1/transactional-emails`
+   and `kasangga_email_worker_secret` with the same EMAIL_WORKER_SECRET value.
+4. Verify SMTP login, then run `supabase/setup/transactional_email_schedule.sql`.
+   Cron invokes the authenticated worker every minute. Restrict Vault and the HTTP
+   request queue to database administrators.
+
+## Delivery safety
+
+Unique event keys deduplicate queue records. Claims use row locks and lease tokens.
+Before SMTP sending, the worker persists `sending`. SMTP has no provider idempotency
+keys: an interrupted or ambiguous result requires manual inspection and is never
+blindly resent. Stable Message-ID aids inspection but does not guarantee recipient
+deduplication. Only explicit SMTP 4xx rejection retries automatically, up to eight
+attempts or 23 hours. Inspect Gmail Sent before manually retrying uncertain jobs.
+
+`sent` means SMTP accepted the message, not guaranteed inbox delivery. HTTP callers
+cannot specify recipients or content. Browser users cannot access the queue or its
+privileged functions. Gmail limits/bounces still apply.
+
+Pause: `select cron.unschedule('kasangga-transactional-emails');`.
+
+## Validation
 
 `node --test scripts/transactional-emails.test.mjs`
 
-These tests use mocked delivery and do not email real users.
+Tests mock SMTP and never email real users. Before claiming activation, verify
+SMTP login and authorized test delivery, then check queued event types,
+cancellation, reminders and transfer notification via the existing flows.

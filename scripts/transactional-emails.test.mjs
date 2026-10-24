@@ -24,7 +24,6 @@ const job = {
   },
 };
 const config = {
-  apiKey: "mock-not-a-secret",
   from: "Kasangga <test@example.test>",
   appUrl: "https://kasangga-test.vercel.app",
 };
@@ -32,6 +31,8 @@ function mockDatabase() {
   const writes = [];
   const filters = [];
   const chain = {
+    select: () => chain,
+    maybeSingle: async () => ({ data: { id: job.id }, error: null }),
     eq: (...args) => {
       filters.push(args);
       return chain;
@@ -83,45 +84,46 @@ test("all requested emails render safe content and the correct role destination"
     /Unsupported/,
   );
 });
-test("provider acceptance persists delivery and guards the lease", async () => {
+test("SMTP acceptance persists delivery only after reserving the job", async () => {
   const db = mockDatabase();
-  const result = await processEmails(db, config, async (url, options) => {
-    assert.equal(url, "https://api.resend.com/emails");
-    assert.equal(
-      options.headers["Idempotency-Key"],
-      "kasangga-email/test-email-id",
-    );
-    assert.deepEqual(JSON.parse(options.body).to, [job.recipient_email]);
-    return new Response(JSON.stringify({ id: "provider-id" }), { status: 200 });
+  const result = await processEmails(db, config, async (message) => {
+    assert.equal(message.to, job.recipient_email);
+    assert.equal(db.writes[0].status, "sending");
+    assert.ok(message.messageId.includes(job.id));
+    return { accepted: [job.recipient_email], messageId: "smtp-message-id" };
   });
   assert.equal(result.accepted, 1);
-  assert.equal(db.writes[0].status, "sent");
-  assert.equal(db.writes[0].provider_id, "provider-id");
+  assert.equal(db.writes[1].status, "sent");
+  assert.equal(db.writes[1].provider_id, "smtp-message-id");
   assert.ok(
     db.filters.some(
       ([key, value]) => key === "lease_token" && value === job.lease_token,
     ),
   );
 });
-test("rate limits retry without marking an email sent", async () => {
+test("explicit SMTP 4xx rejection retries without marking sent", async () => {
   const db = mockDatabase();
-  const result = await processEmails(
-    db,
-    config,
-    async () => new Response("{}", { status: 429 }),
-  );
+  const result = await processEmails(db, config, async () => {
+    throw Object.assign(new Error("temporary"), { responseCode: 451 });
+  });
   assert.equal(result.retried, 1);
-  assert.equal(db.writes[0].status, "pending");
-  assert.ok(Date.parse(db.writes[0].due_at) > Date.now());
+  assert.equal(db.writes[1].status, "pending");
+  assert.ok(Date.parse(db.writes[1].due_at) > Date.now());
 });
-test("permanent provider rejection stops automatic retries", async () => {
+test("SMTP 5xx permanent rejection stops retries", async () => {
   const db = mockDatabase();
-  await processEmails(
-    db,
-    config,
-    async () => new Response("{}", { status: 403 }),
-  );
-  assert.equal(db.writes[0].status, "failed");
+  await processEmails(db, config, async () => {
+    throw Object.assign(new Error("rejected"), { responseCode: 550 });
+  });
+  assert.equal(db.writes[1].status, "failed");
+});
+test("ambiguous SMTP timeout requires manual inspection instead of duplicate sending", async () => {
+  const db = mockDatabase();
+  await processEmails(db, config, async () => {
+    throw new Error("timeout after DATA");
+  });
+  assert.equal(db.writes[1].status, "failed");
+  assert.ok(db.writes[1].last_error.includes("uncertain"));
 });
 test("sidebar counts use unread and actionable Supabase records", () => {
   const inbox = {
