@@ -10,6 +10,7 @@ import "./index.css";
 import "./components/shared/modal-density.css";
 import "./components/admin/modal-density.css";
 import "./components/osas/modal-density.css";
+import "./components/shared/portal-consistency.css";
 
 connectBookingApi();
 
