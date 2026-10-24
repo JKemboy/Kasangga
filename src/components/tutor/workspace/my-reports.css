@@ -273,6 +273,53 @@ html dialog.tutor-modal.mr-report-modal {
   background: #f0e8ff;
   color: #6d28d9;
 }
+.mr-detail-status.is-blocked {
+  background: #fce9e9;
+  color: #a32f28;
+}
+.mr-about-review .mr-card-status > b {
+  background: #f0e8ff;
+  color: #6d28d9;
+}
+.mr-about-resolved .mr-card-status > b {
+  background: #e3f3e8;
+  color: #08632d;
+}
+.mr-form-heading,
+.mr-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.mr-form-actions {
+  justify-content: flex-start;
+}
+.mr-form-heading h3 {
+  margin-bottom: 0;
+}
+.mr-condition {
+  margin-bottom: 8px;
+}
+.mr-condition > b.mr-condition-done {
+  color: #087542;
+}
+.mr-decision-heading {
+  margin-top: 16px !important;
+}
+html dialog.workspace-modal.mr-completion-modal,
+html dialog.tutor-modal.mr-completion-modal {
+  width: min(660px, calc(100vw - 28px));
+}
+.mr-form-preview {
+  display: block;
+  width: 100%;
+  height: min(62dvh, 520px);
+  border: 1px solid #dce4e0;
+  border-radius: 7px;
+  background: white;
+}
 .mr-evidence-label {
   display: block;
   font-size: 10px;

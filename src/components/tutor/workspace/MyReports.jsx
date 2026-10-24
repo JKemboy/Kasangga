@@ -1,12 +1,16 @@
+import {
+  AboutCaseDetails,
+  ReportConditions as Conditions,
+  ReportProgress as Progress,
+} from "./MyReportCaseComponents.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Flag,
   ShieldCheck,
-  CheckCircle,
   Info,
   Clock,
+  CheckCircle,
   LockKeyhole,
-  Download,
   FileText,
   RefreshCw,
 } from "lucide-react";
@@ -18,23 +22,14 @@ import {
   reportStage,
   reportNotice,
   reportActivity,
-  completionFormHtml,
-  reportSteps,
   adminOnlyReport,
+  reportDate,
+  caseClearanceText,
+  caseConditions,
 } from "../../../services/myReportPresentation.js";
 import { button, Modal } from "./ui.jsx";
 import "./my-reports.css";
 
-export const reportDate = (value) =>
-  value
-    ? new Date(
-        value.length === 10 ? value + "T12:00:00+08:00" : value,
-      ).toLocaleString("en-PH", {
-        timeZone: "Asia/Manila",
-        dateStyle: "medium",
-        ...(value.length > 10 ? { timeStyle: "short" } : {}),
-      })
-    : "Not recorded";
 const rowKey = (row, about) =>
   `${about ? "case" : "report"}-${about ? row.case_id : row.report_id}`;
 const sessionTime = (value) => {
@@ -50,33 +45,6 @@ function SessionSummary({ row }) {
       {row.session.title || "Tutoring session"} · BK-{row.booking_id}
       {row.other_party ? ` · session with ${row.other_party}` : ""}
     </span>
-  );
-}
-function Progress({ row, about }) {
-  const stage = reportStage(row, about);
-  const steps = reportSteps(row, about);
-  const active = about
-    ? stage === "Resolved"
-      ? 3
-      : row.decision
-        ? 2
-        : 1
-    : stage === "OSLD Review" && !row.case
-      ? steps.indexOf("Referred to OSLD")
-      : Math.max(1, steps.indexOf(stage));
-  return (
-    <ol className="mr-progress" aria-label="Review progress">
-      {steps.map((step, i) => (
-        <li
-          key={step}
-          className={i <= active ? "is-current" : ""}
-          aria-current={i === active ? "step" : undefined}
-        >
-          <span>{i < active ? <CheckCircle size={15} /> : i + 1}</span>
-          <b>{step}</b>
-        </li>
-      ))}
-    </ol>
   );
 }
 function EvidenceLink({ file, reviewLabel }) {
@@ -115,88 +83,9 @@ function EvidenceLink({ file, reviewLabel }) {
     </li>
   );
 }
-function Conditions({ row, student }) {
-  if (!row.decision) return null;
-  const hasCondition = !!row.decision.condition;
-  const hasHolds = row.holds?.some((h) => h.status === "active");
-  function download() {
-    const url = URL.createObjectURL(
-      new Blob([completionFormHtml(row, student)], {
-        type: "text/html;charset=utf-8",
-      }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `CASE-${row.case_id}-completion-form.html`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-  return (
-    <div className="mr-conditions">
-      <div className="mr-columns">
-        <div>
-          <h3>What happens next</h3>
-          <p>{reportNotice(row, true)}</p>
-          <h3>Decision basis</h3>
-          <p>
-            {row.decision.basis ||
-              "Contact OSLD for the recorded policy basis."}
-          </p>
-        </div>
-        <div>
-          <h3>Conditions for completion</h3>
-          {hasCondition ? (
-            <div className="mr-condition">
-              <span>
-                {row.decision.condition_done ? (
-                  <CheckCircle size={15} />
-                ) : (
-                  <Clock size={15} />
-                )}
-                {row.decision.condition}
-              </span>
-              <b>{row.decision.condition_done ? "Completed" : "Pending"}</b>
-            </div>
-          ) : (
-            <p>No completion condition is recorded.</p>
-          )}
-          {row.decision.due && (
-            <p className="mr-muted">Due: {reportDate(row.decision.due)}</p>
-          )}
-          <p className="mr-muted">OSLD verifies and updates completion.</p>
-          {hasHolds && (
-            <p className="mr-muted">
-              Only OSLD can release a recorded clearance hold.
-            </p>
-          )}
-        </div>
-      </div>
-      {(hasCondition || hasHolds) && (
-        <section className="mr-form">
-          <h3>
-            <FileText size={15} /> OSLD Completion Form
-          </h3>
-          <ol>
-            <li>
-              Download the printable form with your recorded case details.
-            </li>
-            <li>Complete and sign it after meeting the recorded conditions.</li>
-            <li>Submit in person to OSLD for verification.</li>
-          </ol>
-          <button type="button" className={button} onClick={download}>
-            <Download size={13} className="mr-1 inline" />
-            Download Completion Form
-          </button>
-          <small>
-            Printable HTML form. Downloading does not submit it or update your
-            case.
-          </small>
-        </section>
-      )}
-    </div>
-  );
-}
 export function ReportDetails({ row, about, student, go, onClose }) {
+  if (about)
+    return <AboutCaseDetails row={row} student={student} onClose={onClose} />;
   const activities = reportActivity(row, about);
   const stage = reportStage(row, about);
   const adminOnly = !about && adminOnlyReport(row);
@@ -540,59 +429,82 @@ export default function MyReports({ go, args = {} }) {
               </h2>
               {group.map((row) => (
                 <article
-                  className={`mr-card ${stage === "Clearance Blocked" ? "mr-blocked" : ""}`}
+                  className={`mr-card ${stage === "Clearance Blocked" ? "mr-blocked" : about && stage === "Resolved" ? "mr-about-resolved" : about ? "mr-about-review" : ""}`}
                   key={rowKey(row, about)}
                 >
                   <header>
                     <span className="mr-icon">
                       {stage === "Clearance Blocked" ? (
                         <LockKeyhole size={15} />
+                      ) : about && stage === "Resolved" ? (
+                        <CheckCircle size={15} />
+                      ) : about ? (
+                        <Clock size={15} />
                       ) : (
                         <Flag size={15} />
                       )}
                     </span>
                     <div>
                       <h3>
-                        {about ? `CASE-${row.case_id} · ` : ""}
-                        {row.incident_type}
+                        {about && stage === "Clearance Blocked"
+                          ? `Clearance Blocked - CASE-${row.case_id}`
+                          : `${about ? `CASE-${row.case_id} - ` : ""}${row.incident_type}`}
                       </h3>
                       <p>
-                        {about
-                          ? `From report IR-${row.report_id} · case opened ${reportDate(row.opened_at)}`
-                          : `IR-${row.report_id} · filed ${reportDate(row.submitted_at)} as ${row.filing_role}`}
+                        {about && stage === "Clearance Blocked"
+                          ? `${row.incident_type}${row.decision?.at ? ` - decision recorded ${reportDate(row.decision.at)}` : ""} by OSLD${row.officer ? ` (${row.officer})` : ""}`
+                          : about
+                            ? `From report IR-${row.report_id} · case opened ${reportDate(row.opened_at)}`
+                            : `IR-${row.report_id} · filed ${reportDate(row.submitted_at)} as ${row.filing_role}`}
                       </p>
                     </div>
                     <div className="mr-card-status">
-                      <b>{stage}</b>
+                      <b>
+                        {stage}
+                        {about &&
+                        stage === "Resolved" &&
+                        (row.decision?.outcome || row.resolution)
+                          ? ` - ${row.decision?.outcome || row.resolution}`
+                          : ""}
+                      </b>
                       {about && (
                         <small>
-                          {row.decision
-                            ? `Decision: ${row.decision.outcome}`
-                            : row.resolution
-                              ? `Outcome: ${row.resolution}`
-                              : "No decision yet"}
+                          {stage === "Resolved"
+                            ? caseClearanceText(row)
+                            : row.decision
+                              ? `Decision: ${row.decision.outcome}`
+                              : row.resolution
+                                ? `Outcome: ${row.resolution}`
+                                : "No decision yet"}
                         </small>
                       )}
                     </div>
                   </header>
                   <div className="mr-card-body">
-                    {!about && (
+                    {(!about || stage !== "Clearance Blocked") && (
                       <>
-                        <h4>Session</h4>
+                        <h4>{about ? "Related booking" : "Session"}</h4>
                         <p>
                           <SessionSummary row={row} />
                         </p>
                       </>
                     )}
-                    <Progress row={row} about={about} />
-                    {about && row.decision && (
-                      <Conditions row={row} student={reports.student} />
+                    {stage !== "Clearance Blocked" && (
+                      <Progress row={row} about={about} />
                     )}
+                    {about &&
+                      row.decision &&
+                      (stage === "Clearance Blocked" ||
+                        caseConditions(row).some((c) => !c.completed)) && (
+                        <Conditions row={row} student={reports.student} />
+                      )}
                   </div>
                   <footer>
                     <p>
                       <Info size={13} />
-                      {reportNotice(row, about)}
+                      {about && stage === "Clearance Blocked"
+                        ? `Questions? Visit the OSLD office${row.officer_email ? ` or email ${row.officer_email}` : ""}.`
+                        : reportNotice(row, about)}
                     </p>
                     <button
                       className={button}
