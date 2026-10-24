@@ -73,6 +73,7 @@ test("Admin-only reports have three steps and no OSLD phase", () => {
   assert.deepEqual(reportSteps({ osas_referral_status: "referred" }), [
     "Submitted",
     "Admin Review",
+    "Referred to OSLD",
     "OSLD Review",
     "Resolved",
   ]);
@@ -89,6 +90,25 @@ test("refund approval is never presented as confirmed payment delivery", () => {
   });
   assert.ok(message.includes("not yet confirmed"));
   assert.ok(!message.includes("sent"));
+});
+test("referred reports distinguish waiting for assessment from an opened case", () => {
+  const referred = {
+    osas_referral_status: "referred",
+    referred_at: "2026-10-24T08:00:00Z",
+  };
+  assert.equal(reportSteps(referred).length, 5);
+  assert.ok(reportNotice(referred).includes("awaiting OSLD assessment"));
+  const opened = {
+    ...referred,
+    case: { case_id: 17, opened_at: "2026-10-25T08:00:00Z" },
+  };
+  assert.ok(reportNotice(opened).includes("OSLD is reviewing this case"));
+  assert.ok(reportNotice(opened).includes("other student are kept private"));
+  assert.ok(
+    reportActivity(opened).some(
+      (event) => event.title === "OSLD opened CASE-17 for review",
+    ),
+  );
 });
 test("confirmed GCash refunds appear with their actual processing date", () => {
   const report = {

@@ -17,7 +17,7 @@ export function reportSteps(report, about = false) {
   return [
     "Submitted",
     "Admin Review",
-    ...(referred ? ["OSLD Review"] : []),
+    ...(referred ? ["Referred to OSLD", "OSLD Review"] : []),
     "Resolved",
   ];
 }
@@ -76,7 +76,9 @@ export function reportNotice(report, about = false) {
         ? "Review completed. No formal case was opened."
         : "Your report review is completed. Actions taken against another student remain confidential.";
   if (stage === "OSLD Review")
-    return "Admin referred this report to OSLD for institutional review.";
+    return report.case
+      ? "OSLD is reviewing this case. Check My Reports for status updates. Outcomes for the other student are kept private."
+      : "Admin referred this report to OSLD. It is awaiting OSLD assessment; no formal case is recorded yet.";
   const message =
     report.report_status === "submitted"
       ? "Your report is awaiting Admin review."
@@ -105,8 +107,11 @@ export function reportActivity(report, about = false) {
     : [
         { title: "Report submitted", at: report.submitted_at },
         ...(report.admin_activity || []),
-        { title: "Admin referred report to OSLD", at: report.referred_at },
-        { title: "Formal case opened by OSLD", at: report.case?.opened_at },
+        { title: "Referred to OSLD by Kasangga Admin", at: report.referred_at },
+        {
+          title: `OSLD opened CASE-${report.case?.case_id} for review`,
+          at: report.case?.opened_at,
+        },
         {
           title: "Review completed",
           at: report.resolved_at || report.case?.resolved_at,
