@@ -5,6 +5,38 @@ export const aboutStages = [
   "Awaiting Completion",
   "Resolved",
 ];
+export function reportSteps(report, about = false) {
+  if (about)
+    return ["Case Opened", "OSLD Review", "Decision Recorded", "Resolved"];
+  const referred =
+    report.case ||
+    report.referred_at ||
+    ["referred", "case_opened", "closed_no_case"].includes(
+      report.osas_referral_status,
+    );
+  return [
+    "Submitted",
+    "Admin Review",
+    ...(referred ? ["OSLD Review"] : []),
+    "Resolved",
+  ];
+}
+export function adminOnlyReport(report) {
+  return reportSteps(report).length === 3;
+}
+export function refundSummary(report) {
+  const refund = report.refund;
+  if (!refund) return "";
+  if (refund.confirmed)
+    return `${refund.full ? "Full refund" : "Refund"} sent${String(refund.method).toLowerCase().includes("gcash") ? " to your GCash" : " through your recorded payment method"}.`;
+  if (refund.status === "pending")
+    return "Your related refund request is pending review.";
+  if (refund.status === "approved")
+    return "Your refund is approved; payment-provider processing is not yet confirmed.";
+  if (refund.status === "declined")
+    return "Your related refund request was declined.";
+  return "Your refund status is recorded; contact Admin for confirmation of delivery.";
+}
 export function reportStage(report, about = false) {
   if (about) {
     if (report.holds?.some((hold) => hold.status === "active"))
@@ -38,14 +70,18 @@ export function reportNotice(report, about = false) {
     return "OSLD is reviewing this case. A report is an allegation; no decision has been recorded unless shown here.";
   }
   if (stage === "Resolved")
-    return report.osas_referral_status === "closed_no_case"
-      ? "Review completed. No formal case was opened."
-      : "Your report review is completed. Actions taken against another student remain confidential.";
+    return adminOnlyReport(report)
+      ? `Resolved by Kasangga Admin.${refundSummary(report) ? ` ${refundSummary(report)}` : ""}`
+      : report.osas_referral_status === "closed_no_case"
+        ? "Review completed. No formal case was opened."
+        : "Your report review is completed. Actions taken against another student remain confidential.";
   if (stage === "OSLD Review")
     return "Admin referred this report to OSLD for institutional review.";
-  return report.report_status === "submitted"
-    ? "Your report is awaiting Admin review."
-    : "Kasangga Admin is reviewing your report.";
+  const message =
+    report.report_status === "submitted"
+      ? "Your report is awaiting Admin review."
+      : "Kasangga Admin is reviewing your report.";
+  return `${message}${refundSummary(report) ? ` ${refundSummary(report)}` : ""}`;
 }
 export function reportActivity(report, about = false) {
   const events = about
@@ -68,12 +104,21 @@ export function reportActivity(report, about = false) {
       ]
     : [
         { title: "Report submitted", at: report.submitted_at },
+        ...(report.admin_activity || []),
         { title: "Admin referred report to OSLD", at: report.referred_at },
         { title: "Formal case opened by OSLD", at: report.case?.opened_at },
         {
           title: "Review completed",
           at: report.resolved_at || report.case?.resolved_at,
         },
+        ...(report.refund?.confirmed && report.refund.processed_at
+          ? [
+              {
+                title: refundSummary(report).replace(/\.$/, ""),
+                at: report.refund.processed_at,
+              },
+            ]
+          : []),
       ];
   return events
     .filter((e) => e.at)
