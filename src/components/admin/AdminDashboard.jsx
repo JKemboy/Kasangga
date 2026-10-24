@@ -199,8 +199,10 @@ export default function AdminDashboardPage() {
           ids.includes(item.id) ? { ...item, read: true } : item,
         ),
       );
+      return true;
     } catch (cause) {
       setNotificationError(cause.message);
+      return false;
     }
   }
   return (

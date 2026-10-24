@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Bell } from "lucide-react";
-import { button, primary, input } from "../tutor/workspace/ui.jsx";
+import { primary, input } from "../tutor/workspace/ui.jsx";
 
 export default function OsasNotifications({
   rows = [],
@@ -32,14 +32,6 @@ export default function OsasNotifications({
           </h1>
           <p>View referral, case, evidence, clearance and policy updates.</p>
         </div>
-        <button
-          type="button"
-          className={button}
-          disabled={pending || loading || !unread.length}
-          onClick={() => read(unread.map((row) => row.id))}
-        >
-          Mark all as read
-        </button>
       </div>
       <label className="block max-w-xs text-xs font-semibold">
         Show notifications
@@ -79,10 +71,16 @@ export default function OsasNotifications({
         )
       )}
       {visible.map((row) => (
-        <article
+        <button
+          type="button"
+          disabled={pending}
+          onClick={async () => {
+            if (!row.read && (await read([row.id])) === false) return;
+            if (row.entityType && row.entityId) onOpen(row);
+          }}
           key={row.id}
           className={
-            "rounded-lg border bg-white p-4 " +
+            "block w-full rounded-lg border bg-white p-4 text-left " +
             (!row.read ? "border-l-4 border-l-green-700" : "")
           }
         >
@@ -101,32 +99,10 @@ export default function OsasNotifications({
               timeZone: "Asia/Manila",
             })}
           </time>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {!row.read && (
-              <button
-                type="button"
-                className={button}
-                disabled={pending}
-                onClick={() => read([row.id])}
-              >
-                Mark as read
-              </button>
-            )}
-            {row.entityType && row.entityId && (
-              <button
-                type="button"
-                className={primary}
-                disabled={pending}
-                onClick={async () => {
-                  if (!row.read && (await read([row.id])) === false) return;
-                  onOpen(row);
-                }}
-              >
-                View Details
-              </button>
-            )}
-          </div>
-        </article>
+          {row.entityType && row.entityId && (
+            <span className={primary + " mt-3 inline-block"}>View Details</span>
+          )}
+        </button>
       ))}
     </section>
   );

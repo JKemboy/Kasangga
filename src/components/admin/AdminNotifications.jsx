@@ -36,14 +36,6 @@ export default function AdminNotifications({ rows, error, onRead, go }) {
             activity.
           </p>
         </div>
-        <button
-          type="button"
-          className={button}
-          disabled={!unread.length || busy}
-          onClick={() => read(unread.map((row) => row.id))}
-        >
-          Mark all as read
-        </button>
       </div>
       <div className="au-tabs">
         {["All Notifications", "Unread"].map((value) => (
@@ -68,10 +60,17 @@ export default function AdminNotifications({ rows, error, onRead, go }) {
         </p>
       )}
       {visible.map((row) => (
-        <article
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            if (!row.read && (await read([row.id])) === false) return;
+            if (destination(row)) go(destination(row));
+          }}
           key={row.id}
           className={
-            "ad-panel " + (!row.read ? "border-l-4 border-l-green-700" : "")
+            "ad-panel block w-full text-left " +
+            (!row.read ? "border-l-4 border-l-green-700" : "")
           }
         >
           <h2>
@@ -87,30 +86,10 @@ export default function AdminNotifications({ rows, error, onRead, go }) {
               timeZone: "Asia/Manila",
             })}
           </p>
-          <div className="mt-3 flex gap-2">
-            {!row.read && (
-              <button
-                type="button"
-                className={button}
-                disabled={busy}
-                onClick={() => read([row.id])}
-              >
-                Mark as read
-              </button>
-            )}
-            {destination(row) && (
-              <button
-                type="button"
-                className={button}
-                onClick={async () => {
-                  if ((await read([row.id])) !== false) go(destination(row));
-                }}
-              >
-                View Details
-              </button>
-            )}
-          </div>
-        </article>
+          {destination(row) && (
+            <span className={button + " mt-3 inline-block"}>View Details</span>
+          )}
+        </button>
       ))}
     </section>
   );
