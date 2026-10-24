@@ -269,6 +269,16 @@ html dialog.tutor-modal.mr-report-modal {
   background: #e3f3e8;
   color: #08632d;
 }
+.mr-detail-status.is-osld {
+  background: #f0e8ff;
+  color: #6d28d9;
+}
+.mr-evidence-label {
+  display: block;
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 2px;
+}
 .mr-report-modal .mr-progress {
   margin: 0 0 8px;
 }

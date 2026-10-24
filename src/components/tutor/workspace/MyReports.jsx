@@ -61,7 +61,9 @@ function Progress({ row, about }) {
       : row.decision
         ? 2
         : 1
-    : Math.max(1, steps.indexOf(stage));
+    : stage === "OSLD Review" && !row.case
+      ? steps.indexOf("Referred to OSLD")
+      : Math.max(1, steps.indexOf(stage));
   return (
     <ol className="mr-progress" aria-label="Review progress">
       {steps.map((step, i) => (
@@ -77,7 +79,7 @@ function Progress({ row, about }) {
     </ol>
   );
 }
-function EvidenceLink({ file }) {
+function EvidenceLink({ file, reviewLabel }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   useEffect(() => {
@@ -96,15 +98,20 @@ function EvidenceLink({ file }) {
   return (
     <li>
       <FileText size={13} />
-      {url ? (
-        <a href={url} target="_blank" rel="noopener noreferrer">
-          {file.name || "Attachment"}
-        </a>
-      ) : (
-        <span>
-          {file.name || "Attachment"} · {error || "Loading secure link..."}
-        </span>
-      )}
+      <div>
+        {url ? (
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            {file.name || "Attachment"}
+          </a>
+        ) : (
+          <span>
+            {file.name || "Attachment"} · {error || "Loading secure link..."}
+          </span>
+        )}
+        {reviewLabel && (
+          <small className="mr-evidence-label">{reviewLabel}</small>
+        )}
+      </div>
     </li>
   );
 }
@@ -203,7 +210,7 @@ export function ReportDetails({ row, about, student, go, onClose }) {
       }
       headerAside={
         <span
-          className={`mr-detail-status ${stage === "Resolved" ? "is-resolved" : ""}`}
+          className={`mr-detail-status ${stage === "Resolved" ? "is-resolved" : stage === "OSLD Review" ? "is-osld" : ""}`}
         >
           {stage}
         </span>
@@ -251,6 +258,16 @@ export function ReportDetails({ row, about, student, go, onClose }) {
                   </dd>
                 </>
               )}
+              {!about && !adminOnly && (
+                <>
+                  <dt>OSLD case</dt>
+                  <dd>
+                    {row.case?.case_id
+                      ? `CASE-${row.case.case_id}`
+                      : "Awaiting OSLD assessment"}
+                  </dd>
+                </>
+              )}
               {about && (
                 <>
                   <dt>Case officer</dt>
@@ -282,7 +299,17 @@ export function ReportDetails({ row, about, student, go, onClose }) {
             {row.evidence?.length ? (
               <ul className="mr-files">
                 {row.evidence.map((file) => (
-                  <EvidenceLink key={file.id} file={file} />
+                  <EvidenceLink
+                    key={file.id}
+                    file={file}
+                    reviewLabel={
+                      !about
+                        ? adminOnly
+                          ? "For Admin review"
+                          : "For Admin and OSLD review"
+                        : undefined
+                    }
+                  />
                 ))}
               </ul>
             ) : (
@@ -331,7 +358,7 @@ export function ReportDetails({ row, about, student, go, onClose }) {
             Your related refund: {row.refund_status.replaceAll("_", " ")}
           </p>
         )}
-        {row.booking_id && !adminOnly && (
+        {row.booking_id && about && (
           <button
             className={button}
             type="button"
