@@ -103,10 +103,12 @@ export default function SessionDialog({
   const link = meetingUrl(r.link);
   async function submitAction() {
     if (busy) return;
+    if (kind === "cancel" && (!active || !reason || !ack)) return;
     setBusy(true);
     setActionError("");
     try {
-      if (kind === "cancel") await onCancel({ reason, notes });
+      if (kind === "cancel")
+        await onCancel({ reason, notes: notes.trim(), acknowledged: ack });
       else await onRequest({ date, time, reason: reason.trim() });
     } catch (error) {
       setActionError(error.message || "Unable to save this session request.");
@@ -115,7 +117,7 @@ export default function SessionDialog({
     }
   }
   return (
-    <div className="ls-flow">
+    <div className={`ls-flow${kind === "cancel" ? " ls-cancel-flow" : ""}`}>
       <div className="ls-content">
         {kind === "details" ? (
           <>
@@ -199,8 +201,11 @@ export default function SessionDialog({
           <>
             <Rows
               rows={[
-                ["Booking", r.bookingId],
-                ["Session", `${r.name}, ${r.service} - ${r.topic || ""}`],
+                ["Booking", `BK-${String(r.bookingId).replace(/^BK-/, "")}`],
+                [
+                  "Session",
+                  `${r.name}, ${[r.service || r.course, r.topic].filter(Boolean).join(" - ")}`,
+                ],
                 ["Schedule", `${r.date}, ${r.time}`],
                 ["Amount", `${cash(r.amount)} (${r.paymentStatus})`],
               ]}
@@ -241,8 +246,9 @@ export default function SessionDialog({
                 </strong>
                 <p>
                   Refund eligibility is reviewed based on how close to the
-                  session you cancel and the reason given. Payment status stays
-                  unchanged until a refund is verified.
+                  session you cancel and the reason given. Any approved refund
+                  goes back through the original payment method via PayMongo.
+                  Payment status stays unchanged until a refund is verified.
                 </p>
               </div>
             </div>

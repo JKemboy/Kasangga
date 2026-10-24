@@ -372,11 +372,11 @@ export default function LearnerWorkspace({ children, go }) {
               onClose={closeDialog}
               onOpen={open}
               onMessage={message}
-              onCancel={async ({ reason, notes }) => {
+              onCancel={async ({ reason, notes, acknowledged }) => {
                 await cancelLearnerSession(r, {
                   reason,
                   notes,
-                  acknowledged: true,
+                  acknowledged,
                 });
                 window.dispatchEvent(new Event("campustutor:sessions-changed"));
                 await refreshReviews();

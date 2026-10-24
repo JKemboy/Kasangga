@@ -146,6 +146,24 @@ dialog.learner-session-drawer {
   opacity: 0.45;
   cursor: not-allowed;
 }
+html dialog.learner-session-modal:has(.ls-cancel-flow) {
+  width: min(468px, calc(100vw - 24px));
+}
+.ls-cancel-flow .ls-rows > div {
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 12px;
+}
+.ls-cancel-flow .ls-field textarea {
+  min-height: 58px;
+}
+.ls-cancel-flow .ls-footer > button {
+  min-height: 33px;
+  padding: 6px 14px;
+}
+.ls-cancel-flow .ls-danger.solid {
+  background: #df261e;
+  border-color: #df261e;
+}
 .ls-dates {
   display: flex;
   flex-wrap: wrap;
