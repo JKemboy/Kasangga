@@ -1,4 +1,7 @@
-import { listMyReports, receivedReportNotifications } from "./myReports.js";
+import {
+  listMyReportAlerts,
+  receivedReportNotifications,
+} from "./myReports.js";
 import { listChats } from "./bookingMessages.js";
 import { listLearnerSessions } from "./learnerSessions.js";
 import { listTutorSessions } from "./tutorSessions.js";
@@ -41,7 +44,7 @@ export async function loadBookingInbox(role, userId) {
   const [chats, sessions, reports] = await Promise.all([
     listChats(role),
     role === "tutor" ? listTutorSessions() : listLearnerSessions(),
-    userId ? listMyReports() : Promise.resolve({ received: [] }),
+    userId ? listMyReportAlerts() : Promise.resolve({ received: [] }),
   ]);
   const confirmedSessions = sessions.filter((session) => {
     const state = sessionState(session, role);
