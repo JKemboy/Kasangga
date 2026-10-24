@@ -5,6 +5,8 @@ import {
   reportActivity,
   reportNotice,
   reportStage,
+  reportSteps,
+  refundSummary,
 } from "../src/services/myReportPresentation.js";
 import { listMyReports } from "../src/services/myReports.js";
 
@@ -56,10 +58,51 @@ test("only an actual active hold displays Clearance Blocked", () => {
 test("reporter-facing outcome notice contains no other student's sanction", () => {
   const notice = reportNotice({
     report_status: "resolved",
+    case: { resolved: true },
     decision: { outcome: "Written Warning" },
   });
   assert.ok(!notice.includes("Written Warning"));
   assert.ok(notice.includes("confidential"));
+});
+test("Admin-only reports have three steps and no OSLD phase", () => {
+  assert.deepEqual(reportSteps({ osas_referral_status: "not_referred" }), [
+    "Submitted",
+    "Admin Review",
+    "Resolved",
+  ]);
+  assert.deepEqual(reportSteps({ osas_referral_status: "referred" }), [
+    "Submitted",
+    "Admin Review",
+    "OSLD Review",
+    "Resolved",
+  ]);
+  assert.ok(
+    reportNotice({
+      report_status: "resolved",
+      osas_referral_status: "not_referred",
+    }).includes("Resolved by Kasangga Admin"),
+  );
+});
+test("refund approval is never presented as confirmed payment delivery", () => {
+  const message = refundSummary({
+    refund: { status: "approved", confirmed: false },
+  });
+  assert.ok(message.includes("not yet confirmed"));
+  assert.ok(!message.includes("sent"));
+});
+test("confirmed GCash refunds appear with their actual processing date", () => {
+  const report = {
+    refund: {
+      confirmed: true,
+      full: true,
+      method: "gcash",
+      processed_at: "2026-10-24T09:00:00Z",
+    },
+  };
+  assert.equal(refundSummary(report), "Full refund sent to your GCash.");
+  const events = reportActivity(report);
+  assert.equal(events[0].at, report.refund.processed_at);
+  assert.equal(events[0].title, "Full refund sent to your GCash");
 });
 test("activity contains recorded dates and generic public action labels only", () => {
   const events = reportActivity(
