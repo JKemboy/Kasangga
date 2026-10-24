@@ -10,7 +10,7 @@ create table public.transactional_email_outbox (
   recipient_email text not null,
   payload jsonb not null,
   due_at timestamptz not null default now(),
-  status text not null default 'pending' check (status in ('pending','processing','sent','failed','cancelled')),
+  status text not null default 'pending' check (status in ('pending','processing','sending','sent','failed','cancelled')),
   attempts integer not null default 0,
   lease_token uuid,
   locked_at timestamptz,
@@ -103,7 +103,10 @@ begin
       b.booking_status<>'confirmed' or b.payment_status<>'paid'
       or b.session_date::text<>q.payload->>'date' or b.start_time::text<>q.payload->>'start'
       or (b.session_date+b.start_time) at time zone 'Asia/Manila' <= now());
-  -- Resend idempotency lasts 24 hours. Do not automatically retry beyond that window.
+  -- SMTP acceptance is uncertain after a worker crash. Never auto-retry it.
+  update public.transactional_email_outbox set status='failed',last_error='SMTP result uncertain after worker interruption; inspect sender Sent folder before retrying'
+    where status='sending' and locked_at<now()-interval '10 minutes';
+  -- Limit automatic retries of explicit temporary rejections.
   update public.transactional_email_outbox set status='failed',last_error='Retry window exhausted; inspect provider logs before any manual retry'
     where status in ('pending','processing') and (attempts>=8 or first_attempt_at<now()-interval '23 hours');
   return query
