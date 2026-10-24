@@ -56,12 +56,14 @@ export function casePermissions(record, evidence = [], clearance = []) {
   const active = !record.archived;
   return {
     step,
-    note: active && step === "Case Actions",
-    request: active && step === "Case Actions",
-    pending:
+    review:
       active &&
       step === "Case Actions" &&
-      ["Open", "Under Review"].includes(record.status),
+      ["Open", "Awaiting Evidence"].includes(record.status),
+    note: active && step === "Case Actions" && record.status === "Under Review",
+    request: active && step === "Case Actions",
+    pending:
+      active && step === "Case Actions" && record.status === "Under Review",
     decision: active && step === "Case Decision",
     condition: active && step === "Resolution",
     archive: active && step === "Archive",

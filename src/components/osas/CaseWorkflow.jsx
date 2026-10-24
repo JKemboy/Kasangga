@@ -97,8 +97,7 @@ export default function CaseWorkflow({
   clearance = [],
   onSave,
 }) {
-  const [menu, setMenu] = useState(false),
-    [action, setAction] = useState(""),
+  const [action, setAction] = useState(""),
     [form, setForm] = useState({}),
     [error, setError] = useState(""),
     [confirmation, setConfirmation] = useState(null),
@@ -107,7 +106,6 @@ export default function CaseWorkflow({
   const pending = evidence.filter((e) => e.status !== "Validated");
   function open(a) {
     if (!permissions[a]) return;
-    setMenu(false);
     setAction(a);
     setError("");
     setForm({ recipient: r.reporterId, notes: "", due: "", notify: true });
@@ -133,7 +131,9 @@ export default function CaseWorkflow({
       setSaving(true);
       if ((await onSave(next)) === false)
         throw Error("Could not save this case. Please try again.");
-      setAction("");
+      setAction(action === "pending" ? "decision" : "");
+      if (action === "pending")
+        setForm({ recipient: r.reporterId, notes: "", due: "", notify: true });
       setConfirmation(null);
     } catch (err) {
       setError(err.message);
@@ -147,46 +147,30 @@ export default function CaseWorkflow({
       {!["Resolved", "Pending Completion"].includes(r.status) &&
         !evidence.some((e) => e.status === "Insufficient") && (
           <>
-            {permissions.pending && (
-              <button className={primary} onClick={() => open("pending")}>
+            {permissions.review && (
+              <button className={primary} onClick={() => open("review")}>
                 Proceed to Case Action
               </button>
             )}
-            <div className="ocx-status-menu">
-              <button
-                className={button}
-                disabled={
-                  r.archived || !["Case Actions"].includes(permissions.step)
-                }
-                aria-expanded={menu}
-                onClick={() => setMenu(!menu)}
-              >
-                Update Status ▾
+            {permissions.pending && (
+              <button className={primary} onClick={() => open("pending")}>
+                Proceed to Record Decision
               </button>
-              {menu && (
-                <div>
-                  <button
-                    disabled={!permissions.request}
-                    onClick={() => open("request")}
-                  >
-                    Request evidence
-                  </button>
-                  <button
-                    disabled={!permissions.pending}
-                    onClick={() => open("pending")}
-                  >
-                    Move to Pending Decision
-                  </button>
-                </div>
-              )}
-            </div>
-            <button
-              className={primary}
-              disabled={!permissions.decision}
-              onClick={() => open("decision")}
-            >
-              Record Decision & Block Clearance
-            </button>
+            )}
+            {permissions.request && (
+              <button className={button} onClick={() => open("request")}>
+                Request Evidence
+              </button>
+            )}
+            {permissions.decision && (
+              <button
+                className={primary}
+                disabled={!permissions.decision}
+                onClick={() => open("decision")}
+              >
+                Record Decision & Block Clearance
+              </button>
+            )}
           </>
         )}
       {["Pending Completion", "Resolved"].includes(r.status) &&
@@ -206,13 +190,13 @@ export default function CaseWorkflow({
         <Modal
           title={
             action === "review"
-              ? "Start Case Review?"
+              ? "Proceed to Case Action"
               : action === "request"
                 ? "Request Evidence"
                 : action === "pending"
                   ? pending.length
                     ? "Evidence still under validation"
-                    : "Move to Pending Decision?"
+                    : "Proceed to Record Decision?"
                   : action === "condition"
                     ? "Mark the condition completed?"
                     : "Record Decision"
@@ -223,8 +207,8 @@ export default function CaseWorkflow({
           <form onSubmit={save} className="ocx-workflow-form">
             {action === "review" && (
               <p>
-                All evidence must be validated and the case must be Under Review
-                before proceeding to Pending Decision. A case note is optional.
+                All attached evidence is validated. Continue to Case Action to
+                record case notes or interviews before recording a decision.
               </p>
             )}
             {action === "pending" && (
@@ -237,7 +221,8 @@ export default function CaseWorkflow({
             {action === "condition" && (
               <p>
                 {r.decision.condition}. Mark this condition completed? The case
-                will then be ready for resolution and archival.
+                will then be resolved. Any active clearance hold still needs a
+                verified release in Student Clearance Review before archival.
               </p>
             )}
             {action === "request" && (
@@ -409,9 +394,9 @@ export default function CaseWorkflow({
                 }
               >
                 {action === "review"
-                  ? "Start Case Review"
+                  ? "Proceed to Case Action"
                   : action === "pending"
-                    ? "Move to Pending Decision"
+                    ? "Proceed to Record Decision"
                     : action === "request"
                       ? "Save Request"
                       : action === "condition"

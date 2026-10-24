@@ -35,7 +35,7 @@ test("every attached evidence must be validated before proceeding", () => {
   );
   assert.equal(
     casePermissions(row, [{ status: "Validated" }, { status: "Validated" }])
-      .pending,
+      .review,
     true,
   );
 });
@@ -80,6 +80,24 @@ test("completing a condition still requires release of its actual clearance hold
   clearance[0].holds[0].hold_status = "released";
   assert.equal(
     casePermissions(record, [{ status: "Validated" }], clearance).archive,
+    true,
+  );
+});
+
+test("case action must start before proceeding to the decision form", () => {
+  const evidence = [{ status: "Validated" }];
+  assert.equal(casePermissions({ status: "Open" }, evidence).pending, false);
+  assert.equal(casePermissions({ status: "Open" }, evidence).note, false);
+  assert.equal(
+    casePermissions({ status: "Under Review" }, evidence).pending,
+    true,
+  );
+  assert.equal(
+    casePermissions({ status: "Under Review" }, evidence).note,
+    true,
+  );
+  assert.equal(
+    casePermissions({ status: "Awaiting Evidence" }, evidence).review,
     true,
   );
 });
