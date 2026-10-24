@@ -236,6 +236,59 @@
   font-size: 12px;
   line-height: 1.6;
 }
+html dialog.workspace-modal.mr-report-modal,
+html dialog.tutor-modal.mr-report-modal {
+  width: min(820px, calc(100vw - 28px));
+}
+.mr-report-modal [data-modal-header] {
+  align-items: center;
+  gap: 10px;
+}
+.mr-report-modal [data-modal-header] > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.mr-report-modal .mr-modal-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin-bottom: 3px;
+}
+.mr-detail-status {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 4px 9px;
+  color: #885d13;
+  background: #fff3d7;
+}
+.mr-detail-status.is-resolved {
+  background: #e3f3e8;
+  color: #08632d;
+}
+.mr-report-modal .mr-progress {
+  margin: 0 0 8px;
+}
+.mr-report-modal .mr-facts dt,
+.mr-report-modal .mr-facts dd {
+  padding-bottom: 7px;
+  border-bottom: 1px solid #edf0f2;
+}
+.mr-report-modal .mr-facts dd {
+  font-weight: 600;
+}
+.mr-report-modal .mr-files li {
+  border: 1px solid #e1e7e4;
+  border-radius: 7px;
+  padding: 10px;
+  background: white;
+}
+.mr-report-modal .mr-activity {
+  margin-top: -5px;
+}
 .mr-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -19,6 +19,8 @@ import {
   reportNotice,
   reportActivity,
   completionFormHtml,
+  reportSteps,
+  adminOnlyReport,
 } from "../../../services/myReportPresentation.js";
 import { button, Modal } from "./ui.jsx";
 import "./my-reports.css";
@@ -35,28 +37,24 @@ export const reportDate = (value) =>
     : "Not recorded";
 const rowKey = (row, about) =>
   `${about ? "case" : "report"}-${about ? row.case_id : row.report_id}`;
+const sessionTime = (value) => {
+  if (!value) return "Not recorded";
+  const [hours, minutes] = value.split(":");
+  const hour = Number(hours);
+  return `${hour % 12 || 12}:${minutes} ${hour >= 12 ? "PM" : "AM"}`;
+};
 function SessionSummary({ row }) {
   if (!row.session) return <span>No linked session</span>;
   return (
     <span>
-      {row.session.title || "Tutoring session"} � BK-{row.booking_id}
-      {row.other_party ? ` � session with ${row.other_party}` : ""}
+      {row.session.title || "Tutoring session"} · BK-{row.booking_id}
+      {row.other_party ? ` · session with ${row.other_party}` : ""}
     </span>
   );
 }
 function Progress({ row, about }) {
   const stage = reportStage(row, about);
-  const steps = about
-    ? ["Case Opened", "OSLD Review", "Decision Recorded", "Resolved"]
-    : [
-        "Submitted",
-        "Admin Review",
-        ...(row.case ||
-        ["referred", "case_opened"].includes(row.osas_referral_status)
-          ? ["OSLD Review"]
-          : []),
-        "Resolved",
-      ];
+  const steps = reportSteps(row, about);
   const active = about
     ? stage === "Resolved"
       ? 3
@@ -104,7 +102,7 @@ function EvidenceLink({ file }) {
         </a>
       ) : (
         <span>
-          {file.name || "Attachment"} � {error || "Loading secure link�"}
+          {file.name || "Attachment"} · {error || "Loading secure link..."}
         </span>
       )}
     </li>
@@ -191,19 +189,27 @@ function Conditions({ row, student }) {
     </div>
   );
 }
-function ReportDetails({ row, about, student, go, onClose }) {
+export function ReportDetails({ row, about, student, go, onClose }) {
   const activities = reportActivity(row, about);
+  const stage = reportStage(row, about);
+  const adminOnly = !about && adminOnlyReport(row);
   return (
     <Modal
-      title={`${about ? "CASE" : "IR"}-${about ? row.case_id : row.report_id} � ${row.incident_type}`}
+      title={`${about ? "CASE" : "IR"}-${about ? row.case_id : row.report_id} · ${row.incident_type}`}
       onClose={onClose}
+      className="mr-report-modal"
+      headerLabel={
+        about ? "Case about you" : `Report filed by you - ${row.filing_role}`
+      }
+      headerAside={
+        <span
+          className={`mr-detail-status ${stage === "Resolved" ? "is-resolved" : ""}`}
+        >
+          {stage}
+        </span>
+      }
     >
       <div className="mr-details">
-        <p className="mr-muted">
-          {about
-            ? "Case about you"
-            : `Report filed by you � ${row.filing_role}`}
-        </p>
         <Progress row={row} about={about} />
         <div className="mr-columns">
           <div>
@@ -220,14 +226,28 @@ function ReportDetails({ row, about, student, go, onClose }) {
               <dd>
                 <SessionSummary row={row} />
               </dd>
+              {!about && row.other_party && (
+                <>
+                  <dt>Other party</dt>
+                  <dd>
+                    {row.other_party}
+                    {row.other_party_role ? ` (${row.other_party_role})` : ""}
+                  </dd>
+                </>
+              )}
               {row.session && (
                 <>
                   <dt>Session</dt>
                   <dd>
-                    {reportDate(row.session.date)} �{" "}
-                    {row.session.start?.slice(0, 5)}�
-                    {row.session.end?.slice(0, 5)} � {row.session.type}
-                    {row.session.location && ` (${row.session.location})`}
+                    {reportDate(row.session.date)} ·{" "}
+                    {sessionTime(row.session.start)} -{" "}
+                    {sessionTime(row.session.end)} ·{" "}
+                    {row.session.type?.replaceAll("_", " ")}
+                    {row.session.location
+                      ? ` (${row.session.location})`
+                      : row.session.platform
+                        ? ` (${row.session.platform})`
+                        : ""}
                   </dd>
                 </>
               )}
@@ -266,7 +286,12 @@ function ReportDetails({ row, about, student, go, onClose }) {
                 ))}
               </ul>
             ) : (
-              <p className="mr-box">No files attached by you.</p>
+              <p className="mr-box">
+                No files attached.
+                {adminOnly && row.session
+                  ? " Admin can still review the linked session records."
+                  : ""}
+              </p>
             )}
           </div>
         </div>
@@ -301,12 +326,12 @@ function ReportDetails({ row, about, student, go, onClose }) {
           <Info size={14} />
           {reportNotice(row, about)}
         </p>
-        {!about && row.refund_status && (
+        {!about && !row.refund && row.refund_status && (
           <p className="mr-muted">
             Your related refund: {row.refund_status.replaceAll("_", " ")}
           </p>
         )}
-        {row.booking_id && (
+        {row.booking_id && !adminOnly && (
           <button
             className={button}
             type="button"
@@ -434,7 +459,7 @@ export default function MyReports({ go, args = {} }) {
       <p className="mr-info">
         <ShieldCheck size={14} />
         {about
-          ? "Cases about you appear here once a formal case is opened by OSLD. The reporter�s identity and statement are handled by OSLD."
+          ? "Cases about you appear here once a formal case is opened by OSLD. The reporter's identity and statement are handled by OSLD."
           : "Admin reviews every report first. Conduct matters are referred to OSLD. You can track review status and completion; actions against another student remain confidential."}
       </p>
       <div className="mr-toolbar">
@@ -457,7 +482,7 @@ export default function MyReports({ go, args = {} }) {
         <input
           type="search"
           aria-label="Search reports"
-          placeholder="Search reports or cases�"
+          placeholder="Search reports or cases..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -470,7 +495,7 @@ export default function MyReports({ go, args = {} }) {
           </button>
         </p>
       )}
-      {loading && <p role="status">Loading your reports�</p>}
+      {loading && <p role="status">Loading your reports...</p>}
       {!loading && !error && !visible.length && (
         <p className="mr-empty" role="status">
           {about
@@ -501,13 +526,13 @@ export default function MyReports({ go, args = {} }) {
                     </span>
                     <div>
                       <h3>
-                        {about ? `CASE-${row.case_id} � ` : ""}
+                        {about ? `CASE-${row.case_id} · ` : ""}
                         {row.incident_type}
                       </h3>
                       <p>
                         {about
-                          ? `From report IR-${row.report_id} � case opened ${reportDate(row.opened_at)}`
-                          : `IR-${row.report_id} � filed ${reportDate(row.submitted_at)} as ${row.filing_role}`}
+                          ? `From report IR-${row.report_id} · case opened ${reportDate(row.opened_at)}`
+                          : `IR-${row.report_id} · filed ${reportDate(row.submitted_at)} as ${row.filing_role}`}
                       </p>
                     </div>
                     <div className="mr-card-status">

@@ -51,6 +51,9 @@ export function Modal({
   subtitle,
   footer,
   size = "default",
+  headerLabel,
+  headerAside,
+  className = "",
 }) {
   const tutor = useContext(TutorModalContext);
   const ref = useRef(null);
@@ -68,20 +71,24 @@ export function Modal({
         if (e.target === ref.current) onClose();
       }}
       className={
-        tutor
+        (tutor
           ? `tutor-modal tutor-modal--${size}`
-          : `workspace-modal ${size === "profile" ? "learner-profile-modal " : size === "booking" ? "learner-booking-modal " : size === "session-drawer" ? "learner-session-drawer " : size === "session-modal" ? "learner-session-modal " : size === "account" ? "learner-account-modal " : ""}m-auto max-h-[85dvh] w-[min(600px,94vw)] overflow-y-auto rounded-xl p-3 shadow-xl backdrop:bg-black/40`
+          : `workspace-modal ${size === "profile" ? "learner-profile-modal " : size === "booking" ? "learner-booking-modal " : size === "session-drawer" ? "learner-session-drawer " : size === "session-modal" ? "learner-session-modal " : size === "account" ? "learner-account-modal " : ""}m-auto max-h-[85dvh] w-[min(600px,94vw)] overflow-y-auto rounded-xl p-3 shadow-xl backdrop:bg-black/40`) +
+        (className ? ` ${className}` : "")
       }
     >
       <div
+        data-modal-header
         className={
           tutor ? "tutor-modal-header" : "mb-2 flex justify-between gap-3"
         }
       >
         <div>
+          {headerLabel && <p className="mr-modal-label">{headerLabel}</p>}
           <h2 className="font-bold">{title}</h2>
           {subtitle && <p className="tutor-modal-subtitle">{subtitle}</p>}
         </div>
+        {headerAside}
         <button type="button" aria-label="Close dialog" onClick={onClose}>
           <X className="h-5 w-5" />
         </button>
