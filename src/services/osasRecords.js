@@ -264,16 +264,18 @@ export function mapOsasRecords(db) {
     policies,
     sessions,
     users: db.users,
-    notifications: db.notifications.map((n) => ({
-      id: String(n.notification_id),
-      notificationType: n.notification_type,
-      title: n.title,
-      text: n.message,
-      time: n.created_at,
-      read: n.is_read,
-      entityType: n.related_entity_type,
-      entityId: n.related_entity_id,
-    })),
+    notifications: db.notifications
+      .filter((n) => n.notification_type !== "activity_read_receipt")
+      .map((n) => ({
+        id: String(n.notification_id),
+        notificationType: n.notification_type,
+        title: n.title,
+        text: n.message,
+        time: n.created_at,
+        read: n.is_read,
+        entityType: n.related_entity_type,
+        entityId: n.related_entity_id,
+      })),
     settings: json(db.settings, null),
   };
 }

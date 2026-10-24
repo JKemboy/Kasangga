@@ -3,6 +3,7 @@ import { listChats } from "./bookingMessages.js";
 import { listLearnerSessions } from "./learnerSessions.js";
 import { listTutorSessions } from "./tutorSessions.js";
 import { getSupabaseClient } from "./supabaseClient.js";
+import { loadActivityReadIds } from "./notificationReadState.js";
 
 const activeStatuses = new Set(["confirmed"]);
 const activePayments = new Set(["paid", "partially refunded"]);
@@ -57,19 +58,37 @@ export async function loadBookingInbox(role, userId) {
     name: chat.peer_name || "Conversation",
     last_message: chat.last_message || "",
   }));
-  const chatNotifications = threads
-    .filter((chat) => Number(chat.unread) > 0)
-    .map((chat) => ({
-      id: `message-${chat.booking_id}-${chat.last_message || chat.unread}`,
+  // Notification read state is independent of conversation read state:
+  // opening Messages must not silently clear unclicked notification items.
+  const { data: incoming, error: incomingError } = await getSupabaseClient()
+    .from("messages")
+    .select(
+      "message_id,message_content,sent_at,conversations!inner(booking_id)",
+    )
+    .neq("sender_id", userId)
+    .order("sent_at", { ascending: false })
+    .limit(50);
+  if (incomingError)
+    throw new Error(
+      `Unable to load message notifications: ${incomingError.message}`,
+    );
+  const chatNotifications = (incoming || []).map((message) => {
+    const bookingId = String(message.conversations?.booking_id || "");
+    const name =
+      threads.find((t) => String(t.booking_id) === bookingId)?.name ||
+      (role === "tutor" ? "Learner" : "Tutor");
+    return {
+      id: `message-${bookingId}-${message.message_id}`,
       kind: "message",
       category: "Messages",
-      title: `New message from ${chat.name}`,
-      text: chat.last_message || "You have an unread booking message.",
-      time: chat.last_message_at || chat.session_date || "",
+      title: `New message from ${name}`,
+      text: message.message_content,
+      time: message.sent_at,
       view: "messages",
-      args: { bookingId: String(chat.booking_id), learner: chat.name },
-      bookingId: String(chat.booking_id),
-    }));
+      args: { bookingId, learner: name },
+      bookingId,
+    };
+  });
   const sessionNotifications = sessions
     .filter((session) => {
       const { status, payment } = sessionState(session, role);
@@ -110,6 +129,7 @@ export async function loadBookingInbox(role, userId) {
         "notification_id,title,message,notification_type,related_entity_type,related_entity_id,is_read,created_at",
       )
       .eq("user_id", userId)
+      .neq("notification_type", "activity_read_receipt")
       .order("created_at", { ascending: false })
       .limit(50);
     if (error)
@@ -155,6 +175,7 @@ export async function loadBookingInbox(role, userId) {
       };
     });
   }
+  const readIds = userId ? await loadActivityReadIds(userId) : new Set();
   return {
     threads,
     notifications: [
@@ -163,9 +184,11 @@ export async function loadBookingInbox(role, userId) {
       ...transfers,
       ...chatNotifications,
       ...sessionNotifications,
-    ].sort((left, right) =>
-      String(right.time).localeCompare(String(left.time)),
-    ),
+    ]
+      .map((item) => ({ ...item, read: !!item.read || readIds.has(item.id) }))
+      .sort((left, right) =>
+        String(right.time).localeCompare(String(left.time)),
+      ),
     sessions,
   };
 }

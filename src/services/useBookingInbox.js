@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
-import { readMessages } from "./bookingMessages.js";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { persistNotificationRead } from "./notificationReadState.js";
 import { loadBookingInbox } from "./bookingInbox.js";
-import { getSupabaseClient } from "./supabaseClient.js";
 
 export default function useBookingInbox(role, userId) {
   const [feed, setFeed] = useState({ notifications: [], threads: [] });
   const [readIds, setReadIds] = useState([]);
   const [error, setError] = useState("");
+  const account = useRef(userId);
+  account.current = userId;
 
   useEffect(() => {
     setReadIds([]);
@@ -31,12 +32,21 @@ export default function useBookingInbox(role, userId) {
         if (live) setError(cause.message || "Unable to load your inbox.");
       }
     };
+    const changed = (event) => {
+      if (event.detail?.userId === userId)
+        setReadIds((current) => [
+          ...new Set([...current, ...event.detail.ids]),
+        ]);
+      load();
+    };
+    window.addEventListener("campustutor:notifications-changed", changed);
     load();
     const timer = setInterval(load, 15000);
     window.addEventListener("focus", load);
     window.addEventListener("campustutor:sessions-changed", load);
     return () => {
       live = false;
+      window.removeEventListener("campustutor:notifications-changed", changed);
       clearInterval(timer);
       window.removeEventListener("focus", load);
       window.removeEventListener("campustutor:sessions-changed", load);
@@ -51,28 +61,23 @@ export default function useBookingInbox(role, userId) {
       const selected = feed.notifications.filter((item) =>
         ids.includes(item.id),
       );
+      if (!userId || !selected.length) return false;
       const messageIds = selected
         .filter((item) => item.kind === "message")
         .map((item) => item.bookingId);
       try {
-        const storedIds = selected
-          .filter((item) => item.kind === "database")
-          .map((item) => item.notificationId);
-        if (storedIds.length) {
-          const { error } = await getSupabaseClient()
-            .from("notifications")
-            .update({ is_read: true })
-            .eq("user_id", userId)
-            .in("notification_id", storedIds);
-          if (error) throw error;
-        }
-        await Promise.all(
-          messageIds.map((bookingId) => readMessages(bookingId)),
-        );
+        await persistNotificationRead(userId, selected);
+        if (account.current !== userId) return false;
       } catch (cause) {
-        setError(cause.message || "Unable to mark booking messages as read.");
-        return;
+        setError(cause.message || "Unable to mark notification as read.");
+        return false;
       }
+      setError("");
+      window.dispatchEvent(
+        new CustomEvent("campustutor:notifications-changed", {
+          detail: { userId, ids },
+        }),
+      );
       setReadIds((current) => [...new Set([...current, ...ids])]);
       if (messageIds.length) {
         const readBookings = new Set(messageIds.map(String));
@@ -85,6 +90,7 @@ export default function useBookingInbox(role, userId) {
           ),
         }));
       }
+      return true;
     },
     [feed.notifications, userId],
   );
