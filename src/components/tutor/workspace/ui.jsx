@@ -3,12 +3,12 @@ import "./tutor-modals.css";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 export const button =
-  "portal-button rounded-md border border-green-700 px-3 py-2 text-sm font-semibold text-green-800 hover:bg-green-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400";
+  "rounded-md border border-green-700 px-2.5 py-1.5 text-xs font-semibold text-green-800 hover:bg-green-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400";
 export const primary =
   button.replace("text-green-800", "text-white") +
   " bg-green-800 hover:bg-green-900";
 export const input =
-  "portal-input w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-[#253455]";
+  "w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-[#253455]";
 export function Badge({ children }) {
   return (
     <span
@@ -23,7 +23,7 @@ export function Avatar({ name, userId }) {
 }
 export function Panel({ title, children, action }) {
   return (
-    <section className="portal-panel rounded-lg border border-slate-200 bg-white p-4">
+    <section className="rounded-lg border border-slate-200 bg-white p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="text-sm font-bold">{title}</h2>
         {action}
