@@ -22,8 +22,8 @@ export function ReportProgress({ row, about = false }) {
       : row.decision
         ? 2
         : 1
-    : stage === "OSLD Review" && !row.case
-      ? steps.indexOf("Referred to OSLD")
+    : stage === "OSAS Review" && !row.case
+      ? steps.indexOf("Referred to OSAS")
       : Math.max(1, steps.indexOf(stage));
   return (
     <ol className="mr-progress" aria-label="Review progress">
@@ -61,7 +61,7 @@ export function CompletionFormPreview({ row, student, onClose }) {
   }
   return (
     <Modal
-      title="OSLD Completion Form"
+      title="OSAS Completion Form"
       className="mr-completion-modal"
       onClose={onClose}
       footer={
@@ -77,7 +77,7 @@ export function CompletionFormPreview({ row, student, onClose }) {
       }
     >
       <iframe
-        title="OSLD Completion Form preview"
+        title="OSAS Completion Form preview"
         sandbox=""
         srcDoc={completionFormHtml(row, student)}
         className="mr-form-preview"
@@ -101,7 +101,7 @@ export function ReportConditions({ row, student, details = false }) {
             <p>
               {row.decision.notes ||
                 row.decision.basis ||
-                "Contact OSLD for the recorded decision basis."}
+                "Contact OSAS for the recorded decision basis."}
             </p>
           </div>
         )}
@@ -132,7 +132,7 @@ export function ReportConditions({ row, student, details = false }) {
             <p className="mr-muted">Due: {reportDate(row.decision.due)}</p>
           )}
           <p className="mr-muted">
-            OSLD updates this list after verifying compliance.
+            OSAS updates this list after verifying compliance.
           </p>
         </div>
       </div>
@@ -141,7 +141,7 @@ export function ReportConditions({ row, student, details = false }) {
           <div className="mr-form-heading">
             <h3>
               <FileText size={15} />
-              OSLD Completion Form
+              OSAS Completion Form
             </h3>
             <span className="mr-detail-status">
               {completionFormStatus(row)}
@@ -156,7 +156,7 @@ export function ReportConditions({ row, student, details = false }) {
               <b>Complete and sign</b> it after meeting the recorded conditions.
             </li>
             <li>
-              <b>Submit in person</b> to OSLD for verification.
+              <b>Submit in person</b> to OSAS for verification.
             </li>
           </ol>
           <div className="mr-form-actions">
@@ -170,7 +170,7 @@ export function ReportConditions({ row, student, details = false }) {
             </button>
             <span className="mr-muted">
               <Info size={13} className="mr-1 inline" />
-              Submitted face to face at the OSLD office, not online.
+              Submitted face to face at the OSAS office, not online.
             </span>
           </div>
           <small>
@@ -196,10 +196,10 @@ export function AboutCaseDetails({ row, student, onClose }) {
   return (
     <Modal
       title={`CASE-${row.case_id} - ${row.incident_type}`}
-      headerLabel="Report about you - OSLD case"
+      headerLabel="Report about you - OSAS case"
       headerAside={
         <span
-          className={`mr-detail-status ${blocked ? "is-blocked" : stage === "Resolved" ? "is-resolved" : "is-osld"}`}
+          className={`mr-detail-status ${blocked ? "is-blocked" : stage === "Resolved" ? "is-resolved" : "is-osas"}`}
         >
           {stage}
         </span>
@@ -228,10 +228,10 @@ export function AboutCaseDetails({ row, student, onClose }) {
               <dt>Case opened</dt>
               <dd>{reportDate(row.opened_at)}</dd>
               <dt>Reporter</dt>
-              <dd>Kept confidential by OSLD</dd>
+              <dd>Kept confidential by OSAS</dd>
               <dt>Case officer</dt>
               <dd>
-                {row.officer || "OSLD"}
+                {row.officer || "OSAS"}
                 {row.officer_email && (
                   <>
                     {" "}
@@ -251,7 +251,7 @@ export function AboutCaseDetails({ row, student, onClose }) {
               <dd>
                 {row.decision?.outcome ||
                   row.resolution ||
-                  "Pending - OSLD has not recorded a decision"}
+                  "Pending - OSAS has not recorded a decision"}
               </dd>
               {row.decision?.at && (
                 <>
@@ -313,7 +313,7 @@ export function AboutCaseDetails({ row, student, onClose }) {
         <p className="mr-info">
           <Info size={14} />
           {blocked
-            ? "Questions about this decision go to the OSLD office. Kasangga does not share the reporter's statement with you."
+            ? "Questions about this decision go to the OSAS office. Kasangga does not share the reporter's statement with you."
             : reportNotice(row, true)}
         </p>
       </div>

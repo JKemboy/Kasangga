@@ -27,7 +27,7 @@ test("filed report stages follow actual Admin/referral/completion records", () =
       report_status: "under_review",
       osas_referral_status: "referred",
     }),
-    "OSLD Review",
+    "OSAS Review",
   );
   assert.equal(reportStage({ case: { resolved: true } }), "Resolved");
   assert.equal(
@@ -66,7 +66,7 @@ test("About Me filters and progress follow the case view", () => {
     "Resolved",
   ]);
   assert.deepEqual(reportSteps({}, true), [
-    "Referred to OSLD",
+    "Referred to OSAS",
     "Case Review",
     "Decision Recorded",
     "Resolved",
@@ -110,7 +110,7 @@ test("reporter-facing outcome notice contains no other student's sanction", () =
   assert.ok(!notice.includes("Written Warning"));
   assert.ok(notice.includes("confidential"));
 });
-test("Admin-only reports have three steps and no OSLD phase", () => {
+test("Admin-only reports have three steps and no OSAS phase", () => {
   assert.deepEqual(reportSteps({ osas_referral_status: "not_referred" }), [
     "Submitted",
     "Admin Review",
@@ -119,8 +119,8 @@ test("Admin-only reports have three steps and no OSLD phase", () => {
   assert.deepEqual(reportSteps({ osas_referral_status: "referred" }), [
     "Submitted",
     "Admin Review",
-    "Referred to OSLD",
-    "OSLD Review",
+    "Referred to OSAS",
+    "OSAS Review",
     "Resolved",
   ]);
   assert.ok(
@@ -143,16 +143,16 @@ test("referred reports distinguish waiting for assessment from an opened case", 
     referred_at: "2026-10-24T08:00:00Z",
   };
   assert.equal(reportSteps(referred).length, 5);
-  assert.ok(reportNotice(referred).includes("awaiting OSLD assessment"));
+  assert.ok(reportNotice(referred).includes("awaiting OSAS assessment"));
   const opened = {
     ...referred,
     case: { case_id: 17, opened_at: "2026-10-25T08:00:00Z" },
   };
-  assert.ok(reportNotice(opened).includes("OSLD is reviewing this case"));
+  assert.ok(reportNotice(opened).includes("OSAS is reviewing this case"));
   assert.ok(reportNotice(opened).includes("other student are kept private"));
   assert.ok(
     reportActivity(opened).some(
-      (event) => event.title === "OSLD opened CASE-17 for review",
+      (event) => event.title === "OSAS opened CASE-17 for review",
     ),
   );
 });
@@ -204,7 +204,7 @@ test("completion form escapes case data and never claims submission", () => {
   assert.ok(html.includes("CASE-7"));
   assert.ok(html.includes("Student &amp; Name"));
   assert.ok(!html.includes("<script>"));
-  assert.ok(html.includes("Pending OSLD verification"));
+  assert.ok(html.includes("Pending OSAS verification"));
   assert.ok(html.includes("does not mark any condition completed"));
   assert.throws(
     () => completionFormHtml({ case_id: 7 }),

@@ -232,7 +232,7 @@ export default function OsasPolicies({
           onChange={(e) => change(setOwner, e.target.value)}
         >
           <option value="">All Document Owners</option>
-          {["OSLD", "System"].map((o) => (
+          {["OSAS", "System"].map((o) => (
             <option key={o}>{o}</option>
           ))}
         </select>

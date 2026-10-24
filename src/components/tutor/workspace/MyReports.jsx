@@ -99,7 +99,7 @@ export function ReportDetails({ row, about, student, go, onClose }) {
       }
       headerAside={
         <span
-          className={`mr-detail-status ${stage === "Resolved" ? "is-resolved" : stage === "OSLD Review" ? "is-osld" : ""}`}
+          className={`mr-detail-status ${stage === "Resolved" ? "is-resolved" : stage === "OSAS Review" ? "is-osas" : ""}`}
         >
           {stage}
         </span>
@@ -149,18 +149,18 @@ export function ReportDetails({ row, about, student, go, onClose }) {
               )}
               {!about && !adminOnly && (
                 <>
-                  <dt>OSLD case</dt>
+                  <dt>OSAS case</dt>
                   <dd>
                     {row.case?.case_id
                       ? `CASE-${row.case.case_id}`
-                      : "Awaiting OSLD assessment"}
+                      : "Awaiting OSAS assessment"}
                   </dd>
                 </>
               )}
               {about && (
                 <>
                   <dt>Case officer</dt>
-                  <dd>{row.officer || "OSLD"}</dd>
+                  <dd>{row.officer || "OSAS"}</dd>
                   <dt>Decision</dt>
                   <dd>
                     {row.decision?.outcome ||
@@ -195,7 +195,7 @@ export function ReportDetails({ row, about, student, go, onClose }) {
                       !about
                         ? adminOnly
                           ? "For Admin review"
-                          : "For Admin and OSLD review"
+                          : "For Admin and OSAS review"
                         : undefined
                     }
                   />
@@ -339,7 +339,7 @@ export default function MyReports({ go, args = {} }) {
         <div>
           <h1>My Reports</h1>
           <p>
-            Reports you filed, and OSLD cases where you are the reported
+            Reports you filed, and OSAS cases where you are the reported
             student.
           </p>
         </div>
@@ -375,8 +375,8 @@ export default function MyReports({ go, args = {} }) {
       <p className="mr-info">
         <ShieldCheck size={14} />
         {about
-          ? "Cases about you appear here once a formal case is opened by OSLD. The reporter's identity and statement are handled by OSLD."
-          : "Admin reviews every report first. Conduct matters are referred to OSLD. You can track review status and completion; actions against another student remain confidential."}
+          ? "Cases about you appear here once a formal case is opened by OSAS. The reporter's identity and statement are handled by OSAS."
+          : "Admin reviews every report first. Conduct matters are referred to OSAS. You can track review status and completion; actions against another student remain confidential."}
       </p>
       <div className="mr-toolbar">
         <nav className="mr-tabs" aria-label="Report status">
@@ -452,7 +452,7 @@ export default function MyReports({ go, args = {} }) {
                       </h3>
                       <p>
                         {about && stage === "Clearance Blocked"
-                          ? `${row.incident_type}${row.decision?.at ? ` - decision recorded ${reportDate(row.decision.at)}` : ""} by OSLD${row.officer ? ` (${row.officer})` : ""}`
+                          ? `${row.incident_type}${row.decision?.at ? ` - decision recorded ${reportDate(row.decision.at)}` : ""} by OSAS${row.officer ? ` (${row.officer})` : ""}`
                           : about
                             ? `From report IR-${row.report_id} · case opened ${reportDate(row.opened_at)}`
                             : `IR-${row.report_id} · filed ${reportDate(row.submitted_at)} as ${row.filing_role}`}
@@ -503,7 +503,7 @@ export default function MyReports({ go, args = {} }) {
                     <p>
                       <Info size={13} />
                       {about && stage === "Clearance Blocked"
-                        ? `Questions? Visit the OSLD office${row.officer_email ? ` or email ${row.officer_email}` : ""}.`
+                        ? `Questions? Visit the OSAS office${row.officer_email ? ` or email ${row.officer_email}` : ""}.`
                         : reportNotice(row, about)}
                     </p>
                     <button
