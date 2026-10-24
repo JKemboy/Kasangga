@@ -133,6 +133,7 @@ function OsasDashboardContent() {
 
   const navigate = useNavigate();
   const [view, setView] = useSectionNavigation(osasSections, "Overview");
+  const [overviewCaseFilter, setOverviewCaseFilter] = useState({});
   useEffect(() => {
     const open = () => setView("Case Archive");
     window.addEventListener("campustutor:open-case-archive", open);
@@ -489,6 +490,13 @@ function OsasDashboardContent() {
             settings it needs; mutations go through OsasDatabaseContext RPCs. */}
         {view === "Overview" ? (
           <OsasOverview
+            onNavigate={(section, filter) => {
+              setGlobal("");
+              setOverviewCaseFilter(filter);
+              if (section === "Student Clearance Review")
+                setStatus("Pending Review");
+              setView(section);
+            }}
             onReports={() => setView("Reports & Analytics")}
             rows={rows}
             settings={settings}
@@ -531,6 +539,7 @@ function OsasDashboardContent() {
             "Evidence Validation",
           ].includes(view) ? (
           <OsasCaseWorkspace
+            initialFilter={overviewCaseFilter}
             settings={settings}
             searchQuery={global}
             onSearchChange={setGlobal}

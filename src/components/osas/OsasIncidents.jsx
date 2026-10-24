@@ -64,6 +64,7 @@ export default function OsasIncidents({
   embedded = false,
   searchQuery,
   onSearchChange,
+  initialFilter = {},
 }) {
   const database = useOsasDatabase();
   const cases = database.records?.cases || [];
@@ -75,7 +76,10 @@ export default function OsasIncidents({
     [query, setQuery] = useState(initialQuery),
     [type, setType] = useState(""),
     [date, setDate] = useState(""),
-    [status, setStatus] = useState(""),
+    [status, setStatus] = useState(initialFilter.status || ""),
+    [pendingEvidence, setPendingEvidence] = useState(
+      !!initialFilter.pendingEvidence,
+    ),
     [scope, setScope] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
@@ -100,6 +104,10 @@ export default function OsasIncidents({
   const monthly = monitoring.filter((r) => !month || r.date.startsWith(month));
   const filtered = monthly.filter(
     (r) =>
+      (!pendingEvidence ||
+        (database.records?.evidence || []).some(
+          (e) => e.caseId === r.caseId && e.status !== "Validated",
+        )) &&
       scopeMatches(r, scope) &&
       (!type || r.type === type) &&
       (!date || r.date === date) &&
@@ -139,6 +147,7 @@ export default function OsasIncidents({
     setDate("");
     setStatus("");
     setScope("");
+    setPendingEvidence(false);
     setPage(1);
     setMonth("");
     setNotice("");

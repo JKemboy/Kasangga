@@ -26,6 +26,7 @@ export default function OsasOverview({
   onCase,
   onClearance,
   onReports,
+  onNavigate,
 }) {
   const database = useOsasDatabase();
   const caseRows = database.records?.cases || [];
@@ -43,12 +44,7 @@ export default function OsasOverview({
   const saveCase = database.saveCase;
   const records = rows.filter((r) => !month || r.requested.startsWith(month));
   const cases = caseRows
-    .filter(
-      (r) =>
-        !r.archived &&
-        r.status !== "Resolved" &&
-        (!month || r.date.startsWith(month)),
-    )
+    .filter((r) => !r.archived && (!month || r.date.startsWith(month)))
     .map((r) => ({
       ...r,
       name: r.student,
@@ -60,7 +56,7 @@ export default function OsasOverview({
   const evidence = (database.records?.evidence || [])
     .filter(
       (e) =>
-        cases.some((c) => c.caseId === e.caseId) && e.status !== "Validated",
+        open.some((c) => c.caseId === e.caseId) && e.status !== "Validated",
     )
     .map((e) => ({ ...e, name: e.evidenceType, caseStatus: e.status }));
   const review = cases.filter((r) => r.caseStatus === "Under Review");
@@ -162,7 +158,20 @@ export default function OsasOverview({
             aria-pressed={selectedMetric === title}
             onClick={() => {
               setSelectedMetric(title);
-              show(title, items, title === "Clearance Reviews");
+              const target = {
+                "Open Cases": ["Case Review", {}],
+                "Pending Evidence Review": [
+                  "Case Review",
+                  { pendingEvidence: true },
+                ],
+                "Cases Under Review": [
+                  "Case Review",
+                  { status: "Under Review" },
+                ],
+                "Clearance Reviews": ["Student Clearance Review", {}],
+                "Resolved Cases": ["Case Archive", {}],
+              }[title];
+              onNavigate(...target);
             }}
           >
             <span style={{ background: color }}>
@@ -180,7 +189,7 @@ export default function OsasOverview({
         <section className="oo-card oo-recent">
           <div className="oo-title">
             <h2>Recent Cases</h2>
-            <button onClick={() => show("All Cases", cases)}>
+            <button onClick={() => onNavigate("Case Review", {})}>
               View all cases <ArrowRight size={14} />
             </button>
           </div>

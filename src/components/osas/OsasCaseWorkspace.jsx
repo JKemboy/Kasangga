@@ -3,6 +3,7 @@ export default function OsasCaseWorkspace({
   settings,
   searchQuery = "",
   onSearchChange,
+  initialFilter,
 }) {
   return (
     <OsasIncidents
@@ -10,6 +11,7 @@ export default function OsasCaseWorkspace({
       searchQuery={searchQuery}
       onSearchChange={onSearchChange}
       embedded
+      initialFilter={initialFilter}
     />
   );
 }
