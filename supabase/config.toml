@@ -429,3 +429,9 @@ entrypoint = "./functions/create-payment/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/paymongo-webhook/index.ts"
+
+[functions.transactional-emails]
+enabled = true
+# The worker validates its own private x-email-worker-secret header.
+verify_jwt = false
+entrypoint = "./functions/transactional-emails/index.ts"
