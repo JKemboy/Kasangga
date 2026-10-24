@@ -1,13 +1,18 @@
 export const filedStages = ["Admin Review", "OSLD Review", "Resolved"];
-export const aboutStages = [
-  "Clearance Blocked",
-  "Under Review",
-  "Awaiting Completion",
-  "Resolved",
-];
+export const reportDate = (value) =>
+  value
+    ? new Date(
+        value.length === 10 ? value + "T12:00:00+08:00" : value,
+      ).toLocaleString("en-PH", {
+        timeZone: "Asia/Manila",
+        dateStyle: "medium",
+        ...(value.length > 10 ? { timeStyle: "short" } : {}),
+      })
+    : "Not recorded";
+export const aboutStages = ["Clearance Blocked", "Under Review", "Resolved"];
 export function reportSteps(report, about = false) {
   if (about)
-    return ["Case Opened", "OSLD Review", "Decision Recorded", "Resolved"];
+    return ["Referred to OSLD", "Case Review", "Decision Recorded", "Resolved"];
   const referred =
     report.case ||
     report.referred_at ||
@@ -41,8 +46,7 @@ export function reportStage(report, about = false) {
   if (about) {
     if (report.holds?.some((hold) => hold.status === "active"))
       return "Clearance Blocked";
-    if (report.decision?.condition && !report.decision.condition_done)
-      return "Awaiting Completion";
+    if (caseConditions(report).some((c) => !c.completed)) return "Under Review";
     return report.case_status === "resolved" || report.archived_at
       ? "Resolved"
       : "Under Review";
@@ -63,11 +67,11 @@ export function reportNotice(report, about = false) {
   if (about) {
     if (stage === "Clearance Blocked")
       return "An active clearance hold is recorded for this case. Follow the recorded conditions and contact OSLD for verification and release.";
-    if (stage === "Awaiting Completion")
+    if (caseConditions(report).some((c) => !c.completed))
       return "A decision is recorded. Complete the conditions below; OSLD updates their completion status.";
     if (stage === "Resolved")
-      return "The case review is completed. Your recorded outcome is shown below.";
-    return "OSLD is reviewing this case. A report is an allegation; no decision has been recorded unless shown here.";
+      return `${report.decision?.outcome === "No Violation" ? "Resolved with no violation." : "The case review is completed."} ${caseClearanceText(report)}.`;
+    return `OSLD is reviewing this case. ${caseClearanceText(report)}.${report.response_request?.due ? ` Your requested response is due ${reportDate(report.response_request.due)}.` : ""}`;
   }
   if (stage === "Resolved")
     return adminOnlyReport(report)
@@ -88,6 +92,7 @@ export function reportNotice(report, about = false) {
 export function reportActivity(report, about = false) {
   const events = about
     ? [
+        { title: "Referred to OSLD by Kasangga Admin", at: report.referred_at },
         { title: "Formal case opened by OSLD", at: report.opened_at },
         ...(report.activity || [])
           .filter((a) => a.type !== "opened")
@@ -95,7 +100,9 @@ export function reportActivity(report, about = false) {
             title:
               {
                 status: "Case review status updated",
-                decision: "Decision recorded",
+                decision: report.decision?.outcome
+                  ? `Decision recorded: ${report.decision.outcome}`
+                  : "Decision recorded",
                 condition: "Conditions marked completed",
                 archive: "Case archived",
                 archive_insufficient: "Case closed without a finding",
@@ -137,8 +144,66 @@ const escape = (v) =>
         c
       ],
   );
+export function caseConditions(record) {
+  const decision = record.decision;
+  if (Array.isArray(decision?.conditions) && decision.conditions.length)
+    return decision.conditions
+      .filter((c) => c.text)
+      .map((c) => ({
+        text: c.text,
+        completed: decision.condition_done === true || c.completed === true,
+        completed_at:
+          c.completed_at ||
+          (decision.condition_done ? decision.completed_at : null),
+      }));
+  return decision?.condition
+    ? [
+        {
+          text: decision.condition,
+          completed: decision.condition_done === true,
+          completed_at: decision.completed_at,
+        },
+      ]
+    : [];
+}
+export function caseClearanceText(record) {
+  if (record.holds?.some((h) => h.status === "active"))
+    return "An active clearance hold is recorded for this case";
+  if (record.holds?.some((h) => h.status === "released"))
+    return "The recorded clearance hold has been released";
+  if (record.decision?.clearance_effect === "hold_recommended")
+    return "A hold is recommended; no active clearance hold is recorded";
+  return "No clearance hold is recorded for this case";
+}
+export function completionFormStatus(record) {
+  const form = record.decision?.completion_form;
+  return form?.verified_at
+    ? "Verified by OSLD"
+    : form?.submitted_at
+      ? "Submission recorded"
+      : "Submission not recorded";
+}
 export function completionFormHtml(record, student = {}) {
   if (!record.case_id || !record.decision)
     throw new Error("No recorded decision is available for this form.");
-  return `<!doctype html><html><head><meta charset="utf-8"><title>CASE-${escape(record.case_id)} Completion Form</title><style>body{font:14px Arial,sans-serif;line-height:1.6;max-width:800px;margin:40px auto;padding:20px}h1{font-size:22px;color:#075b35}section{border:1px solid #ccc;padding:16px;margin:16px 0}label{display:block;margin-top:36px}@media print{body{margin:0}}</style></head><body><h1>OSLD Case Completion Form</h1><p>Generated from the Kasangga case record. OSLD verifies completion in person.</p><section><p>Case: CASE-${escape(record.case_id)}</p><p>Student: ${escape(student.name)}</p><p>Student ID: ${escape(student.student_id || "Not recorded")}</p><p>Issue: ${escape(record.incident_type)}</p><p>Decision: ${escape(record.decision.outcome)}</p></section><section><h2>Recorded condition</h2><p>${escape(record.decision.condition || "No condition recorded")}</p><p>Due: ${escape(record.decision.due || "Not recorded")}</p><p>Recorded status: ${record.decision.condition_done ? "Completed" : "Pending OSLD verification"}</p></section><label>Student signature: __________________________ Date: ______________</label><label>Verified by OSLD: __________________________ Date: ______________</label><p>Complete and sign this form, then submit it in person to the OSLD office. Downloading this form does not mark any condition completed or release a clearance hold.</p></body></html>`;
+  const table = (rows) =>
+    `<table>${rows.map(([label, value]) => `<tr><th>${escape(label)}</th><td>${escape(value || "Not recorded")}</td></tr>`).join("")}</table>`;
+  const conditions = caseConditions(record);
+  return `<!doctype html><html><head><meta charset="utf-8"><title>CASE-${escape(record.case_id)} Completion Form</title><style>body{font:12px Arial,sans-serif;line-height:1.6;max-width:800px;margin:24px auto;padding:16px;color:#111}h1{font-size:20px;margin-top:0}h2{font-size:14px;margin-top:22px;border-bottom:1px solid #777}table{border-collapse:collapse;width:100%}th,td{border:1px solid #aaa;padding:7px;text-align:left;vertical-align:top}th{width:30%;background:#f3f5f4;font-weight:normal}.signatures{display:flex;gap:30px;margin-top:65px}.signatures>div{flex:1;text-align:center;border-top:1px solid #111;padding-top:8px}small{color:#555}@media print{body{margin:0}}</style></head><body><small>Caraga State University - Office of Student Leadership and Development</small><h1>OSLD Completion Form</h1><h2>Case</h2>${table(
+    [
+      ["Case ID", `CASE-${record.case_id}`],
+      ["Incident Report ID", `IR-${record.report_id}`],
+      ["Decision", record.decision.outcome],
+      ["Recorded", record.decision.at],
+      ["Concern", record.incident_type],
+    ],
+  )}<h2>Student</h2>${table([
+    ["Full Name", student.name],
+    ["Student ID", student.student_id],
+    [
+      "College / Program",
+      [student.college, student.program].filter(Boolean).join(" - "),
+    ],
+    ["CarSU Email", student.email],
+  ])}<h2>Conditions Completed</h2>${conditions.length ? conditions.map((c) => `<p>${c.completed ? "[x]" : "[ ]"} ${escape(c.text)} &nbsp; Date completed: ${escape(c.completed_at || "________________")}</p>`).join("") : "<p>No completion condition is recorded.</p>"}<p>Recorded status: ${conditions.every((c) => c.completed) && conditions.length ? "Completed" : "Pending OSLD verification"}</p><h2>Student Statement</h2><p>I confirm that I have completed the conditions above.</p><p>________________________________________________________________________</p><p>________________________________________________________________________</p><div class="signatures"><div>Student Signature over Printed Name / Date</div><div>OSLD Case Officer Signature / Date</div></div><p>Submit the signed form in person to OSLD for verification. Downloading this form does not mark any condition completed or release a clearance hold.</p><small>Generated from the recorded case details. Submission status: ${escape(completionFormStatus(record))}.</small></body></html>`;
 }
