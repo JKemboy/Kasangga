@@ -1,0 +1,17 @@
+/* Compact live counts; leave each portal's original layout and typography intact. */
+.portal-count-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #facc15;
+  color: #123c26;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
