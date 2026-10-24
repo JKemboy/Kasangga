@@ -127,7 +127,7 @@ export default function OsasSettings({ settings, onSave }) {
       setError(cause.message);
     }
   }
-  function locked(label, value) {
+  function locked(label, value, hint) {
     return (
       <label className="os-field">
         <span>{label}</span>
@@ -135,7 +135,7 @@ export default function OsasSettings({ settings, onSave }) {
           <input value={value} readOnly disabled aria-label={label} />
           <LockKeyhole size={12} />
         </div>
-        {draft.tips && <small>Managed by authorized administration.</small>}
+        {(hint || draft.tips) && <small>{hint || "Managed by authorized administration."}</small>}
       </label>
     );
   }
@@ -176,7 +176,11 @@ export default function OsasSettings({ settings, onSave }) {
             {locked("Position / Role", "OSAS Case Officer")}
             {locked(
               "Employee / Staff ID",
-              auth?.profile?.student_id || "Not assigned",
+              auth?.profile?.student_id ||
+                (auth?.user?.id ? `OSAS-${auth.user.id.toUpperCase()}` : "Loading account ID…"),
+              !auth?.profile?.student_id
+                ? "System-generated account identifier; not an official CSU employee number."
+                : undefined,
             )}
             {locked(
               "Office / Department",
