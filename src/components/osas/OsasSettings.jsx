@@ -1,6 +1,5 @@
 // OSAS Settings: keeps edits as a draft until Save Changes, then delegates to the OSAS Supabase RPC and refresh flow.
 import PortalAvatar from "../shared/PortalAvatar.jsx";
-import SecurityFlow from "../shared/SecurityFlow.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import { useEffect, useState } from "react";
 import {
@@ -12,9 +11,8 @@ import {
   Save,
   Settings,
   CalendarDays,
-  Info,
 } from "lucide-react";
-import { Modal, input, button, primary } from "../tutor/workspace/ui.jsx";
+import { input, button, primary } from "../tutor/workspace/ui.jsx";
 
 const notificationTypes = [
   "New Case Referral",
@@ -87,8 +85,7 @@ export default function OsasSettings({ settings, onSave }) {
   const auth = useAuth();
   const [draft, setDraft] = useState(() => normalizeSettings(settings)),
     [notice, setNotice] = useState(""),
-    [error, setError] = useState(""),
-    [security, setSecurity] = useState(null);
+    [error, setError] = useState("");
   // Draft edits stay in memory until the user confirms Save Changes; refreshes
   // replace the draft with settings returned from Supabase.
   useEffect(() => {
@@ -135,7 +132,9 @@ export default function OsasSettings({ settings, onSave }) {
           <input value={value} readOnly disabled aria-label={label} />
           <LockKeyhole size={12} />
         </div>
-        {(hint || draft.tips) && <small>{hint || "Managed by authorized administration."}</small>}
+        {(hint || draft.tips) && (
+          <small>{hint || "Managed by authorized administration."}</small>
+        )}
       </label>
     );
   }
@@ -147,7 +146,7 @@ export default function OsasSettings({ settings, onSave }) {
             Settings <Settings size={22} className="text-green-800" />
           </h1>
           <p>
-            Manage your OSAS account, notification, security, and interface
+            Manage your OSAS account, notification, and interface
             preferences.
           </p>
         </div>
@@ -177,7 +176,9 @@ export default function OsasSettings({ settings, onSave }) {
             {locked(
               "Employee / Staff ID",
               auth?.profile?.student_id ||
-                (auth?.user?.id ? `OSAS-${auth.user.id.toUpperCase()}` : "Loading account ID…"),
+                (auth?.user?.id
+                  ? `OSAS-${auth.user.id.toUpperCase()}`
+                  : "Loading account ID…"),
               !auth?.profile?.student_id
                 ? "System-generated account identifier; not an official CSU employee number."
                 : undefined,
@@ -243,35 +244,8 @@ export default function OsasSettings({ settings, onSave }) {
         </section>
         <section className="os-card">
           <h2>
-            <ShieldCheck />
-            3. Security
-          </h2>
-          <div className="os-security-row">
-            <b>Two-Factor Authentication</b>
-            <span className="text-slate-500">Not connected</span>
-            <button
-              type="button"
-              className={button}
-              onClick={() => setSecurity("Manage Security")}
-            >
-              <ShieldCheck size={13} />
-              Manage Security
-            </button>
-          </div>
-          <div className="os-security-row">
-            <b>Recent Login</b>
-            <span>Unavailable until configured</span>
-          </div>
-          <p className="os-help flex items-center gap-2">
-            <Info size={13} />
-            An authenticator app generates a 6-digit code for additional sign-in
-            verification. Use Manage Security to set it up and verify the code.
-          </p>
-        </section>
-        <section className="os-card">
-          <h2>
             <SlidersHorizontal />
-            4. Interface Preferences
+            3. Interface Preferences
           </h2>
           <div className="os-interface">
             <div>
@@ -400,11 +374,6 @@ export default function OsasSettings({ settings, onSave }) {
         >
           {error || notice}
         </p>
-      )}
-      {security && (
-        <Modal title={security} onClose={() => setSecurity(null)}>
-          <SecurityFlow mode={security} onClose={() => setSecurity(null)} />
-        </Modal>
       )}
     </form>
   );
