@@ -60,12 +60,12 @@ export default function HeaderInbox({
     };
   }, [panel]);
   const isRead = (n) => n.read || read.includes(n.id);
-  function mark(items) {
+  async function mark(items) {
     if (onRead) {
-      onRead(items.map((n) => n.id));
-      return;
+      return (await onRead(items.map((n) => n.id))) !== false;
     }
     setRead((current) => [...new Set([...current, ...items.map((n) => n.id)])]);
+    return true;
   }
   const unread = notifications.filter((n) => !isRead(n)).length;
   const unreadMessages = threads.reduce(
@@ -113,13 +113,7 @@ export default function HeaderInbox({
                   ? "Support messages"
                   : "Messages"}
             </strong>
-            {panel === "notifications" ? (
-              <button disabled={!unread} onClick={() => mark(notifications)}>
-                Mark all as read
-              </button>
-            ) : (
-              <span>From users</span>
-            )}
+            {panel !== "notifications" && <span>From users</span>}
           </header>
           {inboxError && <p role="alert">{inboxError}</p>}
           <div className="hi-list">
@@ -130,8 +124,8 @@ export default function HeaderInbox({
                     <button
                       className={`hi-item ${isRead(n) ? "" : "hi-unread"}`}
                       key={n.id}
-                      onClick={() => {
-                        mark([n]);
+                      onClick={async () => {
+                        if (!isRead(n) && !(await mark([n]))) return;
                         setPanel(null);
                         if (onNotification) onNotification(n);
                         else setDetail({ notification: n });

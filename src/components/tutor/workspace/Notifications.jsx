@@ -16,7 +16,6 @@ import {
   ChevronRight,
   CreditCard,
   FileCheck2,
-  MailCheck,
   MessageSquare,
   Search,
   ShieldAlert,
@@ -135,17 +134,9 @@ export default function Notifications({ data, update, go, args = {} }) {
     };
   }, []);
 
-  function markRead(id, read) {
-    if (read) {
-      const notification = notifications.find((item) => item.id === id);
-      if (notification) inbox.markRead([notification]);
-    }
-    update((d) => ({
-      ...d,
-      notifications: d.notifications.map((n) =>
-        n.id === id ? { ...n, read } : n,
-      ),
-    }));
+  async function markRead(id) {
+    const notification = notifications.find((item) => item.id === id);
+    return notification ? inbox.markRead([notification]) : false;
   }
 
   function clearFilters() {
@@ -181,26 +172,6 @@ export default function Notifications({ data, update, go, args = {} }) {
             {inbox.error}
           </p>
         )}
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-md border border-[#dce4f1] bg-white px-3 py-2 text-xs font-semibold text-[#001ca8] hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-default disabled:text-slate-400"
-          disabled={unreadCount === 0}
-          onClick={() => {
-            inbox.markRead(
-              notifications.filter((notification) => !notification.read),
-            );
-            update((d) => ({
-              ...d,
-              notifications: d.notifications.map((n) => ({
-                ...n,
-                read: true,
-              })),
-            }));
-          }}
-        >
-          <MailCheck className="h-4 w-4" />
-          Mark all as read
-        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -292,8 +263,8 @@ export default function Notifications({ data, update, go, args = {} }) {
                   type="button"
                   aria-label={`Open ${n.title}: ${n.text}`}
                   className={`grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-2 px-3 py-2 text-left transition-colors hover:bg-[#e8f4ed] focus-visible:relative focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green-700 lg:h-14 lg:grid-cols-[36px_minmax(0,1.35fr)_minmax(0,1fr)_142px_56px] lg:py-1.5 ${n.read ? "bg-white" : "bg-[#eff8f3]"}`}
-                  onClick={() => {
-                    if (!n.read) markRead(n.id, true);
+                  onClick={async () => {
+                    if (!n.read && (await markRead(n.id)) === false) return;
                     const target = notificationDestination(n);
                     if (target) go(target.view, target.args);
                     else setSelectedId(n.id);
@@ -415,13 +386,6 @@ export default function Notifications({ data, update, go, args = {} }) {
               {selected.detail}
             </p>
             <div className="flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                className={button}
-                onClick={() => markRead(selected.id, !selected.read)}
-              >
-                {selected.read ? "Mark as unread" : "Mark as read"}
-              </button>
               {destination && (
                 <button
                   type="button"

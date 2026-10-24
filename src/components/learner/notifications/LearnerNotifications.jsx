@@ -41,7 +41,6 @@ export default function LearnerNotifications() {
   const [activeFilter, setActiveFilter] = useState("All Notifications");
   const [expandedId, setExpandedId] = useState(null);
   const visibleItems = filterNotifications(items, activeFilter);
-  const unreadCount = filterNotifications(items, "Unread").length;
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-3 lg:px-5">
       <h1 className="text-2xl font-bold tracking-[-1px] text-[#101828]">
@@ -95,9 +94,13 @@ export default function LearnerNotifications() {
                   type="button"
                   aria-expanded={expandedId === id}
                   aria-label={`${title}, ${unread ? "unread" : "read"}`}
-                  onClick={() => {
+                  onClick={async () => {
                     const notification = items.find((item) => item.id === id);
-                    if (notification) inbox.markRead([notification]);
+                    if (
+                      notification &&
+                      (await inbox.markRead([notification])) === false
+                    )
+                      return;
                     setExpandedId((current) => (current === id ? null : id));
                     if (notification?.view === "messages")
                       work.message({
@@ -184,23 +187,6 @@ export default function LearnerNotifications() {
                 </button>
               ))}
             </div>
-          </section>
-          <section className="rounded-lg border border-[#e1e7ef] bg-white p-3">
-            <h2 className="text-sm font-bold">Mark as Read</h2>
-            <p className="mt-2 text-xs text-[#637191]">
-              Mark all notifications as read.
-            </p>
-            <button
-              type="button"
-              disabled={unreadCount === 0}
-              onClick={() =>
-                inbox.markRead(items.filter((item) => item.unread))
-              }
-              className="disabled:cursor-not-allowed disabled:opacity-50 mt-2 flex h-7 w-full items-center justify-center gap-2 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
-            >
-              <Mail className="h-4 w-4" />
-              Mark All as Read
-            </button>
           </section>
         </aside>
       </div>
