@@ -80,7 +80,9 @@ export default function CaseShortcut({
   allowEvidenceValidation =
     allowEvidenceValidation &&
     !!r.caseDatabaseId &&
-    !(database.records?.evidence||[]).some(e=>e.caseId===r.caseId && e.status==="Insufficient") &&
+    !(database.records?.evidence || []).some(
+      (e) => e.caseId === r.caseId && e.status === "Insufficient",
+    ) &&
     (database.records?.cases || []).some(
       (c) =>
         c.caseDatabaseId === r.caseDatabaseId &&
@@ -98,8 +100,18 @@ export default function CaseShortcut({
     [enlarged, setEnlarged] = useState(false),
     [status, setStatus] = useState(r.status);
   const [archiveConfirm, setArchiveConfirm] = useState(false),
-    [archiving, setArchiving] = useState(false);
+    [archiving, setArchiving] = useState(false),
+    [validating, setValidating] = useState(false);
   const ref = useRef(null);
+  const reviewStarted = useRef(false);
+  useEffect(() => {
+    if (reviewStarted.current || !r.caseDatabaseId || r.archived || r.decision)
+      return;
+    reviewStarted.current = true;
+    database
+      .save("case", r.caseDatabaseId, "begin_review", {})
+      .catch((cause) => setError(cause.message));
+  }, [r.caseDatabaseId]);
   useEffect(() => {
     const d = ref.current;
     d.showModal();
@@ -157,6 +169,8 @@ export default function CaseShortcut({
     }
   }
   async function saveEvidence() {
+    if (validating) return;
+    setValidating(true);
     try {
       if (!allowEvidenceValidation)
         throw Error("Open a formal case before validating evidence.");
@@ -172,6 +186,8 @@ export default function CaseShortcut({
       if (result === "Insufficient") open("case");
     } catch (e) {
       setError(e.message);
+    } finally {
+      setValidating(false);
     }
   }
   const reportDate = r.date
@@ -183,7 +199,7 @@ export default function CaseShortcut({
     : "Not recorded";
   const title =
     view === "case"
-      ? r.caseId
+      ? `Case Details & Evidence - ${r.caseId}`
       : view === "note"
         ? "Add Case Action / Note"
         : view === "incident"
@@ -273,7 +289,7 @@ export default function CaseShortcut({
             <section>
               <h3>
                 <FileText size={17} />
-                Case Details
+                Case Details & Evidence
               </h3>
               <Facts
                 items={[
@@ -337,6 +353,11 @@ export default function CaseShortcut({
                     </small>
                   </span>
                   <Badge value={e.status} />
+                  <span className="ocx-link">
+                    {e.status === "Validated"
+                      ? "View Validation"
+                      : "Validate Evidence"}
+                  </span>
                 </button>
               ))}
             </section>
@@ -787,7 +808,12 @@ export default function CaseShortcut({
                       database.records?.clearance || [],
                     ).step !== "Evidence Validation"
                   }
-                  onClick={() => open("evidence")}
+                  onClick={() => {
+                    setEvidenceId(
+                      attached.find((e) => e.status !== "Validated")?.id,
+                    );
+                    open("evidence");
+                  }}
                 >
                   Validate Evidence
                 </button>
@@ -835,9 +861,9 @@ export default function CaseShortcut({
                 <button
                   className={primary}
                   onClick={saveEvidence}
-                  disabled={!result || notes.trim().length < 10}
+                  disabled={validating || !result || notes.trim().length < 10}
                 >
-                  Save Validation
+                  {validating ? "Saving..." : "Save Validation"}
                 </button>
               )}
             {view === "status" && (

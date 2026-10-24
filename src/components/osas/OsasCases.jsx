@@ -1,3 +1,4 @@
+import { caseReviewLabel } from "./caseProgress.js";
 // Case Review: searches active cases and optionally archived records, then opens the case workflow for authorized decisions.
 import { statusClass } from "../shared/statusColors.js";
 import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
@@ -95,12 +96,15 @@ export default function OsasCases({ settings }) {
   const date = (v) =>
     settings.dateFormat === "iso"
       ? v
-      : new Date(v + "T12:00:00").toLocaleDateString(settings.language || "en-PH", {
-          timeZone: settings.timezone || "Asia/Manila",
-          month: settings.dateFormat === "short" ? "2-digit" : "short",
-          day: "numeric",
-          year: "numeric",
-        });
+      : new Date(v + "T12:00:00").toLocaleDateString(
+          settings.language || "en-PH",
+          {
+            timeZone: settings.timezone || "Asia/Manila",
+            month: settings.dateFormat === "short" ? "2-digit" : "short",
+            day: "numeric",
+            year: "numeric",
+          },
+        );
   function change(setter, value) {
     setter(value);
     setPage(1);
@@ -341,15 +345,14 @@ export default function OsasCases({ settings }) {
                     className={
                       (["Resolved", "Pending Completion"].includes(r.status)
                         ? button
-                        : primary) +
-                      " oc-review"
+                        : primary) + " oc-review"
                     }
                     aria-label={`Review ${r.caseId}`}
                     onClick={() => open(r)}
                   >
                     {["Resolved", "Pending Completion"].includes(r.status)
                       ? "View Case"
-                      : "Review Case"}
+                      : caseReviewLabel(r)}
                   </button>
                 </td>
               </tr>

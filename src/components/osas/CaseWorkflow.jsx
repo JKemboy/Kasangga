@@ -124,9 +124,7 @@ export default function CaseWorkflow({
       )
         throw Error("Validate every evidence file before proceeding.");
       if (action === "pending" && !["Open", "Under Review"].includes(r.status))
-        throw Error(
-          "The case must be Open or Under Review before proceeding.",
-        );
+        throw Error("The case must be Open or Under Review before proceeding.");
       const next = caseTransition(r, action, form);
       if (["decision", "condition"].includes(action) && !confirmed) {
         setConfirmation(next);
@@ -149,12 +147,16 @@ export default function CaseWorkflow({
       {!["Resolved", "Pending Completion"].includes(r.status) &&
         !evidence.some((e) => e.status === "Insufficient") && (
           <>
+            {permissions.pending && (
+              <button className={primary} onClick={() => open("pending")}>
+                Proceed to Case Action
+              </button>
+            )}
             <div className="ocx-status-menu">
               <button
                 className={button}
                 disabled={
-                  r.archived ||
-                  !["Case Actions"].includes(permissions.step)
+                  r.archived || !["Case Actions"].includes(permissions.step)
                 }
                 aria-expanded={menu}
                 onClick={() => setMenu(!menu)}
@@ -183,7 +185,7 @@ export default function CaseWorkflow({
               disabled={!permissions.decision}
               onClick={() => open("decision")}
             >
-              Record Decision
+              Record Decision & Block Clearance
             </button>
           </>
         )}
@@ -221,9 +223,8 @@ export default function CaseWorkflow({
           <form onSubmit={save} className="ocx-workflow-form">
             {action === "review" && (
               <p>
-                All evidence must be validated and the case must be Under
-                Review before proceeding to Pending Decision. A case note is
-                optional.
+                All evidence must be validated and the case must be Under Review
+                before proceeding to Pending Decision. A case note is optional.
               </p>
             )}
             {action === "pending" && (
@@ -340,6 +341,10 @@ export default function CaseWorkflow({
                 </label>
                 {form.hasCondition && (
                   <>
+                    <p className="ocx-warning">
+                      Recording this condition blocks student clearance until
+                      compliance is verified and OSAS releases the hold.
+                    </p>
                     <label>
                       Condition
                       <input
@@ -411,7 +416,9 @@ export default function CaseWorkflow({
                       ? "Save Request"
                       : action === "condition"
                         ? "Mark Completed"
-                        : "Record Decision"}
+                        : form.hasCondition
+                          ? "Record Decision & Block Clearance"
+                          : "Record Decision"}
               </button>
             </div>
           </form>
@@ -447,7 +454,9 @@ export default function CaseWorkflow({
               {saving
                 ? "Saving..."
                 : action === "decision"
-                  ? "Record Decision"
+                  ? form.hasCondition
+                    ? "Record Decision & Block Clearance"
+                    : "Record Decision"
                   : "Mark Completed"}
             </button>
           </div>

@@ -1,3 +1,10 @@
+export function caseReviewLabel(record) {
+  if (record.archived || record.status === "Resolved") return "View Case";
+  return record.status !== "Open" ||
+    record.history?.some((entry) => entry.action === "Begin Review")
+    ? "Continue Review"
+    : "Open Case";
+}
 export const caseStages = [
   "Incident Report",
   "OSAS Referral",

@@ -1,3 +1,4 @@
+import { caseReviewLabel } from "./caseProgress.js";
 // Incident Monitoring: reviews incoming reports and routes referral/assessment changes through the OSAS database workflow.
 import { statusClass } from "../shared/statusColors.js";
 import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
@@ -430,7 +431,11 @@ export default function OsasIncidents({
                     }
                     onClick={() => (r.caseId ? openCase(r) : view(r))}
                   >
-                    {r.caseId ? "Open Case" : "View Incident"}
+                    {r.caseId
+                      ? caseReviewLabel(
+                          cases.find((c) => c.caseId === r.caseId) || r,
+                        )
+                      : "View Incident"}
                   </button>
                 </td>
               </tr>
