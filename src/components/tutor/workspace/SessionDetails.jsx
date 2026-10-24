@@ -203,6 +203,7 @@ export default function SessionDetails({
       }
       changeAction("");
       await refreshSessions?.();
+      window.dispatchEvent(new Event("campustutor:sessions-changed"));
       setFeedback(
         action === "incident"
           ? "Report submitted for Admin and OSAS review."

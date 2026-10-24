@@ -57,3 +57,29 @@ test("decision and condition completion stay in their workflow stages", () => {
     false,
   );
 });
+
+test("completing a condition still requires release of its actual clearance hold", () => {
+  const record = {
+    status: "Resolved",
+    caseDatabaseId: 7,
+    decision: {
+      outcome: "Verbal Warning",
+      condition: "Submit acknowledgement",
+      conditionDone: true,
+    },
+  };
+  const clearance = [{ holds: [{ case_id: 7, hold_status: "active" }] }];
+  assert.equal(
+    casePermissions(record, [{ status: "Validated" }], clearance).archive,
+    false,
+  );
+  assert.equal(
+    casePermissions(record, [{ status: "Validated" }], clearance).step,
+    "Clearance Effect",
+  );
+  clearance[0].holds[0].hold_status = "released";
+  assert.equal(
+    casePermissions(record, [{ status: "Validated" }], clearance).archive,
+    true,
+  );
+});

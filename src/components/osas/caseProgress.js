@@ -27,8 +27,9 @@ export function caseProgress(record, evidence = [], clearance = []) {
     if (record.decision.condition && !record.decision.conditionDone)
       step = "Resolution";
     else if (
-      record.decision.outcome === "Clearance Hold Recommended" &&
-      (!holds.length || holds.some((h) => h.hold_status === "active"))
+      holds.some((h) => h.hold_status === "active") ||
+      (record.decision.outcome === "Clearance Hold Recommended" &&
+        !holds.length)
     )
       step = "Clearance Effect";
     else step = "Archive";
