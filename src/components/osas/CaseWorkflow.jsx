@@ -1,4 +1,9 @@
 import { casePermissions } from "./caseProgress.js";
+import PolicyReference, {
+  decisionPolicies,
+  policyReference,
+} from "./PolicyReference.jsx";
+import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
 import { useState } from "react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 const outcomes = [
@@ -67,6 +72,7 @@ export function caseTransition(record, action, form = {}) {
       outcome: form.outcome,
       notes: form.notes.trim(),
       basis: form.basis.trim(),
+      policyId: form.policyId,
       condition: form.hasCondition ? form.condition.trim() : "",
       due: form.hasCondition ? form.due : "",
       conditionDone: !form.hasCondition,
@@ -97,6 +103,7 @@ export default function CaseWorkflow({
   clearance = [],
   onSave,
 }) {
+  const database = useOsasDatabase();
   const [action, setAction] = useState(""),
     [form, setForm] = useState({}),
     [error, setError] = useState(""),
@@ -123,6 +130,15 @@ export default function CaseWorkflow({
         throw Error("Validate every evidence file before proceeding.");
       if (action === "pending" && !["Open", "Under Review"].includes(r.status))
         throw Error("The case must be Open or Under Review before proceeding.");
+      if (
+        action === "decision" &&
+        !decisionPolicies(database?.records?.policies).some(
+          (policy) =>
+            policy.id === form.policyId &&
+            policyReference(policy) === form.basis,
+        )
+      )
+        throw Error("Select an active policy from Policies & Procedures.");
       const next = caseTransition(r, action, form);
       if (["decision", "condition"].includes(action) && !confirmed) {
         setConfirmation(next);
@@ -308,12 +324,18 @@ export default function CaseWorkflow({
                 <small>{form.notes.length}/30 characters minimum</small>
                 <label>
                   Policy reference
-                  <input
-                    className={input}
-                    required
-                    placeholder="Enter the applicable policy and version"
+                  <PolicyReference
                     value={form.basis || ""}
-                    onChange={(e) => set("basis", e.target.value)}
+                    onChange={(e) => {
+                      const policy = decisionPolicies(
+                        database?.records?.policies,
+                      ).find((p) => policyReference(p) === e.target.value);
+                      setForm({
+                        ...form,
+                        basis: e.target.value,
+                        policyId: policy?.id,
+                      });
+                    }}
                   />
                 </label>
                 <label>

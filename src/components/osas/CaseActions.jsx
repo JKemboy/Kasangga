@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PolicyReference from "./PolicyReference.jsx";
 import {
   Modal,
   Field,
@@ -174,11 +175,9 @@ export default function CaseActions({ record, onChange, onArchive }) {
                     ))}
                   </select>
                 </Field>
-                <Field
-                  label="Institutional / Policy Basis"
-                  name="basis"
-                  required
-                />
+                <Field label="Policy reference">
+                  <PolicyReference />
+                </Field>
                 <Field label="Condition (optional)" name="condition" />
                 <Field label="Condition Due Date" name="due" type="date" />
                 <label className="flex gap-2">
