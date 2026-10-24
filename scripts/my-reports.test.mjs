@@ -7,6 +7,10 @@ import {
   reportStage,
   reportSteps,
   refundSummary,
+  aboutStages,
+  caseConditions,
+  caseClearanceText,
+  completionFormStatus,
 } from "../src/services/myReportPresentation.js";
 import { listMyReports } from "../src/services/myReports.js";
 
@@ -42,7 +46,7 @@ test("only an actual active hold displays Clearance Blocked", () => {
       condition_done: false,
     },
   };
-  assert.equal(reportStage(pending, true), "Awaiting Completion");
+  assert.equal(reportStage(pending, true), "Under Review");
   assert.equal(
     reportStage({ ...pending, holds: [{ status: "active" }] }, true),
     "Clearance Blocked",
@@ -53,6 +57,48 @@ test("only an actual active hold displays Clearance Blocked", () => {
       true,
     ),
     "Resolved",
+  );
+});
+test("About Me filters and progress follow the case view", () => {
+  assert.deepEqual(aboutStages, [
+    "Clearance Blocked",
+    "Under Review",
+    "Resolved",
+  ]);
+  assert.deepEqual(reportSteps({}, true), [
+    "Referred to OSLD",
+    "Case Review",
+    "Decision Recorded",
+    "Resolved",
+  ]);
+  assert.equal(
+    caseClearanceText({}),
+    "No clearance hold is recorded for this case",
+  );
+  assert.ok(
+    caseClearanceText({ holds: [{ status: "released" }] }).includes("released"),
+  );
+});
+test("individual recorded conditions keep their own completion status", () => {
+  const conditions = caseConditions({
+    decision: {
+      conditions: [
+        { text: "Written acknowledgement", completed: true },
+        { text: "Submit form", completed: false },
+      ],
+    },
+  });
+  assert.equal(conditions[0].completed, true);
+  assert.equal(conditions[1].completed, false);
+  assert.equal(
+    completionFormStatus({ decision: { condition_done: true } }),
+    "Submission not recorded",
+  );
+  assert.equal(
+    completionFormStatus({
+      decision: { completion_form: { submitted_at: "2026-10-24" } },
+    }),
+    "Submission recorded",
   );
 });
 test("reporter-facing outcome notice contains no other student's sanction", () => {
