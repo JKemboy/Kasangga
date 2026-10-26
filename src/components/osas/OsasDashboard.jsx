@@ -1,3 +1,4 @@
+import SidebarLogo from "../shared/SidebarLogo.jsx";
 import useSectionNavigation from "../shared/useSectionNavigation.js";
 import OsasNotifications from "./OsasNotifications.jsx";
 import CountBadge from "../shared/CountBadge.jsx";
@@ -336,7 +337,7 @@ function OsasDashboardContent() {
       )}
       <aside className={`osas-sidebar ${mobile ? "is-open" : ""}`}>
         <div className="osas-brand">
-          <img src="/images/kasangga-logo.png" alt="Kasangga" />
+          <SidebarLogo />
           <button
             aria-label="Close navigation"
             className="ml-auto md:hidden"

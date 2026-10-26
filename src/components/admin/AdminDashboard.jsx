@@ -1,3 +1,4 @@
+import SidebarLogo from "../shared/SidebarLogo.jsx";
 import useSectionNavigation from "../shared/useSectionNavigation.js";
 import AdminPolicies from "./AdminPolicies.jsx";
 import AdminNotifications from "./AdminNotifications.jsx";
@@ -225,7 +226,7 @@ export default function AdminDashboardPage() {
         )}
         <aside className={`osas-sidebar ${open ? "is-open" : ""}`}>
           <div className="osas-brand">
-            <img src="/images/kasangga-logo.png" alt="Kasangga" />
+            <SidebarLogo />
             <button
               className="ml-auto md:hidden"
               aria-label="Close navigation"

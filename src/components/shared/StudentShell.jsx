@@ -1,3 +1,4 @@
+import SidebarLogo from "./SidebarLogo.jsx";
 import { loadMyTutorApplication } from "../../services/tutorApplications.js";
 import { Modal, button, primary } from "../tutor/workspace/ui.jsx";
 import PortalAvatar from "./PortalAvatar.jsx";
@@ -106,11 +107,7 @@ export default function StudentShell({
         className={`fixed inset-y-0 left-0 z-40 flex w-[230px] flex-col bg-[#00542f] text-white transition-transform md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-[76px] shrink-0 items-center bg-[#003e24] px-5">
-          <img
-            src="/images/kasangga-logo.png"
-            alt="Kasangga"
-            className="h-[52px] w-auto max-w-full object-contain object-left"
-          />
+          <SidebarLogo />
         </div>
         <div className="mx-4 my-3 flex rounded-lg bg-black/15 text-xs">
           <button

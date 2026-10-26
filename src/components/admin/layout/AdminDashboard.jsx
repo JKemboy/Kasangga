@@ -1,3 +1,4 @@
+import SidebarLogo from "../../shared/SidebarLogo.jsx";
 import { useLogout } from "../../shared/LogoutProvider.jsx";
 import { useRef, useState } from "react";
 import {
@@ -102,7 +103,7 @@ export default function AdminDashboard() {
           ref={headerRef}
           className="flex h-[clamp(44px,9dvh,76px)] shrink-0 items-center bg-[#004727] px-5"
         >
-          <img src="/images/kasangga-logo.png" alt="Kasangga" className="h-[clamp(30px,6dvh,52px)] w-auto max-w-[190px] object-contain object-left" />
+          <SidebarLogo />
           <button
             type="button"
             aria-label="Close navigation"
