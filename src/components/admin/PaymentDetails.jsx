@@ -65,178 +65,183 @@ export default function PaymentDetails({
     }
   }
   return (
-    <Panel
-      title={
-        <>
-          {r.id} {badge}
-        </>
-      }
-      subtitle={`${r.method} · ${paid}`}
-      onClose={onClose}
-      footer={
-        <>
-          <div className="ud-actions">
-            {r.refundId && (
-              <button
-                className={primary}
-                disabled={r.refundStatus !== "approved" || saving}
-                onClick={() => {
-                  setAction("Transferred");
-                  setReference("");
-                  setConfirmed(false);
-                  setError("");
-                }}
-              >
-                {r.refundStatus === "processed"
-                  ? "Refund Transferred"
-                  : "Mark as Transferred"}
-              </button>
-            )}
-            {pending && (
-              <>
-                <button
-                  className={`${button} text-red-600`}
-                  onClick={() => {
-                    setAction("Declined");
-                    setNote("");
-                    setError("");
-                  }}
-                >
-                  Decline Refund
-                </button>
+    <>
+      <Panel
+        title={
+          <>
+            {r.id} {badge}
+          </>
+        }
+        subtitle={`${r.method} · ${paid}`}
+        onClose={onClose}
+        footer={
+          <>
+            <div className="ud-actions">
+              {r.refundId && (
                 <button
                   className={primary}
+                  disabled={r.refundStatus !== "approved" || saving}
                   onClick={() => {
-                    setAction("Approved");
-                    setNote("");
+                    setAction("Transferred");
+                    setReference("");
+                    setConfirmed(false);
                     setError("");
                   }}
                 >
-                  Approve Refund
+                  {r.refundStatus === "processed"
+                    ? "Refund Transferred"
+                    : "Mark as Transferred"}
                 </button>
-              </>
-            )}
-            <button
-              className={button}
-              disabled={!booking}
-              onClick={() => setBookingOpen(true)}
-            >
-              Related Booking
-            </button>
-          </div>
-          <button className={button} onClick={onClose}>
-            Close
-          </button>
-        </>
-      }
-    >
-      <dl>
-        {[
-          ["Transaction ID", r.id],
-          ["PayMongo reference", r.reference],
-          [
-            "Booking ID",
-            booking ? (
-              <button className="abd-link" onClick={() => setBookingOpen(true)}>
-                {r.booking}
+              )}
+              {pending && (
+                <>
+                  <button
+                    className={`${button} text-red-600`}
+                    onClick={() => {
+                      setAction("Declined");
+                      setNote("");
+                      setError("");
+                    }}
+                  >
+                    Decline Refund
+                  </button>
+                  <button
+                    className={primary}
+                    onClick={() => {
+                      setAction("Approved");
+                      setNote("");
+                      setError("");
+                    }}
+                  >
+                    Approve Refund
+                  </button>
+                </>
+              )}
+              <button
+                className={button}
+                disabled={!booking}
+                onClick={() => setBookingOpen(true)}
+              >
+                Related Booking
               </button>
-            ) : (
-              r.booking
-            ),
-          ],
-          ["Learner", r.learner],
-          ["Tutor", r.tutor],
-          ["Service", booking?.service || r.service],
-          ["Payment method", r.method],
-          ["Payment Status", badge],
-          ["Paid Date", paid],
-          ["Allocation source", split.source],
-          [
-            "Transfer status",
-            r.transferredAt ? "Transferred" : "Not transferred",
-          ],
-          ...(r.transferredAt
-            ? [
-                ["Transferred at", timestampLabel(r.transferredAt)],
-                ["Transferred by", r.transferredBy],
-                ["Transfer reference", r.transferReference],
-              ]
-            : []),
-        ].map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value || "Unavailable"}</dd>
-          </div>
-        ))}
-      </dl>
-      <h3>Allocation</h3>
-      {split && (
-        <>
-          <table className="abd-allocation">
-            <tbody>
+            </div>
+            <button className={button} onClick={onClose}>
+              Close
+            </button>
+          </>
+        }
+      >
+        <dl>
+          {[
+            ["Transaction ID", r.id],
+            ["PayMongo reference", r.reference],
+            [
+              "Booking ID",
+              booking ? (
+                <button
+                  className="abd-link"
+                  onClick={() => setBookingOpen(true)}
+                >
+                  {r.booking}
+                </button>
+              ) : (
+                r.booking
+              ),
+            ],
+            ["Learner", r.learner],
+            ["Tutor", r.tutor],
+            ["Service", booking?.service || r.service],
+            ["Payment method", r.method],
+            ["Payment Status", badge],
+            ["Paid Date", paid],
+            ["Allocation source", split.source],
+            [
+              "Transfer status",
+              r.transferredAt ? "Transferred" : "Not transferred",
+            ],
+            ...(r.transferredAt
+              ? [
+                  ["Transferred at", timestampLabel(r.transferredAt)],
+                  ["Transferred by", r.transferredBy],
+                  ["Transfer reference", r.transferReference],
+                ]
+              : []),
+          ].map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value || "Unavailable"}</dd>
+            </div>
+          ))}
+        </dl>
+        <h3>Allocation</h3>
+        {split && (
+          <>
+            <table className="abd-allocation">
+              <tbody>
+                {[
+                  ["Gross Amount", split.gross],
+                  ["Tutor share", split.tutor],
+                  ["OSAS share", split.osas],
+                  ["Platform share", split.platform],
+                ].map(([label, value]) => (
+                  <tr key={label}>
+                    <td>{label}</td>
+                    <td>{money(value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="abd-muted">
+              {split.source}. This does not confirm a payout.
+            </p>
+          </>
+        )}
+        {r.refundId && (
+          <section className="ud-status">
+            <h3>
+              Refund Request{" "}
+              <span className="au-status restricted">
+                {r.refundDecision ? `${r.refundDecision.decision}` : "Pending"}
+              </span>
+            </h3>
+            <dl>
               {[
-                ["Gross Amount", split.gross],
-                ["Tutor share", split.tutor],
-                ["OSAS share", split.osas],
-                ["Platform share", split.platform],
-              ].map(([label, value]) => (
-                <tr key={label}>
-                  <td>{label}</td>
-                  <td>{money(value)}</td>
-                </tr>
+                ["Requested", timestampLabel(r.refundRequestedAt)],
+                ["Amount", money(r.refundAmount)],
+                ["Reason", r.refundReason],
+                [
+                  "Refund transfer reference",
+                  r.refundTransferReference || "Not recorded",
+                ],
+                [
+                  "Refund transferred on",
+                  r.refundTransferredAt
+                    ? timestampLabel(r.refundTransferredAt)
+                    : "Not recorded",
+                ],
+                [
+                  "Policy",
+                  "Cancellation does not automatically guarantee a refund. Admin reviews the request.",
+                ],
+              ].map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v || "Not recorded"}</dd>
+                </div>
               ))}
-            </tbody>
-          </table>
-          <p className="abd-muted">
-            {split.source}. This does not confirm a payout.
-          </p>
-        </>
-      )}
-      {r.refundId && (
-        <section className="ud-status">
-          <h3>
-            Refund Request{" "}
-            <span className="au-status restricted">
-              {r.refundDecision ? `${r.refundDecision.decision}` : "Pending"}
-            </span>
-          </h3>
-          <dl>
-            {[
-              ["Requested", timestampLabel(r.refundRequestedAt)],
-              ["Amount", money(r.refundAmount)],
-              ["Reason", r.refundReason],
-              [
-                "Refund transfer reference",
-                r.refundTransferReference || "Not recorded",
-              ],
-              [
-                "Refund transferred on",
-                r.refundTransferredAt
-                  ? timestampLabel(r.refundTransferredAt)
-                  : "Not recorded",
-              ],
-              [
-                "Policy",
-                "Cancellation does not automatically guarantee a refund. Admin reviews the request.",
-              ],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <dt>{k}</dt>
-                <dd>{v || "Not recorded"}</dd>
-              </div>
-            ))}
-          </dl>
-          {r.refundDecision && <p>Decision note: {r.refundDecision.note}</p>}
-          <p className="abd-muted">
-            Original allocation is a reference. Provider refund processing is
-            separate from this review.
-          </p>
-        </section>
-      )}
-      <p className="aid-info">
-        Payment confirmations come from the database. Refund decisions are saved
-        for review; provider refund processing is a separate operation.
-      </p>
+            </dl>
+            {r.refundDecision && <p>Decision note: {r.refundDecision.note}</p>}
+            <p className="abd-muted">
+              Original allocation is a reference. Provider refund processing is
+              separate from this review.
+            </p>
+          </section>
+        )}
+        <p className="aid-info">
+          Payment confirmations come from the database. Refund decisions are
+          saved for review; provider refund processing is a separate operation.
+        </p>
+      </Panel>
       {action && (
         <Modal
           title={
@@ -256,11 +261,9 @@ export default function PaymentDetails({
                   transfer reference.
                 </p>
                 <label>
-                  Transfer reference
+                  Receipt / reference (optional)
                   <input
                     className={input}
-                    required
-                    minLength={3}
                     maxLength={150}
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
@@ -285,12 +288,7 @@ export default function PaymentDetails({
                   >
                     Cancel
                   </button>
-                  <button
-                    className={primary}
-                    disabled={
-                      saving || !confirmed || reference.trim().length < 3
-                    }
-                  >
+                  <button className={primary} disabled={saving || !confirmed}>
                     {saving ? "Saving..." : "Mark as Transferred"}
                   </button>
                 </div>
@@ -357,6 +355,6 @@ export default function PaymentDetails({
           onClose={() => setBookingOpen(false)}
         />
       )}
-    </Panel>
+    </>
   );
 }
