@@ -897,8 +897,19 @@
   font-size: 8px;
   padding: 5px;
   white-space: nowrap;
-  color: #4c6189;
-  border-color: #dce4f0;
+  color: #16603e;
+  border-color: #c8ded1;
+}
+.ap-table button:not(:disabled):hover {
+  background: #edf7f1;
+  border-color: #83b89a;
+}
+.ap-table button.ap-transfer-complete:disabled {
+  color: #16603e;
+  background: #e7f4ec;
+  border-color: #c8e3d2;
+  opacity: 1;
+  cursor: default;
 }
 .ap-table .au-status {
   font-size: 8px;

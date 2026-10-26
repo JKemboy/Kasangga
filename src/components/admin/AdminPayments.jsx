@@ -361,7 +361,7 @@ export default function AdminPayments({
                     <td>{r.method}</td>
                     <td>
                       <span
-                        className={`au-status ${r.payment === "Paid" ? "active" : "restricted"}`}
+                        className={`au-status ${["Paid", "Refunded", "Partially Refunded"].includes(r.payment) ? "active" : "restricted"}`}
                       >
                         {r.payment}
                       </span>
@@ -375,7 +375,15 @@ export default function AdminPayments({
                         View Transaction
                       </button>
                       <button
-                        className={button + " ml-2"}
+                        className={
+                          button +
+                          " ml-2" +
+                          (r.refundStatus === "processed" ||
+                          r.transferredAt ||
+                          transferred.includes(r.id)
+                            ? " ap-transfer-complete"
+                            : "")
+                        }
                         disabled={
                           r.refundStatus === "approved"
                             ? !!transferring

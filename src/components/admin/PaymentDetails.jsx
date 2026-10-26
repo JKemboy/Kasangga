@@ -35,7 +35,7 @@ export default function PaymentDetails({
   const paid = timestampLabel(r.paidAt);
   const badge = (
     <span
-      className={`au-status ${r.payment === "Paid" ? "active" : "restricted"}`}
+      className={`au-status ${["Paid", "Refunded", "Partially Refunded"].includes(r.payment) ? "active" : "restricted"}`}
     >
       {r.payment}
     </span>
