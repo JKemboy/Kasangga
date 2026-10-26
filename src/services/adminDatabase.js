@@ -84,3 +84,18 @@ export async function markPaymentTransferred(
   if (error) throw new Error(error.message);
   return true;
 }
+
+export async function markRefundTransferred(
+  refundId,
+  reference,
+  confirmed,
+  client = getSupabaseClient(),
+) {
+  const { error } = await client.rpc("admin_mark_refund_transferred", {
+    p_refund_id: refundId,
+    p_reference: reference,
+    p_confirmed: confirmed,
+  });
+  if (error) throw new Error(error.message);
+  return true;
+}

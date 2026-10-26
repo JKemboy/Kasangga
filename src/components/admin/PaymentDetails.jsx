@@ -11,12 +11,20 @@ import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./adminData.js";
 import { paymentBookings, refundDecision } from "./paymentDetailsData.js";
 import "./booking-details.css";
-export default function PaymentDetails({ record: r, onSave, onClose }) {
+import { markRefundTransferred } from "../../services/adminDatabase.js";
+export default function PaymentDetails({
+  record: r,
+  onSave,
+  onClose,
+  initialAction = "",
+}) {
   const [bookingOpen, setBookingOpen] = useState(false),
-    [action, setAction] = useState(""),
+    [action, setAction] = useState(initialAction),
     [note, setNote] = useState(""),
     [error, setError] = useState("");
-  const { database } = useAdminDatabase();
+  const { database, refresh } = useAdminDatabase();
+  const [reference, setReference] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const incidents = database?.incidents || [];
   const workspace = { sessions: database?.sessions || [] };
   const booking =
@@ -38,6 +46,12 @@ export default function PaymentDetails({ record: r, onSave, onClose }) {
     if (saving) return;
     setSaving(true);
     try {
+      if (action === "Transferred") {
+        await markRefundTransferred(r.refundId, reference.trim(), confirmed);
+        await refresh();
+        setAction("");
+        return;
+      }
       const next = refundDecision(r, action, note);
       if (!(await onSave(next)))
         throw new Error(
@@ -62,6 +76,22 @@ export default function PaymentDetails({ record: r, onSave, onClose }) {
       footer={
         <>
           <div className="ud-actions">
+            {r.refundId && (
+              <button
+                className={primary}
+                disabled={r.refundStatus !== "approved" || saving}
+                onClick={() => {
+                  setAction("Transferred");
+                  setReference("");
+                  setConfirmed(false);
+                  setError("");
+                }}
+              >
+                {r.refundStatus === "processed"
+                  ? "Refund Transferred"
+                  : "Mark as Transferred"}
+              </button>
+            )}
             {pending && (
               <>
                 <button
@@ -176,6 +206,16 @@ export default function PaymentDetails({ record: r, onSave, onClose }) {
               ["Amount", money(r.refundAmount)],
               ["Reason", r.refundReason],
               [
+                "Refund transfer reference",
+                r.refundTransferReference || "Not recorded",
+              ],
+              [
+                "Refund transferred on",
+                r.refundTransferredAt
+                  ? timestampLabel(r.refundTransferredAt)
+                  : "Not recorded",
+              ],
+              [
                 "Policy",
                 "Cancellation does not automatically guarantee a refund. Admin reviews the request.",
               ],
@@ -199,50 +239,106 @@ export default function PaymentDetails({ record: r, onSave, onClose }) {
       </p>
       {action && (
         <Modal
-          title={`${action === "Approved" ? "Approve" : "Decline"} Refund`}
+          title={
+            action === "Transferred"
+              ? "Mark Refund as Transferred"
+              : `${action === "Approved" ? "Approve" : "Decline"} Refund`
+          }
           subtitle={`${r.id} · ${money(r.amount)} · ${r.learner}`}
           onClose={() => setAction("")}
         >
           <form className="ud-form" onSubmit={save}>
-            <p className="aid-info">
-              {action === "Approved"
-                ? "Record approval for this refund request. Payment-provider processing is not connected; the booking remains unchanged."
-                : "Record why this request does not meet refund policy. This does not change the provider payment status or execute an allocation."}
-            </p>
-            <label>
-              Decision note (required)
-              <textarea
-                className={input}
-                rows={4}
-                maxLength={2000}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={
-                  action === "Approved"
-                    ? "Why the refund is granted under policy."
-                    : "Why the request does not meet refund policy."
-                }
-              />
-            </label>
-            <small>
-              {note.trim().length}/15 characters minimum · saved to the database
-            </small>
-            {error && <p role="alert">{error}</p>}
-            <div className="ud-actions">
-              <button
-                type="button"
-                className={button}
-                onClick={() => setAction("")}
-              >
-                Cancel
-              </button>
-              <button
-                className={primary}
-                disabled={saving || note.trim().length < 15}
-              >
-                {action === "Approved" ? "Approve" : "Decline"} Refund
-              </button>
-            </div>
+            {action === "Transferred" ? (
+              <>
+                <p className="aid-info">
+                  Record a completed manual refund transfer. This button does
+                  not send money through PayMongo. In TEST MODE, use a simulated
+                  transfer reference.
+                </p>
+                <label>
+                  Transfer reference
+                  <input
+                    className={input}
+                    required
+                    minLength={3}
+                    maxLength={150}
+                    value={reference}
+                    onChange={(e) => setReference(e.target.value)}
+                  />
+                </label>
+                <label className="flex gap-2">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={confirmed}
+                    onChange={(e) => setConfirmed(e.target.checked)}
+                  />
+                  I confirm the refund transfer is completed, or simulated in
+                  TEST MODE.
+                </label>
+                {error && <p role="alert">{error}</p>}
+                <div className="ud-actions">
+                  <button
+                    type="button"
+                    className={button}
+                    onClick={() => setAction("")}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className={primary}
+                    disabled={
+                      saving || !confirmed || reference.trim().length < 3
+                    }
+                  >
+                    {saving ? "Saving..." : "Mark as Transferred"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="aid-info">
+                  {action === "Approved"
+                    ? "Record approval for this refund request. Payment-provider processing is not connected; the booking remains unchanged."
+                    : "Record why this request does not meet refund policy. This does not change the provider payment status or execute an allocation."}
+                </p>
+                <label>
+                  Decision note (required)
+                  <textarea
+                    className={input}
+                    rows={4}
+                    maxLength={2000}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={
+                      action === "Approved"
+                        ? "Why the refund is granted under policy."
+                        : "Why the request does not meet refund policy."
+                    }
+                  />
+                </label>
+                <small>
+                  {note.trim().length}/15 characters minimum · saved to the
+                  database
+                </small>
+                {error && <p role="alert">{error}</p>}
+                <div className="ud-actions">
+                  <button
+                    type="button"
+                    className={button}
+                    onClick={() => setAction("")}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className={primary}
+                    disabled={saving || note.trim().length < 15}
+                  >
+                    {action === "Approved" ? "Approve" : "Decline"} Refund
+                  </button>
+                </div>
+              </>
+            )}
           </form>
         </Modal>
       )}

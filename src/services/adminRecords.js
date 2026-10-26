@@ -409,6 +409,11 @@ export function mapAdminDatabase(input, now = new Date()) {
       refundAmount: amount(refund?.refund_amount),
       refundReason: refund?.refund_reason,
       refundRequestedAt: refund?.requested_at,
+      refundTransferReference: refund?.provider_refund_id?.replace(
+        /^manual:/,
+        "",
+      ),
+      refundTransferredAt: refund?.processed_at,
       refundDecision:
         refund &&
         ["approved", "declined", "processed"].includes(refund.refund_status)

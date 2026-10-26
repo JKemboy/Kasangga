@@ -377,19 +377,33 @@ export default function AdminPayments({
                       <button
                         className={button + " ml-2"}
                         disabled={
-                          !!r.transferredAt ||
-                          transferred.includes(r.id) ||
-                          !!transferring ||
-                          r.paymentStatus !== "paid" ||
-                          ["pending", "approved"].includes(r.refundStatus)
+                          r.refundStatus === "approved"
+                            ? !!transferring
+                            : r.refundStatus === "processed" ||
+                              !!r.transferredAt ||
+                              transferred.includes(r.id) ||
+                              !!transferring ||
+                              r.paymentStatus !== "paid" ||
+                              ["pending", "approved"].includes(r.refundStatus)
                         }
-                        onClick={() => recordTransfer(r)}
+                        onClick={() =>
+                          r.refundStatus === "approved"
+                            ? setSelected({
+                                ...r,
+                                initialAction: "Transferred",
+                              })
+                            : recordTransfer(r)
+                        }
                       >
-                        {r.transferredAt || transferred.includes(r.id)
-                          ? "Transferred"
-                          : transferring === r.id
-                            ? "Saving..."
-                            : "Mark as Transferred"}
+                        {r.refundStatus === "processed"
+                          ? "Refund Transferred"
+                          : r.refundStatus === "approved"
+                            ? "Mark as Transferred"
+                            : r.transferredAt || transferred.includes(r.id)
+                              ? "Transferred"
+                              : transferring === r.id
+                                ? "Saving..."
+                                : "Mark as Transferred"}
                       </button>
                     </td>
                   </tr>
@@ -480,6 +494,7 @@ export default function AdminPayments({
       )}
       {selected && (
         <PaymentDetails
+          initialAction={selected.initialAction}
           record={transactions.find((r) => r.id === selected.id) || selected}
           onSave={saveReview}
           onClose={() => setSelected(null)}
