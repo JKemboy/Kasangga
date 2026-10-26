@@ -136,7 +136,7 @@ export default function AdminGcashQr() {
           }}
         />
       )}
-      <p className="my-4 text-xs font-bold text-amber-700">TEST MODE</p>
+       
       {notice && (
         <p role="status" className="mb-3 text-xs text-green-800">
           {notice}
