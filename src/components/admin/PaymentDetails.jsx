@@ -250,15 +250,18 @@ export default function PaymentDetails({
               : `${action === "Approved" ? "Approve" : "Decline"} Refund`
           }
           subtitle={`${r.id} · ${money(r.amount)} · ${r.learner}`}
+          className={action === "Transferred" ? "refund-transfer-modal" : ""}
           onClose={() => setAction("")}
         >
-          <form className="ud-form" onSubmit={save}>
+          <form
+            className={`ud-form${action === "Transferred" ? " refund-transfer-form" : ""}`}
+            onSubmit={save}
+          >
             {action === "Transferred" ? (
               <>
                 <p className="aid-info">
-                  Record a completed manual refund transfer. This button does
-                  not send money through PayMongo. In TEST MODE, use a simulated
-                  transfer reference.
+                  Confirm the refund you handed or sent to the learner. This
+                  records the transfer only.
                 </p>
                 <label>
                   Receipt / reference (optional)
@@ -269,15 +272,17 @@ export default function PaymentDetails({
                     onChange={(e) => setReference(e.target.value)}
                   />
                 </label>
-                <label className="flex gap-2">
+                <label className="ud-check refund-transfer-check">
                   <input
                     type="checkbox"
                     required
                     checked={confirmed}
                     onChange={(e) => setConfirmed(e.target.checked)}
                   />
-                  I confirm the refund transfer is completed, or simulated in
-                  TEST MODE.
+                  <span>
+                    I confirm the learner received the refund, or this is a TEST
+                    MODE simulation.
+                  </span>
                 </label>
                 {error && <p role="alert">{error}</p>}
                 <div className="ud-actions">
