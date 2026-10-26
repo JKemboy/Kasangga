@@ -63,20 +63,14 @@ export async function loadBookingInbox(role, userId) {
   }));
   // Notification read state is independent of conversation read state:
   // opening Messages must not silently clear unclicked notification items.
-  const { data: incoming, error: incomingError } = await getSupabaseClient()
-    .from("messages")
-    .select(
-      "message_id,message_content,sent_at,conversations!inner(booking_id)",
-    )
-    .neq("sender_id", userId)
-    .order("sent_at", { ascending: false })
-    .limit(50);
+  const { data: incoming, error: incomingError } =
+    await getSupabaseClient().rpc("list_my_message_notifications");
   if (incomingError)
     throw new Error(
       `Unable to load message notifications: ${incomingError.message}`,
     );
   const chatNotifications = (incoming || []).map((message) => {
-    const bookingId = String(message.conversations?.booking_id || "");
+    const bookingId = String(message.booking_id || "");
     const name =
       threads.find((t) => String(t.booking_id) === bookingId)?.name ||
       (role === "tutor" ? "Learner" : "Tutor");
