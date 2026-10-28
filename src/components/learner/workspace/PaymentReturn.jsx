@@ -7,7 +7,6 @@ import {
   confirmedPaymentSessions,
 } from "../../../services/paymentReturn.js";
 import { Modal, primary, button } from "../../tutor/workspace/ui.jsx";
-import { useLearnerWorkspace } from "./LearnerWorkspace.jsx";
 const cash = (amount) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
     amount,
@@ -15,7 +14,6 @@ const cash = (amount) =>
 export default function PaymentReturn() {
   const location = useLocation();
   const navigate = useNavigate();
-  const work = useLearnerWorkspace();
   const returning =
     new URLSearchParams(location.search).get("payment") === "success";
   const [sessions, setSessions] = useState([]);
@@ -73,10 +71,11 @@ export default function PaymentReturn() {
     };
   }, [returning, location.search, retry]);
   if (!returning) return null;
-  const close = () => {
+  const close = (section) => {
     const params = new URLSearchParams(location.search);
     params.delete("payment");
     params.delete("booking_ids");
+    if (section === "sessions") params.set("section", "sessions");
     navigate(
       {
         pathname: location.pathname,
@@ -150,13 +149,7 @@ export default function PaymentReturn() {
         <button className={button} onClick={close}>
           Close
         </button>
-        <button
-          className={primary}
-          onClick={() => {
-            close();
-            work.go("sessions");
-          }}
-        >
+        <button className={primary} onClick={() => close("sessions")}>
           View My Sessions
         </button>
       </div>

@@ -6,6 +6,8 @@ import {
   CalendarDays,
   ShieldCheck,
   CreditCard,
+  Video,
+  MapPin,
 } from "lucide-react";
 import { button, primary, input, Avatar } from "../../tutor/workspace/ui.jsx";
 import { portalApi, portalApiAvailable } from "../../../services/portalApi.js";
@@ -172,9 +174,11 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
     refresh();
     const timer = window.setInterval(refresh, 15000);
     window.addEventListener("focus", refresh);
+    window.addEventListener("campustutor:sessions-changed", refresh);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("campustutor:sessions-changed", refresh);
       if (current === availabilityRequest.current)
         availabilityRequest.current++;
     };
@@ -753,90 +757,121 @@ export default function BookingFlow({ tutor: record, onComplete, onClose }) {
         )}
         {step === 4 && (
           <>
-            <h3>Choose a session type for each time</h3>
+            <h3>
+              {draft.sessions.length === 1
+                ? "Select Online or In-Person"
+                : "Choose a session type for each time"}
+            </h3>
             <p className="booking-muted">
               {draft.service} is available {types.join(" and ").toLowerCase()}.
-              {types.includes("Online") && (
-                <>
-                  {" "}
-                  Online meeting:{" "}
-                  {topicConfig?.meetingLink ||
-                    tutor.platform ||
-                    "Meeting link shared after booking"}
-                  .
-                </>
-              )}
-              {types.includes("In-person") && (
-                <>
-                  {" "}
-                  In-person meeting:{" "}
-                  {topicConfig?.location ||
-                    tutor.location ||
-                    "Location arranged with tutor"}
-                  .
-                </>
-              )}
             </p>
-            <div className="booking-set-all">
-              <span>Set all to:</span>
-              {["Online", "In-person"].map((type) => (
-                <button
-                  type="button"
-                  key={type}
-                  className={button}
-                  disabled={!types.includes(type)}
-                  onClick={() => setSessionType("all", type)}
-                >
-                  {type}
-                </button>
-              ))}
-              <small>
-                {
-                  draft.sessions.filter((session) =>
-                    types.includes(session.type),
-                  ).length
-                }{" "}
-                of {draft.sessions.length} chosen
-              </small>
-            </div>
-            <div className="booking-session-types">
-              {draft.sessions.map((session) => (
-                <div
-                  className="booking-session-type-row"
-                  key={sessionKey(session)}
-                >
-                  <strong>
-                    {sessionDate(session.date)} &middot;{" "}
-                    {rangeLabel(session.time, session.duration)}
-                  </strong>
-                  <div>
-                    {["Online", "In-person"].map((type) => (
-                      <label
-                        key={type}
-                        className={
-                          !types.includes(type)
-                            ? "unavailable"
-                            : session.type === type
-                              ? "chosen"
-                              : ""
-                        }
-                      >
-                        <input
-                          type="radio"
-                          name={"session-type-" + sessionKey(session)}
-                          checked={session.type === type}
-                          disabled={!types.includes(type)}
-                          onChange={() =>
-                            setSessionType(sessionKey(session), type)
-                          }
-                        />
-                        {type}
-                      </label>
-                    ))}
-                  </div>
+            {draft.sessions.length === 1 ? (
+              <div className="booking-single-types">
+                {["Online", "In-person"].map((type) => (
+                  <label
+                    key={type}
+                    className={[
+                      "booking-single-type",
+                      !types.includes(type)
+                        ? "unavailable"
+                        : draft.sessions[0].type === type
+                          ? "chosen"
+                          : "",
+                    ].join(" ")}
+                  >
+                    <input
+                      type="radio"
+                      name="single-session-type"
+                      checked={draft.sessions[0].type === type}
+                      disabled={!types.includes(type)}
+                      onChange={() =>
+                        setSessionType(sessionKey(draft.sessions[0]), type)
+                      }
+                    />
+                    <span>
+                      <strong>
+                        {type === "In-person" ? "In-Person" : type}
+                      </strong>
+                      <small>
+                        {!types.includes(type)
+                          ? "Not available for this service."
+                          : type === "Online"
+                            ? "External online meeting. Meeting details are available after booking; the platform has no built-in video calls."
+                            : "Meet in person. Location details are available after booking."}
+                      </small>
+                    </span>
+                    {type === "Online" ? (
+                      <Video size={18} aria-hidden="true" />
+                    ) : (
+                      <MapPin size={18} aria-hidden="true" />
+                    )}
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="booking-set-all">
+                  <span>Set all to:</span>
+                  {["Online", "In-person"].map((type) => (
+                    <button
+                      type="button"
+                      key={type}
+                      className={button}
+                      disabled={!types.includes(type)}
+                      onClick={() => setSessionType("all", type)}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                  <small>
+                    {
+                      draft.sessions.filter((session) =>
+                        types.includes(session.type),
+                      ).length
+                    }{" "}
+                    of {draft.sessions.length} chosen
+                  </small>
                 </div>
-              ))}
-            </div>
+                <div className="booking-session-types">
+                  {draft.sessions.map((session) => (
+                    <div
+                      className="booking-session-type-row"
+                      key={sessionKey(session)}
+                    >
+                      <strong>
+                        {sessionDate(session.date)} &middot;{" "}
+                        {rangeLabel(session.time, session.duration)}
+                      </strong>
+                      <div>
+                        {["Online", "In-person"].map((type) => (
+                          <label
+                            key={type}
+                            className={
+                              !types.includes(type)
+                                ? "unavailable"
+                                : session.type === type
+                                  ? "chosen"
+                                  : ""
+                            }
+                          >
+                            <input
+                              type="radio"
+                              name={"session-type-" + sessionKey(session)}
+                              checked={session.type === type}
+                              disabled={!types.includes(type)}
+                              onChange={() =>
+                                setSessionType(sessionKey(session), type)
+                              }
+                            />
+                            {type}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
         {step === 5 && (
