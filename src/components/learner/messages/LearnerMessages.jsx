@@ -7,8 +7,11 @@ export default function LearnerMessages() {
   const work = useLearnerWorkspace();
   const supportSelected = work.data.activeThread === "Kasangga Support";
   return (
-    <div>
-      <nav aria-label="Message conversations" className="mx-auto flex max-w-[1400px] gap-2 px-4 pt-3 lg:px-5">
+    <div className="learner-messages-workspace">
+      <nav
+        aria-label="Message conversations"
+        className="mx-auto flex max-w-[1400px] gap-2 px-4 pt-3 lg:px-5"
+      >
         <button
           type="button"
           aria-pressed={!supportSelected}

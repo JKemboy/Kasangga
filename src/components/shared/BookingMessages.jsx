@@ -253,7 +253,7 @@ export default function BookingMessages({
   );
   return (
     <div
-      className={`booking-chat ${role === "tutor" ? "tutor-booking-chat" : "learner-booking-chat"}`}
+      className={`booking-chat tutor-booking-chat ${role === "learner" ? "learner-booking-chat" : ""}`}
     >
       <h1>Messages</h1>
       <p className="chat-subtitle">

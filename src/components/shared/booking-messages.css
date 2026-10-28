@@ -799,3 +799,17 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+.learner-messages-workspace {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.learner-messages-workspace .booking-chat {
+  padding-top: 8px;
+}
+@media (min-width: 801px) {
+  .learner-messages-workspace .tutor-booking-chat {
+    height: calc(100dvh - 132px);
+    min-height: 420px;
+  }
+}

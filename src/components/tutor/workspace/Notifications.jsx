@@ -66,9 +66,30 @@ function ReadBadge({ read }) {
   );
 }
 
-export default function Notifications({ data, update, go, args = {} }) {
+export default function Notifications({
+  data,
+  update,
+  go,
+  args = {},
+  role = "tutor",
+}) {
+  const categories =
+    role === "learner"
+      ? [
+          "Sessions",
+          "Payments",
+          "Messages",
+          "Reviews",
+          "Safety and Reports",
+          "System",
+        ]
+      : tutorNotificationCategories;
+  const categoryFor =
+    role === "learner"
+      ? (notification) => notification.category || "System"
+      : tutorNotificationCategory;
   const auth = useAuth();
-  const inbox = useBookingInbox("tutor", auth?.user?.id);
+  const inbox = useBookingInbox(role, auth?.user?.id);
   const notifications = [
     ...inbox.notifications,
     ...data.notifications.filter(
@@ -92,7 +113,7 @@ export default function Notifications({ data, update, go, args = {} }) {
       n.title,
       n.text,
       n.detail,
-      tutorNotificationCategory(n),
+      categoryFor(n),
       n.time,
       timestamp(n.time).label,
     ]
@@ -100,7 +121,7 @@ export default function Notifications({ data, update, go, args = {} }) {
       .toLowerCase();
     return (
       terms.every((term) => searchable.includes(term)) &&
-      (category === "All" || tutorNotificationCategory(n) === category) &&
+      (category === "All" || categoryFor(n) === category) &&
       (tab === "All" || (tab === "Read" ? n.read : !n.read))
     );
   });
@@ -160,8 +181,9 @@ export default function Notifications({ data, update, go, args = {} }) {
             Notifications
           </h1>
           <p className="mt-0.5 text-xs text-[#001ca8]">
-            Stay updated on your tutoring services, sessions, payments, and
-            account activity.
+            {role === "learner"
+              ? "Stay updated with your sessions, messages, and account activity."
+              : "Stay updated on your tutoring services, sessions, payments, and account activity."}
           </p>
         </div>
         {inbox.error && (
@@ -212,7 +234,7 @@ export default function Notifications({ data, update, go, args = {} }) {
             }}
           >
             <option value="All">All Notifications</option>
-            {tutorNotificationCategories.map((c) => (
+            {categories.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -266,7 +288,17 @@ export default function Notifications({ data, update, go, args = {} }) {
                   onClick={async () => {
                     if (!n.read && (await markRead(n.id)) === false) return;
                     const target = notificationDestination(n);
-                    if (target) go(target.view, target.args);
+                    if (target)
+                      go(
+                        target.view,
+                        role === "learner" && target.view === "messages"
+                          ? {
+                              ...target.args,
+                              bookingId: n.bookingId,
+                              name: n.title.replace(/^New message from /, ""),
+                            }
+                          : target.args,
+                      );
                     else setSelectedId(n.id);
                   }}
                 >
