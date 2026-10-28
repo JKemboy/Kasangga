@@ -1,3 +1,4 @@
+import { listTutorReviews } from "./tutorReviews.js";
 // Tutor service API: reads and writes tutor-owned services, topics, and time slots through Supabase-backed operations.
 import { getSupabaseClient } from "./supabaseClient.js";
 
@@ -257,6 +258,20 @@ export async function saveTutorService(
       })),
     });
     if (error) throw databaseError(error, "saving topics and their schedules");
+    if (values.courseCode != null) {
+      const { error: codeError } = await client
+        .from("services")
+        .update({ subject: values.courseCode.trim() })
+        .eq("service_id", data)
+        .eq("tutor_profile_id", tutor.tutor_profile_id)
+        .select("service_id")
+        .single();
+      if (codeError)
+        throw databaseError(
+          codeError,
+          "saving the course code; service and topics have been saved",
+        );
+    }
     return loadService(client, data, tutor.tutor_profile_id);
   }
 
@@ -461,6 +476,18 @@ export async function listDiscoverableTutors(client = getSupabaseClient()) {
       ),
       topics: undefined,
     })),
+  );
+  await Promise.all(
+    tutors.map(async (tutor) => {
+      try {
+        const reviews = await listTutorReviews(tutor.tutorProfileId, client);
+        tutor.reviewCount = reviews.count;
+        tutor.rating = reviews.average;
+      } catch {
+        // Keep directory cards available if reviews cannot be loaded.
+        tutor.reviewCount = null;
+      }
+    }),
   );
   return tutors;
 }
