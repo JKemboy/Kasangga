@@ -1,12 +1,12 @@
 // Learner dashboard overview: live tutor recommendations and account-linked shortcuts.
 import { useEffect, useState } from "react";
 import { CalendarDays, Bookmark, Star } from "lucide-react";
-import { savedService } from "../../../services/savedTutors.js";
+
 import { courseRecommendations } from "../../../services/tutorRecommendations.js";
 import { listDiscoverableTutors } from "../../../services/tutorServices.js";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
-import { button, primary } from "../../tutor/workspace/ui.jsx";
-import PortalAvatar from "../../shared/PortalAvatar.jsx";
+import { button } from "../../tutor/workspace/ui.jsx";
+import TutorServiceCard from "../find-tutors/TutorServiceCard.jsx";
 import "./overview.css";
 
 export default function LearnerOverview({ go }) {
@@ -44,16 +44,9 @@ export default function LearnerOverview({ go }) {
 
   const program = work.data.profile.program || "";
   const recommended = courseRecommendations(tutors, program);
-  const rows = recommended
-    .flatMap((tutor) =>
-      tutor.courseServices.map((service) =>
-        savedService({ ...tutor, courseServices: [service] }, service),
-      ),
-    )
-    .sort(
-      (a, b) =>
-        b.courseScore - a.courseScore || (b.rating || 0) - (a.rating || 0),
-    );
+  const rows = recommended.flatMap((tutor) =>
+    tutor.courseServices.map((service) => ({ tutor, service })),
+  );
 
   const today = new Date();
   const weekStart = new Date(today);
@@ -80,6 +73,13 @@ export default function LearnerOverview({ go }) {
 
   return (
     <section className="lo-overview">
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Welcome back
+          {work.data.profile.name ? `, ${work.data.profile.name}` : ""}!
+        </h1>
+        <p className="mt-1">Find a tutor and continue your learning journey.</p>
+      </header>
       <div className="lo-metrics">
         {[
           [
@@ -141,63 +141,13 @@ export default function LearnerOverview({ go }) {
         </p>
       )}
       {!loading && !error && (
-        <div className="lo-tutors">
-          {rows.slice(0, 4).map((tutor) => (
-            <article key={tutor.serviceId}>
-              <span
-                className={`lo-status ${(tutor.types || []).includes("Online") ? "online" : "offline"}`}
-              >
-                •{" "}
-                {(tutor.types || []).includes("Online") ? "Online" : "Offline"}
-              </span>
-              <button
-                className="lo-save"
-                aria-label={`Save ${tutor.name}`}
-                aria-pressed={work.isSaved(tutor)}
-                disabled={work.savedLoading || work.isSaving(tutor)}
-                onClick={() => work.toggleSave(tutor)}
-              >
-                <Bookmark
-                  size={18}
-                  fill={work.isSaved(tutor) ? "#087542" : "none"}
-                />
-              </button>
-              <PortalAvatar
-                name={tutor.name}
-                userId={tutor.avatarUserId}
-                className="lo-avatar overflow-hidden"
-              />
-              <h3>{tutor.name}</h3>
-              <p>
-                {tutor.courseServices
-                  .map((service) =>
-                    [service.name, service.subtitle]
-                      .filter(Boolean)
-                      .join(" - "),
-                  )
-                  .join(", ")}
-              </p>
-              <span className="lo-rating">
-                ★ <span>{tutor.rating || "No ratings yet"}</span>
-              </span>
-              <strong>
-                ₱{tutor.rate.toLocaleString()} <span>/ hour</span>
-              </strong>
-              <div>
-                <button
-                  className={button}
-                  onClick={() => work.open("profile", tutor)}
-                >
-                  View Profile
-                </button>
-                <button
-                  className={primary}
-                  onClick={() => work.open("book", tutor)}
-                >
-                  Book Now
-                </button>
-              </div>
-            </article>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {rows.slice(0, 4).map(({ tutor, service }) => (
+            <TutorServiceCard
+              key={service.id}
+              tutor={tutor}
+              service={service}
+            />
           ))}
         </div>
       )}

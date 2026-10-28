@@ -5,20 +5,12 @@ import {
   matchesPrice,
 } from "../../../services/tutorFilters.js";
 // Find a Tutor: loads published tutor services, supports search/filtering, and opens profile, booking, save, or message actions.
-import { savedService } from "../../../services/savedTutors.js";
+import TutorServiceCard from "./TutorServiceCard.jsx";
 import { listDiscoverableTutors } from "../../../services/tutorServices.js";
-import PortalAvatar from "../../shared/PortalAvatar.jsx";
+
 import { useState, useEffect } from "react";
-import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
-import {
-  Bookmark,
-  CheckCircle2,
-  ChevronDown,
-  Grid2X2,
-  List,
-  ShieldCheck,
-  Star,
-} from "lucide-react";
+
+import { ChevronDown, Grid2X2, List, ShieldCheck } from "lucide-react";
 
 const Select = ({ label, value, onChange, options = [] }) => (
   <label className="block text-xs font-semibold">
@@ -39,7 +31,6 @@ const Select = ({ label, value, onChange, options = [] }) => (
 );
 
 export default function LearnerFindTutor({ query = "" }) {
-  const work = useLearnerWorkspace();
   const [tutors, setTutors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -209,86 +200,14 @@ export default function LearnerFindTutor({ query = "" }) {
             : "mt-1 grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
         }
       >
-        {rows.map(({ tutor, service }) => {
-          const { name, degree, rating } = tutor;
-          const bookmark = savedService(tutor, service);
-          return (
-            <article
-              key={service.id}
-              className={`relative rounded-xl border border-[#e0e7f0] bg-white px-3 pb-2 pt-8 ${list ? "grid items-center gap-4 text-left md:grid-cols-[90px_minmax(0,1fr)_220px]" : "text-center"}`}
-            >
-              <span className="absolute left-2 top-2 rounded-full bg-[#dff8e8] px-2 py-0.5 text-xs text-[#087542]">
-                {service.type === "Both" ? "Online / In-person" : service.type}
-              </span>
-              <button
-                type="button"
-                aria-label={`Save ${name}`}
-                aria-pressed={work.isSaved(bookmark)}
-                disabled={work.savedLoading || work.isSaving(bookmark)}
-                onClick={() => work.toggleSave(bookmark)}
-                className="absolute right-2 top-2 text-[#087542]"
-              >
-                <Bookmark
-                  className="h-4 w-4"
-                  fill={work.isSaved(bookmark) ? "#087542" : "none"}
-                />
-              </button>
-              <div>
-                <PortalAvatar
-                  name={name}
-                  userId={tutor.avatarUserId}
-                  className="mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-[linear-gradient(145deg,#e5e7eb,#cbd5e1)] text-base font-bold text-[#405276]"
-                />
-                <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#dff8e8] px-2 py-0.5 text-xs font-semibold text-[#087542]">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Verified
-                </div>
-              </div>
-              <div>
-                <h2 className="mt-2 text-sm font-bold">{service.name}</h2>
-                <p className="mt-1 text-xs font-semibold">{name}</p>
-                <p className="text-xs text-[#566584]">{degree}</p>
-                <p className="mt-1 min-h-7 text-xs leading-4 text-[#637191]">
-                  {service.subtitle}
-                </p>
-                <p className="mt-1 text-xs text-[#637191]">
-                  <Star className="mr-1 inline h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
-                  {rating || "No ratings yet"}
-                </p>
-              </div>
-              <div>
-                <p className="mt-1 text-sm font-bold text-[#087542]">
-                  {"\u20b1"}
-                  {service.rate.toLocaleString()}
-                  <span className="font-normal text-[#637191]"> / hour</span>
-                </p>
-                <p className="my-2 text-xs text-slate-500">
-                  {service.category} / {service.level}
-                </p>
-                <div className="mt-1 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => work.open("profile", bookmark)}
-                    className="h-7 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
-                  >
-                    View Profile
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      work.open("book", {
-                        ...bookmark,
-                      })
-                    }
-                    className="h-7 rounded-md bg-[#087542] text-xs font-semibold text-white"
-                  >
-                    Book Now
-                  </button>
-                </div>
-              </div>
-            </article>
-          );
-        })}
+        {rows.map(({ tutor, service }) => (
+          <TutorServiceCard
+            key={service.id}
+            tutor={tutor}
+            service={service}
+            list={list}
+          />
+        ))}
       </div>
       {(subject !== "All Subjects" ||
         ratingFilter !== "All Ratings" ||
