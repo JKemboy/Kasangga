@@ -146,7 +146,7 @@
   border-radius: 12px;
   padding: 13px 15px;
 }
-.ltp-service > div:first-child {
+.ltp-service-heading {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -255,4 +255,78 @@
   .ltp-week {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+}
+
+.ltp-service-heading {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.ltp-service-heading strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ltp-service-save {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 5px;
+  border-radius: 5px;
+  color: #087542;
+  cursor: pointer;
+}
+.ltp-service-save:hover {
+  background: #e5f3e9;
+}
+.ltp-service-save:focus-visible {
+  outline: 2px solid #087542;
+  outline-offset: 2px;
+}
+.ltp-service-save:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.ltp-service-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+}
+.ltp-service-bottom {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+.ltp-service-bottom .ltp-topics {
+  flex: 1 1 180px;
+  margin-top: 0;
+}
+.ltp-service-booking {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.ltp-review-author {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 9px;
+  min-width: 0;
+}
+.ltp-review-author small {
+  overflow-wrap: anywhere;
+}
+.ltp-review-date {
+  flex-shrink: 0;
+  text-align: right;
+}
+.ltp-review-stars {
+  display: flex;
+  gap: 2px;
+  margin: 4px 0;
 }

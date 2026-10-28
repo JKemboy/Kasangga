@@ -174,10 +174,6 @@ export default function TutorProfile({
                     : `${completedCount} completed session${completedCount === 1 ? "" : "s"}`}
               </span>
             }
-            <span>
-              <b>{t.rate ? `₱${t.rate}` : "Rate unavailable"}</b>
-              {t.rate && " / hour"}
-            </span>
           </div>
           <div className="ltp-actions">
             <button className={primary} onClick={() => onBook(t)}>
@@ -224,11 +220,38 @@ export default function TutorProfile({
               : null;
             return (
               <div className="ltp-service" key={service.id || service.name}>
-                <div>
+                <div className="ltp-service-heading">
                   <strong>{service.name}</strong>
-                  <small>
-                    {service.subtitle || service.category || t.category}
-                  </small>
+                  {service.id && (
+                    <button
+                      type="button"
+                      className="ltp-service-save"
+                      disabled={saving || savingFor(savedService(t, service))}
+                      aria-label={
+                        savedFor(savedService(t, service))
+                          ? "Unsave service"
+                          : "Save service"
+                      }
+                      title={
+                        savedFor(savedService(t, service))
+                          ? "Unsave service"
+                          : "Save service"
+                      }
+                      aria-pressed={savedFor(savedService(t, service))}
+                      onClick={() => onSave(savedService(t, service))}
+                    >
+                      <Bookmark
+                        size={18}
+                        fill={
+                          savedFor(savedService(t, service))
+                            ? "#087542"
+                            : "none"
+                        }
+                      />
+                    </button>
+                  )}
+                </div>
+                <div className="ltp-service-meta">
                   <small>
                     Session type:{" "}
                     {service.type === "Both"
@@ -248,70 +271,32 @@ export default function TutorProfile({
                             " reviews)"
                           : "No ratings yet"}
                   </small>
-                  <b>
-                    {service.rate || t.rate
-                      ? `₱${service.rate || t.rate} / hour`
-                      : "Rate unavailable"}
-                  </b>
-                  <button
-                    className={button}
-                    onClick={() => onBook(savedService(t, service))}
-                  >
-                    Book this service
-                  </button>
-                  {service.id && (
-                    <button
-                      className={button}
-                      disabled={saving || savingFor(savedService(t, service))}
-                      aria-pressed={savedFor(savedService(t, service))}
-                      onClick={() => onSave(savedService(t, service))}
-                    >
-                      <Bookmark
-                        size={15}
-                        fill={
-                          savedFor(savedService(t, service))
-                            ? "#087542"
-                            : "none"
-                        }
-                      />
-                      {savedFor(savedService(t, service))
-                        ? "Saved"
-                        : "Save service"}
-                    </button>
-                  )}
                 </div>
-                <div className="ltp-topics">
-                  {chips(service.topics).map((topic) => (
-                    <span key={topic}>{topic}</span>
-                  ))}
+                <div className="ltp-service-bottom">
+                  <div className="ltp-topics">
+                    {chips(service.topics).map((topic) => (
+                      <span key={topic}>{topic}</span>
+                    ))}
+                  </div>
+                  <div className="ltp-service-booking">
+                    <b>
+                      {(service.rate ?? t.rate)
+                        ? `\u20b1${service.rate ?? t.rate} / hour`
+                        : "Rate unavailable"}
+                    </b>
+                    <button
+                      type="button"
+                      className={button}
+                      onClick={() => onBook(savedService(t, service))}
+                    >
+                      Book this service
+                    </button>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
-      </section>
-      <section>
-        <h4>Weekly availability</h4>
-        {t.weeklyAvailability ? (
-          <>
-            <div className="ltp-week">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-                <div
-                  key={day}
-                  className={t.weeklyAvailability[day] ? "available" : ""}
-                >
-                  <b>{day}</b>
-                  <small>{t.weeklyAvailability[day] || "Unavailable"}</small>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-slate-500 mt-2">
-              Only open, conflict-free times are offered when you book.
-            </p>
-          </>
-        ) : (
-          <p>Weekly availability has not been provided.</p>
-        )}
       </section>
       <section>
         <h4>Ratings and reviews</h4>
@@ -350,20 +335,31 @@ export default function TutorProfile({
         {!reviewsError && reviews.entries.length
           ? reviews.entries.map((review) => (
               <div className="ltp-review" key={review.id}>
-                <div>
-                  <b>{review.name}</b>
-                  <small>{review.date}</small>
+                <div className="ltp-review-header">
+                  <div className="ltp-review-author">
+                    <b>{review.name}</b>
+                    {review.service && <small>{review.service}</small>}
+                  </div>
+                  <small className="ltp-review-date">{review.date}</small>
                 </div>
                 <p
-                  className="text-amber-500"
+                  className="ltp-review-stars"
                   aria-label={review.rating + " out of 5 stars"}
                 >
-                  {"★".repeat(review.rating)}
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <Star
+                      key={index}
+                      size={15}
+                      aria-hidden="true"
+                      className={
+                        index < review.rating
+                          ? "fill-amber-500 text-amber-500"
+                          : "fill-slate-200 text-slate-200"
+                      }
+                    />
+                  ))}
                 </p>
                 <p>{review.text}</p>
-                <small>
-                  {[review.service, review.topic].filter(Boolean).join(" · ")}
-                </small>
               </div>
             ))
           : !reviewsLoading &&
