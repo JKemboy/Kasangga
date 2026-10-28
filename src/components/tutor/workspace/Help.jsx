@@ -116,15 +116,14 @@ const faqs = [
   {
     question: "How are Tutor earnings calculated?",
     answer:
-      "Each eligible completed paid session is split 90% Tutor, 5% OSAS and 5% Platform. For example, PHP 500 gross gives the tutor PHP 450. See Earnings for transaction details.",
+      "Each eligible completed paid session is split 90% Tutor and 10% Platform. For example, PHP 500 gross gives the tutor PHP 450. See Earnings for transaction details.",
     view: "earnings",
     action: "Open Earnings",
   },
 ];
 const matches = (entry, query) =>
   JSON.stringify(entry).toLowerCase().includes(query.trim().toLowerCase());
-const example =
-  "\u20b1500 Gross = \u20b1450 Tutor + \u20b125 OSAS + \u20b125 Platform";
+const example = "\u20b1500 Gross = \u20b1450 Tutor + \u20b150 Platform";
 function GuideCard({ guide, go, onContact }) {
   const [expanded, setExpanded] = useState(true);
   const Icon = guide.icon;
@@ -154,8 +153,7 @@ function GuideCard({ guide, go, onContact }) {
                 <div className="help-shares">
                   {[
                     ["Tutor Share", "90%"],
-                    ["OSAS Share", "5%"],
-                    ["Platform Share", "5%"],
+                    ["Platform Share", "10%"],
                   ].map(([label, value]) => (
                     <div key={label}>
                       <span>{label}</span>

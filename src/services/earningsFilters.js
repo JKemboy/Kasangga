@@ -7,6 +7,8 @@ export const earningsDateOptions = [
 ];
 export function matchesEarningsDate(value, period, now = new Date()) {
   if (period === "All dates") return true;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(period))
+    return String(value).slice(0, 10) === period;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Manila",

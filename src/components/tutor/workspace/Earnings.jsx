@@ -33,13 +33,12 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 const headers = [
   ["Transaction ID", "12%"],
   ["Booking ID", "12%"],
-  ["Learner", "12%"],
-  ["Service", "13%"],
+  ["Learner", "16%"],
+  ["Service", "17%"],
   ["Session Date", "8%"],
   ["Gross Amount", "8%"],
-  ["Tutor Share (90%)", "9%"],
-  ["OSAS Share (5%)", "8%"],
-  ["Platform Share (5%)", "8%"],
+  ["Your Share (90%)", "9%"],
+  ["Platform Share (10%)", "8%"],
   ["Payment Status", "10%"],
 ];
 
@@ -69,13 +68,54 @@ function Learner({ name }) {
   );
 }
 
-function PaymentBadge({ status }) {
+function PayoutBadge({ session }) {
+  const status = payoutStatus(session);
+  const label = status === "Pending for Transfer" ? "Pending Transfer" : status;
+  const colors =
+    status === "Transferred"
+      ? "bg-[#e3f4e9] text-green-800"
+      : status === "Pending for Transfer"
+        ? "bg-orange-50 text-orange-700"
+        : status === "On Hold"
+          ? "bg-red-50 text-red-600"
+          : "bg-[#eef1f4] text-slate-600";
+  const format = (value) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? null
+      : new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Manila",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(date);
+  };
+  const sent = session.transferredAt && format(session.transferredAt);
+  const due = session.transferDueAt && format(session.transferDueAt);
+  const detail =
+    status === "Transferred"
+      ? sent
+        ? "Sent " + sent
+        : "Transfer recorded"
+      : status === "Pending for Transfer"
+        ? due
+          ? "By " + due
+          : "Awaiting payout transfer"
+        : status === "On Hold"
+          ? "Refund under review"
+          : "Waiting for the learner to confirm";
   return (
-    <span
-      className={`inline-block rounded px-2 py-1 text-[10px] font-semibold ${status === "Paid" ? "bg-[#e3f4eb] text-green-800" : status === "Unpaid" ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}
-    >
-      {status}
-    </span>
+    <div className="space-y-1">
+      <span
+        className={
+          "inline-block rounded-md px-3 py-1 text-xs font-semibold " + colors
+        }
+      >
+        {label}
+      </span>
+      <p className="text-[11px] leading-4 text-slate-500">{detail}</p>
+    </div>
   );
 }
 
@@ -189,7 +229,7 @@ export default function Earnings({ data, go, args = {} }) {
   return (
     <section
       aria-labelledby="earnings-heading"
-      className="space-y-2 pb-1 text-xs text-[#101828]"
+      className="earnings-page space-y-3 pb-1 text-xs text-[#101828]"
     >
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <div>
@@ -204,14 +244,10 @@ export default function Earnings({ data, go, args = {} }) {
             shares.
           </p>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-xl bg-[#eaf4ff] px-3 py-2 text-[11px] font-semibold text-[#0027a5]">
-          <CreditCard className="h-4 w-4 text-blue-600" />
-          GCash via PayMongo
-        </span>
       </div>
 
       <div
-        className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5"
+        className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
         aria-label="Earnings summary"
       >
         {[
@@ -225,21 +261,14 @@ export default function Earnings({ data, go, args = {} }) {
           [
             UsersRound,
             money(totals.tutor),
-            "Tutor Earnings — 90%",
+            "Your Share (90%)",
             "Your fixed share",
             true,
           ],
           [
-            Landmark,
-            money(totals.osas),
-            "OSAS Share — 5%",
-            "Institutional share",
-            false,
-          ],
-          [
             ChartColumnIncreasing,
-            money(totals.platform),
-            "Platform Share — 5%",
+            money(totals.platform + totals.osas),
+            "Platform Share (10%)",
             "Platform operations",
             true,
           ],
@@ -253,7 +282,7 @@ export default function Earnings({ data, go, args = {} }) {
         ].map(([Icon, value, label, hint, gold]) => (
           <article
             key={label}
-            className="flex min-w-0 items-center gap-2.5 rounded-lg border border-[#e0e7f0] bg-white p-3 lg:flex-col lg:items-start xl:flex-row xl:items-center"
+            className={`flex min-w-0 items-center gap-3 rounded-lg border p-4 ${label === "Your Share (90%)" ? "border-green-300 bg-green-50" : "border-[#e0e7f0] bg-white"}`}
           >
             <span
               className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-white ${gold ? "bg-amber-400" : "bg-green-800"}`}
@@ -279,14 +308,12 @@ export default function Earnings({ data, go, args = {} }) {
         <Info className="h-6 w-6 shrink-0 text-green-800" />
         <div>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-bold text-green-900">
-            <span>Tutor 90%</span>
+            <span>Your Share 90%</span>
             <span aria-hidden="true">|</span>
-            <span>OSAS 5%</span>
-            <span aria-hidden="true">|</span>
-            <span>Platform 5%</span>
+            <span>Platform 10%</span>
           </p>
           <p className="mt-1 text-[11px] text-[#263c73]">
-            Example: ₱500 Gross = ₱450 Tutor + ₱25 OSAS + ₱25 Platform
+            Example: PHP 500 Gross = PHP 450 Your Share + PHP 50 Platform
           </p>
         </div>
       </div>
@@ -295,7 +322,7 @@ export default function Earnings({ data, go, args = {} }) {
         <h2 className="text-lg font-bold tracking-tight">
           Transaction History
         </h2>
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+        <div className="grid w-full gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(220px,2fr)_repeat(3,minmax(150px,1fr))]">
           <div className="relative min-w-44 flex-1 sm:w-56">
             <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#263c73]" />
             <input
@@ -333,7 +360,16 @@ export default function Earnings({ data, go, args = {} }) {
               }}
               className="h-9 w-full appearance-none rounded-md border border-[#dce4ef] bg-white pl-3 pr-8 text-xs outline-none focus:border-green-700"
             >
-              {earningsDateOptions.map((period) => (
+              {[
+                ...earningsDateOptions,
+                ...new Set(
+                  data.sessions
+                    .map((session) => session.date)
+                    .filter(Boolean)
+                    .sort()
+                    .reverse(),
+                ),
+              ].map((period) => (
                 <option key={period}>{period}</option>
               ))}
             </select>
@@ -380,10 +416,10 @@ export default function Earnings({ data, go, args = {} }) {
         </div>
       </div>
 
-      <div className="hidden overflow-hidden rounded-lg border border-[#e0e7f0] bg-white lg:block">
+      <div className="hidden overflow-x-auto rounded-lg border border-[#e0e7f0] bg-white lg:block">
         <table
           aria-label="Transaction history"
-          className="w-full table-fixed border-collapse text-left text-[10px]"
+          className="w-full min-w-[1000px] table-fixed border-collapse text-left text-xs"
         >
           <colgroup>
             {headers.map(([label, width]) => (
@@ -438,17 +474,20 @@ export default function Earnings({ data, go, args = {} }) {
                   <td className="px-1.5 py-1.5 leading-[14px]">
                     <time dateTime={s.date}>{sessionDate(s.date)}</time>
                   </td>
-                  {["gross", "tutor", "osas", "platform"].map((share) => (
+                  {["gross", "tutor", "platform"].map((share) => (
                     <td
                       key={share}
-                      className="whitespace-nowrap px-1.5 py-1.5 tabular-nums"
+                      className={`whitespace-nowrap px-3 py-3 tabular-nums ${share === "tutor" ? "bg-green-50 font-bold text-green-800" : ""}`}
                     >
-                      {money(amounts[share])}
+                      {money(
+                        share === "platform"
+                          ? amounts.platform + amounts.osas
+                          : amounts[share],
+                      )}
                     </td>
                   ))}
                   <td className="px-1.5 py-1.5">
-                    <PaymentBadge status={s.payment} />
-                    <PaymentBadge status={payoutStatus(s)} />
+                    <PayoutBadge session={s} />
                   </td>
                 </tr>
               );
@@ -472,8 +511,7 @@ export default function Earnings({ data, go, args = {} }) {
                 <h3 className="break-all text-[11px] font-semibold">
                   {s.transaction || "Transaction pending"}
                 </h3>
-                <PaymentBadge status={s.payment} />
-                <PaymentBadge status={payoutStatus(s)} />
+                <PayoutBadge session={s} />
               </div>
               <p className="break-all text-[11px] text-[#455780]">
                 Booking: {s.booking || "—"}
@@ -489,11 +527,17 @@ export default function Earnings({ data, go, args = {} }) {
               <dl className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3">
                 {[
                   ["Gross Amount", "gross"],
-                  ["Tutor Share (90%)", "tutor"],
-                  ["OSAS Share (5%)", "osas"],
-                  ["Platform Share (5%)", "platform"],
+                  ["Your Share (90%)", "tutor"],
+                  ["Platform Share (10%)", "platform"],
                 ].map(([label, share]) => (
-                  <div key={share}>
+                  <div
+                    key={share}
+                    className={
+                      share === "tutor"
+                        ? "rounded-md bg-green-50 p-2 text-green-800"
+                        : ""
+                    }
+                  >
                     <dt className="text-[10px] text-[#455780]">{label}</dt>
                     <dd className="mt-1 font-semibold tabular-nums">
                       {money(amounts[share])}
