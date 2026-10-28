@@ -165,18 +165,20 @@ export default function StudentShell({
                   Locked
                 </span>
               )}
-              {!locked(id) && counts[id] !== undefined && (
-                <CountBadge
-                  count={counts[id]}
-                  label={
-                    id === "reviews"
-                      ? "sessions awaiting review"
-                      : id === "sessions"
-                        ? "active sessions"
-                        : `unread ${id}`
-                  }
-                />
-              )}
+              {!locked(id) &&
+                counts[id] !== undefined &&
+                (role !== "learner" || Number(counts[id]) >= 1) && (
+                  <CountBadge
+                    count={counts[id]}
+                    label={
+                      id === "reviews"
+                        ? "sessions awaiting review"
+                        : id === "sessions"
+                          ? "active sessions"
+                          : `unread ${id}`
+                    }
+                  />
+                )}
             </button>
           ))}
           <button
