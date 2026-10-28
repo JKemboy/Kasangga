@@ -72,6 +72,9 @@ export default function CreateService({
     };
   }, [auth.user.id, data.profile?.expertise]);
   const [name, setName] = useState(service?.name || "");
+  const [courseCode, setCourseCode] = useState(
+    service?.subtitle !== service?.name ? service?.subtitle || "" : "",
+  );
   const [description, setDescription] = useState(service?.description || "");
   const [schedule, setSchedule] = useState({
     slots: data.slots || [],
@@ -309,6 +312,8 @@ export default function CreateService({
     e.preventDefault();
     if (saving || scheduleLoading || scheduleError || expertiseLoading) return;
     if (expertiseError) return setError(expertiseError);
+    if (!courseCode.trim() || courseCode.trim().length > 50)
+      return setError("Enter a course code (up to 50 characters).");
     if (!expertise.includes(name))
       return setError("Choose a service title from your subject expertise.");
     for (const topic of topics) {
@@ -344,7 +349,10 @@ export default function CreateService({
     setSaving(true);
     setError("");
     try {
-      await saveService(result.values, service?.id ?? null);
+      await saveService(
+        { ...result.values, courseCode: courseCode.trim() },
+        service?.id ?? null,
+      );
       onClose();
     } catch (err) {
       setError(err.message);
@@ -406,7 +414,17 @@ export default function CreateService({
         className="create-service-form"
       >
         <fieldset disabled={saving} className="service-form-fields">
-          <Field label="Service title / Subject">
+          <Field label="Course Code">
+            <input
+              className={input}
+              required
+              maxLength={50}
+              placeholder="e.g. ITE 13"
+              value={courseCode}
+              onChange={(event) => setCourseCode(event.target.value)}
+            />
+          </Field>
+          <Field label="Course Description / Name">
             <select
               className={input}
               required
@@ -647,9 +665,9 @@ export default function CreateService({
                   <div>
                     <h3>Dates and times *</h3>
                     <p className="create-service-hint">
-                      Choose 1 or 2 hours when the full time range is available.
-                      Checked against classes, booked sessions and the other
-                      topics in this service.
+                      Each new time slot is 1 hour. Checked against confirmed
+                      classes, booked sessions, your other availability and the
+                      other topics in this service.
                     </p>
                   </div>
                 </div>
@@ -758,46 +776,6 @@ export default function CreateService({
                                       value={formatTimeInput(start)}
                                     >
                                       {time(start)}
-                                    </option>
-                                  ))}
-                                </select>
-                                <select
-                                  className={input}
-                                  aria-label={
-                                    "Duration on " +
-                                    (group.date || "selected date")
-                                  }
-                                  value={
-                                    row.duration || row.end - row.start || 1
-                                  }
-                                  disabled={
-                                    !group.date ||
-                                    scheduleLoading ||
-                                    !!scheduleError ||
-                                    isBooked(row) ||
-                                    !Number.isFinite(row.start)
-                                  }
-                                  onChange={(e) =>
-                                    patchDuration(
-                                      topic,
-                                      row.key,
-                                      Number(e.target.value),
-                                    )
-                                  }
-                                >
-                                  {[1, 2].map((duration) => (
-                                    <option
-                                      key={duration}
-                                      value={duration}
-                                      disabled={
-                                        !optionsFor({
-                                          ...row,
-                                          duration,
-                                        }).includes(row.start)
-                                      }
-                                    >
-                                      {duration}{" "}
-                                      {duration === 1 ? "hour" : "hours"}
                                     </option>
                                   ))}
                                 </select>

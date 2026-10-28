@@ -1,8 +1,10 @@
+import "./services-table.css";
+import { listTutorReviews } from "../../../services/tutorReviews.js";
 // My Services: lists tutor-owned services and sends create, edit, status, and availability changes to TutorDashboard callbacks.
 import ServiceDetails from "./ServiceDetails.jsx";
 import CreateService from "./CreateService.jsx";
 import { useInteractions } from "../../shared/InteractionProvider.jsx";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Atom,
   BookOpen,
@@ -28,19 +30,6 @@ const control =
   "h-9 w-full rounded-md border border-[#dce4ef] bg-white px-3 text-xs text-[#18233d] outline-none focus:border-green-700 focus:ring-1 focus:ring-green-700";
 const actionButton =
   "min-h-8 rounded border border-green-700 bg-white px-1 py-1 text-[10px] font-semibold leading-3 text-green-800 hover:bg-green-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400";
-const columns = [
-  ["Service / Subject", "14%"],
-  ["Category", "9%"],
-  ["Level", "5.5%"],
-  ["Description", "9%", true],
-  ["Topics / Skills", "8%", true],
-  ["Rate (per hour)", "7%"],
-  ["Session Type", "8%"],
-  ["Status", "8%"],
-  ["Rating", "4%"],
-  ["Completed Sessions", "5.5%"],
-  ["Actions", "22%"],
-];
 
 function ServiceIcon({ service }) {
   const [Icon, color] =
@@ -170,28 +159,30 @@ export default function Services({
   const start = (currentPage - 1) * pageSize;
   const visible = rows.slice(start, start + pageSize);
 
-  useLayoutEffect(() => {
-    const measure = () => {
-      const top = tableHeadRef.current.getBoundingClientRect().bottom;
-      setPageSize(
-        window.innerWidth >= 1024
-          ? Math.max(
-              1,
-              Math.min(5, Math.floor((window.innerHeight - top - 48) / 80)),
-            )
-          : 5,
-      );
+  const [topicReviews, setTopicReviews] = useState([]);
+  const [reviewsError, setReviewsError] = useState("");
+  const tutorProfileId = data.services[0]?.tutorProfileId;
+  useEffect(() => {
+    if (!tutorProfileId) return;
+    let active = true;
+    const load = async () => {
+      try {
+        const result = await listTutorReviews(tutorProfileId);
+        if (active) {
+          setTopicReviews(result.entries);
+          setReviewsError("");
+        }
+      } catch {
+        if (active) setReviewsError("Ratings unavailable");
+      }
     };
-    measure();
-    const observer = new ResizeObserver(measure);
-    const main = tableHeadRef.current.closest("main");
-    observer.observe(main?.firstElementChild || tableHeadRef.current);
-    window.addEventListener("resize", measure);
+    load();
+    window.addEventListener("focus", load);
     return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
+      active = false;
+      window.removeEventListener("focus", load);
     };
-  }, []);
+  }, [tutorProfileId]);
 
   function close() {
     setEdit(null);
@@ -391,151 +382,167 @@ export default function Services({
         </span>
       </p>
 
-      <div className="hidden overflow-hidden rounded-lg border border-[#e0e7f0] bg-white lg:block">
-        <table
-          aria-label="Tutoring services"
-          className="w-full table-fixed border-collapse text-left text-[10px]"
-        >
+      <div className="overflow-x-auto rounded-lg border border-[#e0e7f0] bg-white">
+        <table className="tutor-services-table" aria-label="Tutoring services">
           <colgroup>
-            {columns.map(([title, width, wide]) => (
-              <col
-                key={title}
-                style={{ width }}
-                className={wide ? "hidden xl:table-column" : ""}
-              />
+            {[16, 14, 16, 9, 10, 7, 10, 7, 11].map((width, index) => (
+              <col key={index} style={{ width: width + "%" }} />
             ))}
           </colgroup>
-          <thead ref={tableHeadRef} className="bg-[#f5f7fa]">
-            <tr className="h-10">
-              {columns.map(([title, , wide]) => (
-                <th
-                  key={title}
-                  scope="col"
-                  className={`px-1.5 py-2 text-[9px] font-semibold leading-3 ${wide ? "hidden xl:table-cell" : ""}`}
-                >
-                  {title}
+          <thead className="bg-[#f5f7fa]">
+            <tr>
+              {[
+                "Service / Subject",
+                "Description",
+                "Topics / Skills",
+                "Rate (per hour)",
+                "Session Type",
+                "Status",
+                "Rating",
+                "Completed Sessions",
+                "Actions",
+              ].map((label) => (
+                <th key={label} className="px-3 py-3 text-[10px] font-semibold">
+                  {label}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#edf0f5]">
-            {visible.map((s) => (
-              <tr key={s.id} className="h-20">
-                <th scope="row" className="px-1.5 py-2 text-left font-normal">
-                  <div className="flex items-center gap-2">
-                    <ServiceIcon service={s} />
-                    <div className="min-w-0">
-                      <span className="line-clamp-2 text-[11px] font-bold leading-4">
-                        {s.name}
-                      </span>
-                      <span className="mt-0.5 line-clamp-2 text-[10px] leading-[14px] text-[#455780]">
-                        {s.subtitle}
-                      </span>
-                    </div>
-                  </div>
-                </th>
-                <td className="px-1.5 py-2">
-                  <CategoryBadge category={s.category} />
-                </td>
-                <td className="px-1 py-2">
-                  <span
-                    className={`inline-block rounded px-1 py-1 text-[9px] font-medium leading-3 ${s.level === "All Levels" ? "bg-purple-50 text-purple-600" : "bg-blue-50 text-blue-600"}`}
-                  >
-                    {s.level}
-                  </span>
-                </td>
-                <td className="hidden px-1.5 py-2 text-[#455780] xl:table-cell">
-                  <span className="line-clamp-3 leading-[14px]">
-                    {s.description}
-                  </span>
-                </td>
-                <td className="hidden px-1.5 py-2 text-[#455780] xl:table-cell">
-                  <span className="line-clamp-3 leading-[14px]">
-                    {s.topics
-                      .split(",")
-                      .map((topic) => topic.trim())
-                      .join(" · ")}
-                  </span>
-                </td>
-                <td className="px-1.5 py-2">
-                  <span className="font-bold text-green-800">
-                    {money(s.rate).replace(/\.00$/, "")}
-                  </span>
-                  <span className="text-[9px] text-green-800">/hour</span>
-                </td>
-                <td className="px-1.5 py-2">
-                  <SessionType type={s.type} />
-                </td>
-                <td className="px-1 py-2 text-center">
-                  <StatusBadge status={s.status} />
-                  {s.status === "Suspended" && (
-                    <p className="mt-1 line-clamp-3 text-[8px] leading-[11px] text-[#455780]">
-                      Suspended by Admin — moderation applies.
-                    </p>
-                  )}
-                </td>
-                <td className="px-1 py-2">
-                  <span className="inline-flex items-center gap-1">
-                    <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
-                    {s.rating || "—"}
-                  </span>
-                </td>
-                <td className="px-1.5 py-2 text-center font-medium">
-                  {s.completed ?? "?"}
-                </td>
-                <td className="px-1.5 py-2">{actions(s)}</td>
-              </tr>
-            ))}
-          </tbody>
+          {visible.map((service) => {
+            const sessions = data.sessions.filter(
+              (session) =>
+                String(session.serviceId) === String(service.id) &&
+                session.status === "Completed",
+            );
+            const topics = service.topicDetails?.length
+              ? service.topicDetails
+              : String(service.topics || "")
+                  .split(",")
+                  .map((name) => name.trim())
+                  .filter(Boolean)
+                  .map((name) => ({
+                    name,
+                    rate: service.rate,
+                    types:
+                      service.type === "Both"
+                        ? ["Online", "In-person"]
+                        : [service.type],
+                  }));
+            const topicRows = topics.length
+              ? topics
+              : [
+                  {
+                    name: "No topics",
+                    rate: service.rate,
+                    types: [service.type],
+                  },
+                ];
+            return (
+              <tbody key={service.id} className="border-t border-[#dce5e1]">
+                {topicRows.map((topic, index) => {
+                  const reviews = topicReviews.filter(
+                    (review) =>
+                      String(review.serviceId) === String(service.id) &&
+                      review.topic === topic.name,
+                  );
+                  const rating = reviews.length
+                    ? (
+                        reviews.reduce(
+                          (sum, review) => sum + review.rating,
+                          0,
+                        ) / reviews.length
+                      ).toFixed(1)
+                    : null;
+                  const completed = sessions.filter(
+                    (session) => session.topic === topic.name,
+                  ).length;
+                  return (
+                    <tr
+                      key={topic.id || topic.name}
+                      className="border-b border-slate-100 last:border-0"
+                    >
+                      {index === 0 && (
+                        <>
+                          <th
+                            scope="rowgroup"
+                            rowSpan={topicRows.length}
+                            className="px-3 py-3 align-top font-normal"
+                          >
+                            <div className="flex items-start gap-2">
+                              <ServiceIcon service={service} />
+                              <div>
+                                <span className="font-bold">
+                                  {service.name}
+                                </span>
+                              </div>
+                            </div>
+                          </th>
+                          <td
+                            rowSpan={topicRows.length}
+                            className="max-w-48 px-3 py-3 align-top text-[#455780]"
+                          >
+                            {service.description}
+                          </td>
+                        </>
+                      )}
+                      <td className="px-3 py-3 font-medium">
+                        {topic.name}
+                        <p className="mt-1 text-[10px] font-normal text-slate-500">
+                          {completed} completed sessions
+                        </p>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3 text-green-800">
+                        {money(topic.rate)}/hr
+                      </td>
+                      <td className="px-3 py-3">
+                        <SessionType
+                          type={
+                            topic.types?.length === 2
+                              ? "Both"
+                              : topic.types?.[0] || service.type
+                          }
+                        />
+                      </td>
+                      {index === 0 && (
+                        <td
+                          rowSpan={topicRows.length}
+                          className="px-3 py-3 align-top"
+                        >
+                          <StatusBadge status={service.status} />
+                        </td>
+                      )}
+                      <td className="px-3 py-3">
+                        <span className="inline-flex items-center gap-1">
+                          <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
+                          {reviewsError ||
+                            (rating
+                              ? rating + " (" + reviews.length + ")"
+                              : "No ratings yet")}
+                        </span>
+                      </td>
+                      {index === 0 && (
+                        <td
+                          rowSpan={topicRows.length}
+                          className="px-3 py-3 text-center align-top font-semibold"
+                        >
+                          {sessions.length}
+                        </td>
+                      )}
+                      {index === 0 && (
+                        <td
+                          rowSpan={topicRows.length}
+                          className="service-table-actions px-3 py-3 align-top"
+                        >
+                          {actions(service)}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            );
+          })}
         </table>
-      </div>
-
-      <div
-        className="grid gap-2 md:grid-cols-2 lg:hidden"
-        aria-label="Service cards"
-      >
-        {visible.map((s) => (
-          <article
-            key={s.id}
-            className="min-w-0 space-y-3 rounded-lg border border-[#e0e7f0] bg-white p-3"
-          >
-            <div className="flex items-start gap-2">
-              <ServiceIcon service={s} />
-              <div className="min-w-0 flex-1">
-                <h2 className="break-words text-sm font-bold">{s.name}</h2>
-                <p className="mt-0.5 break-words text-[11px] text-[#455780]">
-                  {s.subtitle}
-                </p>
-              </div>
-              <StatusBadge status={s.status} />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <CategoryBadge category={s.category} />
-              <span className="text-[10px] text-blue-700">{s.level}</span>
-            </div>
-            <p className="break-words leading-5 text-[#455780]">
-              {s.description}
-            </p>
-            <p className="break-words text-[11px] leading-4 text-[#455780]">
-              <b>Topics / Skills:</b> {s.topics}
-            </p>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <b className="text-green-800">{money(s.rate)}/hour</b>
-              <SessionType type={s.type} />
-            </div>
-            <p className="flex items-center gap-1 text-[11px]">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-              {s.rating || "No ratings yet"}
-              <span className="ml-auto">{s.completed} completed sessions</span>
-            </p>
-            {s.status === "Suspended" && (
-              <p className="text-[10px] text-red-600">
-                Suspended by Admin — moderation applies.
-              </p>
-            )}
-            {actions(s)}
-          </article>
-        ))}
       </div>
 
       {!rows.length && (

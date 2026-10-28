@@ -1,0 +1,58 @@
+.tutor-services-table {
+  width: 100%;
+  min-width: 1100px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.tutor-services-table th,
+.tutor-services-table td {
+  padding: 14px 10px;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.tutor-services-table thead th {
+  padding: 12px 10px;
+  color: #52617b;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.tutor-services-table thead th:nth-child(8) {
+  text-align: center;
+}
+.tutor-services-table tbody + tbody {
+  border-top: 2px solid #cbdcd1;
+}
+.tutor-services-table tbody:nth-of-type(even) {
+  background: #fafcfb;
+}
+.tutor-services-table [scope="rowgroup"] {
+  color: #152d22;
+}
+.tutor-services-table .service-table-actions > div {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.tutor-services-table .service-table-actions button {
+  min-height: 30px;
+  padding: 6px 8px;
+  line-height: 1.35;
+}
+.tutor-services-table td > .inline-flex {
+  flex-wrap: wrap;
+}
+
+.tutor-services-table th,
+.tutor-services-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+.tutor-services-table [scope="rowgroup"] > div {
+  justify-content: center;
+  align-items: center;
+}
+.tutor-services-table td > .inline-flex {
+  justify-content: center;
+}

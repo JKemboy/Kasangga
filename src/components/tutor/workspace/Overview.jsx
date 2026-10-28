@@ -235,7 +235,7 @@ export default function Overview({
             key={label}
             aria-label={`Open ${label}`}
             aria-pressed={selectedMetric === label}
-            className={`flex min-w-0 items-center gap-2 rounded-lg border p-2 text-left transition-colors active:border-green-700 active:bg-green-100 active:ring-2 active:ring-green-700 focus-visible:outline-green-700 ${selectedMetric === label ? "border-green-700 bg-green-50 ring-2 ring-green-700" : "bg-white hover:bg-green-50 " + (gold ? "border-amber-100" : "border-[#e0e7f0]")}`}
+            className={`flex min-w-0 items-center gap-2 rounded-lg border p-2 text-left cursor-pointer transition-[border-color,background-color,box-shadow] hover:border-[#22c55e] hover:ring-1 hover:ring-[#22c55e] focus-visible:border-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 active:border-green-700 active:bg-green-100 active:ring-2 active:ring-green-700 focus-visible:outline-green-700 ${selectedMetric === label ? "border-green-700 bg-green-50 ring-2 ring-green-700" : "bg-white hover:bg-green-50 " + (gold ? "border-amber-100" : "border-[#e0e7f0]")}`}
             onClick={() => {
               onSelectMetric?.(label);
               if (args.create) setCreating(true);

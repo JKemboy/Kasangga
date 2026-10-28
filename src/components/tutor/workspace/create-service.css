@@ -304,8 +304,8 @@
 }
 .service-date-group {
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(170px, 0.9fr) minmax(0, 1.7fr);
+  gap: 10px;
   padding: 12px;
   border-bottom: 1px solid #edf0f3;
 }
@@ -329,10 +329,16 @@
 }
 .service-date-times > button {
   justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .service-group-time {
   display: grid;
-  grid-template-columns: minmax(100px, 1fr) 90px 100px minmax(100px, 1.4fr) 20px;
+  grid-template-columns: minmax(85px, 1fr) minmax(85px, 1fr) minmax(
+      90px,
+      1.2fr
+    ) 22px;
   align-items: center;
   gap: 8px;
 }
@@ -351,19 +357,19 @@
 .service-date-picker small {
   color: #778094;
 }
-@media (max-width: 700px) {
+@media (max-width: 600px) {
   .service-date-group {
     grid-template-columns: 1fr;
   }
   .service-group-time {
-    grid-template-columns: minmax(100px, 1fr) 90px 100px 20px;
+    grid-template-columns: minmax(80px, 1fr) minmax(80px, 1fr) 22px;
   }
-  .service-group-time > span:nth-child(4) {
-    grid-column: 1 / 4;
+  .service-group-time > span:nth-child(3) {
+    grid-column: 1 / 3;
     grid-row: 2;
   }
   .service-group-time > button {
-    grid-column: 4;
+    grid-column: 3;
     grid-row: 1;
   }
 }
