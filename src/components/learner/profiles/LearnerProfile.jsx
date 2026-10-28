@@ -1,3 +1,4 @@
+import "./learner-profile.css";
 // Learner Profile: shows institutional profile data and saves editable profile details through the account services.
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
@@ -171,7 +172,6 @@ export default function LearnerProfile() {
         { details },
       );
       if (error) throw error;
-      work.commit((d) => ({ ...d, profile: next }));
       auth.retry();
       cancel();
       setNotice("Profile saved.");
@@ -196,7 +196,7 @@ export default function LearnerProfile() {
   );
 
   return (
-    <section className="mx-auto max-w-[1400px] px-4 py-3 lg:px-5">
+    <section className="learner-profile mx-auto max-w-[1400px] px-4 py-3 lg:px-5">
       <h1 className="text-2xl font-bold tracking-[-1px] text-[#101828]">
         Profile
       </h1>
@@ -352,7 +352,11 @@ export default function LearnerProfile() {
               {controls("academic")}
             </div>
             <div className="mt-2 space-y-2">
-              <Field label="Course / Program" value={profile.program || ""} />
+              <Field
+                label="Course / Program"
+                value={profile.program || ""}
+                disabled
+              />
               <label className="block text-xs font-medium">
                 Year Level
                 <select
@@ -368,7 +372,7 @@ export default function LearnerProfile() {
                   ))}
                 </select>
               </label>
-              <Field label="College" value={profile.college || ""} />
+              <Field label="College" value={profile.college || ""} disabled />
             </div>
           </section>
           <section className="rounded-xl border border-[#e1e7ef] bg-white p-3">
