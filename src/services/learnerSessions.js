@@ -44,6 +44,8 @@ export function mapLearnerSession(row, now = new Date()) {
   return {
     id: String(row.booking_id),
     bookingId: String(row.booking_id),
+    completedAt: row.completed_at || null,
+    serviceId: row.service_id == null ? null : String(row.service_id),
     tutorUserId: row.tutor_user_id || row.user_id || null,
     lifecycle: sessionLifecycle(row, now),
     startAt: new Date(
@@ -118,7 +120,13 @@ export async function listLearnerSessions(
         : error.message || "Unable to load your booked sessions.",
     );
   return (data || [])
-    .filter(paidSession)
+    .filter(
+      (row) =>
+        paidSession(row) ||
+        ["cancelled", "canceled"].includes(
+          String(row.booking_status).toLowerCase(),
+        ),
+    )
     .map((row) => mapLearnerSession(row, now))
     .sort(
       (left, right) =>

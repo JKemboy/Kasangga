@@ -1,3 +1,5 @@
+import { listMyReports } from "../../../services/myReports.js";
+import "./sessions.css";
 // My Sessions: loads the signed-in learner's paid sessions and groups them by their time-based lifecycle.
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,11 +22,36 @@ import {
   XCircle,
 } from "lucide-react";
 
-const tabs = ["Upcoming", "Ongoing", "Completed"];
+const tabs = ["Upcoming", "Ongoing", "Completed", "Cancelled"];
 
 export default function LearnerSessions({ args = {} }) {
   const work = useLearnerWorkspace();
   const [records, setRecords] = useState([]);
+  const [filedReports, setFiledReports] = useState([]);
+  const [reportsError, setReportsError] = useState("");
+  useEffect(() => {
+    let active = true;
+    async function loadReports() {
+      try {
+        const snapshot = await listMyReports();
+        if (active) {
+          setFiledReports(snapshot.created || []);
+          setReportsError("");
+        }
+      } catch {
+        if (active)
+          setReportsError("Report links are temporarily unavailable.");
+      }
+    }
+    loadReports();
+    window.addEventListener("focus", loadReports);
+    window.addEventListener("campustutor:sessions-changed", loadReports);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", loadReports);
+      window.removeEventListener("campustutor:sessions-changed", loadReports);
+    };
+  }, []);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const request = useRef(0);
@@ -78,6 +105,11 @@ export default function LearnerSessions({ args = {} }) {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const now = new Date();
   const lifecycleFor = (session) => {
+    if (
+      session.bookingStatus === "Cancelled" ||
+      session.bookingStatus === "Canceled"
+    )
+      return "Cancelled";
     if (session.bookingStatus === "Completed") return "Completed";
     const start = new Date(session.startAt);
     const end = new Date(session.endAt);
@@ -222,6 +254,7 @@ export default function LearnerSessions({ args = {} }) {
             lifecycle,
             paymentStatus,
             canManage,
+            completedAt,
             duration,
             link,
             details: [
@@ -244,14 +277,11 @@ export default function LearnerSessions({ args = {} }) {
               initials,
             ],
           }) => (
-            <article
-              key={id}
-              className="grid grid-cols-2 items-center gap-3 rounded-xl border border-[#e0e7f0] bg-white p-2 text-xs [&>div]:min-w-0 [&>div]:break-words sm:grid-cols-3 lg:grid-cols-[40px_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_55px_150px] lg:gap-2"
-            >
+            <article key={id} className="learner-session-card">
               <div className="text-center font-bold text-[#087542]">
                 <p className="text-xs">{month}</p>
                 <p className="text-2xl text-[#101828]">{day}</p>
-                <p className="text-xs">{weekday}</p>
+                <p className="whitespace-nowrap text-xs">{weekday}</p>
                 <p className="mt-1 text-xs text-[#637191]">{date.slice(-4)}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -306,7 +336,7 @@ export default function LearnerSessions({ args = {} }) {
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-base font-bold">{price}</p>
+                <p className="whitespace-nowrap text-base font-bold">{price}</p>
                 <span
                   className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${paymentStatus === "Paid" ? "bg-[#dff8e8] text-[#087542]" : "bg-[#e7f3ff] text-[#1675df]"}`}
                 >
@@ -318,8 +348,8 @@ export default function LearnerSessions({ args = {} }) {
                   </span>
                 )}
               </div>
-              <div className="col-span-2 border-t border-[#e1e7ef] pt-2 sm:col-span-3 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-2 lg:pt-0">
-                <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-1">
+              <div className="learner-session-actions">
+                <div className="grid grid-cols-2 gap-2">
                   {canManage && mode === "Online" && (
                     <button
                       onClick={() =>
@@ -329,7 +359,7 @@ export default function LearnerSessions({ args = {} }) {
                         )
                       }
                       type="button"
-                      className="min-h-6 px-1 py-0.5 rounded-md bg-[#075d34] text-xs font-semibold text-white"
+                      className="col-span-2 min-h-8 px-2 py-1 rounded-md bg-[#075d34] text-xs font-semibold text-white"
                     >
                       {mode === "Online" && (
                         <Video className="mr-2 inline h-4 w-4" />
@@ -338,8 +368,20 @@ export default function LearnerSessions({ args = {} }) {
                       <ExternalLink className="inline h-4 w-4" />
                     </button>
                   )}
-                  {canManage && (
+                  {(canManage || lifecycle === "Completed") && (
                     <button
+                      disabled={
+                        lifecycle === "Completed" &&
+                        (!completedAt ||
+                          now.getTime() >=
+                            new Date(completedAt).getTime() +
+                              24 * 60 * 60 * 1000)
+                      }
+                      title={
+                        lifecycle === "Completed"
+                          ? "Messaging is available for 24 hours after session completion."
+                          : undefined
+                      }
                       onClick={() =>
                         work.message({
                           name,
@@ -349,25 +391,12 @@ export default function LearnerSessions({ args = {} }) {
                         })
                       }
                       type="button"
-                      className="min-h-6 px-1 py-0.5 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
+                      className="col-span-2 min-h-8 px-2 py-1 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
                     >
                       <MessageCircle className="mr-2 inline h-4 w-4" />
                       Message Tutor
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      act(
-                        "report",
-                        records.find((session) => session.id === id),
-                      )
-                    }
-                    className="report-issue-button min-h-6 rounded-md border border-[#dfe5ed] px-1 py-0.5 text-xs font-semibold"
-                  >
-                    <Flag className="mr-2 inline h-4 w-4" />
-                    Report an Issue
-                  </button>
                   {canManage && lifecycle === "Upcoming" && (
                     <button
                       type="button"
@@ -377,12 +406,73 @@ export default function LearnerSessions({ args = {} }) {
                           records.find((session) => session.id === id),
                         )
                       }
-                      className="min-h-6 rounded-md border border-red-200 px-1 py-0.5 text-xs font-semibold text-red-700"
+                      className="min-h-8 rounded-md border border-red-200 px-1 py-0.5 text-xs font-semibold text-red-700"
                     >
                       <XCircle className="mr-2 inline h-4 w-4" />
                       Cancel Session
                     </button>
                   )}
+                  {lifecycle !== "Cancelled" && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        act(
+                          "report",
+                          records.find((session) => session.id === id),
+                        )
+                      }
+                      className="report-issue-button min-h-8 rounded-md border border-[#dfe5ed] px-1 py-0.5 text-xs font-semibold"
+                    >
+                      <Flag className="mr-2 inline h-4 w-4" />
+                      Report an Issue
+                    </button>
+                  )}
+                  {filedReports
+                    .filter((report) => String(report.booking_id) === id)
+                    .map((report) => (
+                      <button
+                        key={report.report_id}
+                        type="button"
+                        className="col-span-2 min-h-8 rounded-md border border-[#15924f] px-2 py-1 text-xs font-semibold text-[#087542]"
+                        onClick={() =>
+                          work.go("reports", {
+                            tab: "created",
+                            reportId: String(report.report_id),
+                          })
+                        }
+                      >
+                        <Flag className="h-4 w-4" /> Report filed (IR-
+                        {report.report_id})
+                      </button>
+                    ))}
+                  {lifecycle === "Cancelled" && reportsError && (
+                    <p
+                      role="status"
+                      className="col-span-2 text-xs text-slate-500"
+                    >
+                      {reportsError}
+                    </p>
+                  )}
+                  {lifecycle === "Completed" && (
+                    <button
+                      type="button"
+                      className="col-span-2 min-h-8 rounded-md border border-[#15924f] px-2 py-1 text-xs font-semibold text-[#087542]"
+                      onClick={() =>
+                        act(
+                          "review",
+                          records.find((session) => session.id === id),
+                        )
+                      }
+                    >
+                      <Star className="h-4 w-4" />
+                      {work.data.reviews.some(
+                        (review) => review.sessionId === id,
+                      )
+                        ? "Edit Review"
+                        : "Rate & Review Tutor"}
+                    </button>
+                  )}
+
                   <button
                     onClick={() =>
                       act(
@@ -390,10 +480,10 @@ export default function LearnerSessions({ args = {} }) {
                         records.find((session) => session.id === id),
                       )
                     }
-                    className="min-h-6 px-1 py-0.5 rounded-md border border-[#dfe5ed] text-xs font-semibold"
+                    className="col-span-2 min-h-8 px-2 py-1 rounded-md border border-[#dfe5ed] text-xs font-semibold"
                   >
                     <View className="mr-2 inline h-4 w-4" />
-                    View Details
+                    View Session
                   </button>
                 </div>
               </div>

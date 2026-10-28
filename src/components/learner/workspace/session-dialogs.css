@@ -7,9 +7,9 @@ dialog.learner-session-drawer {
 }
 dialog.learner-session-drawer {
   margin: auto;
-  max-height: calc(100dvh - 48px);
-  width: min(580px, calc(100vw - 32px));
-  border-radius: 14px;
+  max-height: calc(100dvh - 24px);
+  width: min(500px, calc(100vw - 24px));
+  border-radius: 12px;
 }
 .learner-session-modal[open],
 .learner-session-drawer[open] {
@@ -147,7 +147,8 @@ dialog.learner-session-drawer {
   cursor: not-allowed;
 }
 html dialog.learner-session-modal:has(.ls-cancel-flow) {
-  width: min(468px, calc(100vw - 24px));
+  border-radius: 12px;
+  width: min(500px, calc(100vw - 24px));
 }
 .ls-cancel-flow .ls-rows > div {
   grid-template-columns: 78px minmax(0, 1fr);
@@ -187,7 +188,43 @@ html dialog.learner-session-modal:has(.ls-cancel-flow) {
 }
 
 .learner-session-drawer .ls-content {
-  padding: 10px 18px;
-  font-size: 13px;
-  line-height: 1.5;
+  padding: 18px 20px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.learner-session-drawer > div:first-child,
+.learner-session-modal:has(.ls-cancel-flow) > div:first-child {
+  padding: 12px 16px;
+}
+.learner-session-drawer > div:first-child h2,
+.learner-session-modal:has(.ls-cancel-flow) > div:first-child h2 {
+  font-size: 16px;
+}
+.ls-cancel-flow {
+  line-height: 1.6;
+}
+.ls-cancel-flow .ls-content {
+  padding: 18px 20px;
+}
+.ls-cancel-flow .ls-rows > div {
+  padding: 6px 0;
+}
+.ls-cancel-flow .ls-field {
+  margin-top: 12px;
+  gap: 5px;
+}
+.ls-cancel-flow .ls-alert.danger {
+  padding: 10px;
+  gap: 8px;
+  margin-top: 12px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.ls-cancel-flow .ls-check {
+  font-size: 12px;
+}
+.learner-session-drawer .ls-footer,
+.ls-cancel-flow .ls-footer {
+  padding: 10px 16px;
 }
