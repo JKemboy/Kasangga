@@ -8,6 +8,7 @@ import { useInteractions } from "../../shared/InteractionProvider.jsx";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   CalendarDays,
+  Grid2X2,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -440,11 +441,10 @@ export default function Availability({
                 <button
                   type="button"
                   className={`${primary} inline-flex items-center gap-1.5 py-2`}
-                  disabled={availabilityLoading || !!availabilityError}
-                  onClick={() => addAvailability()}
+                  onClick={() => go("services")}
                 >
-                  <Plus className="h-4 w-4" />
-                  Add Availability
+                  <Grid2X2 className="h-4 w-4" />
+                  Set times in My Services
                 </button>
               </div>
             </div>
@@ -580,11 +580,14 @@ export default function Availability({
               {!classOnly && (
                 <button
                   type="button"
-                  className={primary}
-                  disabled={availabilityLoading || !!availabilityError}
-                  onClick={() => addAvailability(day.date)}
+                  className={`${primary} inline-flex items-center gap-1.5`}
+                  onClick={() => {
+                    setDay(null);
+                    go("services");
+                  }}
                 >
-                  Add Availability
+                  <Grid2X2 className="h-4 w-4" />
+                  Set times in My Services
                 </button>
               )}
             </div>

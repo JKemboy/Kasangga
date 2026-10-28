@@ -61,7 +61,7 @@ export function formatTimeInput(value) {
 
 function decimalHour(value) {
   if (typeof value === "number") return value;
-  const match = typeof value === "string" && /^(\d{1,2}):(\d{2})$/.exec(value);
+  const match = typeof value === "string" && /^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(value);
   if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return NaN;
   return Number(match[1]) + Number(match[2]) / 60;
 }
@@ -101,25 +101,45 @@ export function eventsForDate(
   if (includeAvailability) {
     slots.forEach((slot, index) => {
       if (slot.day !== day || (!slot.repeat && slot.date !== iso)) return;
-      events.push({
-        id: `slot:${slot.id ?? index}:${iso}`,
-        kind: "available",
-        conflict: classes.some(
-          (c) => c[0] === day && slot.start < c[2] && c[1] < slot.end,
-        ),
-        start: slot.start,
-        end: slot.end,
-        title: slot.serviceName
-          ? `Available · ${slot.serviceName}`
-          : "Available for tutoring",
-        detail: `${slot.repeat ? "Repeats weekly" : "Only on this date"}${slot.serviceId ? " · For this service" : " · All services"}`,
-        slot,
-      });
+      let free = [{ start: slot.start, end: slot.end }];
+      for (const session of sessions.filter(
+        (session) =>
+          session.date === iso &&
+          ["Confirmed", "Pending", "Completed"].includes(session.status),
+      )) {
+        const start = decimalHour(session.start),
+          end = decimalHour(session.end);
+        free = free.flatMap((segment) => {
+          if (start >= segment.end || end <= segment.start) return [segment];
+          return [
+            ...(segment.start < start
+              ? [{ start: segment.start, end: start }]
+              : []),
+            ...(end < segment.end ? [{ start: end, end: segment.end }] : []),
+          ];
+        });
+      }
+      for (const segment of free) {
+        events.push({
+          id: `slot:${slot.id ?? index}:${iso}:${segment.start}`,
+          kind: "available",
+          conflict: classes.some(
+            (c) => c[0] === day && slot.start < c[2] && c[1] < slot.end,
+          ),
+          start: segment.start,
+          end: segment.end,
+          title: slot.serviceName
+            ? `Available · ${slot.serviceName}`
+            : "Available for tutoring",
+          detail: `${slot.repeat ? "Repeats weekly" : "Only on this date"}${slot.serviceId ? " · For this service" : " · All services"}`,
+          slot,
+        });
+      }
     });
     sessions.forEach((session, index) => {
       if (
         session.date !== iso ||
-        !["Confirmed", "Pending"].includes(session.status)
+        !["Confirmed", "Pending", "Completed"].includes(session.status)
       )
         return;
       events.push({
