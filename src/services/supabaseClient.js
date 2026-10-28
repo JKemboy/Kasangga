@@ -11,6 +11,8 @@ export function getSupabaseClient() {
     throw new Error(
       "Supabase is not configured. Set the Vite Supabase environment variables and restart the app.",
     );
-  client = createClient(url.replace(/\/rest\/v1\/?$/, ""), key);
+  client = createClient(url.replace(/\/rest\/v1\/?$/, ""), key, {
+    auth: { persistSession: false },
+  });
   return client;
 }
