@@ -416,4 +416,35 @@
   }
 }
 
-@media (min-width: 768px) { .sessions-reference { gap: 4px; } }
+@media (min-width: 768px) {
+  .sessions-reference {
+    gap: 4px;
+  }
+}
+
+.tutor-session-cards .learner-session-actions button {
+  min-height: 34px;
+  border: 1px solid #15924f;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #087542;
+  background: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+.tutor-session-cards .learner-session-actions button:hover {
+  background: #e5f5eb;
+}
+.tutor-session-cards .learner-session-actions .tutor-session-meeting {
+  background: #075d34;
+  color: white;
+}
+.tutor-session-cards .learner-session-actions .tutor-session-cancel {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.tutor-session-cards .learner-session-actions .report-issue-button {
+  background: #b91c1c;
+  color: white;
+  border-color: #b91c1c;
+}
