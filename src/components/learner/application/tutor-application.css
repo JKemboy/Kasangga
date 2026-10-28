@@ -654,3 +654,31 @@
     padding: 13px;
   }
 }
+
+.tutor-application .ta-application-action {
+  margin-top: 12px;
+  font-weight: 600;
+  padding: 9px 16px;
+}
+.tutor-application .ta-application-action:hover {
+  background: #004b28;
+  border-color: #004b28;
+}
+
+.ta-subject-entry {
+  display: grid;
+  gap: 10px;
+  margin: 7px 0;
+}
+.ta-subject-entry > input {
+  width: 100%;
+}
+.ta-subject-entry .ta-fields {
+  margin: 0;
+}
+.ta-subject-entry > button {
+  justify-self: end;
+  border-color: #087542;
+  color: #087542;
+  font-weight: 600;
+}

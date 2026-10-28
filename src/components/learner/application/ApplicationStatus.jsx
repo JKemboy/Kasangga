@@ -198,7 +198,11 @@ export default function ApplicationStatus({
           {["Resubmission Required", "Rejected"].includes(
             application.status,
           ) && (
-            <button onClick={onEdit}>
+            <button
+              type="button"
+              className="ta-primary ta-application-action"
+              onClick={onEdit}
+            >
               {application.status === "Rejected"
                 ? "Start a new application"
                 : "Update requested items"}

@@ -801,34 +801,10 @@ export default function TutorApplication({ onClose }) {
                           service after approval.
                         </p>
                       </div>
-                      <div className="ta-fields">
-                        <label>
-                          Course Code *
-                          <input
-                            maxLength={50}
-                            placeholder="e.g. IT 101"
-                            value={draft.courseCode || ""}
-                            onChange={(e) =>
-                              patch("courseCode", e.target.value)
-                            }
-                          />
-                        </label>
-                        <label>
-                          Course Description *
-                          <textarea
-                            maxLength={1000}
-                            placeholder="e.g. Introduction to Computing: fundamentals and applications."
-                            value={draft.courseDescription || ""}
-                            onChange={(e) =>
-                              patch("courseDescription", e.target.value)
-                            }
-                          />
-                        </label>
-                      </div>
                       <label htmlFor="application-subject">
                         Subjects / Areas of Expertise *
                       </label>
-                      <div className="ta-add">
+                      <div className="ta-subject-entry">
                         <input
                           id="application-subject"
                           maxLength={100}
@@ -842,6 +818,30 @@ export default function TutorApplication({ onClose }) {
                             <option key={subject} value={subject} />
                           ))}
                         </datalist>
+                        <div className="ta-fields">
+                          <label>
+                            Course Code *
+                            <input
+                              maxLength={50}
+                              placeholder="e.g. IT101"
+                              value={draft.courseCode || ""}
+                              onChange={(e) =>
+                                patch("courseCode", e.target.value)
+                              }
+                            />
+                          </label>
+                          <label>
+                            Course Description *
+                            <textarea
+                              maxLength={1000}
+                              placeholder="e.g. Introduction to Programming"
+                              value={draft.courseDescription || ""}
+                              onChange={(e) =>
+                                patch("courseDescription", e.target.value)
+                              }
+                            />
+                          </label>
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
@@ -1006,7 +1006,7 @@ export default function TutorApplication({ onClose }) {
                       <div className="ta-notice blue">
                         <Info size={22} />
                         <p>
-                          Required: a current-semester COR and grades that
+                          Required: A current-semester COR and grades that
                           support your added subjects or expertise. CSU ID
                           upload is not required here. Awards are optional;
                           select up to 10 PDF, JPG or PNG files, at most 10 MB
