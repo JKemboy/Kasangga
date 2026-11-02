@@ -26,7 +26,7 @@ export function applicationDecision(
     );
   if (decision === "Approved" && (record.notes || "").trim().length < 15)
     throw new Error(
-      "Enter at least 15 characters of Admin review notes before approving.",
+      "Enter at least 15 characters of LCO review notes before approving.",
     );
   if (decision !== "Approved" && reason.trim().length < 15)
     throw new Error("Enter at least 15 characters.");
@@ -44,13 +44,13 @@ export function applicationDecision(
           decision === "Approved"
             ? manualReviewComplete(record, verificationState)
               ? "Manual review completed: original documents inspected; identity, current-semester enrollment and relevant grades confirmed."
-              : "OCR-assisted document review acknowledged by Admin."
+              : "OCR-assisted document review acknowledged by LCO."
             : reason.trim(),
         requestedChanges:
           decision === "Resubmission Required" ? [...fields] : [],
         reviewed: decision === "Approved",
         at: new Date().toISOString(),
-        by: "Admin User",
+        by: "LCO User",
       },
     ],
   };
@@ -123,7 +123,7 @@ export default function ApplicationDecision({
             {!approvalChecksComplete && (
               <p role="status">
                 Complete the review checklist and add at least 15 characters of
-                Admin review notes before approval.
+                LCO review notes before approval.
               </p>
             )}
             <label className="aar-checkbox">
