@@ -1,6 +1,6 @@
 import { statusClass } from "../shared/statusColors.js";
 import EvidenceFile from "./EvidenceFile.jsx";
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { useState, useRef, useEffect } from "react";
 import { X } from "lucide-react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
@@ -12,14 +12,14 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
     [action, setAction] = useState(""),
     [notes, setNotes] = useState(""),
     [error, setError] = useState("");
-  const database = useOsasDatabase();
+  const database = useOsweDatabase();
   const cases = database.records?.cases || [];
   const linked = cases.find((c) => c.caseId === r.caseId);
   const canAssess =
     !r.caseId &&
     !r.assessment &&
     r.referral !== "Not Referred" &&
-    r.status !== "Admin Handling";
+    r.status !== "LCO Handling";
   useEffect(() => {
     if (linked) return;
     const d = ref.current;
@@ -107,11 +107,11 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
         {!database.records?.evidence.some(
           (e) => e.reportDatabaseId === r.reportDatabaseId,
         ) && <p>No attachments recorded.</p>}
-        <h3>Formal OSAS case</h3>
+        <h3>Formal OSWE case</h3>
         <section>
-          <b>Referral from Kasangga Admin</b>
+          <b>Referral from Kasangga LCO</b>
           <p>
-            {r.referral}. OSAS decides whether a formal case is needed. A
+            {r.referral}. OSWE decides whether a formal case is needed. A
             referral is not a finding.
           </p>
         </section>
@@ -167,7 +167,7 @@ export default function IncidentAssessment({ record: r, onSave, onClose }) {
           >
             {action === "open" ? (
               <p>
-                A formal OSAS case starts institutional review. Opening a case
+                A formal OSWE case starts institutional review. Opening a case
                 is not a finding of responsibility and does not affect
                 clearance.
               </p>
