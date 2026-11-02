@@ -1,3 +1,4 @@
+import { sessionAllocation } from "../tutor/workspace/earnings.js";
 import { statusClass } from "../shared/statusColors.js";
 import {
   paymentAllocation,
@@ -18,16 +19,7 @@ import "./incident-details.css";
 import "./booking-details.css";
 
 export function paymentSplit(amount) {
-  const gross = Math.round(Number(amount) * 100);
-  if (!Number.isSafeInteger(gross) || gross < 0) return null;
-  const tutor = Math.round(gross * 0.9),
-    osas = Math.round(gross * 0.05);
-  return {
-    gross: gross / 100,
-    tutor: tutor / 100,
-    osas: osas / 100,
-    platform: (gross - tutor - osas) / 100,
-  };
+  return sessionAllocation({ amount, status: "Completed", payment: "Paid" });
 }
 export default function BookingDetails({
   record: r,
@@ -169,8 +161,9 @@ export default function BookingDetails({
                     {[
                       ["Gross Amount", split.gross],
                       ["Tutor share", split.tutor],
-                      ["OSWE share", split.osas],
-                      ["Platform share", split.platform],
+                      ["Admin share (5%)", split.admin],
+                      ["Platform share (10%)", split.platform],
+                      ["Maintenance (5%)", split.maintenance],
                     ].map(([label, value]) => (
                       <tr key={label}>
                         <td>{label}</td>
@@ -276,8 +269,8 @@ export default function BookingDetails({
       <footer>
         {!transaction && (
           <span className="abd-muted">
-            <LockKeyhole size={13} /> Monitoring only. LCO cannot reschedule
-            or cancel bookings here.
+            <LockKeyhole size={13} /> Monitoring only. LCO cannot reschedule or
+            cancel bookings here.
           </span>
         )}
         {showRelatedTransaction && (

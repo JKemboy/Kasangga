@@ -304,11 +304,11 @@ export default function ChatDetails({ chat, mode, close, role }) {
                       cash(data.payment_details?.allocation?.tutor_amount),
                     ],
                     [
-                      "OSWE",
+                      "Admin (5%)",
                       cash(data.payment_details?.allocation?.osas_amount),
                     ],
                     [
-                      "Platform",
+                      "Maintenance (5%)",
                       cash(data.payment_details?.allocation?.platform_amount),
                     ],
                     [
