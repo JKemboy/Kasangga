@@ -21,9 +21,10 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
     dialog.current.showModal();
   }, []);
   const full = r.full || {};
+  const isArchived = !!full.archived;
   const evidence = r.evidence || full.evidence || [];
   const events = [
-    { title: "Formal case opened", when: date(r.opened), by: "OSWE" },
+    { title: "Case review started", when: date(r.opened), by: "OSWE" },
     ...(full.history || []).map((event) => ({
       title: event.action || event.status || "Case action recorded",
       when: event.at
@@ -38,8 +39,10 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
       by: r.officer,
     },
     {
-      title: "Case resolved and archived",
-      when: date(r.archived),
+      title: isArchived
+        ? "Case resolved and archived"
+        : "Case resolved; clearance follow-up",
+      when: date(isArchived ? r.archived : r.resolved),
       by: r.officer,
     },
   ];
@@ -53,10 +56,14 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
       <header>
         <div>
           <h2 id={titleId}>
-            {r.caseId} <span className="archive-badge">Archived</span>
+            {r.caseId}{" "}
+            <span className="archive-badge">
+              {isArchived ? "Archived" : "Resolved"}
+            </span>
           </h2>
           <p>
-            {r.type} · Archived {date(r.archived)} by {r.officer}
+            {r.type} | {isArchived ? "Archived" : "Resolved"}{" "}
+            {date(isArchived ? r.archived : r.resolved)} by {r.officer}
           </p>
         </div>
         <button
@@ -71,7 +78,11 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
         <div className="archive-readonly">
           <LockKeyhole size={20} />
           <div>
-            <strong>READ-ONLY ARCHIVED RECORD</strong>
+            <strong>
+              {isArchived
+                ? "READ-ONLY ARCHIVED RECORD"
+                : "READ-ONLY DECISION RECORD"}
+            </strong>
             <p>
               Archived cases cannot be edited, deleted, or have their decision
               changed.
@@ -91,7 +102,12 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
             ["Academic Year", r.year],
             ["Date Opened", date(r.opened)],
             ["Resolution Date", date(r.resolved)],
-            ["Archived", `${date(r.archived)} · ${r.officer}`],
+            [
+              isArchived ? "Archived" : "Clearance Follow-up",
+              isArchived
+                ? `${date(r.archived)} | ${r.officer}`
+                : "Student Clearance Review",
+            ],
           ].map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>
@@ -128,7 +144,7 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
         <section>
           <h3>
             <ShieldCheck size={16} />
-            Archived Evidence
+            Evidence
           </h3>
           {evidence.length ? (
             evidence.map((item) => (
@@ -136,7 +152,7 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
                 <FileText size={22} />
                 <div>
                   <b>{item.id}</b>
-                  <p>{item.filename} · archived copy</p>
+                  <p>{item.filename} | read-only</p>
                 </div>
                 <button
                   type="button"
