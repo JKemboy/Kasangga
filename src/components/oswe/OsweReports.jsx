@@ -1,5 +1,5 @@
-// OSAS Reports: builds case and clearance analytics from database records using the saved display preferences.
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+// OSWE Reports: builds case and clearance analytics from database records using the saved display preferences.
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { useState } from "react";
 import {
   ChartNoAxesCombined,
@@ -68,8 +68,8 @@ const group = (records, key) =>
     records: records.filter((r) => (r[key] || "Not recorded") === label),
   }));
 
-export default function OsasReports({ rows, settings }) {
-  const database = useOsasDatabase();
+export default function OsweReports({ rows, settings }) {
+  const database = useOsweDatabase();
   const sessions = database.records?.sessions || [];
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [start, setStart] = useState(""),
@@ -163,13 +163,13 @@ export default function OsasReports({ rows, settings }) {
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "osas-analytics.json";
+    a.download = "oswe-analytics.json";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   return (
     <div className="or-reports">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             Reports &amp; Analytics{" "}
@@ -394,7 +394,7 @@ export default function OsasReports({ rows, settings }) {
         <div className="or-financial-heading">
           <Database size={24} />
           <div>
-            <h2>OSAS Financial Allocation</h2>
+            <h2>OSWE Financial Allocation</h2>
             <p>
               Read-only figures for eligible completed paid tutoring sessions.
             </p>
@@ -412,10 +412,10 @@ export default function OsasReports({ rows, settings }) {
               "For selected period",
             ],
             ["Tutor Share", "90%", money(totals.tutor)],
-            ["OSAS Share", "5%", money(totals.osas)],
+            ["OSWE Share", "5%", money(totals.osas)],
             ["Platform Share", "5%", money(totals.platform)],
             [
-              "Total OSAS Allocation",
+              "Total OSWE Allocation",
               money(totals.osas),
               `${totals.count} eligible sessions`,
             ],
@@ -430,7 +430,7 @@ export default function OsasReports({ rows, settings }) {
         </div>
         <p className="or-equation">
           {money(totals.gross)} = {money(totals.tutor)} Tutor +{" "}
-          {money(totals.osas)} OSAS + {money(totals.platform)} Platform
+          {money(totals.osas)} OSWE + {money(totals.platform)} Platform
         </p>
       </section>
       {settings.tips && (
