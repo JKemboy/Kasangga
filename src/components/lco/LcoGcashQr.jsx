@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { CreditCard, Save } from "lucide-react";
 import { button, primary, input } from "../tutor/workspace/ui.jsx";
 import {
-  loadAdminGcashQr,
-  saveAdminGcashQr,
+  loadLcoGcashQr,
+  saveLcoGcashQr,
   validateGcashQr,
-} from "../../services/adminGcashQr.js";
+} from "../../services/lcoGcashQr.js";
 
-export default function AdminGcashQr() {
+export default function LcoGcashQr() {
   const [current, setCurrent] = useState({ path: null, url: "" });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
@@ -19,7 +19,7 @@ export default function AdminGcashQr() {
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
-    loadAdminGcashQr()
+    loadLcoGcashQr()
       .then((value) => {
         if (mounted.current) setCurrent(value);
       })
@@ -61,7 +61,7 @@ export default function AdminGcashQr() {
     setLoading(true);
     setError("");
     try {
-      setCurrent(await loadAdminGcashQr());
+      setCurrent(await loadLcoGcashQr());
     } catch (cause) {
       setError(cause.message);
     } finally {
@@ -77,12 +77,12 @@ export default function AdminGcashQr() {
       // Decode before uploading so a renamed non-image cannot be saved as a QR image.
       const image = await createImageBitmap(file);
       image.close();
-      const result = await saveAdminGcashQr(file, current.path);
+      const result = await saveLcoGcashQr(file, current.path);
       if (!mounted.current) return;
       setFile(null);
       if (picker.current) picker.current.value = "";
       setNotice(result.warning || "GCash QR code saved.");
-      setCurrent(await loadAdminGcashQr());
+      setCurrent(await loadLcoGcashQr());
     } catch (cause) {
       if (mounted.current)
         setError(cause.message || "Unable to save this image.");
