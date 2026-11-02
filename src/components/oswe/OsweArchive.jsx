@@ -1,6 +1,5 @@
 import { academicYear } from "../../services/academicYear.js";
 // Case Archive: lists archived case records and opens them in read-only detail views.
-import CaseShortcut from "./CaseShortcut.jsx";
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { useState } from "react";
 import {
@@ -16,7 +15,7 @@ import { button, input } from "../tutor/workspace/ui.jsx";
 
 import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 
-// Resolved cases appear here; final archival still enforces conditions and holds.
+// All resolved cases are available here without a separate archival action.
 export function matchesArchiveResolution(record, filter) {
   if (!filter) return true;
   const outcome = String(record.outcome || "")
@@ -77,10 +76,10 @@ export default function OsweArchive({
           (!year || r.year === year) &&
           (!type || r.type === type) &&
           matchesArchiveResolution(r, outcome) &&
-          (!start || r.archived >= start) &&
-          (!end || r.archived <= end) &&
+          (!start || r.recordDate >= start) &&
+          (!end || r.recordDate <= end) &&
           (!scope ||
-            (scope === "month" && r.archived.startsWith(currentMonth)) ||
+            (scope === "month" && r.recordDate.startsWith(currentMonth)) ||
             (scope === "resolved" && r.status === "Resolved")) &&
           [r.caseId, r.incident, r.student, r.type, r.outcome, r.officer]
             .join(" ")
@@ -173,13 +172,13 @@ export default function OsweArchive({
             records.length,
             "Resolved & Archived Cases",
             "All time",
-            "View all archives",
+            "View all resolved cases",
             "all",
             "#005c32",
           ],
           [
             CalendarDays,
-            records.filter((r) => r.archived.startsWith(currentMonth)).length,
+            records.filter((r) => r.recordDate.startsWith(currentMonth)).length,
             "Resolved & Archived This Month",
             new Date(currentMonth + "-01T12:00:00").toLocaleDateString(
               "en-US",
@@ -255,7 +254,7 @@ export default function OsweArchive({
           ))}
         </select>
         <label>
-          Archived from
+          Resolved / archived from
           <input
             className={input}
             type="date"
@@ -302,7 +301,7 @@ export default function OsweArchive({
                 "Date Opened",
                 "Resolution Date",
                 "Case Outcome / Resolution",
-                "Archived Date",
+                "Resolved / Archived Date",
                 "Action",
               ].map((h) => (
                 <th key={h}>{h}</th>
@@ -320,11 +319,7 @@ export default function OsweArchive({
                 <td>{date(r.opened)}</td>
                 <td>{date(r.resolved)}</td>
                 <td>{badge(r)}</td>
-                <td>
-                  {r.full?.archived
-                    ? date(r.archived)
-                    : "Awaiting final archival"}
-                </td>
+                <td>{date(r.recordDate)}</td>
                 <td>
                   <button
                     className={button + " oa-view"}
@@ -332,7 +327,7 @@ export default function OsweArchive({
                     onClick={() => setSelected(r)}
                   >
                     <LockKeyhole size={12} />
-                    View Archived Case
+                    View Case Record
                   </button>
                 </td>
               </tr>
@@ -374,27 +369,16 @@ export default function OsweArchive({
       <div className="op-note">
         <Info size={18} />
         <p>
-          Resolved cases appear here. Complete any remaining conditions and
-          clearance holds before final archival. Archived cases are read-only.
+          All resolved cases appear here automatically as read-only records.
+          Clearance follow-up is handled separately in Student Clearance Review.
         </p>
       </div>
-      {selected && !selected.full?.archived ? (
-        <CaseShortcut
-          record={
-            database.records.cases.find((c) => c.caseId === selected.caseId) ||
-            selected.full
-          }
+      {selected && (
+        <ArchivedCaseDetails
+          record={records.find((r) => r.caseId === selected.caseId) || selected}
+          date={date}
           onClose={() => setSelected(null)}
-          onSave={database.saveCase}
         />
-      ) : (
-        selected && (
-          <ArchivedCaseDetails
-            record={selected}
-            date={date}
-            onClose={() => setSelected(null)}
-          />
-        )
       )}
     </section>
   );
