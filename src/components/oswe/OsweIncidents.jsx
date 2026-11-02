@@ -1,8 +1,7 @@
+import CaseReviewFlow from "./CaseReviewFlow.jsx";
 // Incident Monitoring: reviews incoming reports and routes referral/assessment changes through the OSWE database workflow.
 import { statusClass } from "../shared/statusColors.js";
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
-import IncidentAssessment from "./IncidentAssessment.jsx";
-import CaseShortcut from "./CaseShortcut.jsx";
 import UserExport from "../lco/UserExport.jsx";
 import { incidentSummary } from "./incidentAssessment.js";
 import { useState } from "react";
@@ -36,7 +35,7 @@ export function matchesCaseStatus(value, filter) {
         "Pending Completion",
       ],
       "Pending Decision": ["Pending Decision"],
-      Resolved: ["Resolved", "Closed / No Formal Case"],
+      Resolved: ["Resolved", "Closed / No Finding"],
     }[filter]?.includes(value) || false
   );
 }
@@ -46,7 +45,6 @@ const scopeMatches = (r, scope) =>
   (scope === "assessment" &&
     ["Open", "Awaiting OSWE Assessment"].includes(r.status) &&
     r.referral !== "Not Referred") ||
-  (scope === "formal" && !!r.caseId) ||
   (scope === "active" &&
     [
       "Under Institutional Review",
@@ -57,7 +55,7 @@ const scopeMatches = (r, scope) =>
       "Resolved",
     ].includes(r.status)) ||
   (scope === "closed" &&
-    ["Resolved", "Closed / No Formal Case"].includes(r.status));
+    ["Resolved", "Closed / No Finding"].includes(r.status));
 export default function OsweIncidents({
   settings,
   initialQuery = "",
@@ -70,7 +68,11 @@ export default function OsweIncidents({
   const cases = database.records?.cases || [];
   const incidents = (database.records?.incidents || []).filter((r) => {
     const linkedCase = cases.find((c) => c.caseId === r.caseId);
-    return linkedCase ? !linkedCase.archived : true;
+    return linkedCase
+      ? !linkedCase.archived &&
+          !linkedCase.decision &&
+          !["Resolved", "Pending Completion"].includes(linkedCase.status)
+      : !["Resolved", "Closed / No Finding"].includes(r.status);
   });
   const [month, setMonth] = useState(""),
     [query, setQuery] = useState(initialQuery),
@@ -83,30 +85,19 @@ export default function OsweIncidents({
     [scope, setScope] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
-    [selectedCase, setSelectedCase] = useState(null),
     [notice, setNotice] = useState("");
-  const assessments = {};
   const monitoring = incidents.map((r) => {
-    const record = assessments[r.id] || r;
-    const linked = cases.find((c) => c.caseId === record.caseId);
-    return linked ? { ...record, status: linked.status } : record;
+    const linked = cases.find((c) => c.caseId === r.caseId);
+    return linked ? { ...r, status: linked.status } : r;
   });
-  async function saveAssessment(updated) {
-    await database.save(
-      "incident",
-      updated.reportDatabaseId,
-      updated.assessment.action,
-      updated,
-    );
-    setSelected(null);
-    return true;
-  }
   const monthly = monitoring.filter((r) => !month || r.date.startsWith(month));
   const filtered = monthly.filter(
     (r) =>
       (!pendingEvidence ||
         (database.records?.evidence || []).some(
-          (e) => e.caseId === r.caseId && e.status !== "Validated",
+          (e) =>
+            e.reportDatabaseId === r.reportDatabaseId &&
+            !["Validated", "Insufficient"].includes(e.status),
         )) &&
       scopeMatches(r, scope) &&
       (!type || r.type === type) &&
@@ -156,9 +147,7 @@ export default function OsweIncidents({
     setSelected(r);
   }
   function openCase(r) {
-    const record = cases.find((c) => c.caseId === r.caseId);
-    if (record) setSelectedCase(record);
-    else view(r);
+    setSelected(r);
   }
   function exportCsv() {
     const fields = [
@@ -223,8 +212,8 @@ export default function OsweIncidents({
             <ShieldAlert size={22} className="text-green-800" />
           </h1>
           <p>
-            Open an incident to assess the referral, create its formal case,
-            validate evidence and complete the case workflow.
+            Review each evidence item, record the case decision, and transfer
+            the resolved case to Student Clearance.
           </p>
         </div>
         <label className="op-month">
@@ -259,28 +248,12 @@ export default function OsweIncidents({
             "#ffb500",
           ],
           [
-            ShieldPlus,
-            "formal",
-            "Formal Cases Created",
-            "With a related case reference",
-            "View formal cases",
-            "#0876ff",
-          ],
-          [
             Flag,
             "active",
             "Institutional Review Active",
             "Ongoing review",
             "View active reviews",
             "#ff6500",
-          ],
-          [
-            CheckCircle,
-            "closed",
-            "Closed / No Formal Case",
-            "Resolved institutional incidents",
-            "View closed incidents",
-            "#006237",
           ],
         ].map(([Icon, key, title, hint, action, color]) => (
           <button
@@ -471,17 +444,17 @@ export default function OsweIncidents({
         <div>
           <ShieldPlus />
           <span>
-            <b>Formal OSWE Case</b>
+            <b>Case Decision &amp; Clearance</b>
             <small>
-              An institutional case created only after referral and OSWE
-              assessment.
+              A recorded decision resolves the case and transfers clearance
+              follow-up to Student Clearance.
             </small>
           </span>
         </div>
         <div>
           <Info />
           <span>
-            Not every platform incident becomes a formal OSWE case. Technical
+            Review each evidence item before recording a decision. Technical
             matters remain under LCO handling.
           </span>
         </div>
@@ -492,20 +465,7 @@ export default function OsweIncidents({
         </p>
       </footer>
       {selected && (
-        <IncidentAssessment
-          record={assessments[selected.id] || selected}
-          onSave={saveAssessment}
-          onClose={() => {
-            setSelected(null);
-          }}
-        />
-      )}
-      {selectedCase && (
-        <CaseShortcut
-          record={selectedCase}
-          onSave={database.saveCase}
-          onClose={() => setSelectedCase(null)}
-        />
+        <CaseReviewFlow record={selected} onClose={() => setSelected(null)} />
       )}
     </section>
   );
