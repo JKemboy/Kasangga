@@ -1,9 +1,9 @@
-// Reports & Analytics: derives report summaries from the Admin snapshot and exports the currently selected report data.
+// Reports & Analytics: derives report summaries from the LCO snapshot and exports the currently selected report data.
 import {
-  buildAdminReport,
+  buildLcoReport,
   summarizePayments,
-} from "../../services/adminRecords.js";
-import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
+} from "../../services/lcoRecords.js";
+import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
 import UserExport from "./UserExport.jsx";
 import { reportRows, reportCsv, reportHtml } from "./reportExport.js";
 import { useState } from "react";
@@ -11,7 +11,7 @@ import { ChartNoAxesCombined, Download } from "lucide-react";
 import { button, primary, input, Modal } from "../tutor/workspace/ui.jsx";
 import { money } from "../tutor/workspace/data.js";
 import { summarizeEarnings } from "../tutor/workspace/earnings.js";
-import { downloadData } from "./adminData.js";
+import { downloadData } from "./lcoData.js";
 function Chart({ title, values, labels, color = "#00723d" }) {
   const max = Math.max(1, ...values);
   const points = values
@@ -59,7 +59,7 @@ function Chart({ title, values, labels, color = "#00723d" }) {
     </section>
   );
 }
-export default function AdminReports({ users, services, go }) {
+export default function LcoReports({ users, services, go }) {
   const [notice, setNotice] = useState("");
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [start, setStart] = useState(""),
@@ -68,7 +68,7 @@ export default function AdminReports({ users, services, go }) {
     [subject, setSubject] = useState(""),
     [status, setStatus] = useState(""),
     [detail, setDetail] = useState(null);
-  const database = useAdminDatabase().database;
+  const database = useLcoDatabase().database;
   const sessions = database?.sessions || [];
   const invalid = start && end && start > end;
   const {
@@ -81,11 +81,11 @@ export default function AdminReports({ users, services, go }) {
     counts,
     distribution,
     popular,
-  } = buildAdminReport(database, { start, end, college, subject, status });
+  } = buildLcoReport(database, { start, end, college, subject, status });
   const labels = months.map((m) => m.label);
   return (
     <div className="ad-page ad-reports">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             Reports &amp; Analytics <ChartNoAxesCombined size={22} />
@@ -130,7 +130,7 @@ export default function AdminReports({ users, services, go }) {
             );
             const a = document.createElement("a");
             a.href = url;
-            a.download = "admin-report.csv";
+            a.download = "lco-report.csv";
             a.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
             setNotice("Exported the filtered report as CSV.");
@@ -336,7 +336,7 @@ export default function AdminReports({ users, services, go }) {
           {[
             ["Gross Session Payments", financial.gross],
             ["Tutor Share", financial.tutor],
-            ["OSAS Share", financial.osas],
+            ["OSWE Share", financial.osas],
             ["Platform Revenue", financial.platform],
           ].map(([label, value]) => (
             <div key={label}>
