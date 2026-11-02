@@ -6,7 +6,7 @@ export const helpArticles = [
     steps: [
       "Kasangga connects CSU learners with student tutors offering academic subjects and services.",
       "Use your learner account to discover tutors, book sessions, pay through the available checkout and manage your learning activities.",
-      "Students who want to tutor can apply through Profile. Tutor access becomes available after Admin approval.",
+      "Students who want to tutor can apply through Profile. Tutor access becomes available after LCO approval.",
     ],
     view: "dashboard",
     action: "Open Dashboard",
@@ -18,7 +18,7 @@ export const helpArticles = [
     steps: [
       "Use the Learner and Tutor tabs in the sidebar to switch roles.",
       "If you have an approved tutor role, the Tutor tab opens your tutor dashboard.",
-      "If you are not approved yet, the Tutor tab shows your application status or an Apply as Tutor card. Complete the application and wait for Admin review.",
+      "If you are not approved yet, the Tutor tab shows your application status or an Apply as Tutor card. Complete the application and wait for LCO review.",
     ],
     view: "profile",
     action: "Open Profile",
@@ -28,7 +28,7 @@ export const helpArticles = [
     category: "Finding a Tutor",
     title: "What does Verified mean?",
     steps: [
-      "A Verified Tutor has passed the tutor application review performed by an authorized Admin.",
+      "A Verified Tutor has passed the tutor application review performed by an authorized LCO.",
       "Read the tutor profile, subjects, service details and reviews before choosing a service. Verification does not guarantee a particular academic result.",
       "Report a session-related concern through Report an Issue on the affected booking.",
     ],
@@ -53,7 +53,7 @@ export const helpArticles = [
     title: "How do I change my password?",
     steps: [
       "Kasangga uses your CSU Google account for sign-in. Manage its password through your Google account.",
-      "Follow the security instructions provided by Google or your university account administrator.",
+      "Follow the security instructions provided by Google or your university account LCO.",
       "Keep your password private and log out of shared devices.",
     ],
     view: "profile",
@@ -66,7 +66,7 @@ export const helpArticles = [
     steps: [
       "Your name, Student ID and email are locked in Profile and the tutor application because they identify your student account.",
       "Contact Kasangga Support to explain the correction you need. Include the relevant account details without sharing passwords or verification codes.",
-      "An authorized administrator must review corrections to institutional identity records. Other editable profile details can be updated in Profile.",
+      "An authorized LCO must review corrections to institutional identity records. Other editable profile details can be updated in Profile.",
     ],
     view: "support",
     action: "Message Kasangga Support",
@@ -78,7 +78,7 @@ export const helpArticles = [
     steps: [
       "Choose Contact Support, then Message Kasangga Support, or open Messages and select the Kasangga Support conversation.",
       "Write a clear message about the issue. Include the affected page, relevant booking reference and what you expected to happen. Send the message to start or continue your private support conversation.",
-      "Return to Kasangga Support in Messages to read Admin replies. Do not share passwords, OTPs or GCash MPINs. For a session incident, use Report an Issue on the affected session.",
+      "Return to Kasangga Support in Messages to read LCO replies. Do not share passwords, OTPs or GCash MPINs. For a session incident, use Report an Issue on the affected session.",
     ],
     view: "support",
     action: "Message Kasangga Support",
@@ -175,7 +175,7 @@ export const helpArticles = [
     steps: [
       "For an upcoming session, select Cancel Session on its card or in Session Details.",
       "Choose a reason, add useful notes and acknowledge the cancellation policy before confirming.",
-      "Cancellation does not automatically guarantee a refund. Refund eligibility is reviewed separately; payment status changes only when the corresponding payment or refund is verified.",
+      "Cancellation does not automatically guarantee a refund. A learner who does not attend the scheduled session is not eligible for a refund for their own absence. Refund eligibility is reviewed separately; payment status changes only when the corresponding payment or refund is verified.",
       "If the session has started or the cancellation is rejected, contact the tutor and use Report an Issue for a session-related concern.",
     ],
     view: "sessions",
@@ -237,7 +237,7 @@ export const helpArticles = [
       "Open Profile and select Apply as Tutor. Your student information is taken from your account and cannot be edited in the application.",
       "Enter the course code and description. Type each subject or area of expertise and click Add. Complete your bio, motivation and GCash payout reference details.",
       "Upload your current-semester COR and grades relevant to your subjects. You can attach up to 10 certificate or award files; PDF, JPG and PNG files must be at most 10 MB each. CSU ID upload is not required in this application.",
-      "Review your application, confirm the certification and submit it. Continue shows warnings for missing information. Tutor access becomes available after Admin approval.",
+      "Review your application, confirm the certification and submit it. Continue shows warnings for missing information. Tutor access becomes available after LCO approval.",
     ],
     view: "application",
     action: "Apply as Tutor",
@@ -248,8 +248,8 @@ export const helpArticles = [
     title: "How do I check or correct my tutor application?",
     steps: [
       "Open Profile to view your tutor application and its status.",
-      "If Admin requests resubmission, read the requested changes, update the relevant information or documents and resubmit for review.",
-      "The Tutor switch displays your application status while approval is pending. GCash details in the application are payout references for Admin; entering them does not enable automatic transfers.",
+      "If LCO requests resubmission, read the requested changes, update the relevant information or documents and resubmit for review.",
+      "The Tutor switch displays your application status while approval is pending. GCash details in the application are payout references for LCO; entering them does not enable automatic transfers.",
     ],
     view: "profile",
     action: "Open Profile",
@@ -271,8 +271,8 @@ export const helpArticles = [
     category: "Account & Security",
     title: "How do I update my account or password?",
     steps: [
-      "Open Profile to update the available editable fields. Name, Student ID and email are locked; contact an authorized university administrator for corrections to those records.",
-      "Manage your CSU Google account password through Google or your university account administrator.",
+      "Open Profile to update the available editable fields. Name, Student ID and email are locked; contact an authorized university LCO for corrections to those records.",
+      "Manage your CSU Google account password through Google or your university account LCO.",
       "Use Logout when leaving a shared device. Never share your password, verification codes or GCash credentials.",
     ],
     view: "profile",
@@ -285,7 +285,7 @@ export const helpArticles = [
     steps: [
       "Open the affected session under Upcoming, Ongoing or Completed and select Report an Issue.",
       "Choose an incident type, explain what happened and attach the requested evidence. Include accurate booking details without exposing passwords or payment credentials.",
-      "Submit the report for authorized Admin review. Conduct concerns may be referred to OSAS; check Notifications for updates.",
+      "Submit the report for authorized LCO review. Conduct concerns may be referred to OSWE; check Notifications for updates.",
     ],
     view: "sessions",
     action: "Open My Sessions",

@@ -336,7 +336,7 @@ export default function LearnerHelpSupport() {
               <p className="mt-1 text-slate-600">
                 Open the affected session and choose Report an Issue. Include
                 the booking reference, a clear description and the requested
-                evidence. Reports are submitted to authorized Admin for review.
+                evidence. Reports are submitted to authorized LCO for review.
               </p>
               <button
                 type="button"
@@ -364,7 +364,7 @@ export default function LearnerHelpSupport() {
             <section>
               <h3 className="font-semibold">Account or technical help</h3>
               <p className="mt-1 text-slate-600">
-                Open Kasangga Support to send a private message to the Admin
+                Open Kasangga Support to send a private message to the LCO
                 support team. Include the page, what happened and any booking
                 reference. Never send passwords, OTPs or GCash MPINs.
               </p>
