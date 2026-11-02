@@ -95,14 +95,28 @@ export default function OsweReports({ rows, settings }) {
             (!caseStatus || r.caseStatus === caseStatus) &&
             (!incident || r.caseId !== "None"),
         );
-  const cases = (database.records?.cases || [])
+  const savedCases = database.records?.cases || [];
+  const reviewRecords = [
+    ...savedCases,
+    ...(database.records?.incidents || [])
+      .filter(
+        (r) =>
+          !r.caseId && !["Resolved", "Closed / No Finding"].includes(r.status),
+      )
+      .map((r) => ({ ...r, caseId: r.id, status: "Open" })),
+  ];
+  const cases = (invalid ? [] : reviewRecords)
     .filter(
       (r) =>
         inPeriod(r.date) &&
         (!caseStatus || r.status === caseStatus) &&
         (!incident || r.type === incident),
     )
-    .map((r) => ({ ...r, caseStatus: r.status }));
+    .map((r) => ({
+      ...r,
+      requested: r.date || r.requested || "",
+      caseStatus: r.status || "Open",
+    }));
   const resolved = cases.filter((r) => r.caseStatus.startsWith("Resolved"));
   const open = cases.filter((r) => !r.caseStatus.startsWith("Resolved"));
   const reviewed = clearance.filter((r) => r.reviewed);
@@ -125,7 +139,9 @@ export default function OsweReports({ rows, settings }) {
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(endDate.getFullYear(), endDate.getMonth() - 5 + i, 1);
     const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const records = cases.filter((r) => r.requested.startsWith(prefix));
+    const records = cases.filter((r) =>
+      String(r.date || r.requested || "").startsWith(prefix),
+    );
     return {
       label: d.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
       count: records.length,
@@ -289,7 +305,7 @@ export default function OsweReports({ rows, settings }) {
       )}
       <div className="or-metrics">
         {[
-          [BriefcaseBusiness, cases.length, "Formal Cases", cases],
+          [BriefcaseBusiness, cases.length, "Case Records", cases],
           [FileText, open.length, "Open Cases", open],
           [ShieldCheck, resolved.length, "Resolved Cases", resolved],
           [Clock, "—", "Average Resolution Time", null],
