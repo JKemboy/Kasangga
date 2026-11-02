@@ -1,18 +1,18 @@
-// Admin database gateway: reads the Admin snapshot and persists authorized changes through Admin RPCs.
+// LCO database gateway: reads the LCO snapshot and persists authorized changes through LCO RPCs.
 import { getSupabaseClient } from "./supabaseClient.js";
-import { mapAdminDatabase } from "./adminRecords.js";
-export { mapAdminDatabase } from "./adminRecords.js";
-export async function loadAdminDatabase(client = getSupabaseClient()) {
-  // The snapshot RPC returns system_settings with the rest of the Admin data;
-  // mapAdminDatabase parses recognized setting keys into the UI config.
+import { mapLcoDatabase } from "./lcoRecords.js";
+export { mapLcoDatabase } from "./lcoRecords.js";
+export async function loadLcoDatabase(client = getSupabaseClient()) {
+  // The snapshot RPC returns system_settings with the rest of the LCO data;
+  // mapLcoDatabase parses recognized setting keys into the UI config.
   const { data, error } = await client.rpc("admin_dashboard_snapshot");
   if (error)
     throw new Error(
       error.code === "PGRST202"
-        ? "Admin database update is missing. Apply the Admin workflow migration."
+        ? "LCO database update is missing. Apply the LCO workflow migration."
         : error.message,
     );
-  if (!data) throw new Error("The database did not return the Admin records.");
+  if (!data) throw new Error("The database did not return the LCO records.");
   for (const table of [
     "users",
     "user_roles",
@@ -27,17 +27,17 @@ export async function loadAdminDatabase(client = getSupabaseClient()) {
   ]) {
     if (!Array.isArray(data[table]))
       throw new Error(
-        `The Admin snapshot is missing ${table}. Refresh or check the database migration.`,
+        `The LCO snapshot is missing ${table}. Refresh or check the database migration.`,
       );
   }
-  return mapAdminDatabase(data);
+  return mapLcoDatabase(data);
 }
-export async function saveAdminRecord(
+export async function saveLcoRecord(
   kind,
   record,
   client = getSupabaseClient(),
 ) {
-  // Admin settings are saved by the database RPC into public.system_settings.
+  // LCO settings are saved by the database RPC into public.system_settings.
   // Do not mirror these preferences into localStorage or browser storage.
   const id =
     kind === "users"
@@ -98,4 +98,36 @@ export async function markRefundTransferred(
   });
   if (error) throw new Error(error.message);
   return true;
+}
+
+export async function loadTutorPayoutAccount(
+  userId,
+  client = getSupabaseClient(),
+) {
+  if (!userId) throw new Error("This payment has no linked tutor account.");
+  const { data: profile, error: profileError } = await client
+    .from("tutor_profiles")
+    .select("application_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (profileError)
+    throw new Error("Could not load tutor profile: " + profileError.message);
+  if (!profile?.application_id)
+    throw new Error("No approved application is linked to this tutor profile.");
+  const { data, error } = await client
+    .from("tutor_applications")
+    .select("application_details")
+    .eq("user_id", userId)
+    .eq("application_id", profile.application_id)
+    .eq("application_status", "approved")
+    .order("reviewed_at", { ascending: false, nullsFirst: false })
+    .order("submitted_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error)
+    throw new Error("Could not load tutor payout details: " + error.message);
+  return {
+    name: data?.application_details?.gcashName || "",
+    number: data?.application_details?.gcashNumber || "",
+  };
 }
