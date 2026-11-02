@@ -1,3 +1,4 @@
+import RecordSearch from "../shared/RecordSearch.jsx";
 import useSectionNavigation from "../shared/useSectionNavigation.js";
 import OsweNotifications from "./OsweNotifications.jsx";
 import CountBadge from "../shared/CountBadge.jsx";
@@ -199,7 +200,7 @@ function OsweDashboardContent() {
           );
   const [mobile, setMobile] = useState(false),
     [query, setQuery] = useState(""),
-    [global, setGlobal] = useState(""),
+    [sectionSearch, setSectionSearch] = useState({}),
     [status, setStatus] = useState(""),
     [college, setCollege] = useState(""),
     [requested, setRequested] = useState(""),
@@ -213,6 +214,9 @@ function OsweDashboardContent() {
     [confirmed, setConfirmed] = useState(false),
     [notice, setNotice] = useState(""),
     [error, setError] = useState("");
+  const global = sectionSearch[view] || "";
+  const setGlobal = (value) =>
+    setSectionSearch((current) => ({ ...current, [view]: value }));
   const filtered = rows.filter(
     (r) =>
       (!status || r.status === status) &&
@@ -396,33 +400,26 @@ function OsweDashboardContent() {
         >
           <Menu size={20} />
         </button>
-        <form
-          className="oswe-global"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (
-              ![
-                "Case Review",
-                "Policies & Procedures",
-                "Case Archive",
-              ].includes(view)
-            )
-              setView("Case Review");
+        <RecordSearch
+          label="Search cases, reports, policies and students..."
+          groups={[
+            ["Case Review", database.records?.incidents || []],
+            ["Student Clearance Review", rows],
+            ["Case Archive", database.records?.archive || []],
+            ["Policies & Procedures", database.records?.policies || []],
+          ]}
+          onSelect={(section, row) => {
+            setView(section);
             setPage(1);
-            setNotice("Showing matching records.");
+            setSectionSearch((current) => ({
+              ...current,
+              [section]: String(row.id || row.name || row.title || ""),
+            }));
+            if (section === "Student Clearance Review")
+              setQuery(String(row.id || row.name || ""));
           }}
-        >
-          <Search size={16} />
-          <input
-            aria-label="Search OSWE records"
-            placeholder="Search cases, reports, documents, or students..."
-            value={global}
-            onChange={(e) => setGlobal(e.target.value)}
-          />
-          <button aria-label="Search records">
-            <Search size={17} />
-          </button>
-        </form>
+        />
+
         <div className="ml-auto flex items-center gap-4">
           <HeaderInbox
             role="oswe"

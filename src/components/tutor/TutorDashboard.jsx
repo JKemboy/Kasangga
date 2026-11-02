@@ -369,7 +369,7 @@ export default function TutorDashboardPage() {
   };
   const results = [
     ...data.services.map((s) => ({ label: s.name, view: "services" })),
-    ...data.sessions.slice(0, 8).map((s) => ({
+    ...data.sessions.map((s) => ({
       label: `${s.learner} · ${s.service} · ${s.date}`,
       view: "sessions",
     })),
