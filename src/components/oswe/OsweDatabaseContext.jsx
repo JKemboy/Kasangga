@@ -1,4 +1,4 @@
-// OSAS data provider: reads the role-authorized snapshot, writes through osas_save_record, and refreshes committed database state.
+// OSWE data provider: reads the role-authorized snapshot, writes through osas_save_record, and refreshes committed database state.
 import {
   createContext,
   useCallback,
@@ -8,10 +8,10 @@ import {
   useState,
 } from "react";
 import { getSupabaseClient } from "../../services/supabaseClient.js";
-import { mapOsasRecords } from "../../services/osasRecords.js";
+import { mapOsweRecords } from "../../services/osweRecords.js";
 const Context = createContext(null);
-export const useOsasDatabase = () => useContext(Context);
-export function OsasDatabaseProvider({ children }) {
+export const useOsweDatabase = () => useContext(Context);
+export function OsweDatabaseProvider({ children }) {
   const [records, setRecords] = useState(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true);
@@ -19,36 +19,46 @@ export function OsasDatabaseProvider({ children }) {
   const refresh = useCallback(async () => {
     const request = ++generation.current;
     try {
-      // osas_dashboard_snapshot is the authoritative OSAS data/settings read.
+      // osas_dashboard_snapshot is the authoritative OSWE data/settings read.
       const { data, error } = await getSupabaseClient().rpc(
         "osas_dashboard_snapshot",
       );
       if (error) throw error;
-      const next = mapOsasRecords(data);
+      const next = mapOsweRecords(data);
       if (request === generation.current) {
         setRecords(next);
         setError("");
       }
     } catch (cause) {
       if (request === generation.current)
-        setError(cause.message || "Unable to load OSAS records.");
+        setError(cause.message || "Unable to load OSWE records.");
     } finally {
       if (request === generation.current) setLoading(false);
     }
   }, []);
   useEffect(() => {
     refresh();
+    const client = getSupabaseClient();
+    const channel = client
+      .channel("oswe-policy-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "policies" },
+        refresh,
+      )
+      .subscribe();
     const timer = setInterval(refresh, 15000);
     window.addEventListener("focus", refresh);
     return () => {
       generation.current++;
       clearInterval(timer);
+      client.removeChannel(channel);
       window.removeEventListener("focus", refresh);
     };
   }, [refresh]);
   async function save(kind, id, action, value, expected = null) {
     // Persist through the role-checked RPC, then reload the snapshot so every
-    // OSAS view renders the committed database value rather than a local copy.
+    // OSWE view renders the committed database value rather than a local copy.
     const { error } = await getSupabaseClient().rpc("osas_save_record", {
       p_kind: kind,
       p_id: id,
