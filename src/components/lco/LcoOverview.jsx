@@ -1,6 +1,6 @@
-// Admin Overview: summarizes users, applications, services, and system activity from the Admin database snapshot.
+// LCO Overview: summarizes users, applications, services, and system activity from the LCO database snapshot.
 import { statusClass } from "../shared/statusColors.js";
-import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
+import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import { useState } from "react";
 import ApplicationReview from "./ApplicationReview.jsx";
@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 import { Modal, button, Avatar } from "../tutor/workspace/ui.jsx";
 import { money } from "../tutor/workspace/data.js";
-import { summarizePayments } from "../../services/adminRecords.js";
+import { summarizePayments } from "../../services/lcoRecords.js";
 import IncidentDetails from "./IncidentDetails.jsx";
-import { dateLabel } from "./adminData.js";
-export default function AdminOverview({
+import { dateLabel } from "./lcoData.js";
+export default function LcoOverview({
   users,
   applications,
   onUpdateApplications,
@@ -27,7 +27,7 @@ export default function AdminOverview({
   go,
 }) {
   const [detail, setDetail] = useState(null);
-  const { database, saveRecord } = useAdminDatabase();
+  const { database, saveRecord } = useLcoDatabase();
   const incidents = database?.incidents || [];
   const workspace = {
     sessions: database?.sessions || [],
@@ -98,9 +98,9 @@ export default function AdminOverview({
   }
   return (
     <section className="ad-page ao-overview">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
-          <h1>Admin Overview</h1>
+          <h1>LCO Overview</h1>
           <p>Monitor Kasangga platform operations and recent activity.</p>
         </div>
       </div>
@@ -225,7 +225,7 @@ export default function AdminOverview({
                     </td>
                     <td>
                       {badge(
-                        r.referral === "Referred to OSAS"
+                        r.referral === "Referred to OSWE"
                           ? r.referral
                           : r.status,
                       )}
@@ -347,7 +347,7 @@ export default function AdminOverview({
                 {[
                   ["Gross", totals.gross],
                   ["Tutor share", totals.tutor],
-                  ["OSAS share", totals.osas],
+                  ["OSWE share", totals.osas],
                   ["Platform share", totals.platform],
                 ].map(([label, value]) => (
                   <p key={label}>
