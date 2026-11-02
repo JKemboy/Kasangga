@@ -1,9 +1,9 @@
-// Case detail workflow: coordinates evidence, case actions, decision, clearance effects, and final archival for one OSAS case.
+// Case detail workflow: coordinates evidence, case actions, decision, clearance effects, and final archival for one OSWE case.
 import { caseProgress, casePermissions } from "./caseProgress.js";
 import { statusClass } from "../shared/statusColors.js";
 import EvidenceFile from "./EvidenceFile.jsx";
 import { useInteractions } from "../shared/InteractionProvider.jsx";
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import CaseWorkflow from "./CaseWorkflow.jsx";
 import { useEffect, useRef, useState } from "react";
 import { X, FileText, ShieldCheck, Eye, PenLine } from "lucide-react";
@@ -48,7 +48,7 @@ export function validateEvidence(record, result, checks, notes) {
         status: result,
         criteria: checks,
         notes: notes.trim(),
-        reviewer: "OSAS Officer",
+        reviewer: "OSWE Officer",
         at: new Date().toISOString(),
       },
     ],
@@ -76,7 +76,7 @@ export default function CaseShortcut({
   onEvidenceSave,
   allowEvidenceValidation = true,
 }) {
-  const database = useOsasDatabase();
+  const database = useOsweDatabase();
   allowEvidenceValidation =
     allowEvidenceValidation &&
     !!r.caseDatabaseId &&
@@ -156,7 +156,7 @@ export default function CaseShortcut({
           action: actionType,
           notes: notes.trim(),
           status: r.status,
-          officer: "OSAS Officer",
+          officer: "OSWE Officer",
           at: new Date().toISOString(),
         },
       ],
@@ -307,7 +307,7 @@ export default function CaseShortcut({
                   ["Incident Type", r.type],
                   ["Priority", <Badge value={r.priority} />],
                   ["Date Opened", r.date],
-                  ["Assigned OSAS", r.officer],
+                  ["Assigned OSWE", r.officer],
                   ["Status", <Badge value={r.status} />],
                 ]}
               />
@@ -408,7 +408,7 @@ export default function CaseShortcut({
             )}
             <section>
               <h3>
-                OSAS Notes ({r.history?.filter((h) => h.notes).length || 0})
+                OSWE Notes ({r.history?.filter((h) => h.notes).length || 0})
               </h3>
               {r.history?.length ? (
                 r.history.map((h, i) => (
@@ -545,13 +545,13 @@ export default function CaseShortcut({
                 <Badge value={e.status} />
               </button>
             ))}
-            <h3>Formal OSAS case</h3>
+            <h3>Formal OSWE case</h3>
             <div className="ocx-formal-case">
               <ShieldCheck size={24} />
               <div>
-                <b>{r.caseId}</b> ? FORMAL OSAS CASE
+                <b>{r.caseId}</b> ? FORMAL OSWE CASE
                 <small>
-                  Opened after referral and OSAS assessment ? {r.status} ?
+                  Opened after referral and OSWE assessment ? {r.status} ?
                   Assigned to {r.officer || "Not recorded"}
                 </small>
               </div>
@@ -880,7 +880,7 @@ export default function CaseShortcut({
                         {
                           status,
                           notes: notes.trim(),
-                          officer: "OSAS Officer",
+                          officer: "OSWE Officer",
                           at: new Date().toISOString(),
                         },
                       ],
