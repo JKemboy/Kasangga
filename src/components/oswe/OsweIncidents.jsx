@@ -1,10 +1,9 @@
-import { caseReviewLabel } from "./caseProgress.js";
-// Incident Monitoring: reviews incoming reports and routes referral/assessment changes through the OSAS database workflow.
+// Incident Monitoring: reviews incoming reports and routes referral/assessment changes through the OSWE database workflow.
 import { statusClass } from "../shared/statusColors.js";
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import IncidentAssessment from "./IncidentAssessment.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
-import UserExport from "../admin/UserExport.jsx";
+import UserExport from "../lco/UserExport.jsx";
 import { incidentSummary } from "./incidentAssessment.js";
 import { useState } from "react";
 import {
@@ -15,6 +14,7 @@ import {
   CheckCircle,
   ArrowRight,
   Search,
+  RotateCcw,
   Download,
   Info,
   ShieldAlert,
@@ -28,7 +28,7 @@ export function matchesCaseStatus(value, filter) {
   if (!filter) return true;
   return (
     {
-      New: ["New", "Open", "Awaiting OSAS Assessment"],
+      New: ["New", "Open", "Awaiting OSWE Assessment"],
       "Under Review": [
         "Under Review",
         "Under Institutional Review",
@@ -44,7 +44,7 @@ const scopeMatches = (r, scope) =>
   !scope ||
   (scope === "referred" && r.referral !== "Not Referred") ||
   (scope === "assessment" &&
-    ["Open", "Awaiting OSAS Assessment"].includes(r.status) &&
+    ["Open", "Awaiting OSWE Assessment"].includes(r.status) &&
     r.referral !== "Not Referred") ||
   (scope === "formal" && !!r.caseId) ||
   (scope === "active" &&
@@ -58,7 +58,7 @@ const scopeMatches = (r, scope) =>
     ].includes(r.status)) ||
   (scope === "closed" &&
     ["Resolved", "Closed / No Formal Case"].includes(r.status));
-export default function OsasIncidents({
+export default function OsweIncidents({
   settings,
   initialQuery = "",
   embedded = false,
@@ -66,7 +66,7 @@ export default function OsasIncidents({
   onSearchChange,
   initialFilter = {},
 }) {
-  const database = useOsasDatabase();
+  const database = useOsweDatabase();
   const cases = database.records?.cases || [];
   const incidents = (database.records?.incidents || []).filter((r) => {
     const linkedCase = cases.find((c) => c.caseId === r.caseId);
@@ -117,7 +117,7 @@ export default function OsasIncidents({
         .toLowerCase()
         .includes((searchQuery ?? query).trim().toLowerCase()),
   );
-  const size = Number(settings.pageSize),
+  const size = 12,
     pages = Math.max(1, Math.ceil(filtered.length / size)),
     current = Math.min(page, pages),
     visible = filtered.slice((current - 1) * size, current * size);
@@ -167,10 +167,9 @@ export default function OsasIncidents({
       "reporter",
       "student",
       "type",
-      "priority",
+
       "date",
-      "referral",
-      "caseId",
+
       "status",
     ];
     const quote = (v) => '"' + String(v).replaceAll('"', '""') + '"';
@@ -181,10 +180,9 @@ export default function OsasIncidents({
         "Reporter",
         "Reported Student",
         "Incident Type",
-        "Priority",
+
         "Submitted Date",
-        "Referral Status",
-        "Related Case ID",
+
         "Current Status",
       ],
       ...filtered.map((r) => fields.map((f) => r[f])),
@@ -218,7 +216,7 @@ export default function OsasIncidents({
   }
   return (
     <section className="oi-incidents">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             {embedded ? "Case Review" : "Incident Monitoring"}{" "}
@@ -248,14 +246,14 @@ export default function OsasIncidents({
             TriangleAlert,
             "referred",
             "Referred Incidents",
-            "Reported to OSAS",
+            "Reported to OSWE",
             "View referred incidents",
             "#f5002c",
           ],
           [
             FileText,
             "assessment",
-            "Awaiting OSAS Assessment",
+            "Awaiting OSWE Assessment",
             "Open referrals awaiting assessment",
             "View pending assessment",
             "#ffb500",
@@ -316,21 +314,19 @@ export default function OsasIncidents({
         ))}
       </div>
       <div className="oi-toolbar">
-        {!embedded && (
-          <label className="osas-search">
-            <Search size={15} />
-            <input
-              aria-label="Search incidents"
-              placeholder="Search incident ID, booking ID, reporter, student, or keyword..."
-              value={query}
-              onChange={(e) => {
-                change(setQuery, e.target.value);
-                onSearchChange?.(e.target.value);
-              }}
-            />
-          </label>
-        )}
-        {selectFilter("Incident Type", type, setType, "type")}
+        <label className="oswe-search">
+          <Search size={15} />
+          <input
+            aria-label="Search incidents"
+            placeholder="Search incident ID, booking ID, reporter, student, or keyword..."
+            value={searchQuery ?? query}
+            onChange={(e) => {
+              change(setQuery, e.target.value);
+              onSearchChange?.(e.target.value);
+            }}
+          />
+        </label>
+        {selectFilter("All Incident Types", type, setType, "type")}
         <input
           aria-label="Submitted date"
           title="Submitted date"
@@ -352,8 +348,14 @@ export default function OsasIncidents({
             ),
           )}
         </select>
-        <button className={button} onClick={reset}>
-          Reset
+        <button
+          type="button"
+          className={button + " oi-reset"}
+          onClick={reset}
+          aria-label="Reset case review filters"
+          title="Reset filters"
+        >
+          <RotateCcw size={17} />
         </button>
         <UserExport
           rows={filtered}
@@ -386,10 +388,9 @@ export default function OsasIncidents({
                 "Reporter",
                 "Reported Student",
                 "Incident Type",
-                "Priority",
+
                 "Submitted Date",
-                "Referral Status",
-                "Related Case ID",
+
                 "Current Status",
                 "Action",
               ].map((h) => (
@@ -408,43 +409,17 @@ export default function OsasIncidents({
                 <td>{r.reporter}</td>
                 <td>{r.student}</td>
                 <td>{r.type}</td>
-                <td>
-                  <Badge value={r.priority} />
-                </td>
                 <td>{formatDate(r.date)}</td>
-                <td>
-                  <Badge value={r.referral} />
-                </td>
-                <td>
-                  {r.caseId ? (
-                    <button
-                      className="hover:underline"
-                      onClick={() => openCase(r)}
-                    >
-                      {r.caseId}
-                    </button>
-                  ) : (
-                    "—"
-                  )}
-                </td>
                 <td>
                   <Badge value={r.status} />
                 </td>
                 <td>
                   <button
                     className={button + " oi-view"}
-                    aria-label={
-                      r.caseId
-                        ? `Open case ${r.caseId}`
-                        : `View incident ${r.id}`
-                    }
-                    onClick={() => (r.caseId ? openCase(r) : view(r))}
+                    aria-label={`Open case for report ${r.id}`}
+                    onClick={() => openCase(r)}
                   >
-                    {r.caseId
-                      ? caseReviewLabel(
-                          cases.find((c) => c.caseId === r.caseId) || r,
-                        )
-                      : "View Incident"}
+                    Open Case
                   </button>
                 </td>
               </tr>
@@ -461,7 +436,7 @@ export default function OsasIncidents({
         <span>
           Showing {filtered.length ? (current - 1) * size + 1 : 0} to{" "}
           {Math.min(current * size, filtered.length)} of {filtered.length}{" "}
-          entries
+          entries | 12 rows per page
         </span>
         <div>
           <button
@@ -496,9 +471,9 @@ export default function OsasIncidents({
         <div>
           <ShieldPlus />
           <span>
-            <b>Formal OSAS Case</b>
+            <b>Formal OSWE Case</b>
             <small>
-              An institutional case created only after referral and OSAS
+              An institutional case created only after referral and OSWE
               assessment.
             </small>
           </span>
@@ -506,14 +481,14 @@ export default function OsasIncidents({
         <div>
           <Info />
           <span>
-            Not every platform incident becomes a formal OSAS case. Technical
-            matters remain under Admin handling.
+            Not every platform incident becomes a formal OSWE case. Technical
+            matters remain under LCO handling.
           </span>
         </div>
         <p>
-          Demo monitoring records. Incident reports do not establish misconduct.{" "}
-          {settings.tips &&
-            "OSAS may monitor only referred or escalated institutional matters; no Admin controls are provided here."}
+          Incident reports do not establish misconduct. OSWE reviews only
+          referred or escalated institutional matters; technical concerns remain
+          under LCO handling.
         </p>
       </footer>
       {selected && (
