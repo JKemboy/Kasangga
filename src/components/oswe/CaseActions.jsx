@@ -21,7 +21,7 @@ export default function CaseActions({ record, onChange, onArchive }) {
     let next = { ...record };
     const entry = {
       at: new Date().toISOString(),
-      officer: record.officer || "OSAS Officer",
+      officer: record.officer || "OSWE Officer",
       notes: values.notes.trim(),
       status: record.status,
     };
