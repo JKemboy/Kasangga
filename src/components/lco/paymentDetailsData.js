@@ -11,7 +11,7 @@ export function refundDecision(record, decision, note) {
       decision,
       note: note.trim(),
       at: new Date().toISOString(),
-      by: "Admin User",
+      by: "LCO User",
     },
     history: [
       ...(record.history || []),
@@ -19,7 +19,7 @@ export function refundDecision(record, decision, note) {
         to: `Refund ${decision}`,
         reason: note.trim(),
         at: new Date().toISOString(),
-        by: "Admin User",
+        by: "LCO User",
       },
     ],
   };
