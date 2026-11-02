@@ -2,7 +2,7 @@ import { statusClass } from "../shared/statusColors.js";
 import {
   paymentAllocation,
   timestampLabel,
-} from "../../services/adminRecords.js";
+} from "../../services/lcoRecords.js";
 import { useEffect, useRef, useState } from "react";
 import {
   X,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { button, primary } from "../tutor/workspace/ui.jsx";
 import { money } from "../tutor/workspace/data.js";
-import { dateLabel } from "./adminData.js";
+import { dateLabel } from "./lcoData.js";
 import "./incident-details.css";
 import "./booking-details.css";
 
@@ -52,7 +52,7 @@ export default function BookingDetails({
   const booking = r.booking || r.id;
   const related = incidents.filter((i) => i.booking === booking);
   const underReview = related.filter((i) =>
-    ["Pending Review", "Under Admin Review"].includes(i.status),
+    ["Pending Review", "Under LCO Review"].includes(i.status),
   );
   const sessionEnded =
     Number.isFinite(Date.parse(r.date + "T" + r.end + ":00+08:00")) &&
@@ -123,8 +123,8 @@ export default function BookingDetails({
   return (
     <dialog
       ref={ref}
-      className="admin-incident-details admin-booking-details"
-      aria-labelledby="admin-booking-title"
+      className="lco-incident-details lco-booking-details"
+      aria-labelledby="lco-booking-title"
       onCancel={onClose}
       onClick={(e) => {
         if (e.target === ref.current) onClose();
@@ -132,7 +132,7 @@ export default function BookingDetails({
     >
       <header>
         <div>
-          <h2 id="admin-booking-title">
+          <h2 id="lco-booking-title">
             {transaction ? r.transaction : booking}{" "}
             {!transaction && badge(r.status)} {badge(r.payment)}
           </h2>
@@ -169,7 +169,7 @@ export default function BookingDetails({
                     {[
                       ["Gross Amount", split.gross],
                       ["Tutor share", split.tutor],
-                      ["OSAS share", split.osas],
+                      ["OSWE share", split.osas],
                       ["Platform share", split.platform],
                     ].map(([label, value]) => (
                       <tr key={label}>
@@ -276,7 +276,7 @@ export default function BookingDetails({
       <footer>
         {!transaction && (
           <span className="abd-muted">
-            <LockKeyhole size={13} /> Monitoring only. Admin cannot reschedule
+            <LockKeyhole size={13} /> Monitoring only. LCO cannot reschedule
             or cancel bookings here.
           </span>
         )}
