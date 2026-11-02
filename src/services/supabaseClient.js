@@ -12,7 +12,12 @@ export function getSupabaseClient() {
       "Supabase is not configured. Set the Vite Supabase environment variables and restart the app.",
     );
   client = createClient(url.replace(/\/rest\/v1\/?$/, ""), key, {
-    auth: { persistSession: false },
+    // Persist only the Supabase login session so reloads and payment returns stay authenticated.
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
   });
   return client;
 }

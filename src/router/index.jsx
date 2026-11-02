@@ -1,8 +1,8 @@
 import { createBrowserRouter, Navigate, useLocation } from "react-router-dom";
-import AdminDashboard from "../components/admin/AdminDashboard.jsx";
+import LcoDashboard from "../components/lco/LcoDashboard.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
 import Login from "../pages/Login.jsx";
-import OsasDashboard from "../components/osas/OsasDashboard.jsx";
+import OsweDashboard from "../components/oswe/OsweDashboard.jsx";
 import TutorDashboard from "../components/tutor/TutorDashboard.jsx";
 
 import Register from "../pages/Register.jsx";
@@ -54,18 +54,18 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/admin-dashboard",
+    path: "/lco-dashboard",
     element: (
-      <ProtectedRoute role="admin">
-        <AdminDashboard />
+      <ProtectedRoute role="lco">
+        <LcoDashboard />
       </ProtectedRoute>
     ),
   },
   {
-    path: "/osas-dashboard",
+    path: "/oswe-dashboard",
     element: (
-      <ProtectedRoute role="osas">
-        <OsasDashboard />
+      <ProtectedRoute role="oswe">
+        <OsweDashboard />
       </ProtectedRoute>
     ),
   },

@@ -1,3 +1,4 @@
+import { normalizeRoles } from "./accountRoles.js";
 // Account service: resolves the authenticated user's public profile and active portal roles before dashboards load.
 import { findCollege, findProgram } from "./collegeProgramMap.js";
 export const isCsuEmail = (email) =>
@@ -17,21 +18,23 @@ export async function loadAuthAccount(client, userId) {
     );
   if (!profile.data)
     throw new Error(
-      "Your Auth account exists, but its public.users profile is missing. Ask an administrator to provision your profile.",
+      "Your Auth account exists, but its public.users profile is missing. Ask an LCO to provision your profile.",
     );
   if (profile.data.account_status !== "active")
-    throw new Error("Your account is not active. Contact an administrator.");
-  const allowed = (roles.data || [])
-    .map((r) => r.role)
-    .filter((r) => ["learner", "tutor", "admin", "osas"].includes(r));
+    throw new Error("Your account is not active. Contact an LCO.");
+  const allowed = normalizeRoles((roles.data || []).map((r) => r.role)).filter(
+    (r) => ["learner", "tutor", "lco", "oswe"].includes(r),
+  );
   if (!allowed.length)
     throw new Error(
-      "No active portal role is assigned. Ask an administrator to provision your account.",
+      "No active portal role is assigned. Ask an LCO to provision your account.",
     );
   return { profile: profile.data, roles: allowed };
 }
 export function privilegedAccountRole(roles) {
-  return ["admin", "osas"].find((role) => roles.includes(role)) || null;
+  return (
+    ["lco", "oswe"].find((role) => normalizeRoles(roles).includes(role)) || null
+  );
 }
 export function accountHome(roles) {
   const role =

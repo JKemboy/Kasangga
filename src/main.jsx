@@ -8,8 +8,8 @@ import { connectBookingApi } from "./services/portalApi.js";
 import router from "./router/index.jsx";
 import "./index.css";
 import "./components/shared/modal-density.css";
-import "./components/admin/modal-density.css";
-import "./components/osas/modal-density.css";
+import "./components/lco/modal-density.css";
+import "./components/oswe/modal-density.css";
 import "./components/shared/portal-badges.css";
 
 connectBookingApi();
