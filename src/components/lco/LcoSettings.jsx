@@ -60,7 +60,11 @@ export default function LcoSettings({ config, onSave }) {
     return (
       <label className="ad-setting-row">
         <span>{label}</span>
-        <input className={input + " disabled:cursor-default disabled:opacity-100"} value={value} disabled />
+        <input
+          className={input + " disabled:cursor-default disabled:opacity-100"}
+          value={value}
+          disabled
+        />
       </label>
     );
   }
@@ -108,7 +112,9 @@ export default function LcoSettings({ config, onSave }) {
   }
   return (
     <form
-      onSubmit={tab === "System Settings" ? save : (event) => event.preventDefault()}
+      onSubmit={
+        tab === "System Settings" ? save : (event) => event.preventDefault()
+      }
       className="ad-page"
     >
       <div className="oswe-heading">
@@ -126,16 +132,18 @@ export default function LcoSettings({ config, onSave }) {
         )}
       </div>
       <div className="au-tabs">
-        {["System Settings", "Account Settings", "GCash Payment Details"].map((t) => (
-          <button
-            type="button"
-            key={t}
-            aria-pressed={tab === t}
-            onClick={() => setTab(t)}
-          >
-            {t}
-          </button>
-        ))}
+        {["System Settings", "Account Settings", "GCash Payment Details"].map(
+          (t) => (
+            <button
+              type="button"
+              key={t}
+              aria-pressed={tab === t}
+              onClick={() => setTab(t)}
+            >
+              {t}
+            </button>
+          ),
+        )}
       </div>
       {tab === "Account Settings" ? (
         <section className="ad-panel ad-account">
@@ -144,12 +152,14 @@ export default function LcoSettings({ config, onSave }) {
             Account Settings
           </h2>
           <div className="mb-4 flex items-center gap-3">
-              <PortalAvatar
-                role="lco"
-                editable
-                className="h-16 w-16 rounded-full"
-              />
-            <p className="ad-help">Click the avatar to update your profile picture.</p>
+            <PortalAvatar
+              role="lco"
+              editable
+              className="h-16 w-16 rounded-full"
+            />
+            <p className="ad-help">
+              Click the avatar to update your profile picture.
+            </p>
           </div>
           {[
             ["Full Name", accountName],
@@ -159,7 +169,13 @@ export default function LcoSettings({ config, onSave }) {
           ].map(([label, value]) => (
             <label className="ad-setting-row" key={label}>
               <span>{label}</span>
-              <input className={input + " disabled:cursor-default disabled:opacity-100"} value={value} disabled />
+              <input
+                className={
+                  input + " disabled:cursor-default disabled:opacity-100"
+                }
+                value={value}
+                disabled
+              />
             </label>
           ))}
           <p className="ad-help">
@@ -191,16 +207,24 @@ export default function LcoSettings({ config, onSave }) {
               <div className="ad-shares">
                 {[
                   ["Tutor Share", 90],
-                  ["OSWE Share", 5],
-                  ["Platform Share", 5],
+                  ["Maintenance", 5],
+                  ["LCO / Admin", 5],
                 ].map(([l, v]) => (
                   <label key={l}>
                     {l}
-                    <input className={input + " disabled:cursor-default disabled:opacity-100"} disabled value={`${v}%`} />
+                    <input
+                      className={
+                        input + " disabled:cursor-default disabled:opacity-100"
+                      }
+                      disabled
+                      value={`${v}%`}
+                    />
                   </label>
                 ))}
               </div>
-              <p className="ad-equation">90% + 5% + 5% = 100%</p>
+              <p className="ad-equation">
+                90% Tutor + 10% Platform (5% Maintenance + 5% Admin) = 100%
+              </p>
               <p className="ad-help">
                 Default estimates use this split. Recorded transaction
                 allocations take precedence in reports.
@@ -229,10 +253,17 @@ export default function LcoSettings({ config, onSave }) {
               </h2>
               {fixed("Platform Name", "Kasangga")}
               {fixed("Timezone", "Asia/Manila (UTC+08:00)")}
-              {fixed("CSU Email Verification", "Required by platform authentication")}
+              {fixed(
+                "CSU Email Verification",
+                "Required by platform authentication",
+              )}
               <div className="ad-setting-row">
                 <span>LCO Multi-Factor Authentication</span>
-                <button type="button" className={button} onClick={() => setSecurity("Manage Security")}>
+                <button
+                  type="button"
+                  className={button}
+                  onClick={() => setSecurity("Manage Security")}
+                >
                   Manage Authenticator
                 </button>
               </div>

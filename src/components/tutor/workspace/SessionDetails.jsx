@@ -20,23 +20,19 @@ const dateLabel = (value) =>
   });
 const range = (s) => `${time(hour(s.start))} – ${time(hour(s.end))}`;
 function Allocation({ session: s }) {
-  const amounts =
-    s.allocation ||
-    (s.transferredAt
-      ? sessionAllocation(s)
-      : {
-          gross: s.amount,
-          tutor: s.amount * 0.9,
-          osas: s.amount * 0.05,
-          platform: s.amount * 0.05,
-        });
+  const amounts = sessionAllocation({
+    ...s,
+    status: "Completed",
+    payment: "Paid",
+  });
   return (
     <div className="payment-allocation">
       {[
         ["Gross Amount", "gross"],
         ["Tutor (90%)", "tutor"],
-        ["OSWE (5%)", "osas"],
-        ["Platform (5%)", "platform"],
+        ["Admin (5%)", "admin"],
+        ["Maintenance (5%)", "maintenance"],
+        ["Platform (10%)", "platform"],
       ].map(([label, share]) => (
         <div key={label}>
           <span>{label}</span>

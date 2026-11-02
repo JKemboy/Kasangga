@@ -267,7 +267,7 @@ export default function Earnings({ data, go, args = {} }) {
           ],
           [
             ChartColumnIncreasing,
-            money(totals.platform + totals.osas),
+            money(totals.platform),
             "Platform Share (10%)",
             "Platform operations",
             true,
@@ -481,7 +481,7 @@ export default function Earnings({ data, go, args = {} }) {
                     >
                       {money(
                         share === "platform"
-                          ? amounts.platform + amounts.osas
+                          ? amounts.platform
                           : amounts[share],
                       )}
                     </td>
@@ -529,6 +529,8 @@ export default function Earnings({ data, go, args = {} }) {
                   ["Gross Amount", "gross"],
                   ["Your Share (90%)", "tutor"],
                   ["Platform Share (10%)", "platform"],
+                  ["Maintenance (5%)", "maintenance"],
+                  ["Admin (5%)", "admin"],
                 ].map(([label, share]) => (
                   <div
                     key={share}

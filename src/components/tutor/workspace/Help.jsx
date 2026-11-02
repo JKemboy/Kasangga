@@ -116,7 +116,7 @@ const faqs = [
   {
     question: "How are Tutor earnings calculated?",
     answer:
-      "Each eligible completed paid session is split 90% Tutor and 10% Platform. For example, PHP 500 gross gives the tutor PHP 450. See Earnings for transaction details.",
+      "Each eligible completed paid session is split 90% Tutor and 10% Platform (5% Maintenance and 5% Admin). For example, PHP 500 gross gives the tutor PHP 450. See Earnings for transaction details.",
     view: "earnings",
     action: "Open Earnings",
   },
