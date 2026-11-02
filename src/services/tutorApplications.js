@@ -232,13 +232,21 @@ export async function saveTutorApplicationReview(
     );
   const nextStatus = statusValues[status] || null;
   const latestHistory = application.history?.at(-1) || {};
-  const { error } = await client.rpc("review_tutor_application", {
-    p_application_id: Number(application.id),
-    p_status: nextStatus,
-    p_notes: application.notes || "",
-    p_reason: latestHistory.reason || "",
-    p_requested_changes: latestHistory.requestedChanges || [],
-  });
+  const { error } = await client.rpc(
+    nextStatus === "approved"
+      ? "review_tutor_application_with_grades"
+      : "review_tutor_application",
+    {
+      ...(nextStatus === "approved"
+        ? { p_subject_grades: application.subjectGrades || {} }
+        : {}),
+      p_application_id: Number(application.id),
+      p_status: nextStatus,
+      p_notes: application.notes || "",
+      p_reason: latestHistory.reason || "",
+      p_requested_changes: latestHistory.requestedChanges || [],
+    },
+  );
   if (error)
     throw new Error(`Could not save the application review: ${error.message}`);
 }

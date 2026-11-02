@@ -13,9 +13,22 @@ export function manualReviewComplete(record, state = {}) {
   );
 }
 
+export function subjectGradesQualified(record, grades = {}) {
+  return (
+    Array.isArray(record.subjects) &&
+    record.subjects.length > 0 &&
+    record.subjects.every((subject) => {
+      const value = String(grades[subject] ?? "").trim();
+      const grade = Number(value);
+      return /^\d+(?:\.\d+)?$/.test(value) && grade >= 1 && grade <= 1.75;
+    })
+  );
+}
+
 export function approvalChecksComplete(record, state = {}) {
   return (
-    manualReviewComplete(record, state) ||
-    (state?.documentStatus === "Complete" && !!state?.matchConfirmed)
+    subjectGradesQualified(record, state?.manualReview?.subjectGrades) &&
+    (manualReviewComplete(record, state) ||
+      (state?.documentStatus === "Complete" && !!state?.matchConfirmed))
   );
 }
