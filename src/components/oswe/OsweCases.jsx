@@ -1,7 +1,7 @@
 import { caseReviewLabel } from "./caseProgress.js";
 // Case Review: searches active cases and optionally archived records, then opens the case workflow for authorized decisions.
 import { statusClass } from "../shared/statusColors.js";
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
 import CaseActions from "./CaseActions.jsx";
@@ -36,8 +36,8 @@ const statuses = [
   "Resolved",
 ];
 
-export default function OsasCases({ settings }) {
-  const database = useOsasDatabase();
+export default function OsweCases({ settings }) {
+  const database = useOsweDatabase();
   const rows = database.records?.cases || [];
   const personnel = (database.records?.users || [])
     .filter((u) =>
@@ -150,7 +150,7 @@ export default function OsasCases({ settings }) {
   );
   return (
     <section className="oc-cases">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             Case Review <ShieldCheck size={23} className="text-green-800" />
@@ -220,7 +220,7 @@ export default function OsasCases({ settings }) {
         })}
       </div>
       <div className="oc-toolbar">
-        <label className="osas-search">
+        <label className="oswe-search">
           <Search size={16} />
           <input
             aria-label="Search cases"
@@ -301,7 +301,7 @@ export default function OsasCases({ settings }) {
                 "Incident Type",
                 "Priority",
                 "Date Opened",
-                "Assigned OSAS Personnel",
+                "Assigned OSWE Personnel",
                 "Case Status",
                 "Action",
               ].map((h) => (
@@ -396,7 +396,7 @@ export default function OsasCases({ settings }) {
         <Info size={18} />
         <p>
           Incident reports contain allegations requiring impartial review. A
-          report does not establish misconduct. OSAS case actions and decisions
+          report does not establish misconduct. OSWE case actions and decisions
           are saved to the database.
         </p>
       </div>
