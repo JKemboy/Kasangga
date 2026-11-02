@@ -1,12 +1,16 @@
-import { matchesAdminTransaction } from "../../services/adminTransactionFilters.js";
+import useNotificationTarget from "./useNotificationTarget.js";
+import { matchesLcoTransaction } from "../../services/lcoTransactionFilters.js";
 // Payments & Transactions: presents payment records and delegates allowed payment actions to database-backed services.
-import { markPaymentTransferred } from "../../services/adminDatabase.js";
+import {
+  markPaymentTransferred,
+  loadTutorPayoutAccount,
+} from "../../services/lcoDatabase.js";
 import {
   paymentAllocation,
   summarizePayments,
   timestampLabel,
-} from "../../services/adminRecords.js";
-import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
+} from "../../services/lcoRecords.js";
+import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
 import PaymentDetails from "./PaymentDetails.jsx";
 import UserExport from "./UserExport.jsx";
 import { useEffect, useState } from "react";
@@ -18,7 +22,8 @@ import {
   PieChart,
   Check,
   Download,
-  CalendarDays,
+  RotateCcw,
+  Search,
   Info,
 } from "lucide-react";
 import {
@@ -29,17 +34,17 @@ import {
   Avatar,
 } from "../tutor/workspace/ui.jsx";
 import { money } from "../tutor/workspace/data.js";
-import { dateLabel } from "./adminData.js";
 
 const initialTransactions = [];
 // Refund-review rows retain the original paid allocation, but are excluded from
 // settled earnings until the review is resolved. This is reference data only.
 const originalAllocation = paymentAllocation;
-export default function AdminPayments({
+export default function LcoPayments({
+  notificationTarget,
   searchQuery = "",
   onQueryChange = () => {},
 }) {
-  const { database, saveRecord, refresh } = useAdminDatabase();
+  const { database, saveRecord, refresh } = useLcoDatabase();
   const transactions = database?.transactionRecords || database?.payments || [];
   const [transferring, setTransferring] = useState(null),
     [transferred, setTransferred] = useState([]),
@@ -50,13 +55,34 @@ export default function AdminPayments({
     const timer = setTimeout(() => setTransferMessage(""), 4500);
     return () => clearTimeout(timer);
   }, [transferMessage]);
+  const [payout, setPayout] = useState(null);
+  const [account, setAccount] = useState(null);
+  const [loadingAccount, setLoadingAccount] = useState(false);
+  const [reference, setReference] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  async function openPayout(record) {
+    setPayout(record);
+    setAccount(null);
+    setReference("");
+    setConfirmed(false);
+    setTransferError("");
+    setLoadingAccount(true);
+    try {
+      setAccount(await loadTutorPayoutAccount(record.tutorUserId));
+    } catch (error) {
+      setTransferError(error.message);
+    } finally {
+      setLoadingAccount(false);
+    }
+  }
   async function recordTransfer(record) {
     if (transferring || record.transferredAt || transferred.includes(record.id))
       return;
     setTransferring(record.id);
     setTransferError("");
     try {
-      await markPaymentTransferred(record.id, null, true);
+      await markPaymentTransferred(record.id, reference.trim(), confirmed);
+      setPayout(null);
       setTransferred((current) => [...current, record.id]);
       setTransferMessage(
         "Payout of " +
@@ -78,7 +104,6 @@ export default function AdminPayments({
   const [status, setStatus] = useState(""),
     [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
-    [dateOpen, setDateOpen] = useState(false),
     [tutor, setTutor] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
@@ -92,11 +117,17 @@ export default function AdminPayments({
   const totals = summarizePayments(period);
   const filtered = period.filter(
     (r) =>
-      matchesAdminTransaction(r, status, transferred) &&
+      matchesLcoTransaction(r, status, transferred) &&
       (!tutor || r.tutor === tutor) &&
       `${r.id} ${r.booking} ${r.learner} ${r.tutor}`
         .toLowerCase()
         .includes(searchQuery.trim().toLowerCase()),
+  );
+  const targetRow = useNotificationTarget(
+    notificationTarget,
+    filtered,
+    7,
+    setPage,
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),
@@ -116,7 +147,7 @@ export default function AdminPayments({
         "Tutor",
         "Gross Amount",
         "Original Tutor Share",
-        "Original OSAS Share",
+        "Original OSWE Share",
         "Original Platform Share",
         "Payment Method",
         "Payment Status",
@@ -148,7 +179,7 @@ export default function AdminPayments({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "admin-transactions.csv";
+    a.download = "lco-transactions.csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(`Exported ${filtered.length} matching transactions.`);
@@ -169,7 +200,7 @@ export default function AdminPayments({
           {transferError}
         </p>
       )}
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             Payments &amp; Transactions <CreditCard size={23} />
@@ -193,7 +224,7 @@ export default function AdminPayments({
           ],
           [
             Landmark,
-            "OSAS Share",
+            "OSWE Share",
             money(totals.osas),
             "Institutional allocation",
           ],
@@ -232,7 +263,20 @@ export default function AdminPayments({
           </div>
         ))}
       </div>
-      <div className="ad-toolbar">
+      <div className="ad-toolbar ap-payment-filters">
+        <label className="ap-payment-search">
+          <Search size={16} />
+          <input
+            className={input}
+            aria-label="Search transactions"
+            placeholder="Search transaction, booking, learner or tutor..."
+            value={searchQuery}
+            onChange={(e) => {
+              onQueryChange(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
         <div className="ap-transaction-selects">
           <select
             aria-label="Transaction status"
@@ -270,18 +314,32 @@ export default function AdminPayments({
               ))}
           </select>
         </div>
-        <button
-          className={button}
-          aria-label="Transaction date range"
-          onClick={() => setDateOpen(true)}
-        >
-          <CalendarDays size={14} />
-          {start ? dateLabel(start) : "Any date"} –{" "}
-          {end ? dateLabel(end) : "Any date"}
-        </button>
-        <span className="ap-method">GCash via PayMongo</span>
+        <label className="ap-date-field">
+          From
+          <input
+            className={input}
+            type="date"
+            aria-label="Payment start date"
+            value={start}
+            max={end || undefined}
+            onChange={(e) => change(setStart, e.target.value)}
+          />
+        </label>
+        <label className="ap-date-field">
+          To
+          <input
+            className={input}
+            type="date"
+            aria-label="Payment end date"
+            value={end}
+            min={start || undefined}
+            onChange={(e) => change(setEnd, e.target.value)}
+          />
+        </label>
         <button
           type="button"
+          aria-label="Reset transaction filters"
+          title="Reset filters"
           className={button}
           onClick={() => {
             setStatus("");
@@ -292,7 +350,7 @@ export default function AdminPayments({
             setPage(1);
           }}
         >
-          Reset filters
+          <RotateCcw size={16} />
         </button>
         <UserExport
           kind="payments"
@@ -323,7 +381,7 @@ export default function AdminPayments({
                   "Tutor",
                   "Gross Amount",
                   "Tutor Share",
-                  "OSAS Share",
+                  "OSWE Share",
                   "Platform Share",
                   "Payment Method",
                   "Payment Status",
@@ -337,7 +395,7 @@ export default function AdminPayments({
               {visible.map((r) => {
                 const a = originalAllocation(r);
                 return (
-                  <tr key={r.id}>
+                  <tr key={r.id} {...targetRow(r)}>
                     <td>
                       <b>{r.id}</b>
                     </td>
@@ -400,7 +458,7 @@ export default function AdminPayments({
                                 ...r,
                                 initialAction: "Transferred",
                               })
-                            : recordTransfer(r)
+                            : openPayout(r)
                         }
                       >
                         {r.refundStatus === "processed"
@@ -459,45 +517,97 @@ export default function AdminPayments({
         sessions; pending refund reviews are excluded. Shares without a stored
         allocation are marked as estimates.
       </p>
-      {dateOpen && (
+      {invalid && (
+        <p role="alert" className="text-red-600">
+          End date must be on or after start date.
+        </p>
+      )}
+      {payout && (
         <Modal
-          title="Transaction Date Range"
-          onClose={() => setDateOpen(false)}
+          title="Record Tutor Transfer"
+          onClose={() => {
+            if (!transferring) setPayout(null);
+          }}
         >
-          <div className="space-y-3 text-xs">
-            <label className="block">
-              From
-              <input
-                aria-label="Payment start date"
-                className={input}
-                type="date"
-                value={start}
-                onChange={(e) => change(setStart, e.target.value)}
-              />
-            </label>
-            <label className="block">
-              To
-              <input
-                aria-label="Payment end date"
-                className={input}
-                type="date"
-                value={end}
-                onChange={(e) => change(setEnd, e.target.value)}
-              />
-            </label>
-            {invalid && (
-              <p className="text-red-600">
-                End date must be on or after start date.
+          <form
+            className="space-y-4 text-sm"
+            onSubmit={(e) => {
+              e.preventDefault();
+              recordTransfer(payout);
+            }}
+          >
+            <dl className="ap-payout-account">
+              <dt>Tutor</dt>
+              <dd>{payout.tutor}</dd>
+              <dt>Amount to transfer</dt>
+              <dd className="font-semibold text-green-800">
+                {money(originalAllocation(payout).tutor)}
+              </dd>
+              <dt>GCash account name</dt>
+              <dd>
+                {loadingAccount
+                  ? "Loading..."
+                  : account?.name || "Not provided"}
+              </dd>
+              <dt>GCash number</dt>
+              <dd>
+                {loadingAccount
+                  ? "Loading..."
+                  : account?.number || "Not provided"}
+              </dd>
+            </dl>
+            {!loadingAccount && !account?.number && (
+              <p className="text-amber-800">
+                Ask the tutor to provide GCash payout details before recording a
+                transfer.
               </p>
             )}
-            <button
-              className={primary}
-              disabled={!!invalid}
-              onClick={() => setDateOpen(false)}
-            >
-              Apply date range
-            </button>
-          </div>
+            <label className="block">
+              Transfer reference
+              <input
+                className={input + " mt-1 w-full"}
+                required
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+              />
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                required
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+              />
+              I have sent this amount to the GCash account shown above.
+            </label>
+            {transferError && (
+              <p role="alert" className="text-red-600">
+                {transferError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className={button}
+                disabled={!!transferring}
+                onClick={() => setPayout(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className={primary}
+                disabled={
+                  loadingAccount ||
+                  !account?.number ||
+                  !confirmed ||
+                  !reference.trim() ||
+                  !!transferring
+                }
+              >
+                {transferring ? "Saving..." : "Confirm Transfer"}
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
       {selected && (
