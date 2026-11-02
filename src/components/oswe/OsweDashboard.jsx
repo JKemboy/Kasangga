@@ -1,30 +1,30 @@
 import useSectionNavigation from "../shared/useSectionNavigation.js";
-import OsasNotifications from "./OsasNotifications.jsx";
+import OsweNotifications from "./OsweNotifications.jsx";
 import CountBadge from "../shared/CountBadge.jsx";
 import { collegeProgramMap } from "../../services/collegeProgramMap.js";
-// OSAS portal coordinator: loads the database snapshot, applies saved preferences, and routes clearance, case, policy, archive, and report sections.
-import OsasCaseWorkspace from "./OsasCaseWorkspace.jsx";
+// OSWE portal coordinator: loads the database snapshot, applies saved preferences, and routes clearance, case, policy, archive, and report sections.
+import OsweCaseWorkspace from "./OsweCaseWorkspace.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
 import { statusClass } from "../shared/statusColors.js";
-import { OsasDatabaseProvider } from "./OsasDatabaseContext.jsx";
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { OsweDatabaseProvider } from "./OsweDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
 import ClearanceReview from "./ClearanceReview.jsx";
-import UserExport from "../admin/UserExport.jsx";
-import { reportHtml } from "../admin/reportExport.js";
+import UserExport from "../lco/UserExport.jsx";
+import { reportHtml } from "../lco/reportExport.js";
 import HeaderInbox from "../shared/HeaderInbox.jsx";
 import { useLogout } from "../shared/LogoutProvider.jsx";
-import OsasArchive from "./OsasArchive.jsx";
-import OsasCases from "./OsasCases.jsx";
-import OsasOverview from "./OsasOverview.jsx";
-import OsasPolicies from "./OsasPolicies.jsx";
-import OsasReports from "./OsasReports.jsx";
-import OsasSettings, {
-  filterOsasNotifications,
+import OsweArchive from "./OsweArchive.jsx";
+import OsweCases from "./OsweCases.jsx";
+import OsweOverview from "./OsweOverview.jsx";
+import OswePolicies from "./OswePolicies.jsx";
+import OsweReports from "./OsweReports.jsx";
+import OsweSettings, {
+  filterOsweNotifications,
   loadSettings,
   normalizeSettings,
-} from "./OsasSettings.jsx";
+} from "./OsweSettings.jsx";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -58,7 +58,7 @@ import {
   primary,
   input,
 } from "../tutor/workspace/ui.jsx";
-import "./osas.css";
+import "./oswe.css";
 
 const statuses = [
   "Pending Review",
@@ -77,7 +77,7 @@ const navigation = [
   ["Notifications", Bell],
   ["Settings", Settings],
 ];
-const osasSections = navigation.map(([label]) => label);
+const osweSections = navigation.map(([label]) => label);
 
 const dateLabel = (v) =>
   v
@@ -88,7 +88,7 @@ const dateLabel = (v) =>
       })
     : "—";
 function Status({ value }) {
-  return <span className={statusClass(value, "osas-badge")}>{value}</span>;
+  return <span className={statusClass(value, "oswe-badge")}>{value}</span>;
 }
 function csvCell(v) {
   return (
@@ -98,14 +98,14 @@ function csvCell(v) {
   );
 }
 
-export default function OsasDashboardPage() {
+export default function OsweDashboardPage() {
   return (
-    <OsasDatabaseProvider>
-      <OsasDashboardContent />
-    </OsasDatabaseProvider>
+    <OsweDatabaseProvider>
+      <OsweDashboardContent />
+    </OsweDatabaseProvider>
   );
 }
-function OsasDashboardContent() {
+function OsweDashboardContent() {
   const auth = useAuth();
   const [accountOpen, setAccountOpen] = useState(false);
   const accountMenu = useRef(null);
@@ -127,12 +127,12 @@ function OsasDashboardContent() {
       document.removeEventListener("keydown", escape);
     };
   }, [accountOpen]);
-  const database = useOsasDatabase();
+  const database = useOsweDatabase();
   const rows = database.records?.clearance || [];
   const requestLogout = useLogout();
 
   const navigate = useNavigate();
-  const [view, setView] = useSectionNavigation(osasSections, "Overview");
+  const [view, setView] = useSectionNavigation(osweSections, "Overview");
   const [overviewCaseFilter, setOverviewCaseFilter] = useState({});
   useEffect(() => {
     const open = () => setView("Case Archive");
@@ -157,7 +157,7 @@ function OsasDashboardContent() {
       );
     }
   }, [database.records?.settings]);
-  const notifications = filterOsasNotifications(
+  const notifications = filterOsweNotifications(
     database.records?.notifications || [],
     settings,
   );
@@ -326,7 +326,7 @@ function OsasDashboardContent() {
     setModal(label);
   }
   return (
-    <div className="osas-app">
+    <div className="oswe-app">
       {mobile && (
         <button
           className="fixed inset-0 z-30 bg-black/40 md:hidden"
@@ -334,8 +334,8 @@ function OsasDashboardContent() {
           onClick={() => setMobile(false)}
         />
       )}
-      <aside className={`osas-sidebar ${mobile ? "is-open" : ""}`}>
-        <div className="osas-brand">
+      <aside className={`oswe-sidebar ${mobile ? "is-open" : ""}`}>
+        <div className="oswe-brand">
           <img src="/images/kasangga-logo.png" alt="Kasangga" />
           <button
             aria-label="Close navigation"
@@ -346,9 +346,9 @@ function OsasDashboardContent() {
           </button>
         </div>
         <p className="px-4 pb-2 pt-4 text-[11px] font-bold text-yellow-300">
-          OSAS PORTAL
+          OSWE PORTAL
         </p>
-        <nav aria-label="OSAS navigation">
+        <nav aria-label="OSWE navigation">
           {navigation.map(([label, Icon]) => (
             <button
               key={label}
@@ -367,11 +367,11 @@ function OsasDashboardContent() {
             </button>
           ))}
         </nav>
-        <button className="osas-logout" onClick={requestLogout}>
+        <button className="oswe-logout" onClick={requestLogout}>
           <LogOut size={18} />
           Logout
         </button>
-        <div className="osas-campus">
+        <div className="oswe-campus">
           <img src="/images/csubuilding.jpg" alt="Caraga State University" />
           <div>
             <strong>Caraga State University</strong>
@@ -379,7 +379,7 @@ function OsasDashboardContent() {
           </div>
         </div>
       </aside>
-      <header className="osas-topbar">
+      <header className="oswe-topbar">
         <button
           aria-label="Open navigation"
           className="md:hidden"
@@ -388,7 +388,7 @@ function OsasDashboardContent() {
           <Menu size={20} />
         </button>
         <form
-          className="osas-global"
+          className="oswe-global"
           onSubmit={(e) => {
             e.preventDefault();
             if (
@@ -405,7 +405,7 @@ function OsasDashboardContent() {
         >
           <Search size={16} />
           <input
-            aria-label="Search OSAS records"
+            aria-label="Search OSWE records"
             placeholder="Search cases, reports, documents, or students..."
             value={global}
             onChange={(e) => setGlobal(e.target.value)}
@@ -416,7 +416,7 @@ function OsasDashboardContent() {
         </form>
         <div className="ml-auto flex items-center gap-4">
           <HeaderInbox
-            role="osas"
+            role="oswe"
             showMessages={false}
             notifications={notifications}
             onRead={database.markNotificationsRead}
@@ -431,14 +431,14 @@ function OsasDashboardContent() {
               aria-haspopup="menu"
               onClick={() => setAccountOpen((open) => !open)}
             >
-              <PortalAvatar role="osas" />
+              <PortalAvatar role="oswe" />
               <span className="hidden sm:block">
                 <b className="block text-xs text-slate-900">
                   {[auth?.profile?.first_name, auth?.profile?.last_name]
                     .filter(Boolean)
-                    .join(" ") || "OSAS Officer"}
+                    .join(" ") || "OSWE Officer"}
                 </b>
-                <small>OSAS Case Officer</small>
+                <small>OSWE Case Officer</small>
               </span>
               <ChevronDown size={14} />
             </button>
@@ -475,21 +475,21 @@ function OsasDashboardContent() {
         </div>
       </header>
       <main
-        className={`osas-main ${settings.compact ? "" : "osas-comfortable"}`}
+        className={`oswe-main ${settings.compact ? "" : "oswe-comfortable"}`}
       >
         {database.error && (
-          <p role="alert" className="osas-alert">
+          <p role="alert" className="oswe-alert">
             {database.error}
             <button onClick={database.refresh}>Retry</button>
           </p>
         )}
         {database.loading && (
-          <p role="status">Loading OSAS records from Supabase...</p>
+          <p role="status">Loading OSWE records from Supabase...</p>
         )}
-        {/* OSAS section router: every child receives the snapshot records or
-            settings it needs; mutations go through OsasDatabaseContext RPCs. */}
+        {/* OSWE section router: every child receives the snapshot records or
+            settings it needs; mutations go through OsweDatabaseContext RPCs. */}
         {view === "Overview" ? (
-          <OsasOverview
+          <OsweOverview
             onNavigate={(section, filter) => {
               setGlobal("");
               setOverviewCaseFilter(filter);
@@ -507,7 +507,7 @@ function OsasDashboardContent() {
             onClearance={review}
           />
         ) : view === "Notifications" ? (
-          <OsasNotifications
+          <OsweNotifications
             rows={notifications}
             loading={database.loading}
             error={database.error}
@@ -515,7 +515,7 @@ function OsasDashboardContent() {
             onOpen={openNotification}
           />
         ) : view === "Settings" ? (
-          <OsasSettings
+          <OsweSettings
             settings={settings}
             onSave={async (next) => {
               // Persist first; update the rendered preference cache only after
@@ -525,9 +525,9 @@ function OsasDashboardContent() {
             }}
           />
         ) : view === "Reports & Analytics" ? (
-          <OsasReports rows={rows} settings={settings} />
+          <OsweReports rows={rows} settings={settings} />
         ) : view === "Policies & Procedures" ? (
-          <OsasPolicies
+          <OswePolicies
             settings={settings}
             searchQuery={global}
             onSearchChange={setGlobal}
@@ -538,14 +538,14 @@ function OsasDashboardContent() {
             "Incident Monitoring",
             "Evidence Validation",
           ].includes(view) ? (
-          <OsasCaseWorkspace
+          <OsweCaseWorkspace
             initialFilter={overviewCaseFilter}
             settings={settings}
             searchQuery={global}
             onSearchChange={setGlobal}
           />
         ) : view === "Case Archive" ? (
-          <OsasArchive
+          <OsweArchive
             settings={settings}
             searchQuery={global}
             onSearchChange={setGlobal}
@@ -553,9 +553,9 @@ function OsasDashboardContent() {
         ) : (
           <>
             <div className="text-[10px] text-slate-400">
-              Supabase records · Authorized OSAS review
+              Supabase records · Authorized OSWE review
             </div>
-            <div className="osas-heading">
+            <div className="oswe-heading">
               <div>
                 <h1>
                   Student Clearance Review{" "}
@@ -578,7 +578,7 @@ function OsasDashboardContent() {
                 ))}
               </select>
             </div>
-            <div className="osas-metrics">
+            <div className="oswe-metrics">
               {[
                 [
                   FileText,
@@ -611,7 +611,7 @@ function OsasDashboardContent() {
                   }
                   aria-pressed={status === value}
                 >
-                  <span className={`osas-metric-icon ${color}`}>
+                  <span className={`oswe-metric-icon ${color}`}>
                     <Icon size={25} />
                   </span>
                   <span>
@@ -630,7 +630,7 @@ function OsasDashboardContent() {
                 </button>
               ))}
             </div>
-            <div className="osas-filters">
+            <div className="oswe-filters">
               <select
                 className={input}
                 aria-label="Clearance status"
@@ -689,7 +689,7 @@ function OsasDashboardContent() {
               </button>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <label className="osas-search">
+              <label className="oswe-search">
                 <Search size={16} />
                 <input
                   aria-label="Search students"
@@ -721,7 +721,7 @@ function OsasDashboardContent() {
                   ])
                     .replace(
                       /<p>Local demo records[\s\S]*?<\/p>/,
-                      "<p>Student clearance records from the OSAS database.</p>",
+                      "<p>Student clearance records from the OSWE database.</p>",
                     )
                     .replaceAll(
                       "Reports &amp; Analytics",
@@ -739,7 +739,7 @@ function OsasDashboardContent() {
                 {notice}
               </p>
             )}
-            <section className="osas-table-panel">
+            <section className="oswe-table-panel">
               <div className="overflow-x-auto">
                 <table>
                   <thead>
@@ -843,11 +843,11 @@ function OsasDashboardContent() {
               </div>
             </section>
             {settings.tips && (
-              <footer className="osas-note">
+              <footer className="oswe-note">
                 <Info size={20} className="shrink-0 text-blue-600" />
                 <p>
                   An incident report alone does not block student clearance.
-                  Clearance implications require an authorized OSAS case review,
+                  Clearance implications require an authorized OSWE case review,
                   applicable institutional basis, and a recorded decision.
                 </p>
                 <div>
@@ -912,7 +912,7 @@ function OsasDashboardContent() {
           ) : modal === "Logout" ? (
             <div className="space-y-3 text-xs">
               <p>
-                Leave the OSAS portal? Saved database reviews will remain on
+                Leave the OSWE portal? Saved database reviews will remain on
                 this browser.
               </p>
               <button className={primary} onClick={() => navigate("/")}>
@@ -928,7 +928,7 @@ function OsasDashboardContent() {
               </p>
               <p>
                 For account access or technical assistance, contact your
-                authorized Kasangga administrator. Include the page and
+                authorized Kasangga LCO. Include the page and
                 case/report reference; never share passwords or verification
                 codes.
               </p>
@@ -947,16 +947,16 @@ function OsasDashboardContent() {
             <div className="space-y-3 text-xs">
               <p>
                 <PortalAvatar
-                  role="osas"
+                  role="oswe"
                   editable
                   className="mb-3 h-16 w-16 rounded-full"
                 />
                 <b>
                   {[auth?.profile?.first_name, auth?.profile?.last_name]
                     .filter(Boolean)
-                    .join(" ") || "OSAS Officer"}
+                    .join(" ") || "OSWE Officer"}
                 </b>{" "}
-                · OSAS Case Officer
+                · OSWE Case Officer
               </p>
               <p>
                 {auth?.user?.email}. Display preferences are available in
