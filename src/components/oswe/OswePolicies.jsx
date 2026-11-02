@@ -1,5 +1,9 @@
+import {
+  policyCategories,
+  policyPresentation,
+} from "../../services/policyPresentation.js";
 // Policies & Procedures: displays policy records and available authorized policy-management actions.
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { useState } from "react";
 import {
   BookOpen,
@@ -13,12 +17,13 @@ import {
   Info,
   ChevronLeft,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 import { Modal, button, input } from "../tutor/workspace/ui.jsx";
 
 import PolicyDetails from "./PolicyDetails.jsx";
 
-export default function OsasPolicies({
+export default function OswePolicies({
   settings,
   policies: providedPolicies,
   onEdit,
@@ -27,8 +32,10 @@ export default function OsasPolicies({
   onSearchChange,
   hideSearch = false,
 }) {
-  const database = useOsasDatabase();
-  const policies = providedPolicies ?? database?.records?.policies ?? [];
+  const database = useOsweDatabase();
+  const policies = (providedPolicies ?? database?.records?.policies ?? []).map(
+    policyPresentation,
+  );
   const [query, setQuery] = useState(""),
     [category, setCategory] = useState(""),
     [status, setStatus] = useState(""),
@@ -55,7 +62,10 @@ export default function OsasPolicies({
   const available = policies.filter((p) => p.updated <= endDay);
   const updated = (p) => p.updated >= cutoffDay && p.updated <= endDay;
   const categories = [
-    ...new Set(policies.map((p) => p.category).filter(Boolean)),
+    ...new Set([
+      ...policyCategories,
+      ...policies.map((p) => p.category).filter(Boolean),
+    ]),
   ].sort();
   const filtered = available.filter(
     (p) =>
@@ -70,7 +80,7 @@ export default function OsasPolicies({
         .toLowerCase()
         .includes((searchQuery ?? query).trim().toLowerCase()),
   );
-  const size = Number(settings.pageSize),
+  const size = 12,
     pages = Math.max(1, Math.ceil(filtered.length / size)),
     current = Math.min(page, pages),
     visible = filtered.slice((current - 1) * size, current * size);
@@ -104,7 +114,7 @@ export default function OsasPolicies({
   }
   return (
     <section className="op-policies">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             Policies &amp; Procedures{" "}
@@ -203,13 +213,16 @@ export default function OsasPolicies({
         ))}
       </div>
       {!hideSearch && (
-        <label className="osas-search">
+        <label className="oswe-search">
           <Search size={17} />
           <input
             aria-label="Search policies"
             placeholder="Search policies by title, category, or keyword..."
-            value={query}
-            onChange={(e) => change(setQuery, e.target.value)}
+            value={searchQuery ?? query}
+            onChange={(e) => {
+              change(setQuery, e.target.value);
+              onSearchChange?.(e.target.value);
+            }}
           />
         </label>
       )}
@@ -220,9 +233,11 @@ export default function OsasPolicies({
           value={category}
           onChange={(e) => change(setCategory, e.target.value)}
         >
-          <option value="">All Categories</option>
+          <option value="">All Categories ({policies.length})</option>
           {categories.map((c) => (
-            <option key={c}>{c}</option>
+            <option key={c} value={c}>
+              {c} ({policies.filter((p) => p.category === c).length})
+            </option>
           ))}
         </select>
         <select
@@ -232,12 +247,18 @@ export default function OsasPolicies({
           onChange={(e) => change(setOwner, e.target.value)}
         >
           <option value="">All Document Owners</option>
-          {["OSAS", "System"].map((o) => (
+          {["Student Handbook", "System"].map((o) => (
             <option key={o}>{o}</option>
           ))}
         </select>
-        <button className={button} onClick={reset}>
-          Reset filters
+        <button
+          type="button"
+          className={button + " op-reset"}
+          onClick={reset}
+          aria-label="Reset policy filters"
+          title="Reset filters"
+        >
+          <RotateCcw size={17} />
         </button>
       </div>
       {recent && (
@@ -259,7 +280,6 @@ export default function OsasPolicies({
                 "Version",
                 "Effective Date",
                 "Document Owner",
-                "Status",
                 "Last Updated",
                 "Action",
               ].map((h) => (
@@ -287,14 +307,9 @@ export default function OsasPolicies({
                   </span>
                 </td>
                 <td>{p.version}</td>
-                <td>{date(p.effective)}</td>
+                <td>{p.effectiveLabel || date(p.effective)}</td>
                 <td>{p.owner}</td>
-                <td>
-                  <span className={`op-status ${p.status.toLowerCase()}`}>
-                    {p.status}
-                  </span>
-                </td>
-                <td>{date(p.updated)}</td>
+                <td>{p.updatedLabel || date(p.updated)}</td>
                 <td>
                   <button
                     className={button + " op-view"}
@@ -319,7 +334,7 @@ export default function OsasPolicies({
         <span>
           Showing {filtered.length ? (current - 1) * size + 1 : 0} to{" "}
           {Math.min(current * size, filtered.length)} of {filtered.length}{" "}
-          entries
+          entries | 12 rows per page
         </span>
         <div>
           <button
@@ -341,26 +356,31 @@ export default function OsasPolicies({
           </button>
         </div>
       </div>
-      {settings.tips && (
+      {
         <div className="op-note">
           <Info size={18} />
           <p>
-            These policies support OSAS institutional review and case handling.
-            Policy records are maintained by authorized Admin users.
+            These policies support OSWE institutional review and case handling.
+            LCO maintains system policies. University and student handbook
+            policies are read-only.
           </p>
         </div>
-      )}
+      }
       {selected && (
         <PolicyDetails
-          policy={selected}
+          policy={policies.find((p) => p.id === selected.id) || selected}
           policies={policies}
           date={date}
           onSelect={setSelected}
           onClose={() => setSelected(null)}
           onEdit={
-            onEdit
+            onEdit &&
+            (policies.find((p) => p.id === selected.id) || selected).scope ===
+              "system"
               ? () => {
-                  onEdit(selected);
+                  onEdit(
+                    policies.find((p) => p.id === selected.id) || selected,
+                  );
                   setSelected(null);
                 }
               : undefined
