@@ -29,7 +29,22 @@ export default function OsweOverview({
   onNavigate,
 }) {
   const database = useOsweDatabase();
-  const caseRows = database.records?.cases || [];
+  const savedCases = database.records?.cases || [];
+  const caseRows = [
+    ...savedCases,
+    ...(database.records?.incidents || [])
+      .filter(
+        (r) =>
+          !r.caseId && !["Resolved", "Closed / No Finding"].includes(r.status),
+      )
+      .map((r) => ({
+        ...r,
+        caseId: r.id,
+        date: r.date,
+        student: r.student,
+        status: "Open",
+      })),
+  ];
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [month, setMonth] = useState(""),
     [detail, setDetail] = useState(null);
@@ -37,26 +52,45 @@ export default function OsweOverview({
   const [shortcut, setShortcut] = useState(null);
   const openCase = (record, view = "case") =>
     setShortcut({
-      caseId: record.caseId,
+      reportId: record.reportDatabaseId,
+      caseId:
+        record.caseId ||
+        caseRows.find((c) => c.reportDatabaseId === record.reportDatabaseId)
+          ?.caseId,
       view,
       evidenceId: view === "evidence" ? record.id : undefined,
     });
-  const saveCase = database.saveCase;
   const records = rows.filter((r) => !month || r.requested.startsWith(month));
   const cases = caseRows
-    .filter((r) => !r.archived && (!month || r.date.startsWith(month)))
+    .filter(
+      (r) =>
+        !month ||
+        String(
+          r.databaseStatus === "resolved" || r.archived
+            ? r.resolvedAt || r.date || ""
+            : r.date || "",
+        ).startsWith(month),
+    )
     .map((r) => ({
       ...r,
       name: r.student,
-      caseStatus: r.status,
+      caseStatus:
+        r.databaseStatus === "resolved" || r.archived
+          ? "Resolved"
+          : r.status || "Open",
       requested: r.date,
     }))
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) =>
+      String(b.resolvedAt || b.date || "").localeCompare(
+        String(a.resolvedAt || a.date || ""),
+      ),
+    );
   const open = cases.filter((r) => !r.caseStatus.startsWith("Resolved"));
   const evidence = (database.records?.evidence || [])
     .filter(
       (e) =>
-        open.some((c) => c.caseId === e.caseId) && e.status !== "Validated",
+        open.some((c) => c.reportDatabaseId === e.reportDatabaseId) &&
+        !["Validated", "Insufficient"].includes(e.status),
     )
     .map((e) => ({ ...e, name: e.evidenceType, caseStatus: e.status }));
   const review = cases.filter((r) => r.caseStatus === "Under Review");
@@ -149,7 +183,7 @@ export default function OsweOverview({
             CheckCircle,
             resolved,
             "Resolved Cases",
-            "In selected request month",
+            "Resolved in the selected period",
             "#00502d",
           ],
         ].map(([Icon, items, title, hint, color]) => (
@@ -269,7 +303,7 @@ export default function OsweOverview({
             </table>
             {!cases.length && (
               <p className="p-8 text-center text-xs text-slate-500">
-                No formal cases for the selected period. Review pending
+                No case records for the selected period. Review pending
                 referrals above.
               </p>
             )}
@@ -362,11 +396,12 @@ export default function OsweOverview({
       {shortcut && (
         <CaseShortcut
           key={shortcut.caseId + shortcut.view}
-          record={caseRows.find((r) => r.caseId === shortcut.caseId)}
+          record={caseRows.find(
+            (r) => r.reportDatabaseId === shortcut.reportId,
+          )}
           initialView={shortcut.view}
           initialEvidenceId={shortcut.evidenceId}
           onClose={() => setShortcut(null)}
-          onSave={saveCase}
         />
       )}
       {detail && (
