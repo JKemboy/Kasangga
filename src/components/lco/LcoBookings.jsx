@@ -1,17 +1,20 @@
+import useNotificationTarget from "./useNotificationTarget.js";
 import {
   bookingSessionType,
   bookingPaymentStatus,
   matchesBookingPayment,
 } from "../../services/bookingMonitoringFilters.js";
-// Bookings Monitoring: reads booking and payment details through the Admin database context.
+// Bookings Monitoring: reads booking and payment details through the LCO database context.
 import { statusClass } from "../shared/statusColors.js";
-import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
+import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import IncidentDetails from "./IncidentDetails.jsx";
 import UserExport from "./UserExport.jsx";
 import { useState } from "react";
 import {
   CalendarDays,
+  Search,
+  RotateCcw,
   CheckCircle,
   X,
   Download,
@@ -26,12 +29,13 @@ import {
   Avatar,
 } from "../tutor/workspace/ui.jsx";
 import { money } from "../tutor/workspace/data.js";
-import { dateLabel } from "./adminData.js";
-export default function AdminBookings({
+import { dateLabel } from "./lcoData.js";
+export default function LcoBookings({
+  notificationTarget,
   searchQuery = "",
   onQueryChange = () => {},
 }) {
-  const { database, saveRecord } = useAdminDatabase();
+  const { database, saveRecord } = useLcoDatabase();
   const incidents = database?.incidents || [];
   const [incident, setIncident] = useState(null);
   const workspace = {
@@ -45,7 +49,6 @@ export default function AdminBookings({
     [end, setEnd] = useState(""),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
-    [dates, setDates] = useState(false),
     [notice, setNotice] = useState("");
   const rows = workspace.sessions
       .map((record) => {
@@ -80,6 +83,12 @@ export default function AdminBookings({
             .toLowerCase()
             .includes(searchQuery.trim().toLowerCase()),
       );
+  const targetRow = useNotificationTarget(
+    notificationTarget,
+    filtered,
+    6,
+    setPage,
+  );
   const pages = Math.max(1, Math.ceil(filtered.length / 6)),
     current = Math.min(page, pages),
     visible = filtered.slice((current - 1) * 6, current * 6);
@@ -142,14 +151,14 @@ export default function AdminBookings({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "admin-bookings.csv";
+    a.download = "lco-bookings.csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(`Exported ${filtered.length} matching bookings.`);
   }
   return (
     <section className="ad-page ab-bookings">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             Bookings Monitoring <CalendarDays size={22} />
@@ -205,7 +214,22 @@ export default function AdminBookings({
           </button>
         ))}
       </div>
-      <div className="ab-filters">
+      <div className="ab-filters ab-monitoring-filters">
+        <label className="ab-booking-search">
+          <span className="sr-only">Search bookings</span>
+          <Search size={16} />
+          <input
+            type="search"
+            aria-label="Search bookings"
+            className={input}
+            placeholder="Search booking, learner, tutor, or service..."
+            value={searchQuery}
+            onChange={(event) => {
+              onQueryChange(event.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
         <select
           aria-label="Booking status"
           className={input}
@@ -224,15 +248,28 @@ export default function AdminBookings({
             </option>
           ))}
         </select>
-        <button
-          className={button}
-          aria-label="Booking date range"
-          onClick={() => setDates(true)}
-        >
-          <CalendarDays size={14} />
-          {start ? dateLabel(start) : "Any date"} –{" "}
-          {end ? dateLabel(end) : "Any date"}
-        </button>
+        <label className="ab-date-field">
+          From
+          <input
+            type="date"
+            aria-label="Booking start date"
+            className={input}
+            value={start}
+            max={end || undefined}
+            onChange={(event) => change(setStart, event.target.value)}
+          />
+        </label>
+        <label className="ab-date-field">
+          To
+          <input
+            type="date"
+            aria-label="Booking end date"
+            className={input}
+            value={end}
+            min={start || undefined}
+            onChange={(event) => change(setEnd, event.target.value)}
+          />
+        </label>
         <select
           className={input}
           aria-label="Booking session type"
@@ -256,7 +293,10 @@ export default function AdminBookings({
           ))}
         </select>
         <button
-          className={button}
+          type="button"
+          aria-label="Reset filters"
+          title="Reset filters"
+          className={button + " ab-reset-filters"}
           onClick={() => {
             setStatus("");
             setType("");
@@ -268,7 +308,7 @@ export default function AdminBookings({
             setNotice("");
           }}
         >
-          Reset filters
+          <RotateCcw size={16} aria-hidden="true" />
         </button>
         <UserExport
           kind="bookings"
@@ -315,7 +355,7 @@ export default function AdminBookings({
           </thead>
           <tbody>
             {visible.map((r) => (
-              <tr key={r.id}>
+              <tr key={r.id} {...targetRow(r)}>
                 <td>
                   <b>{r.booking || r.id}</b>
                 </td>
@@ -394,44 +434,6 @@ export default function AdminBookings({
         Booking and payment statuses come from the database. Monitoring does not
         change Tutor or Learner schedules.
       </p>
-      {dates && (
-        <Modal title="Booking Date Range" onClose={() => setDates(false)}>
-          <div className="space-y-3 text-xs">
-            <label className="block">
-              From
-              <input
-                className={input}
-                aria-label="Booking start date"
-                type="date"
-                value={start}
-                onChange={(e) => change(setStart, e.target.value)}
-              />
-            </label>
-            <label className="block">
-              To
-              <input
-                className={input}
-                aria-label="Booking end date"
-                type="date"
-                value={end}
-                onChange={(e) => change(setEnd, e.target.value)}
-              />
-            </label>
-            {invalid && (
-              <p className="text-red-600">
-                End date must be on or after start date.
-              </p>
-            )}
-            <button
-              className={primary}
-              disabled={!!invalid}
-              onClick={() => setDates(false)}
-            >
-              Apply date range
-            </button>
-          </div>
-        </Modal>
-      )}
       {selected && (
         <BookingDetails
           record={rows.find((r) => r.id === selected.id) || selected}
