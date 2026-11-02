@@ -1,9 +1,9 @@
-// OSAS Overview: derives case, incident, clearance, and review summaries from the OSAS database snapshot.
+// OSWE Overview: derives case, incident, clearance, and review summaries from the OSWE database snapshot.
 import { statusClass } from "../shared/statusColors.js";
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import OverviewMonth from "./OverviewMonth.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
-import ServiceMenu from "../admin/ServiceMenu.jsx";
+import ServiceMenu from "../lco/ServiceMenu.jsx";
 import { Eye, PenLine } from "lucide-react";
 import { useState } from "react";
 import {
@@ -20,7 +20,7 @@ import {
 import { Modal, button, input } from "../tutor/workspace/ui.jsx";
 
 const colors = ["#ff6971", "#ffc629", "#1686ff", "#65d3a8", "#006039"];
-export default function OsasOverview({
+export default function OsweOverview({
   rows,
   settings,
   onCase,
@@ -28,7 +28,7 @@ export default function OsasOverview({
   onReports,
   onNavigate,
 }) {
-  const database = useOsasDatabase();
+  const database = useOsweDatabase();
   const caseRows = database.records?.cases || [];
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [month, setMonth] = useState(""),
@@ -107,9 +107,9 @@ export default function OsasOverview({
     });
   return (
     <section className="oo-overview">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
-          <h1>OSAS Overview</h1>
+          <h1>OSWE Overview</h1>
           <p>
             Institutional overview of referred cases, evidence review, and
             student-clearance activity.
@@ -142,7 +142,7 @@ export default function OsasOverview({
             Scale,
             clearance,
             "Clearance Reviews",
-            "Pending OSAS action",
+            "Pending OSWE action",
             "#006536",
           ],
           [
@@ -204,7 +204,7 @@ export default function OsasOverview({
                     "Incident Type",
                     "Priority",
                     "Date Opened",
-                    "Assigned OSAS Personnel",
+                    "Assigned OSWE Personnel",
                     "Case Status",
                     "Action",
                   ].map((h) => (
@@ -352,7 +352,7 @@ export default function OsasOverview({
         <div className="op-note">
           <Info size={17} />
           <p>
-            Incident reports remain allegations until OSAS completes impartial
+            Incident reports remain allegations until OSWE completes impartial
             review and records a final institutional decision. Case totals
             reflect database case records; clearance totals reflect clearance
             requests.
