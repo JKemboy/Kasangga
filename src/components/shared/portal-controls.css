@@ -1,0 +1,39 @@
+/* Shared density and alignment for recurring portal controls. */
+:is(.lco-app, .oswe-app) :is(.ad-actions, .oswe-actions) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+:is(.lco-app, .oswe-app) :is(.ad-panel, .oswe-panel) {
+  border-radius: 10px;
+  min-width: 0;
+}
+:is(.lco-app, .oswe-app) :is(.ad-cards, .oswe-metrics, .or-metrics) > * {
+  min-width: 0;
+}
+:is(.lco-app, .oswe-app)
+  :is(.ad-filter-row, .ad-report-filters, .oswe-filters, .or-filters) {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+:is(.lco-app, .oswe-app)
+  :is(.ad-filter-row, .ad-report-filters, .oswe-filters, .or-filters)
+  > :is(label, select, input, .oswe-search) {
+  flex: 1 1 150px;
+  min-width: 0;
+  max-width: none;
+}
+:is(.lco-app, .oswe-app) :is(.ad-actions, .oswe-actions) button {
+  min-height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+:is(.lco-app, .oswe-app) button svg {
+  flex-shrink: 0;
+}
