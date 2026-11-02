@@ -60,10 +60,10 @@ export default function PolicyDetails({
               </span>,
             ],
             ["Version", policy.version],
-            ["Effective Date", date(policy.effective)],
+            ["Effective Date", policy.effectiveLabel || date(policy.effective)],
             ["Document Owner", policy.owner],
             ["Status", policy.status],
-            ["Last Updated", date(policy.updated)],
+            ["Last Updated", policy.updatedLabel || date(policy.updated)],
           ].map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>
