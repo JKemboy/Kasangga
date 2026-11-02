@@ -317,12 +317,6 @@ export default function TutorDashboardPage() {
     setNotice("Class schedule saved to Supabase.");
     return classSchedule;
   }
-  function update() {
-    setNotice(
-      "This action is not connected to the database yet. Nothing was saved.",
-    );
-    return false;
-  }
   // All tutor sidebar and cross-section links pass through this gate so a
   // missing confirmed class schedule cannot open protected Tutor sections.
   function go(next, options = {}) {
@@ -360,7 +354,6 @@ export default function TutorDashboardPage() {
               ).length,
       })),
     },
-    update,
     go,
     args,
     availabilityLoading,
