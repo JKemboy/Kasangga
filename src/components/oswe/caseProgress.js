@@ -7,7 +7,7 @@ export function caseReviewLabel(record) {
 }
 export const caseStages = [
   "Incident Report",
-  "OSAS Referral",
+  "OSWE Referral",
   "Formal Case",
   "Evidence Validation",
   "Case Actions",
