@@ -4,6 +4,7 @@ export function mapPolicy(row) {
   return {
     id: `POL-${row.policy_id}`,
     policyId: row.policy_id,
+    scope: row.policy_scope || "institutional",
     title: row.title,
     category: row.category || "",
     version: row.version || "",
@@ -17,7 +18,7 @@ export function mapPolicy(row) {
   };
 }
 
-export async function listAdminPolicies(client = getSupabaseClient()) {
+export async function listLcoPolicies(client = getSupabaseClient()) {
   const { data, error } = await client
     .from("policies")
     .select("*")
@@ -45,10 +46,14 @@ export function validatePolicy(value) {
     throw new Error("Use an HTTPS document URL.");
 }
 
-export async function saveAdminPolicy(value, client = getSupabaseClient()) {
+export async function saveLcoPolicy(value, client = getSupabaseClient()) {
   if (!Number.isSafeInteger(value?.policyId) || value.policyId < 1)
     throw new Error(
       "Choose an existing policy to edit. Adding policies is disabled.",
+    );
+  if (value.scope !== "system")
+    throw new Error(
+      "LCO can edit system policies only. University and student handbook policies are read-only.",
     );
   validatePolicy(value);
   const { data, error } = await client.rpc("save_admin_policy", {
