@@ -99,7 +99,7 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
         <div className="ls-alert mt-4">
           <ShieldCheck size={23} />
           <p>
-            Reports are saved securely for Admin screening and OSAS review. For
+            Reports are saved securely for LCO screening and OSWE review. For
             emergencies, contact campus security right away.
           </p>
         </div>

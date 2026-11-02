@@ -15,7 +15,6 @@ import {
 } from "../../../services/savedTutors.js";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { workspaceProfile } from "../../../services/authAccount.js";
-import AccountAction from "./AccountAction.jsx";
 import ReviewDialog from "./ReviewDialog.jsx";
 import LearnerReport from "./LearnerReport.jsx";
 import SessionDialog from "./SessionDialog.jsx";
@@ -29,13 +28,7 @@ import {
   useRef,
   useCallback,
 } from "react";
-import {
-  Modal,
-  Field,
-  button,
-  primary,
-  input,
-} from "../../tutor/workspace/ui.jsx";
+import { Modal, button } from "../../tutor/workspace/ui.jsx";
 import { useInteractions } from "../../shared/InteractionProvider.jsx";
 
 const Context = createContext(null);
@@ -190,15 +183,6 @@ export default function LearnerWorkspace({ children, go }) {
       },
     }));
   }, [auth?.profile, auth?.user]);
-  function commit() {
-    setError(
-      "This action is not connected to the database yet. Nothing was saved.",
-    );
-    toast(
-      "This action is not connected to the database yet. Nothing was saved.",
-    );
-    return false;
-  }
   function open(kind, record = {}) {
     setError("");
     if (kind === "application") {
@@ -256,27 +240,16 @@ export default function LearnerWorkspace({ children, go }) {
     if (type === "report") {
       const result = await portalApi("report", values);
       setDialog(null);
-      toast(`Report ${result.id} submitted for Admin and OSAS review.`);
+      toast(`Report ${result.id} submitted for LCO and OSWE review.`);
       return result;
     }
-    const record = {
-      id: crypto.randomUUID(),
-      type,
-      ...values,
-      status: "Pending",
-      created: new Date().toISOString(),
-    };
-    if (!commit((d) => ({ ...d, requests: [...d.requests, record] }))) return;
-    setDialog(null);
-    toast(
-      "Request not connected to the database. Server delivery is not connected.",
-    );
+    throw new Error("Unsupported request type.");
   }
+
   const api = {
     // Sections share this account-scoped API instead of maintaining separate
     // copies of learner selections and conversation state.
     data,
-    commit,
     open,
     toggleSave,
     message,
@@ -336,10 +309,7 @@ export default function LearnerWorkspace({ children, go }) {
                 data.reviews.find((x) => x.sessionId === r.id) || r.review
                   ? "Edit Review"
                   : "Rate & Review Tutor",
-              editProfile: "Edit Profile",
               application: "Apply as Tutor",
-              data: "Request My Data",
-              delete: "Delete Account",
               article: r?.title,
             }[dialog.kind] || dialog.kind
           }
@@ -433,69 +403,6 @@ export default function LearnerWorkspace({ children, go }) {
                 toast("Review saved.");
                 refreshReviews();
               }}
-            />
-          )}
-          {dialog.kind === "editProfile" && (
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const values = Object.fromEntries(
-                  new FormData(e.currentTarget),
-                );
-                if (
-                  commit((d) => ({
-                    ...d,
-                    profile: { ...d.profile, ...values },
-                  }))
-                ) {
-                  setDialog(null);
-                  toast("Profile updated.");
-                }
-              }}
-            >
-              <Field
-                label="Contact Number"
-                name="phone"
-                defaultValue={data.profile.phone || ""}
-                pattern="09[0-9]{9}"
-                placeholder="09XXXXXXXXX"
-              />
-              <Field label="About Me">
-                <textarea
-                  name="bio"
-                  className={input}
-                  defaultValue={data.profile.bio || ""}
-                  maxLength={1000}
-                />
-              </Field>
-              <Field label="Year Level">
-                <select
-                  name="year"
-                  className={input}
-                  defaultValue={data.profile.year || "1st Year"}
-                >
-                  {[
-                    "1st Year",
-                    "2nd Year",
-                    "3rd Year",
-                    "4th Year",
-                    "5th Year",
-                  ].map((v) => (
-                    <option key={v}>{v}</option>
-                  ))}
-                </select>
-              </Field>
-              <button className={primary}>Save Changes</button>
-            </form>
-          )}
-          {["data", "delete"].includes(dialog.kind) && (
-            <AccountAction
-              key={dialog.kind}
-              kind={dialog.kind}
-              email={data.profile.email || "juan.delacruz@carsu.edu.ph"}
-              onClose={closeDialog}
-              onRequest={request}
             />
           )}
           {dialog.kind === "article" && (
