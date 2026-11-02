@@ -1,6 +1,6 @@
 import StaffNotifications from "../shared/StaffNotifications.jsx";
 
-export default function OsasNotifications({
+export default function OsweNotifications({
   rows = [],
   loading,
   error,
