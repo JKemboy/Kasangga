@@ -1,6 +1,3 @@
-import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
-import ServiceDetails from "./ServiceDetails.jsx";
-import BookingDetails from "./BookingDetails.jsx";
 import { useEffect, useRef, useState } from "react";
 import { X, Ban, RotateCcw } from "lucide-react";
 import {
@@ -10,8 +7,7 @@ import {
   primary,
   input,
 } from "../tutor/workspace/ui.jsx";
-import { dateLabel } from "./adminData.js";
-import ApplicationReview from "./ApplicationReview.jsx";
+import { dateLabel } from "./lcoData.js";
 import "./incident-details.css";
 import "./user-details.css";
 
@@ -48,12 +44,19 @@ export function changeUserStatus(user, action, form = {}) {
         category: form.category || "",
         reviewDate: form.reviewDate || "",
         at: new Date().toISOString(),
-        by: "Admin User",
+        by: "LCO User",
       },
     ],
   };
 }
-export function Panel({ title, subtitle, children, footer, onClose }) {
+export function Panel({
+  title,
+  subtitle,
+  children,
+  footer,
+  onClose,
+  className = "",
+}) {
   const ref = useRef(null);
   useEffect(() => {
     const d = ref.current;
@@ -63,7 +66,7 @@ export function Panel({ title, subtitle, children, footer, onClose }) {
   return (
     <dialog
       ref={ref}
-      className="admin-incident-details"
+      className={`lco-incident-details ${className}`}
       aria-label={typeof title === "string" ? title : "User details"}
       onCancel={onClose}
       onClick={(e) => {
@@ -110,18 +113,13 @@ export default function UserDetails({
       ack: false,
     }),
     [error, setError] = useState(""),
-    [notice, setNotice] = useState(""),
-    [linked, setLinked] = useState(null);
-  const { database, saveRecord } = useAdminDatabase();
-  const workspace = {
-    sessions: database?.sessions || [],
-    profile: { name: "" },
-  };
-  const relatedBookings = workspace.sessions.filter(
-    (b) => b.learnerId === r.userId || b.tutorUserId === r.userId,
-  );
+    [notice, setNotice] = useState("");
   const roles = (r.roles || [])
-    .map((role) => role.charAt(0).toUpperCase() + role.slice(1))
+    .map(
+      (role) =>
+        ({ lco: "LCO", oswe: "OSWE" })[role] ||
+        role.charAt(0).toUpperCase() + role.slice(1),
+    )
     .join(" + ");
   const history = r.history || [];
   const current = [...history].reverse().find((h) => h.to === r.status);
@@ -174,8 +172,6 @@ export default function UserDetails({
       setSaving(false);
     }
   }
-  const relatedServices = services.filter((s) => s.tutorUserId === r.userId);
-  const relatedApps = applications.filter((a) => a.userId === r.userId);
   return (
     <Panel
       title={
@@ -254,44 +250,11 @@ export default function UserDetails({
             ))}
           </dl>
           <p className="ud-muted">
-            Platform account administration. This is not an OSAS disciplinary
+            Platform account administration. This is not an OSWE disciplinary
             decision.
           </p>
         </section>
       )}
-      <h3>Linked records</h3>
-      <div className="ud-links">
-        {relatedApps.map((a) => (
-          <button
-            className={button}
-            key={a.id}
-            onClick={() => setLinked({ kind: "application", id: a.id })}
-          >
-            {a.id} · {a.status}
-          </button>
-        ))}
-        {relatedServices.map((s) => (
-          <button
-            className={button}
-            key={s.id}
-            onClick={() => setLinked({ kind: "service", id: s.id })}
-          >
-            {s.id} · {s.title}
-          </button>
-        ))}
-        {relatedBookings.map((b) => (
-          <button
-            className={button}
-            key={b.id}
-            onClick={() => setLinked({ kind: "booking", id: b.id })}
-          >
-            {b.booking || b.id} ({b.learner === r.name ? "learner" : "tutor"})
-          </button>
-        ))}
-        {!relatedApps.length &&
-          !relatedServices.length &&
-          !relatedBookings.length && <p>None</p>}
-      </div>
       {notice && <p role="status">{notice}</p>}
       {action && (
         <Modal
@@ -309,7 +272,7 @@ export default function UserDetails({
             {action === "Suspend User" ? (
               <>
                 <p className="ud-status">
-                  This is platform account administration, not an OSAS
+                  This is platform account administration, not an OSWE
                   disciplinary decision.
                 </p>
                 <label>
@@ -404,30 +367,6 @@ export default function UserDetails({
             </div>
           </form>
         </Modal>
-      )}
-      {linked?.kind === "booking" && (
-        <BookingDetails
-          record={workspace.sessions.find((b) => b.id === linked.id)}
-          tutor={workspace.profile.name}
-          onClose={() => setLinked(null)}
-        />
-      )}
-      {linked?.kind === "application" && (
-        <ApplicationReview
-          application={applications.find((a) => a.id === linked.id)}
-          account={r}
-          config={config}
-          onSave={onApplicationSave}
-          onDocument={onDocument}
-          onClose={() => setLinked(null)}
-        />
-      )}
-      {linked?.kind === "service" && (
-        <ServiceDetails
-          service={services.find((s) => s.id === linked.id)}
-          onSave={onServiceSave}
-          onClose={() => setLinked(null)}
-        />
       )}
     </Panel>
   );
