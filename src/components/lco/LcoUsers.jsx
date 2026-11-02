@@ -1,10 +1,15 @@
-import { collegeProgramMap } from "../../services/collegeProgramMap.js";
-// User Management: searches and reviews user records, then sends authorized changes to the Admin database callbacks.
+import {
+  collegeProgramMap,
+  findCollege,
+  findProgram,
+} from "../../services/collegeProgramMap.js";
+// User Management: searches and reviews user records, then sends authorized changes to the LCO database callbacks.
 import UserExport from "./UserExport.jsx";
 import UserDetails from "./UserDetails.jsx";
 import { useState } from "react";
 import {
   Users,
+  Search,
   UserCheck,
   UserX,
   GraduationCap,
@@ -12,7 +17,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { button, input, Avatar } from "../tutor/workspace/ui.jsx";
-export default function AdminUsers({
+export default function LcoUsers({
   rows: allRows,
   onUpdate,
   query,
@@ -27,7 +32,7 @@ export default function AdminUsers({
   const rows = allRows.filter((user) => {
     const roles = (user.roles || []).map((role) => role.toLowerCase());
     return (
-      !roles.some((role) => role === "admin" || role === "osas") &&
+      !roles.some((role) => ["lco", "oswe"].includes(role)) &&
       roles.some((role) => role === "learner" || role === "tutor")
     );
   });
@@ -101,14 +106,14 @@ export default function AdminUsers({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "admin-users.csv";
+    a.download = "lco-users.csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(`Exported ${filtered.length} matching users.`);
   }
   return (
-    <section className="au-users">
-      <div className="osas-heading">
+    <section className="au-users lco-user-management">
+      <div className="oswe-heading">
         <div>
           <h1>User Management</h1>
           <p>Monitor and manage Kasangga Learner and Tutor accounts.</p>
@@ -170,7 +175,27 @@ export default function AdminUsers({
           </button>
         ))}
       </div>
-      <div className="au-toolbar flex-wrap">
+      <div className="au-toolbar user-management-toolbar">
+        <label className="user-management-search">
+          Search users
+          <span className="relative block">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+            />
+            <input
+              type="search"
+              aria-label="Search users"
+              placeholder="Search name, student ID, or email..."
+              className={input + " pl-9"}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPage(1);
+              }}
+            />
+          </span>
+        </label>
         <label>
           Users
           <select
@@ -270,12 +295,23 @@ export default function AdminUsers({
                     </div>
                   </td>
                   <td>{r.email}</td>
-                  <td>{r.college}</td>
-                  <td>{r.program}</td>
+                  <td title={r.college}>
+                    {findCollege(r.college)?.code ||
+                      r.college ||
+                      "Not provided"}
+                  </td>
+                  <td title={r.program}>
+                    {findProgram(findCollege(r.college), r.program)?.code ||
+                      r.program ||
+                      "Not provided"}
+                  </td>
                   <td>
                     {r.roles.map((role) => (
                       <span className="au-role" key={role}>
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                        {{
+                          lco: "LCO",
+                          oswe: "OSWE",
+                        }[role] || role.charAt(0).toUpperCase() + role.slice(1)}
                       </span>
                     ))}
                   </td>
