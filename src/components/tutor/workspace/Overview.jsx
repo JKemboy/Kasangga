@@ -66,7 +66,6 @@ function Initials({ name }) {
 export default function Overview({
   data,
   go,
-  update,
   saveService,
   selectedMetric,
   onSelectMetric,
@@ -478,15 +477,9 @@ export default function Overview({
                     key={n.id}
                     aria-label={`Open notification: ${n.title}`}
                     className="flex w-full items-center gap-2 py-1 text-left hover:bg-green-50"
-                    onClick={() => {
-                      if (!n.read) void inbox.markRead([n]);
-                      if (!n.read)
-                        update((d) => ({
-                          ...d,
-                          notifications: d.notifications.map((v) =>
-                            v.id === n.id ? { ...v, read: true } : v,
-                          ),
-                        }));
+                    onClick={async () => {
+                      if (!n.read && (await inbox.markRead([n])) === false)
+                        return;
                       openActivity(n);
                     }}
                   >
@@ -518,7 +511,6 @@ export default function Overview({
       {sessionId && (
         <SessionDetails
           data={data}
-          update={update}
           go={go}
           sessionId={sessionId}
           onClose={() => setSessionId(null)}

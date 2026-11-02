@@ -29,7 +29,7 @@ function allocateCents(session) {
     return {
       gross,
       tutor: amountInCents(session.allocation.tutor),
-      osas: amountInCents(session.allocation.osas),
+      osas: amountInCents(session.allocation.oswe ?? session.allocation.osas),
       platform: amountInCents(session.allocation.platform),
     };
 
