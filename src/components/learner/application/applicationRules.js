@@ -21,7 +21,7 @@ export const DOCUMENTS = [
     title: "Grade Evidence / Academic Record",
     required: true,
     description:
-      "Attach grades or academic records for courses relevant to the services or subject expertise you selected in this application.",
+      "Attach the academic record for each applied subject. Each subject requires a grade of 1.00 to 1.75, regardless of your overall academic standing.",
   },
   {
     id: "awards",

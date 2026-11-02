@@ -88,6 +88,7 @@ export default function ApplicationReview({
     const next = {
       ...r,
       notes: notes.trim(),
+      subjectGrades: manual.subjectGrades || {},
       ...(status
         ? {
             status,
@@ -116,7 +117,10 @@ export default function ApplicationReview({
     }
   }
   async function saveTutorDecision(next) {
-    await onSave(next, next.status);
+    await onSave(
+      { ...next, subjectGrades: manual.subjectGrades || {} },
+      next.status,
+    );
     setMessage("Application review saved.");
   }
   const pill = (value) => (
@@ -649,6 +653,42 @@ export default function ApplicationReview({
                   approval.
                 </p>
               </details>
+            )}
+            {!final && (
+              <section className="rounded-lg border border-slate-200 p-3 space-y-3">
+                <strong>Subject grade eligibility</strong>
+                <p className="text-xs text-slate-600">
+                  Verify each applied subject against the original academic
+                  record. Only 1.00 to 1.75 qualifies. Overall academic standing
+                  is not an eligibility requirement.
+                </p>
+                {(r.subjects || []).map((subject, index) => (
+                  <label
+                    key={subject}
+                    className="grid grid-cols-[minmax(0,1fr)_100px] items-center gap-3"
+                    htmlFor={`subject-grade-${index}`}
+                  >
+                    <span>{subject}</span>
+                    <input
+                      id={`subject-grade-${index}`}
+                      className={input}
+                      type="number"
+                      min="1"
+                      max="1.75"
+                      step="0.01"
+                      placeholder="1.00 to 1.75"
+                      disabled={busy}
+                      value={manual.subjectGrades?.[subject] ?? ""}
+                      onChange={(e) =>
+                        updateManual("subjectGrades", {
+                          ...manual.subjectGrades,
+                          [subject]: e.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                ))}
+              </section>
             )}
             <label htmlFor="application-lco-notes">
               <strong>LCO Notes</strong>
