@@ -3,7 +3,7 @@ import PolicyReference, {
   decisionPolicies,
   policyReference,
 } from "./PolicyReference.jsx";
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { useState } from "react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 const outcomes = [
@@ -103,7 +103,7 @@ export default function CaseWorkflow({
   clearance = [],
   onSave,
 }) {
-  const database = useOsasDatabase();
+  const database = useOsweDatabase();
   const [action, setAction] = useState(""),
     [form, setForm] = useState({}),
     [error, setError] = useState(""),
@@ -350,7 +350,7 @@ export default function CaseWorkflow({
                   <>
                     <p className="ocx-warning">
                       Recording this condition blocks student clearance until
-                      compliance is verified and OSAS releases the hold.
+                      compliance is verified and OSWE releases the hold.
                     </p>
                     <label>
                       Condition
