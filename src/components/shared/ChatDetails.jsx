@@ -213,8 +213,8 @@ export default function ChatDetails({ chat, mode, close, role }) {
               />
               <p className="chat-safety">
                 <ShieldCheck size={23} />
-                Reports are confidential. Admin reviews them and refers conduct
-                concerns to OSAS.
+                Reports are confidential. LCO reviews them and refers conduct
+                concerns to OSWE.
               </p>
             </form>
           )
@@ -304,7 +304,7 @@ export default function ChatDetails({ chat, mode, close, role }) {
                       cash(data.payment_details?.allocation?.tutor_amount),
                     ],
                     [
-                      "OSAS",
+                      "OSWE",
                       cash(data.payment_details?.allocation?.osas_amount),
                     ],
                     [

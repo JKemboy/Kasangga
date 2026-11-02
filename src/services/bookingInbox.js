@@ -112,7 +112,7 @@ export async function loadBookingInbox(role, userId) {
             kind: "transfer",
             category: "Payments",
             title: "Payout Transferred",
-            text: `${session.booking} · ${session.service} · Payout marked as transferred by Admin.`,
+            text: `${session.booking} · ${session.service} · Payout marked as transferred by LCO.`,
             time: session.transferredAt,
             view: "earnings",
             args: { transactionId: session.transaction },

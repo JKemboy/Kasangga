@@ -16,7 +16,7 @@ export function tutorNotificationCategory(notification) {
     .join(" ")
     .toLowerCase()
     .replaceAll("_", " ");
-  if (/incident|report|safety|conduct|osas|case|evidence/.test(text))
+  if (/incident|report|safety|conduct|osas|oswe|case|evidence/.test(text))
     return "Safety and Reports";
   if (/payment|payout|refund|transfer|earning/.test(text)) return "Payments";
   if (/rating|review/.test(text)) return "Reviews";

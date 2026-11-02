@@ -22,7 +22,7 @@ export default function FollowUpEvidence({ caseId }) {
             submissionKey: key.current,
           });
           setDone(true);
-          setMessage("Follow-up evidence saved for OSAS review.");
+          setMessage("Follow-up evidence saved for OSWE review.");
         } catch (cause) {
           setMessage(cause.message);
         } finally {

@@ -22,12 +22,15 @@ export function statusTone(value) {
   if (
     [
       "resolved",
+      "resolved by lco",
       "resolved by admin",
+      "resolved by oswe",
       "resolved by osas",
       "pending decision",
       "validated",
       "cleared",
       "case created",
+      "lco screening complete",
       "admin screening complete",
       "approved",
       "active",
@@ -52,9 +55,18 @@ export function statusTone(value) {
     ].includes(text)
   )
     return "blue";
-  if (["referred to osas", "assessed by osas"].includes(text)) return "purple";
+  if (
+    [
+      "referred to oswe",
+      "assessed by oswe",
+      "referred to osas",
+      "assessed by osas",
+    ].includes(text)
+  )
+    return "purple";
   if (["not referred", "not required", "archived", "inactive"].includes(text))
     return "gray";
   return "amber";
 }
-export const statusClass = (value, base = "") => base + " ct-status ct-status-" + statusTone(value);
+export const statusClass = (value, base = "") =>
+  base + " ct-status ct-status-" + statusTone(value);
