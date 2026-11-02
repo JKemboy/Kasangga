@@ -77,7 +77,7 @@ export function Profile({
                 Tutor Role: Verified / Active
               </span>
               <p className="mt-1 text-[11px] text-[#344675]">
-                Approved by Kasangga Admin
+                Approved by Kasangga LCO
               </p>
             </div>
           </div>

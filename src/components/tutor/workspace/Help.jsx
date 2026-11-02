@@ -52,7 +52,7 @@ const guides = [
     title: "Cancellation & Refund Policy",
     icon: FileText,
     summary:
-      "Cancellation does not automatically guarantee a refund. Refund eligibility is reviewed separately under Kasangga policy.",
+      "Cancellation does not automatically guarantee a refund. If the learner does not attend the scheduled session, their absence does not qualify for a refund. Report attendance issues for LCO review.",
     bullets: [
       "Use the cancellation action where available and include a clear reason for the learner.",
       "Payment status changes only when a payment or refund is verified. Check Notifications for updates.",
@@ -86,7 +86,7 @@ const guides = [
     icon: TriangleAlert,
     summary:
       "Report session-related incidents through Report an Issue in the relevant Session Details.",
-    body: "Include accurate details and the required evidence. Admin reviews reports and refers conduct concerns to OSAS.",
+    body: "Include accurate details and the required evidence. LCO reviews reports and refers conduct concerns to OSWE.",
     report: true,
   },
   {
@@ -94,7 +94,7 @@ const guides = [
     icon: Headset,
     summary:
       "Need technical or account help? Contact the Kasangga support team.",
-    body: "Send a private request to the Admin support inbox. Include the affected page and any booking reference. Never include passwords, OTPs or GCash MPINs.",
+    body: "Send a private request to the LCO support inbox. Include the affected page and any booking reference. Never include passwords, OTPs or GCash MPINs.",
     contact: true,
   },
 ];

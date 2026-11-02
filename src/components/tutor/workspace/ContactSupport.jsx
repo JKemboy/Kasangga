@@ -110,16 +110,16 @@ export default function ContactSupport({ onClose }) {
           {message.trim().length}/15 characters minimum
         </p>
         <p className="text-xs text-slate-500">
-          For session incidents, use Report an Issue in Session Details so Admin
-          can review it and refer conduct concerns to OSAS.
+          For session incidents, use Report an Issue in Session Details so LCO
+          can review it and refer conduct concerns to OSWE.
         </p>
         <p className="text-[11px] text-slate-500">
-          Your request is sent to the Kasangga Admin support inbox. Do not
+          Your request is sent to the Kasangga LCO support inbox. Do not
           include passwords, OTPs or GCash MPINs.
         </p>
         {saved && (
           <p role="status" className="text-xs text-green-800">
-            Your support request was sent to the Admin team.
+            Your support request was sent to the LCO team.
           </p>
         )}
         {error && (
