@@ -1,4 +1,4 @@
-// Admin Settings: edits supported alert preferences as an in-memory draft, confirms before save, and delegates persistence to AdminDashboard.
+// LCO Settings: edits supported alert preferences as an in-memory draft, confirms before save, and delegates persistence to LcoDashboard.
 import { useInteractions } from "../shared/InteractionProvider.jsx";
 import { useEffect, useState } from "react";
 import {
@@ -14,8 +14,8 @@ import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 import SecurityFlow from "../shared/SecurityFlow.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
-import AdminGcashQr from "./AdminGcashQr.jsx";
-export default function AdminSettings({ config, onSave }) {
+import LcoGcashQr from "./LcoGcashQr.jsx";
+export default function LcoSettings({ config, onSave }) {
   const { confirm } = useInteractions();
   const auth = useAuth();
 
@@ -29,7 +29,7 @@ export default function AdminSettings({ config, onSave }) {
       .filter(Boolean)
       .join(" ") ||
     auth?.user?.email?.split("@")[0] ||
-    "Administrator";
+    "LCO";
   // Keep unsaved edits in component state only; the latest Supabase snapshot
   // is the source of truth and replaces the draft after it changes.
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function AdminSettings({ config, onSave }) {
       setNotice("No changes to save.");
       return;
     }
-    // Require an explicit confirmation before passing Admin preferences to
+    // Require an explicit confirmation before passing LCO preferences to
     // the database save handler; cancelling leaves the Supabase row unchanged.
     if (
       !(await confirm({
@@ -91,14 +91,14 @@ export default function AdminSettings({ config, onSave }) {
         ? [
             {
               at: new Date().toISOString(),
-              by: config.name || "Admin User",
+              by: config.name || "LCO User",
               fields,
             },
           ]
         : []),
     ];
     try {
-      // AdminDashboard persists this through admin_save_record into
+      // LcoDashboard persists this through admin_save_record into
       // public.system_settings, then refreshes the authoritative snapshot.
       await onSave(next);
       setNotice("Settings saved to the database.");
@@ -111,12 +111,12 @@ export default function AdminSettings({ config, onSave }) {
       onSubmit={tab === "System Settings" ? save : (event) => event.preventDefault()}
       className="ad-page"
     >
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             Settings <Settings size={22} />
           </h1>
-          <p>Manage Admin notification preferences and account security.</p>
+          <p>Manage LCO notification preferences and account security.</p>
         </div>
         {tab === "System Settings" && (
           <button className={primary + " flex items-center gap-2"}>
@@ -145,7 +145,7 @@ export default function AdminSettings({ config, onSave }) {
           </h2>
           <div className="mb-4 flex items-center gap-3">
               <PortalAvatar
-                role="admin"
+                role="lco"
                 editable
                 className="h-16 w-16 rounded-full"
               />
@@ -154,7 +154,7 @@ export default function AdminSettings({ config, onSave }) {
           {[
             ["Full Name", accountName],
             ["Email Address", auth?.user?.email || ""],
-            ["Position", "System Administrator"],
+            ["Position", "System LCO"],
             ["Department", "Information Technology Services"],
           ].map(([label, value]) => (
             <label className="ad-setting-row" key={label}>
@@ -167,7 +167,7 @@ export default function AdminSettings({ config, onSave }) {
           </p>
         </section>
       ) : tab === "GCash Payment Details" ? (
-        <AdminGcashQr />
+        <LcoGcashQr />
       ) : (
         <div className="ad-settings-grid">
           <div>
@@ -178,9 +178,9 @@ export default function AdminSettings({ config, onSave }) {
               </h2>
 
               {fixed("Automatic Tutor Approval", "Disabled")}
-              {fixed("Manual Admin Decision", "Required")}
+              {fixed("Manual LCO Decision", "Required")}
               <p className="ad-help">
-                Admin retains final Tutor approval authority.
+                LCO retains final Tutor approval authority.
               </p>
             </section>
             <section className="ad-panel">
@@ -191,7 +191,7 @@ export default function AdminSettings({ config, onSave }) {
               <div className="ad-shares">
                 {[
                   ["Tutor Share", 90],
-                  ["OSAS Share", 5],
+                  ["OSWE Share", 5],
                   ["Platform Share", 5],
                 ].map(([l, v]) => (
                   <label key={l}>
@@ -231,7 +231,7 @@ export default function AdminSettings({ config, onSave }) {
               {fixed("Timezone", "Asia/Manila (UTC+08:00)")}
               {fixed("CSU Email Verification", "Required by platform authentication")}
               <div className="ad-setting-row">
-                <span>Admin Multi-Factor Authentication</span>
+                <span>LCO Multi-Factor Authentication</span>
                 <button type="button" className={button} onClick={() => setSecurity("Manage Security")}>
                   Manage Authenticator
                 </button>
