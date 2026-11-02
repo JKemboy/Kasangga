@@ -42,7 +42,7 @@ export function decideClearance(record, choice, note, cases) {
         basis: decisionNote,
         notes: decisionNote,
         reviewed,
-        officer: "OSAS Officer",
+        officer: "OSWE Officer",
       },
     ],
   };
