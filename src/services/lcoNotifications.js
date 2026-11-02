@@ -1,9 +1,9 @@
-// Admin inbox service: reads and updates the signed-in Admin's notifications in the Supabase notifications table.
+// LCO inbox service: reads and updates the signed-in LCO's notifications in the Supabase notifications table.
 import { getSupabaseClient } from "./supabaseClient.js";
 
-export async function loadAdminNotifications(userId) {
+export async function loadLcoNotifications(userId) {
   if (!userId) return [];
-  // Notifications come from the signed-in administrator's database rows;
+  // Notifications come from the signed-in LCO's database rows;
   // the settings screen only filters this server-backed list for display.
   const { data, error } = await getSupabaseClient()
     .from("notifications")
@@ -15,7 +15,7 @@ export async function loadAdminNotifications(userId) {
     .order("created_at", { ascending: false })
     .limit(50);
   if (error)
-    throw new Error(`Could not load admin notifications: ${error.message}`);
+    throw new Error(`Could not load LCO notifications: ${error.message}`);
   return (data || []).map((row) => ({
     id: String(row.notification_id),
     notificationId: row.notification_id,
@@ -29,7 +29,7 @@ export async function loadAdminNotifications(userId) {
   }));
 }
 
-export function filterAdminNotifications(rows, config) {
+export function filterLcoNotifications(rows, config) {
   return rows.filter((notification) => {
     const type =
       `${notification.notificationType || ""} ${notification.entityType || ""} ${notification.title || ""}`.toLowerCase();
@@ -45,7 +45,7 @@ export function filterAdminNotifications(rows, config) {
   });
 }
 
-export async function markAdminNotificationsRead(userId, ids) {
+export async function markLcoNotificationsRead(userId, ids) {
   if (!userId || !ids.length) return;
   const { error } = await getSupabaseClient()
     .from("notifications")
