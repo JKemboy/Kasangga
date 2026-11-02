@@ -1,3 +1,4 @@
+import { normalizeAllocation } from "../../../services/paymentAllocation.js";
 function amountInCents(value) {
   if (typeof value !== "number" && typeof value !== "string") return 0;
   if (
@@ -24,14 +25,20 @@ function isEarned(session) {
 
 function allocateCents(session) {
   const gross = amountInCents(session?.amount);
-  if (!isEarned(session)) return { gross, tutor: 0, osas: 0, platform: 0 };
-  if (session.allocation)
+  if (!isEarned(session))
+    return { gross, tutor: 0, admin: 0, maintenance: 0, platform: 0 };
+  if (session.allocation) {
+    const allocation = normalizeAllocation(session.allocation, session.amount);
     return {
       gross,
-      tutor: amountInCents(session.allocation.tutor),
-      osas: amountInCents(session.allocation.oswe ?? session.allocation.osas),
-      platform: amountInCents(session.allocation.platform),
+      ...Object.fromEntries(
+        ["tutor", "admin", "maintenance", "platform"].map((key) => [
+          key,
+          amountInCents(allocation[key]),
+        ]),
+      ),
     };
+  }
 
   // 90/5/5 is 18/1/1 twentieths. Split full twentieths first so even large
   // safe cent amounts never need an unsafe cents * 90 multiplication.
@@ -48,14 +55,21 @@ function allocateCents(session) {
   for (let index = 0; index < unallocated; index++) {
     shares[order[index].index] += 1;
   }
-  return { gross, tutor: shares[0], osas: shares[1], platform: shares[2] };
+  return {
+    gross,
+    tutor: shares[0],
+    admin: shares[1],
+    maintenance: shares[2],
+    platform: shares[1] + shares[2],
+  };
 }
 
 function pesos(cents) {
   return {
     gross: cents.gross / 100,
     tutor: cents.tutor / 100,
-    osas: cents.osas / 100,
+    admin: cents.admin / 100,
+    maintenance: cents.maintenance / 100,
     platform: cents.platform / 100,
   };
 }
@@ -65,7 +79,7 @@ export function sessionAllocation(session) {
 }
 
 export function summarizeEarnings(sessions = []) {
-  const totals = { gross: 0, tutor: 0, osas: 0, platform: 0 };
+  const totals = { gross: 0, tutor: 0, admin: 0, maintenance: 0, platform: 0 };
   let count = 0;
   for (const session of sessions) {
     if (!isEarned(session)) continue;
