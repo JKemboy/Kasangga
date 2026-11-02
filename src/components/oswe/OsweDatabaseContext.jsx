@@ -89,36 +89,6 @@ export function OsweDatabaseProvider({ children }) {
       return false;
     }
   }
-  async function saveCase(record) {
-    const current = records.cases.find(
-      (c) => c.caseDatabaseId === record.caseDatabaseId,
-    );
-    const action =
-      record.archived && !current.archived
-        ? records.evidence.some(
-            (e) => e.caseId === record.caseId && e.status === "Insufficient",
-          )
-          ? "archive_insufficient"
-          : "archive"
-        : record.decision && !current.decision
-          ? "decision"
-          : record.decision?.conditionDone && !current.decision?.conditionDone
-            ? "condition"
-            : JSON.stringify(record.evidenceRequest) !==
-                JSON.stringify(current.evidenceRequest)
-              ? "request"
-              : record.history?.length > current.history.length &&
-                  record.status === current.status
-                ? "note"
-                : "status";
-    return save(
-      "case",
-      record.caseDatabaseId,
-      action,
-      record,
-      record.databaseStatus,
-    );
-  }
   return (
     <Context.Provider
       value={{
@@ -127,7 +97,6 @@ export function OsweDatabaseProvider({ children }) {
         error,
         loading,
         save,
-        saveCase,
         markNotificationsRead,
       }}
     >
