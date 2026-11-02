@@ -135,3 +135,9 @@
     flex: 1;
   }
 }
+
+.archive-details { border-radius:14px; overflow:hidden; width:min(800px,96vw); max-height:92dvh; }
+.archive-details .ocx-body { padding:18px; }
+.archive-details .archive-badge { background:#e0f3e8; color:#006239; }
+.archive-details > header > button { border:1px solid #e8bf56; border-radius:8px; }
+.archive-details > footer { background:white; gap:12px; }
