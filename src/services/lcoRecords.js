@@ -449,8 +449,7 @@ export function mapLcoDatabase(input, now = new Date()) {
       osweStatus: linkedCase ? label(linkedCase.case_status) : "",
       osweOutcome:
         decision?.decision_type ||
-        (r.osas_assessment?.action === "close" &&
-          "Closed without a formal case") ||
+        (r.osas_assessment?.action === "close" && "Closed without a finding") ||
         "",
       osweNotes: details.notes || r.osas_assessment?.notes || "",
       osweBasis: details.basis || "",

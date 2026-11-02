@@ -255,7 +255,7 @@ export default function IncidentDetails({
               <p>
                 {action === "Resolved by LCO"
                   ? "Resolve only platform or technical issues. Conduct concerns go to OSWE. Participants arrange any session rescheduling."
-                  : "A referral does not establish misconduct. OSWE assesses whether a formal case is needed. The referral status is saved in the database."}
+                  : "A referral does not establish misconduct. OSWE reviews the referred evidence and records the case decision. The referral status is saved in the database."}
               </p>
             </div>
             <label htmlFor="incident-resolution">
