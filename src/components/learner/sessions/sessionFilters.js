@@ -6,7 +6,9 @@ export function filterSessions(
 ) {
   return sessions.filter(
     (session) =>
-      session.lifecycle === lifecycle &&
+      (session.lifecycle === lifecycle ||
+        (lifecycle === "Ongoing" &&
+          session.lifecycle === "Awaiting Completion")) &&
       (date === "all" || session.date === date) &&
       (paymentStatus === "all" || session.paymentStatus === paymentStatus),
   );

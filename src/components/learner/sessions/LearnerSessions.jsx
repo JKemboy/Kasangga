@@ -130,7 +130,9 @@ export default function LearnerSessions({ args = {} }) {
     selectedStatus,
   );
   const tabCount = liveRecords.filter(
-    (session) => session.lifecycle === activeTab,
+    (session) =>
+      session.lifecycle === activeTab ||
+      (activeTab === "Ongoing" && session.lifecycle === "Awaiting Completion"),
   ).length;
   return (
     <section className="mx-auto max-w-[1400px] px-4 py-3 lg:px-5">
@@ -170,8 +172,12 @@ export default function LearnerSessions({ args = {} }) {
             >
               {tab} (
               {
-                liveRecords.filter((session) => session.lifecycle === tab)
-                  .length
+                liveRecords.filter(
+                  (session) =>
+                    session.lifecycle === tab ||
+                    (tab === "Ongoing" &&
+                      session.lifecycle === "Awaiting Completion"),
+                ).length
               }
               )
             </button>

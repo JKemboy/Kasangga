@@ -1,5 +1,5 @@
 import SessionDetailRows from "../../shared/SessionDetailRows.jsx";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Info, TriangleAlert, Video } from "lucide-react";
 import {
   Avatar,
@@ -9,7 +9,6 @@ import {
   input,
 } from "../../tutor/workspace/ui.jsx";
 import { meetingUrl } from "../../tutor/workspace/sessionActions.js";
-import { chatRequest } from "../../../services/bookingMessages.js";
 import "./session-dialogs.css";
 const cash = (value) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
@@ -63,41 +62,8 @@ export default function SessionDialog({
   const [reason, setReason] = useState(""),
     [notes, setNotes] = useState(""),
     [ack, setAck] = useState(false),
-    [date, setDate] = useState(""),
-    [time, setTime] = useState(""),
-    [slots, setSlots] = useState([]),
-    [loadingSlots, setLoadingSlots] = useState(false),
     [actionError, setActionError] = useState(""),
     [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (kind !== "reschedule") return;
-    let live = true;
-    setLoadingSlots(true);
-    setActionError("");
-    chatRequest("chat_reschedule_options", {
-      p_booking_id: Number(r.bookingId),
-    })
-      .then((rows) => {
-        if (live)
-          setSlots(
-            (rows || []).map((row) => ({
-              date: row.session_date,
-              time: String(row.start_time).slice(0, 5),
-              end: String(row.end_time).slice(0, 5),
-            })),
-          );
-      })
-      .catch((error) => {
-        if (live) setActionError(error.message);
-      })
-      .finally(() => {
-        if (live) setLoadingSlots(false);
-      });
-    return () => {
-      live = false;
-    };
-  }, [kind, r.bookingId]);
-  const dates = [...new Set(slots.map((s) => s.date))];
   const active =
     r.canManage && !["Completed", "Cancelled"].includes(r.lifecycle);
   const link = meetingUrl(r.link);
@@ -109,7 +75,6 @@ export default function SessionDialog({
     try {
       if (kind === "cancel")
         await onCancel({ reason, notes: notes.trim(), acknowledged: ack });
-      else await onRequest({ date, time, reason: reason.trim() });
     } catch (error) {
       setActionError(error.message || "Unable to save this session request.");
     } finally {
@@ -242,7 +207,9 @@ export default function SessionDialog({
               <TriangleAlert size={23} />
               <div>
                 <strong>
-                  Cancellation does not automatically guarantee a refund.
+                  Cancellation does not automatically guarantee a refund. If you
+                  do not attend the scheduled session, your absence does not
+                  qualify for a refund.
                 </strong>
                 <p>
                   Refund eligibility is reviewed based on how close to the
@@ -261,86 +228,8 @@ export default function SessionDialog({
               I understand that cancelling may not result in a refund.
             </label>
           </>
-        ) : (
-          <>
-            <div className="ls-alert">
-              <Info size={23} />
-              <p>
-                This sends a request to {r.name}. Your booking stays on the
-                current schedule unless the tutor approves.
-              </p>
-            </div>
-            <Rows
-              rows={[
-                ["Booking", `${r.bookingId}, ${r.service} - ${r.topic || ""}`],
-                ["Current schedule", `${r.date}, ${r.time}`],
-              ]}
-            />
-            <label className="ls-field">
-              {dates.length
-                ? "Choose a new date from the tutor's availability"
-                : "Preferred new date"}
-            </label>
-            {dates.length ? (
-              <>
-                <div className="ls-dates">
-                  {dates.map((d) => (
-                    <button
-                      key={d}
-                      className={date === d ? primary : button}
-                      onClick={() => {
-                        setDate(d);
-                        setTime("");
-                      }}
-                    >
-                      {new Date(d + "T12:00:00").toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </button>
-                  ))}
-                </div>
-                <div className="ls-dates">
-                  {slots
-                    .filter((s) => s.date === date)
-                    .map((s) => (
-                      <button
-                        type="button"
-                        key={s.time}
-                        className={time === s.time ? primary : button}
-                        onClick={() => setTime(s.time)}
-                      >
-                        {s.time} – {s.end}
-                      </button>
-                    ))}
-                </div>
-              </>
-            ) : (
-              <p role={loadingSlots ? "status" : "alert"} className="ls-muted">
-                {loadingSlots
-                  ? "Loading available times..."
-                  : "No bookable reschedule slots are available. Ask your tutor to add availability."}
-              </p>
-            )}
-            {actionError && (
-              <p role="alert" className="text-sm text-red-700">
-                {actionError}
-              </p>
-            )}
-            <label className="ls-field">
-              Reason
-              <textarea
-                className={input}
-                rows={3}
-                maxLength={2000}
-                placeholder="Let your tutor know why you need a new time (required)"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              />
-            </label>
-          </>
-        )}
+        ) : null}
+
         {kind === "cancel" && actionError && (
           <p role="alert" className="mt-3 text-sm text-red-700">
             {actionError}
@@ -390,27 +279,10 @@ export default function SessionDialog({
             </button>
             <button
               className={kind === "cancel" ? "ls-danger solid" : primary}
-              disabled={
-                busy ||
-                !active ||
-                (kind === "cancel"
-                  ? !reason || !ack
-                  : !date ||
-                    !time ||
-                    reason.trim().length < 10 ||
-                    loadingSlots ||
-                    !slots.some(
-                      (option) => option.date === date && option.time === time,
-                    ) ||
-                    !(new Date(`${date}T${time}:00+08:00`) > new Date()))
-              }
+              disabled={busy || !active || !reason || !ack}
               onClick={submitAction}
             >
-              {busy
-                ? "Saving..."
-                : kind === "cancel"
-                  ? "Cancel Session"
-                  : "Send Reschedule Request"}
+              {busy ? "Saving..." : "Cancel Session"}
             </button>
           </>
         )}
