@@ -1,30 +1,30 @@
 import useSectionNavigation from "../shared/useSectionNavigation.js";
-import AdminPolicies from "./AdminPolicies.jsx";
-import AdminNotifications from "./AdminNotifications.jsx";
-// Admin portal coordinator: loads the role-authorized Supabase snapshot, maintains the Admin inbox, and routes to each Admin section.
-import AdminCatalog from "./AdminCatalog.jsx";
+import LcoPolicies from "./LcoPolicies.jsx";
+import LcoNotifications from "./LcoNotifications.jsx";
+// LCO portal coordinator: loads the role-authorized Supabase snapshot, maintains the LCO inbox, and routes to each LCO section.
+import LcoCatalog from "./LcoCatalog.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
-import { saveAdminRecord } from "../../services/adminDatabase.js";
-import useAdminRecords from "./useAdminRecords.js";
-import { AdminDatabaseContext } from "./AdminDatabaseContext.jsx";
+import { saveLcoRecord } from "../../services/lcoDatabase.js";
+import useLcoRecords from "./useLcoRecords.js";
+import { LcoDatabaseContext } from "./LcoDatabaseContext.jsx";
 import HeaderInbox from "../shared/HeaderInbox.jsx";
 import CountBadge from "../shared/CountBadge.jsx";
 import { listSupportConversations } from "../../services/supportInbox.js";
 import { useLogout } from "../shared/LogoutProvider.jsx";
-import AdminBookings from "./AdminBookings.jsx";
-import AdminIncidents from "./AdminIncidents.jsx";
-import AdminOverview from "./AdminOverview.jsx";
-import AdminPayments from "./AdminPayments.jsx";
-import AdminSettings from "./AdminSettings.jsx";
-import AdminReports from "./AdminReports.jsx";
-import { loadConfig } from "./adminData.js";
+import LcoBookings from "./LcoBookings.jsx";
+import LcoIncidents from "./LcoIncidents.jsx";
+import LcoOverview from "./LcoOverview.jsx";
+import LcoPayments from "./LcoPayments.jsx";
+import LcoSettings from "./LcoSettings.jsx";
+import LcoReports from "./LcoReports.jsx";
+import { loadConfig } from "./lcoData.js";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import {
-  filterAdminNotifications,
-  loadAdminNotifications,
-  markAdminNotificationsRead,
-} from "../../services/adminNotifications.js";
+  filterLcoNotifications,
+  loadLcoNotifications,
+  markLcoNotificationsRead,
+} from "../../services/lcoNotifications.js";
 import { downloadTutorApplicationDocument } from "../../services/tutorApplicationStorage.js";
 import { saveTutorApplicationReview } from "../../services/tutorApplications.js";
 import {
@@ -46,10 +46,10 @@ import {
   X,
 } from "lucide-react";
 import { Modal, button, primary } from "../tutor/workspace/ui.jsx";
-import AdminUsers from "./AdminUsers.jsx";
-import AdminSupportInbox from "./AdminSupportInbox.jsx";
-import "../osas/osas.css";
-import "./admin.css";
+import LcoUsers from "./LcoUsers.jsx";
+import LcoSupportInbox from "./LcoSupportInbox.jsx";
+import "../oswe/oswe.css";
+import "./lco.css";
 const navigation = [
   ["Overview", Home],
   ["User Management", Users],
@@ -64,13 +64,13 @@ const navigation = [
   ["Notifications", Bell],
   ["Settings", Settings],
 ];
-const adminSections = navigation.map(([label]) => label);
-export default function AdminDashboardPage() {
+const lcoSections = navigation.map(([label]) => label);
+export default function LcoDashboardPage() {
   const requestLogout = useLogout();
   const auth = useAuth();
 
-  const [view, setView] = useSectionNavigation(adminSections, "Overview");
-  const [adminNotifications, setAdminNotifications] = useState([]);
+  const [view, setView] = useSectionNavigation(lcoSections, "Overview");
+  const [lcoNotifications, setLcoNotifications] = useState([]);
   const [supportThreads, setSupportThreads] = useState([]);
   const [notificationError, setNotificationError] = useState("");
   const {
@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
     applicationsError: appsError,
     refreshing,
     refresh: refreshDatabase,
-  } = useAdminRecords(auth.user.id, view);
+  } = useLcoRecords(auth.user.id, view);
   const rows = database?.users || [],
     services = database?.services || [],
     config = database?.config || loadConfig();
@@ -88,9 +88,9 @@ export default function AdminDashboardPage() {
     let alive = true;
     const refresh = async () => {
       try {
-        const next = await loadAdminNotifications(auth.user.id);
+        const next = await loadLcoNotifications(auth.user.id);
         if (alive) {
-          setAdminNotifications(next);
+          setLcoNotifications(next);
           setNotificationError("");
         }
       } catch (cause) {
@@ -125,13 +125,13 @@ export default function AdminDashboardPage() {
       window.removeEventListener("focus", refresh);
     };
   }, [auth.user.id]);
-  const visibleAdminNotifications = filterAdminNotifications(
-    adminNotifications,
+  const visibleLcoNotifications = filterLcoNotifications(
+    lcoNotifications,
     config,
   );
   const appsLoading = !database && refreshing;
   const navigationCounts = {
-    Notifications: visibleAdminNotifications.filter((n) => !n.read).length,
+    Notifications: visibleLcoNotifications.filter((n) => !n.read).length,
     Messages: supportThreads.filter((t) => t.status === "open").length,
     "Tutor Verification": apps.filter((a) =>
       ["Pending", "Under Review"].includes(a.status),
@@ -155,21 +155,20 @@ export default function AdminDashboardPage() {
     return downloadTutorApplicationDocument(doc.storagePath, auth.user.id);
   }
   async function saveRecord(kind, record) {
-    // Section components submit edits here; saveAdminRecord writes them via
-    // the Admin RPC and refreshDatabase reloads the authorized snapshot.
-    await saveAdminRecord(kind, record);
+    // Section components submit edits here; saveLcoRecord writes them via
+    // the LCO RPC and refreshDatabase reloads the authorized snapshot.
+    await saveLcoRecord(kind, record);
     await refreshDatabase();
     return true;
-  }
-  async function persist(kind, next) {
-    const updated = next.find((r) => r !== services.find((s) => s.id === r.id));
-    return updated ? saveRecord(kind, updated) : true;
   }
   const [open, setOpen] = useState(false),
     [modal, setModal] = useState(null),
     [query, setQuery] = useState(""),
     [search, setSearch] = useState("");
-  function go(label) {
+  const [notificationTarget, setNotificationTarget] = useState(null);
+  function go(label, notification = null) {
+    setNotificationTarget(notification);
+    if (notification) setSearch("");
     setOpen(false);
     if (
       [
@@ -193,8 +192,8 @@ export default function AdminDashboardPage() {
   }
   async function readNotifications(ids) {
     try {
-      await markAdminNotificationsRead(auth.user.id, ids);
-      setAdminNotifications((current) =>
+      await markLcoNotificationsRead(auth.user.id, ids);
+      setLcoNotifications((current) =>
         current.map((item) =>
           ids.includes(item.id) ? { ...item, read: true } : item,
         ),
@@ -206,7 +205,7 @@ export default function AdminDashboardPage() {
     }
   }
   return (
-    <AdminDatabaseContext.Provider
+    <LcoDatabaseContext.Provider
       value={{
         database,
         saveRecord,
@@ -215,7 +214,7 @@ export default function AdminDashboardPage() {
         error: databaseError,
       }}
     >
-      <div className="osas-app admin-app">
+      <div className="oswe-app lco-app">
         {open && (
           <button
             className="fixed inset-0 z-30 bg-black/40 md:hidden"
@@ -223,8 +222,8 @@ export default function AdminDashboardPage() {
             onClick={() => setOpen(false)}
           />
         )}
-        <aside className={`osas-sidebar ${open ? "is-open" : ""}`}>
-          <div className="osas-brand">
+        <aside className={`oswe-sidebar ${open ? "is-open" : ""}`}>
+          <div className="oswe-brand">
             <img src="/images/kasangga-logo.png" alt="Kasangga" />
             <button
               className="ml-auto md:hidden"
@@ -235,9 +234,9 @@ export default function AdminDashboardPage() {
             </button>
           </div>
           <p className="px-4 pb-2 pt-4 text-[11px] font-bold text-yellow-300">
-            ADMIN PORTAL
+            LCO PORTAL
           </p>
-          <nav aria-label="Admin navigation">
+          <nav aria-label="LCO navigation">
             {navigation.map(([label, Icon]) => (
               <button
                 key={label}
@@ -264,11 +263,11 @@ export default function AdminDashboardPage() {
               </button>
             ))}
           </nav>
-          <button className="osas-logout" onClick={requestLogout}>
+          <button className="oswe-logout" onClick={requestLogout}>
             <LogOut size={18} />
             Logout
           </button>
-          <div className="osas-campus">
+          <div className="oswe-campus">
             <img src="/images/csubuilding.jpg" alt="Caraga State University" />
             <div>
               <strong>Caraga State University</strong>
@@ -276,7 +275,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </aside>
-        <header className="osas-topbar" aria-label="Admin top navigation">
+        <header className="oswe-topbar" aria-label="LCO top navigation">
           <button
             className="md:hidden"
             aria-label="Open navigation"
@@ -285,7 +284,7 @@ export default function AdminDashboardPage() {
             <Menu size={20} />
           </button>
           <form
-            className="osas-global"
+            className="oswe-global"
             onSubmit={(e) => {
               e.preventDefault();
               setModal(null);
@@ -305,7 +304,7 @@ export default function AdminDashboardPage() {
           >
             <Search size={16} />
             <input
-              aria-label="Search admin records"
+              aria-label="Search LCO records"
               placeholder="Search users, tutors, bookings, reports, or settings..."
               value={search}
               onChange={(e) => {
@@ -319,8 +318,8 @@ export default function AdminDashboardPage() {
           </form>
           <div className="ml-auto flex items-center gap-4">
             <HeaderInbox
-              role="admin"
-              notifications={visibleAdminNotifications}
+              role="lco"
+              notifications={visibleLcoNotifications}
               threads={supportThreads.map((thread) => ({
                 ...thread,
                 name: thread.subject,
@@ -328,14 +327,26 @@ export default function AdminDashboardPage() {
               }))}
               inboxError={notificationError}
               onRead={readNotifications}
+              onNotification={(row) => {
+                const section = {
+                  incident_reports: "Incident Reports",
+                  bookings: "Bookings Monitoring",
+                  payments: "Payments & Transactions",
+                  refunds: "Payments & Transactions",
+                  services: "Service Management",
+                  tutor_applications: "Tutor Verification",
+                  support_conversations: "Messages",
+                }[row.entityType];
+                if (section) go(section, row);
+              }}
               onNavigate={go}
             />
             <button
               className="flex items-center gap-2 text-left"
-              aria-label="Admin account"
+              aria-label="LCO account"
               onClick={() => setModal("Account")}
             >
-              <PortalAvatar role="admin" editable />
+              <PortalAvatar role="lco" editable />
               <span className="hidden sm:block">
                 <b className="block text-xs text-slate-900">
                   {auth.profile?.first_name
@@ -344,13 +355,13 @@ export default function AdminDashboardPage() {
                         .join(" ")
                     : config.name}
                 </b>
-                <small>Administrator</small>
+                <small>LCO</small>
               </span>
               <ChevronDown size={14} />
             </button>
           </div>
         </header>
-        <main className="osas-main">
+        <main className="oswe-main">
           {databaseError && (
             <p role="alert" className="m-4 text-red-700">
               {databaseError}
@@ -358,7 +369,7 @@ export default function AdminDashboardPage() {
           )}
           {!database && !databaseError && (
             <p role="status" className="m-4">
-              Loading admin records...
+              Loading LCO records...
             </p>
           )}
           {appsError && (
@@ -385,11 +396,11 @@ export default function AdminDashboardPage() {
           {!database ? (
             <p className="m-4 text-sm text-slate-600">
               {databaseError
-                ? "Admin records could not be loaded. Reload the page to retry."
-                : "Loading Admin records - "}
+                ? "LCO records could not be loaded. Reload the page to retry."
+                : "Loading LCO records - "}
             </p>
           ) : view === "Overview" ? (
-            <AdminOverview
+            <LcoOverview
               users={rows}
               applications={apps}
               onUpdateApplications={updateApplication}
@@ -398,25 +409,26 @@ export default function AdminDashboardPage() {
               config={config}
               go={go}
             />
-          ) : // The view switch is the Admin section router. Section components
+          ) : // The view switch is the LCO section router. Section components
           // receive only the records and callbacks needed for their workflow.
           view === "Policies & Procedures" ? (
-            <AdminPolicies />
+            <LcoPolicies />
           ) : view === "Notifications" ? (
-            <AdminNotifications
-              rows={adminNotifications}
+            <LcoNotifications
+              rows={lcoNotifications}
               error={notificationError}
               onRead={readNotifications}
               go={go}
             />
           ) : view === "Settings" ? (
-            <AdminSettings
+            <LcoSettings
               config={config}
               onSave={(next) => saveRecord("settings", next)}
             />
           ) : view === "Tutor Verification" ? (
-            <AdminCatalog
-              key="applications"
+            <LcoCatalog
+              key={"applications-" + (notificationTarget?.id || "")}
+              notificationTarget={notificationTarget}
               searchQuery={search}
               onQueryChange={setSearch}
               kind="applications"
@@ -428,8 +440,9 @@ export default function AdminDashboardPage() {
               config={config}
             />
           ) : view === "Service Management" ? (
-            <AdminCatalog
-              key="services"
+            <LcoCatalog
+              key={"services-" + (notificationTarget?.id || "")}
+              notificationTarget={notificationTarget}
               users={rows}
               applications={apps}
               onUserSave={(updated) => saveRecord("users", updated)}
@@ -441,15 +454,22 @@ export default function AdminDashboardPage() {
               onQueryChange={setSearch}
               kind="services"
               rows={services}
-              onUpdate={(next) => persist("services", next)}
+              onUpdate={(record) => saveRecord("services", record)}
               config={config}
             />
           ) : view === "Bookings Monitoring" ? (
-            <AdminBookings searchQuery={search} onQueryChange={setSearch} />
+            <LcoBookings
+              key={notificationTarget?.id || "bookings"}
+              notificationTarget={notificationTarget}
+              searchQuery={search}
+              onQueryChange={setSearch}
+            />
           ) : view === "Messages" ? (
-            <AdminSupportInbox />
+            <LcoSupportInbox />
           ) : view === "Incident Reports" ? (
-            <AdminIncidents
+            <LcoIncidents
+              key={notificationTarget?.id || "incidents"}
+              notificationTarget={notificationTarget}
               searchQuery={search}
               onQueryChange={setSearch}
               users={rows}
@@ -457,32 +477,27 @@ export default function AdminDashboardPage() {
               services={services}
               config={config}
               onUserSave={(updated) => saveRecord("users", updated)}
-              onServiceSave={(updated) =>
-                persist(
-                  "services",
-                  services.map((s) => (s.id === updated.id ? updated : s)),
-                )
-              }
+              onServiceSave={(updated) => saveRecord("services", updated)}
               onApplicationSave={(updated, status) =>
                 updateApplication(updated, status)
               }
               onDocument={loadApplicationDocument}
             />
           ) : view === "Payments & Transactions" ? (
-            <AdminPayments searchQuery={search} onQueryChange={setSearch} />
+            <LcoPayments
+              key={notificationTarget?.id || "payments"}
+              notificationTarget={notificationTarget}
+              searchQuery={search}
+              onQueryChange={setSearch}
+            />
           ) : view === "Reports & Analytics" ? (
-            <AdminReports users={rows} services={services} go={go} />
+            <LcoReports users={rows} services={services} go={go} />
           ) : (
-            <AdminUsers
+            <LcoUsers
               applications={apps}
               services={services}
               config={config}
-              onServiceSave={(updated) =>
-                persist(
-                  "services",
-                  services.map((s) => (s.id === updated.id ? updated : s)),
-                )
-              }
+              onServiceSave={(updated) => saveRecord("services", updated)}
               onApplicationSave={(updated, status) =>
                 updateApplication(updated, status)
               }
@@ -498,7 +513,7 @@ export default function AdminDashboardPage() {
           )}
         </main>
         {modal && (
-          <Modal title="Administrator account" onClose={() => setModal(null)}>
+          <Modal title="LCO account" onClose={() => setModal(null)}>
             <div className="space-y-3 text-xs">
               <p>
                 <b>
@@ -520,6 +535,6 @@ export default function AdminDashboardPage() {
           </Modal>
         )}
       </div>
-    </AdminDatabaseContext.Provider>
+    </LcoDatabaseContext.Provider>
   );
 }
