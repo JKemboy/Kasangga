@@ -1,17 +1,17 @@
 import {
   paymentAllocation,
   timestampLabel,
-} from "../../services/adminRecords.js";
-import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
+} from "../../services/lcoRecords.js";
+import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
 import { useState } from "react";
 import { Panel } from "./UserDetails.jsx";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import { money } from "../tutor/workspace/data.js";
-import { dateLabel } from "./adminData.js";
+import { dateLabel } from "./lcoData.js";
 import { paymentBookings, refundDecision } from "./paymentDetailsData.js";
 import "./booking-details.css";
-import { markRefundTransferred } from "../../services/adminDatabase.js";
+import { markRefundTransferred } from "../../services/lcoDatabase.js";
 export default function PaymentDetails({
   record: r,
   onSave,
@@ -22,7 +22,7 @@ export default function PaymentDetails({
     [action, setAction] = useState(initialAction),
     [note, setNote] = useState(""),
     [error, setError] = useState("");
-  const { database, refresh } = useAdminDatabase();
+  const { database, refresh } = useLcoDatabase();
   const [reference, setReference] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const incidents = database?.incidents || [];
@@ -181,7 +181,7 @@ export default function PaymentDetails({
                 {[
                   ["Gross Amount", split.gross],
                   ["Tutor share", split.tutor],
-                  ["OSAS share", split.osas],
+                  ["OSWE share", split.osas],
                   ["Platform share", split.platform],
                 ].map(([label, value]) => (
                   <tr key={label}>
@@ -221,7 +221,7 @@ export default function PaymentDetails({
                 ],
                 [
                   "Policy",
-                  "Cancellation does not automatically guarantee a refund. Admin reviews the request.",
+                  "Cancellation does not automatically guarantee a refund. A learner who misses the scheduled session is not eligible for a refund for their own absence. Confirm attendance circumstances before deciding.",
                 ],
               ].map(([k, v]) => (
                 <div key={k}>
