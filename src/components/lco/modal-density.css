@@ -1,23 +1,23 @@
-html dialog:is(.admin-incident-details, .admin-application-review) {
+html dialog:is(.lco-incident-details, .lco-application-review) {
   width: min(780px, calc(100vw - 24px));
   max-height: calc(100dvh - 24px);
   border-radius: 10px;
   font-size: 12px;
 }
-html dialog.admin-application-review {
+html dialog.lco-application-review {
   width: min(860px, calc(100vw - 24px));
 }
 html dialog.audit-details {
   width: min(560px, calc(100vw - 24px));
 }
 html
-  dialog:is(.admin-incident-details, .admin-application-review)
+  dialog:is(.lco-incident-details, .lco-application-review)
   > :is(header, footer) {
   padding: 10px 14px;
   gap: 8px;
   flex-wrap: wrap;
 }
-html dialog:is(.admin-incident-details, .admin-application-review) h2 {
+html dialog:is(.lco-incident-details, .lco-application-review) h2 {
   font-size: 16px;
   flex-wrap: wrap;
 }
