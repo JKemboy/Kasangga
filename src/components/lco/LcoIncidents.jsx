@@ -1,13 +1,13 @@
-// Incident Reports: lets Admin review reports, linked users, evidence, and referral status through saved-record callbacks.
+import useNotificationTarget from "./useNotificationTarget.js";
+// Incident Reports: lets LCO review reports, linked users, evidence, and referral status through saved-record callbacks.
 import { statusClass } from "../shared/statusColors.js";
-import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
+import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
 import UserExport from "./UserExport.jsx";
-import ServiceMenu from "./ServiceMenu.jsx";
 import EvidencePreview from "./EvidencePreview.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import UserDetails from "./UserDetails.jsx";
 import { paymentBookings } from "./paymentDetailsData.js";
-import { CalendarDays, UserRound, Image } from "lucide-react";
+import { CalendarDays, Image } from "lucide-react";
 import IncidentDetails from "./IncidentDetails.jsx";
 import { useState } from "react";
 import {
@@ -18,7 +18,6 @@ import {
   Users,
   Check,
   Download,
-  MoreHorizontal,
   Info,
 } from "lucide-react";
 import {
@@ -28,8 +27,9 @@ import {
   input,
   Avatar,
 } from "../tutor/workspace/ui.jsx";
-import { dateLabel } from "./adminData.js";
-export default function AdminIncidents({
+import { dateLabel } from "./lcoData.js";
+export default function LcoIncidents({
+  notificationTarget,
   searchQuery = "",
   onQueryChange = () => {},
   users = [],
@@ -42,7 +42,7 @@ export default function AdminIncidents({
   onDocument,
 }) {
   const [linked, setLinked] = useState(null);
-  const { database, saveRecord } = useAdminDatabase();
+  const { database, saveRecord } = useLcoDatabase();
   const workspace = {
     sessions: database?.sessions || [],
     profile: { name: "" },
@@ -81,13 +81,19 @@ export default function AdminIncidents({
       (!type || r.type === type) &&
       (!status ||
         (status === "pendingGroup"
-          ? ["Pending Review", "Under Admin Review"].includes(r.status)
+          ? ["Pending Review", "Under LCO Review"].includes(r.status)
           : r.status === status)) &&
       (!referral || r.referral === referral) &&
       [r.id, r.booking, r.reporter, r.reported, r.type, r.issue]
         .join(" ")
         .toLowerCase()
         .includes(searchQuery.trim().toLowerCase()),
+  );
+  const targetRow = useNotificationTarget(
+    notificationTarget,
+    filtered,
+    7,
+    setPage,
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),
@@ -129,7 +135,7 @@ export default function AdminIncidents({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "admin-incident-reports.csv";
+    a.download = "lco-incident-reports.csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(`Exported ${filtered.length} reports.`);
@@ -154,14 +160,14 @@ export default function AdminIncidents({
   }
   return (
     <section className="ad-page ai-incidents">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             Incident Reports <ShieldCheck size={22} />
           </h1>
           <p>
             Monitor submitted incidents, resolve authorized platform issues, and
-            refer institutional conduct matters to OSAS.
+            refer institutional conduct matters to OSWE.
           </p>
         </div>
       </div>
@@ -172,7 +178,7 @@ export default function AdminIncidents({
             Clock,
             "Pending Review",
             period.filter((r) =>
-              ["Pending Review", "Under Admin Review"].includes(r.status),
+              ["Pending Review", "Under LCO Review"].includes(r.status),
             ).length,
             () => setStatus("pendingGroup"),
           ],
@@ -184,15 +190,15 @@ export default function AdminIncidents({
           ],
           [
             Users,
-            "Referred to OSAS",
-            period.filter((r) => r.referral === "Referred to OSAS").length,
-            () => setReferral("Referred to OSAS"),
+            "Referred to OSWE",
+            period.filter((r) => r.referral === "Referred to OSWE").length,
+            () => setReferral("Referred to OSWE"),
           ],
           [
             Check,
-            "Resolved Administrative Issues",
-            period.filter((r) => r.status === "Resolved by Admin").length,
-            () => setStatus("Resolved by Admin"),
+            "Resolved Platform Issues",
+            period.filter((r) => r.status === "Resolved by LCO").length,
+            () => setStatus("Resolved by LCO"),
           ],
         ].map(([Icon, label, n, action], i) => (
           <button
@@ -200,14 +206,12 @@ export default function AdminIncidents({
             aria-pressed={
               [
                 !type && !status && !referral,
-                [
-                  "pendingGroup",
-                  "Pending Review",
-                  "Under Admin Review",
-                ].includes(status),
+                ["pendingGroup", "Pending Review", "Under LCO Review"].includes(
+                  status,
+                ),
                 type === "Platform / Technical",
-                referral === "Referred to OSAS",
-                status === "Resolved by Admin",
+                referral === "Referred to OSWE",
+                status === "Resolved by LCO",
               ][i]
             }
             onClick={() => {
@@ -242,15 +246,15 @@ export default function AdminIncidents({
         ])}
         {select("All Review Statuses", status, setStatus, [
           "Pending Review",
-          "Under Admin Review",
-          "Admin Screening Complete",
-          "Resolved by Admin",
+          "Under LCO Review",
+          "LCO Screening Complete",
+          "Resolved by LCO",
           ...(status === "pendingGroup" ? ["pendingGroup"] : []),
         ])}
         {select("All Referral Statuses", referral, setReferral, [
           "Not Required",
           "Not Yet Referred",
-          "Referred to OSAS",
+          "Referred to OSWE",
         ])}
         <label>
           From
@@ -304,7 +308,7 @@ export default function AdminIncidents({
       <p className="ad-banner flex items-center gap-2">
         <Info size={16} />
         Submitting a report does not prove misconduct or create an automatic
-        sanction. Formal conduct decisions are handled by OSAS.
+        sanction. Formal conduct decisions are handled by OSWE.
       </p>
       <div className="ai-table">
         <div className="overflow-x-auto">
@@ -317,10 +321,9 @@ export default function AdminIncidents({
                   "Reporter",
                   "Reported User",
                   "Incident Type",
-                  "Priority",
                   "Submitted Date",
-                  "Admin Review Status",
-                  "OSAS Referral Status",
+                  "LCO Review Status",
+                  "OSWE Referral Status",
                   "Action",
                 ].map((h) => (
                   <th key={h}>{h}</th>
@@ -329,7 +332,7 @@ export default function AdminIncidents({
             </thead>
             <tbody>
               {visible.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} {...targetRow(r)}>
                   <td>
                     <b>{r.id}</b>
                   </td>
@@ -346,37 +349,37 @@ export default function AdminIncidents({
                       {r.reported}
                     </div>
                   </td>
-                  <td>
-                    {pill(r.type)}
-                    <small>{r.issue}</small>
-                  </td>
-                  <td>{pill(r.priority)}</td>
+                  <td>{pill(r.type)}</td>
                   <td>{dateLabel(r.date)}</td>
                   <td>{pill(r.status)}</td>
                   <td>{pill(r.referral)}</td>
                   <td>
-                    <div className="ad-actions">
+                    <div className="ad-actions ai-report-actions">
                       <button
+                        type="button"
                         className={button}
-                        aria-label={`Open ${r.id}`}
+                        disabled={!r.booking}
+                        onClick={() => related(r, "booking")}
+                      >
+                        <CalendarDays size={14} />
+                        View Booking
+                      </button>
+                      <button
+                        type="button"
+                        className={button}
+                        onClick={() => related(r, "evidence")}
+                      >
+                        <Image size={14} />
+                        Preview Evidence
+                      </button>
+                      <button
+                        type="button"
+                        className={primary}
                         onClick={() => open(r)}
                       >
-                        {[
-                          "Admin Screening Complete",
-                          "Resolved by Admin",
-                        ].includes(r.status)
-                          ? "View Report"
-                          : "Review Report"}
+                        <FileText size={14} />
+                        View Report
                       </button>
-                      <ServiceMenu
-                        service={{ title: r.id }}
-                        options={[
-                          [CalendarDays, "View booking", "booking"],
-                          [UserRound, "View reporter account", "account"],
-                          [Image, "Preview evidence", "evidence"],
-                        ]}
-                        onSelect={(kind) => related(r, kind)}
-                      />
                     </div>
                   </td>
                 </tr>
