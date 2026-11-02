@@ -1,5 +1,6 @@
+import useNotificationTarget from "./useNotificationTarget.js";
 import { collegeProgramMap } from "../../services/collegeProgramMap.js";
-// Admin catalogs: renders tutor verification and service moderation tables with their record-review actions.
+// LCO catalogs: renders tutor verification and service moderation tables with their record-review actions.
 import { statusClass } from "../shared/statusColors.js";
 import ServiceDetails from "./ServiceDetails.jsx";
 import UserDetails from "./UserDetails.jsx";
@@ -15,6 +16,10 @@ import {
   Download,
   MoreHorizontal,
   Eye,
+  Search,
+  Ban,
+  RotateCcw,
+  UserRound,
 } from "lucide-react";
 import {
   Modal,
@@ -23,14 +28,15 @@ import {
   input,
   Avatar,
 } from "../tutor/workspace/ui.jsx";
-import { dateLabel, downloadData } from "./adminData.js";
+import { dateLabel, downloadData } from "./lcoData.js";
 function applicationDocumentKey(application) {
   return Object.entries(application.documents || {})
     .map(([kind, document]) => `${kind}:${document.storagePath || ""}`)
     .sort()
     .join("|");
 }
-export default function AdminCatalog({
+export default function LcoCatalog({
+  notificationTarget,
   kind,
   searchQuery = "",
   onQueryChange = () => {},
@@ -93,6 +99,12 @@ export default function AdminCatalog({
         .toLowerCase()
         .includes(searchQuery.trim().toLowerCase()),
   );
+  const targetRow = useNotificationTarget(
+    notificationTarget,
+    filtered,
+    7,
+    setPage,
+  );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),
     visible = filtered.slice((current - 1) * 7, current * 7);
@@ -121,7 +133,7 @@ export default function AdminCatalog({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "admin-services.csv";
+    a.download = "lco-services.csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice("Exported " + filtered.length + " matching services.");
@@ -169,10 +181,10 @@ export default function AdminCatalog({
     <section
       className={
         "ad-page " +
-        (verification ? "admin-tutor-verification" : "admin-service-management")
+        (verification ? "lco-tutor-verification" : "lco-service-management")
       }
     >
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             {title}{" "}
@@ -269,7 +281,22 @@ export default function AdminCatalog({
           </select>
         </div>
       ) : (
-        <div className="ad-toolbar flex-wrap">
+        <div className="ad-toolbar service-management-toolbar">
+          <label className="service-management-search">
+            <span className="sr-only">Search services</span>
+            <Search size={16} />
+            <input
+              type="search"
+              aria-label="Search services"
+              placeholder="Search service, tutor, or topic..."
+              className={input}
+              value={searchQuery}
+              onChange={(event) => {
+                onQueryChange(event.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
           <select
             aria-label="Service status"
             className={input}
@@ -340,7 +367,7 @@ export default function AdminCatalog({
             </thead>
             <tbody>
               {visible.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} {...targetRow(r)}>
                   <td>{r.id}</td>
                   <td>
                     <div className="au-person ad-catalog-person">
@@ -452,6 +479,11 @@ export default function AdminCatalog({
                               )
                             }
                           >
+                            {r.status === "Suspended" ? (
+                              <RotateCcw size={13} />
+                            ) : (
+                              <Ban size={13} />
+                            )}
                             {r.status === "Suspended"
                               ? "Lift Suspension"
                               : "Suspend"}
@@ -461,7 +493,7 @@ export default function AdminCatalog({
                             className={button}
                             onClick={() => serviceOption(r, "account")}
                           >
-                            Tutor Account
+                            <UserRound size={13} /> Tutor Account
                           </button>
                         </>
                       )}
@@ -538,9 +570,7 @@ export default function AdminCatalog({
               : ""
           }
           onTutor={() => serviceOption(selected, "account")}
-          onSave={(updated) =>
-            onUpdate(rows.map((r) => (r.id === updated.id ? updated : r)))
-          }
+          onSave={(updated) => onUpdate(updated)}
           onClose={() => setSelected(null)}
         />
       )}
