@@ -1,4 +1,5 @@
-// OSAS record mapper: converts database snapshot tables into the case, clearance, evidence, archive, and report view models.
+import { academicYear } from "./academicYear.js";
+// OSWE record mapper: converts database snapshot tables into the case, clearance, evidence, archive, and report view models.
 const label = (value) =>
   String(value || "")
     .replaceAll("_", " ")
@@ -20,7 +21,7 @@ const json = (value, fallback = {}) => {
     return fallback;
   }
 };
-export function mapOsasRecords(db) {
+export function mapOsweRecords(db) {
   for (const key of [
     "users",
     "incident_reports",
@@ -36,47 +37,53 @@ export function mapOsasRecords(db) {
     "notifications",
   ])
     if (!Array.isArray(db?.[key]))
-      throw new Error(`OSAS snapshot is missing ${key}.`);
+      throw new Error(`OSWE snapshot is missing ${key}.`);
   const users = new Map(db.users.map((u) => [u.user_id, u]));
   const name = (id) => users.get(id)?.name || "Unavailable";
-  const incidents = db.incident_reports.map((r) => {
-    const linked = db.cases.find((c) => c.report_id === r.report_id);
-    return {
-      id: `IR-${r.report_id}`,
-      reportDatabaseId: r.report_id,
-      booking: r.booking_id ? `BK-${r.booking_id}` : "No booking",
-      reporterId: r.reported_by,
-      studentUserId: r.reported_against,
-      reporter: name(r.reported_by),
-      student: name(r.reported_against),
-      reporterStudentId: users.get(r.reported_by)?.student_id || "",
-      studentId: users.get(r.reported_against)?.student_id || "",
-      type: r.incident_type,
-      description: r.description,
-      priority: r.priority === "normal" ? "Medium" : label(r.priority),
-      date: day(r.submitted_at),
-      submittedAt: r.submitted_at,
-      referral:
-        r.osas_referral_status === "not_referred"
-          ? "Not Referred"
-          : "Referred to OSAS",
-      caseId: linked ? `CASE-${linked.case_id}` : "",
-      status: linked
-        ? label(linked.case_status)
-        : r.osas_referral_status === "closed_no_case"
-          ? "Closed / No Formal Case"
-          : r.report_status === "resolved"
-            ? "Resolved"
-            : r.osas_referral_status === "referred"
-              ? "Awaiting OSAS Assessment"
-              : "Awaiting Admin Screening",
-      assessment:
-        r.osas_assessment ||
-        (r.osas_referral_status === "closed_no_case"
-          ? { action: "close" }
-          : null),
-    };
-  });
+  const incidents = db.incident_reports
+    .filter(
+      (r) =>
+        ["referred", "closed_no_case"].includes(r.osas_referral_status) ||
+        db.cases.some((c) => c.report_id === r.report_id),
+    )
+    .map((r) => {
+      const linked = db.cases.find((c) => c.report_id === r.report_id);
+      return {
+        id: `IR-${r.report_id}`,
+        reportDatabaseId: r.report_id,
+        booking: r.booking_id ? `BK-${r.booking_id}` : "No booking",
+        reporterId: r.reported_by,
+        studentUserId: r.reported_against,
+        reporter: name(r.reported_by),
+        student: name(r.reported_against),
+        reporterStudentId: users.get(r.reported_by)?.student_id || "",
+        studentId: users.get(r.reported_against)?.student_id || "",
+        type: r.incident_type,
+        description: r.description,
+        priority: r.priority === "normal" ? "Medium" : label(r.priority),
+        date: day(r.submitted_at),
+        submittedAt: r.submitted_at,
+        referral:
+          r.osas_referral_status === "not_referred"
+            ? "Not Referred"
+            : "Referred to OSWE",
+        caseId: linked ? `CASE-${linked.case_id}` : "",
+        status: linked
+          ? label(linked.case_status)
+          : r.osas_referral_status === "closed_no_case"
+            ? "Closed / No Formal Case"
+            : r.report_status === "resolved"
+              ? "Resolved"
+              : r.osas_referral_status === "referred"
+                ? "Awaiting OSWE Assessment"
+                : "Awaiting LCO Screening",
+        assessment:
+          r.osas_assessment ||
+          (r.osas_referral_status === "closed_no_case"
+            ? { action: "close" }
+            : null),
+      };
+    });
   const cases = db.cases.map((c) => {
     const report = incidents.find((r) => r.reportDatabaseId === c.report_id);
     const decisions = db.case_decisions
@@ -222,7 +229,7 @@ export function mapOsasRecords(db) {
       resolved: day(c.resolvedAt),
       archived: day(c.archivedAt),
       outcome: c.decision?.outcome || c.resolution || "",
-      year: String(new Date(c.archivedAt).getFullYear()),
+      year: academicYear(c.archivedAt),
       evidence: evidence
         .filter((item) => item.reportDatabaseId === c.reportDatabaseId)
         .map((item) => ({
@@ -232,6 +239,7 @@ export function mapOsasRecords(db) {
     }));
   const policies = db.policies.map((p) => ({
     id: `POL-${p.policy_id}`,
+    scope: p.policy_scope || "institutional",
     title: p.title,
     category: p.category,
     version: p.version,
