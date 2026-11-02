@@ -1,12 +1,10 @@
+import { getSupabaseClient } from "../../services/supabaseClient.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import OsasPolicies from "../osas/OsasPolicies.jsx";
+import OswePolicies from "../oswe/OswePolicies.jsx";
 import { Modal, button, input, primary } from "../tutor/workspace/ui.jsx";
-import {
-  listAdminPolicies,
-  saveAdminPolicy,
-} from "../../services/adminPolicies.js";
+import { listLcoPolicies, saveLcoPolicy } from "../../services/lcoPolicies.js";
 
-export default function AdminPolicies() {
+export default function LcoPolicies() {
   const [rows, setRows] = useState([]),
     [loading, setLoading] = useState(true);
   const [error, setError] = useState(""),
@@ -18,7 +16,7 @@ export default function AdminPolicies() {
   const refresh = useCallback(async () => {
     const request = ++generation.current;
     try {
-      const next = await listAdminPolicies();
+      const next = await listLcoPolicies();
       if (request === generation.current) {
         setRows(next);
         setError("");
@@ -31,17 +29,28 @@ export default function AdminPolicies() {
   }, []);
   useEffect(() => {
     refresh();
+    const client = getSupabaseClient();
+    const channel = client
+      .channel("lco-policy-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "policies" },
+        refresh,
+      )
+      .subscribe();
     const timer = setInterval(refresh, 15000);
     window.addEventListener("focus", refresh);
     return () => {
       generation.current++;
       clearInterval(timer);
+      client.removeChannel(channel);
       window.removeEventListener("focus", refresh);
     };
   }, [refresh]);
   function edit(value) {
     setFormError("");
-    setEditing({ ...value });
+    const saved = rows.find((row) => row.policyId === value.policyId);
+    setEditing({ ...(saved || value) });
   }
   async function save(event) {
     event.preventDefault();
@@ -49,7 +58,7 @@ export default function AdminPolicies() {
     setSaving(true);
     setFormError("");
     try {
-      await saveAdminPolicy(editing);
+      await saveLcoPolicy(editing);
       setEditing(null);
       setNotice("Policy saved to Supabase.");
       await refresh();
@@ -79,7 +88,7 @@ export default function AdminPolicies() {
           {notice}
         </p>
       )}
-      <OsasPolicies
+      <OswePolicies
         policies={rows}
         onEdit={edit}
         settings={{ pageSize: 8, timezone: "Asia/Manila", language: "en-PH" }}
@@ -150,7 +159,7 @@ export default function AdminPolicies() {
               </label>
               <p className="text-xs text-slate-500">
                 Use ## for section headings and - for bullet points. Changes
-                appear in the OSAS policy catalog after saving.
+                appear in the OSWE policy catalog after saving.
               </p>
             </fieldset>
             {formError && (
