@@ -1,8 +1,8 @@
-import { useAdminDatabase } from "./AdminDatabaseContext.jsx";
-import { useState } from "react";
+import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
+import { useEffect, useState } from "react";
 import { Panel } from "./UserDetails.jsx";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
-import { dateLabel } from "./adminData.js";
+import { dateLabel } from "./lcoData.js";
 import { moderateService } from "./serviceActions.js";
 import { money } from "../tutor/workspace/data.js";
 import BookingDetails from "./BookingDetails.jsx";
@@ -14,18 +14,19 @@ export default function ServiceDetails({
   initialAction = "",
   onTutor,
 }) {
-  const [action, setAction] = useState(
-      ["Suspend Service", "Lift Suspension"].includes(initialAction)
-        ? initialAction
-        : "",
-    ),
+  const [action, setAction] = useState(""),
     [message, setMessage] = useState(""),
     [ack, setAck] = useState(false),
     [confirming, setConfirming] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [booking, setBooking] = useState(null);
-  const { database, saveRecord } = useAdminDatabase();
+  useEffect(() => {
+    if (!["Suspend Service", "Lift Suspension"].includes(initialAction)) return;
+    const frame = requestAnimationFrame(() => setAction(initialAction));
+    return () => cancelAnimationFrame(frame);
+  }, [initialAction]);
+  const { database, saveRecord } = useLcoDatabase();
   const workspace = {
     sessions: database?.sessions || [],
     profile: { name: "" },
@@ -92,150 +93,152 @@ export default function ServiceDetails({
     ["Availability", s.availability],
   ];
   return (
-    <Panel
-      title={
-        <>
-          {s.title}
-          <span
-            className={`au-status ${s.status === "Active" ? "active" : s.status === "Suspended" ? "suspended" : "restricted"}`}
-          >
-            {s.status}
-          </span>
-        </>
-      }
-      subtitle={`${s.id} · created ${dateLabel(s.date)}`}
-      onClose={onClose}
-      footer={
-        <>
-          <div className="ud-actions">
-            {s.status === "Suspended" ? (
-              <button
-                className={button}
-                onClick={() => open("Lift Suspension")}
-              >
-                Lift Suspension
-              </button>
-            ) : (
-              s.status === "Active" && (
+    <>
+      <Panel
+        title={
+          <>
+            {s.title}
+            <span
+              className={`au-status ${s.status === "Active" ? "active" : s.status === "Suspended" ? "suspended" : "restricted"}`}
+            >
+              {s.status}
+            </span>
+          </>
+        }
+        subtitle={`${s.id} · created ${dateLabel(s.date)}`}
+        onClose={onClose}
+        footer={
+          <>
+            <div className="ud-actions">
+              {s.status === "Suspended" ? (
                 <button
-                  className={`${button} text-red-600`}
-                  onClick={() => open("Suspend Service")}
+                  className={button}
+                  onClick={() => open("Lift Suspension")}
                 >
-                  Suspend
+                  Lift Suspension
                 </button>
-              )
-            )}
-          </div>
-          <button className={button} onClick={onClose}>
-            Close
-          </button>
-        </>
-      }
-    >
-      <p className="aid-info">
-        Tutor-owned content. Admin cannot edit the description, topics, rate or
-        availability.
-      </p>
-      <dl>
-        {facts.map(([k, v]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd>{v || "Not provided"}</dd>
-          </div>
-        ))}
-      </dl>
-      {
-        <section>
-          <h3>Bookings for this service</h3>
-          {bookings.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr>
-                    {[
-                      "Booking",
-                      "Learner",
-                      "Date / Time",
-                      "Booking Status",
-                      "Payment Status",
-                      "Action",
-                    ].map((label) => (
-                      <th key={label} className="p-2">
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map((b) => (
-                    <tr key={b.id}>
-                      <td className="p-2">{b.booking || b.id}</td>
-                      <td className="p-2">{b.learner}</td>
-                      <td className="p-2">
-                        {dateLabel(b.date)} {b.start}?{b.end}
-                      </td>
-                      <td className="p-2">{b.status}</td>
-                      <td className="p-2">{b.payment}</td>
-                      <td className="p-2">
-                        <button
-                          type="button"
-                          className={button}
-                          onClick={() => setBooking(b)}
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              ) : (
+                s.status === "Active" && (
+                  <button
+                    className={`${button} text-red-600`}
+                    onClick={() => open("Suspend Service")}
+                  >
+                    Suspend
+                  </button>
+                )
+              )}
             </div>
-          ) : (
-            <p>No matching bookings in the available records.</p>
-          )}
-        </section>
-      }
-      <h3>Description</h3>
-      <p>{s.description || "Not provided"}</p>
-      <h3>Topics, rates and schedules</h3>
-      {s.topicDetails?.length ? (
-        s.topicDetails.map((topic) => (
-          <section className="rounded border p-3 my-2" key={topic.id}>
-            <h4>
-              {topic.name} - {money(topic.rate)}/hr - {topic.type}
-            </h4>
-            {topic.meetingLink && <p>Meeting link: {topic.meetingLink}</p>}
-            {topic.location && <p>Meeting place: {topic.location}</p>}
-            <p>
-              {topic.slots.length
-                ? topic.slots
-                    .map((slot) =>
-                      [
-                        slot.date || "Every " + slot.day,
-                        slot.start + " - " + slot.end,
-                      ].join(" "),
-                    )
-                    .join("; ")
-                : "No active topic schedule"}
-            </p>
+            <button className={button} onClick={onClose}>
+              Close
+            </button>
+          </>
+        }
+      >
+        <p className="aid-info">
+          Tutor-owned content. LCO cannot edit the description, topics, rate or
+          availability.
+        </p>
+        <dl>
+          {facts.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v || "Not provided"}</dd>
+            </div>
+          ))}
+        </dl>
+        {
+          <section>
+            <h3>Bookings for this service</h3>
+            {bookings.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr>
+                      {[
+                        "Booking",
+                        "Learner",
+                        "Date / Time",
+                        "Booking Status",
+                        "Payment Status",
+                        "Action",
+                      ].map((label) => (
+                        <th key={label} className="p-2">
+                          {label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings.map((b) => (
+                      <tr key={b.id}>
+                        <td className="p-2">{b.booking || b.id}</td>
+                        <td className="p-2">{b.learner}</td>
+                        <td className="p-2">
+                          {dateLabel(b.date)} {b.start}?{b.end}
+                        </td>
+                        <td className="p-2">{b.status}</td>
+                        <td className="p-2">{b.payment}</td>
+                        <td className="p-2">
+                          <button
+                            type="button"
+                            className={button}
+                            onClick={() => setBooking(b)}
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>No matching bookings in the available records.</p>
+            )}
           </section>
-        ))
-      ) : (
-        <p>No active topics recorded.</p>
-      )}
+        }
+        <h3>Description</h3>
+        <p>{s.description || "Not provided"}</p>
+        <h3>Topics, rates and schedules</h3>
+        {s.topicDetails?.length ? (
+          s.topicDetails.map((topic) => (
+            <section className="rounded border p-3 my-2" key={topic.id}>
+              <h4>
+                {topic.name} - {money(topic.rate)}/hr - {topic.type}
+              </h4>
+              {topic.meetingLink && <p>Meeting link: {topic.meetingLink}</p>}
+              {topic.location && <p>Meeting place: {topic.location}</p>}
+              <p>
+                {topic.slots.length
+                  ? topic.slots
+                      .map((slot) =>
+                        [
+                          slot.date || "Every " + slot.day,
+                          slot.start + " - " + slot.end,
+                        ].join(" "),
+                      )
+                      .join("; ")
+                  : "No active topic schedule"}
+              </p>
+            </section>
+          ))
+        ) : (
+          <p>No active topics recorded.</p>
+        )}
 
-      {s.status === "Suspended" && (
-        <div className="ud-status red">
-          <h3>Suspension</h3>
-          <p>
-            {latest
-              ? `${dateLabel(latest.at.slice(0, 10))} by ${latest.by}`
-              : "Date not recorded"}
-          </p>
-          <p>{latest?.reason || "Reason not recorded."}</p>
-        </div>
-      )}
-      {notice && <p role="status">{notice}</p>}
+        {s.status === "Suspended" && (
+          <div className="ud-status red">
+            <h3>Suspension</h3>
+            <p>
+              {latest
+                ? `${dateLabel(latest.at.slice(0, 10))} by ${latest.by}`
+                : "Date not recorded"}
+            </p>
+            <p>{latest?.reason || "Reason not recorded."}</p>
+          </div>
+        )}
+        {notice && <p role="status">{notice}</p>}
+      </Panel>
       {action && (
         <Modal
           title={
@@ -321,6 +324,6 @@ export default function ServiceDetails({
           onClose={() => setBooking(null)}
         />
       )}
-    </Panel>
+    </>
   );
 }
