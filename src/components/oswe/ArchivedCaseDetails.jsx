@@ -23,13 +23,13 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
   const full = r.full || {};
   const evidence = r.evidence || full.evidence || [];
   const events = [
-    { title: "Formal case opened", when: date(r.opened), by: "OSAS" },
+    { title: "Formal case opened", when: date(r.opened), by: "OSWE" },
     ...(full.history || []).map((event) => ({
       title: event.action || event.status || "Case action recorded",
       when: event.at
         ? new Date(event.at).toLocaleString()
         : "Date not recorded",
-      by: event.officer || event.by || "OSAS",
+      by: event.officer || event.by || "OSWE",
       notes: event.notes,
     })),
     {
