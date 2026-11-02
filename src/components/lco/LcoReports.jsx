@@ -91,8 +91,7 @@ export default function LcoReports({ users, services, go }) {
             Reports &amp; Analytics <ChartNoAxesCombined size={22} />
           </h1>
           <p>
-            Monitor Kasangga usage, services, bookings, and transaction
-            trends.
+            Monitor Kasangga usage, services, bookings, and transaction trends.
           </p>
         </div>
         <UserExport
@@ -328,7 +327,8 @@ export default function LcoReports({ users, services, go }) {
       <section className="ad-panel">
         {financial.estimated && (
           <p className="ad-help">
-            Shares without a recorded allocation use the estimated 90/5/5 split.
+            Shares without a recorded allocation use the estimated 90% tutor /
+            10% platform split.
           </p>
         )}
         <h2>Financial Analytics — GCash via PayMongo</h2>
@@ -336,7 +336,8 @@ export default function LcoReports({ users, services, go }) {
           {[
             ["Gross Session Payments", financial.gross],
             ["Tutor Share", financial.tutor],
-            ["OSWE Share", financial.osas],
+            ["Admin Share (5%)", financial.admin],
+            ["Maintenance (5%)", financial.maintenance],
             ["Platform Revenue", financial.platform],
           ].map(([label, value]) => (
             <div key={label}>

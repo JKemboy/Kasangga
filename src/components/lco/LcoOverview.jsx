@@ -347,7 +347,8 @@ export default function LcoOverview({
                 {[
                   ["Gross", totals.gross],
                   ["Tutor share", totals.tutor],
-                  ["OSWE share", totals.osas],
+                  ["Admin share (5%)", totals.admin],
+                  ["Maintenance (5%)", totals.maintenance],
                   ["Platform share", totals.platform],
                 ].map(([label, value]) => (
                   <p key={label}>
@@ -356,7 +357,7 @@ export default function LcoOverview({
                 ))}
                 <p>
                   {totals.estimated
-                    ? "Some shares use the estimated 90/5/5 split."
+                    ? "Some shares use the estimated 90% tutor / 10% platform split."
                     : "Shares use recorded allocations."}
                 </p>
                 <button

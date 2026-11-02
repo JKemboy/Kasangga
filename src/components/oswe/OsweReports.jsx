@@ -410,7 +410,7 @@ export default function OsweReports({ rows, settings }) {
         <div className="or-financial-heading">
           <Database size={24} />
           <div>
-            <h2>OSWE Financial Allocation</h2>
+            <h2>Payment Allocation</h2>
             <p>
               Read-only figures for eligible completed paid tutoring sessions.
             </p>
@@ -428,11 +428,12 @@ export default function OsweReports({ rows, settings }) {
               "For selected period",
             ],
             ["Tutor Share", "90%", money(totals.tutor)],
-            ["OSWE Share", "5%", money(totals.osas)],
-            ["Platform Share", "5%", money(totals.platform)],
+            ["Admin Share", "5%", money(totals.admin)],
+            ["Maintenance", "5%", money(totals.maintenance)],
+            ["Platform Share", "10%", money(totals.platform)],
             [
-              "Total OSWE Allocation",
-              money(totals.osas),
+              "Total Platform Allocation",
+              money(totals.platform),
               `${totals.count} eligible sessions`,
             ],
             ["Payment Method", "GCash via PayMongo", "Demo payment records"],
@@ -446,7 +447,7 @@ export default function OsweReports({ rows, settings }) {
         </div>
         <p className="or-equation">
           {money(totals.gross)} = {money(totals.tutor)} Tutor +{" "}
-          {money(totals.osas)} OSWE + {money(totals.platform)} Platform
+          {money(totals.platform)} Platform (5% Maintenance + 5% Admin)
         </p>
       </section>
       {settings.tips && (
