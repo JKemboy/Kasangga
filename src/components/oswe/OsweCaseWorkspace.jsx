@@ -1,12 +1,12 @@
-import OsasIncidents from "./OsasIncidents.jsx";
-export default function OsasCaseWorkspace({
+import OsweIncidents from "./OsweIncidents.jsx";
+export default function OsweCaseWorkspace({
   settings,
   searchQuery = "",
   onSearchChange,
   initialFilter,
 }) {
   return (
-    <OsasIncidents
+    <OsweIncidents
       settings={settings}
       searchQuery={searchQuery}
       onSearchChange={onSearchChange}
