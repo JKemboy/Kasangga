@@ -71,7 +71,7 @@
   border-color: #badacb;
   font-weight: 600;
 }
-.au-toolbar .osas-search {
+.au-toolbar .oswe-search {
   margin-left: auto;
   max-width: 360px;
   min-width: 120px;
@@ -193,11 +193,11 @@
   border-color: #e1e7f2;
   color: #53658d;
 }
-.admin-app .osas-sidebar nav button {
+.lco-app .oswe-sidebar nav button {
   padding-top: 10px;
   padding-bottom: 10px;
 }
-.admin-app .osas-main {
+.lco-app .oswe-main {
   padding-top: 80px;
 }
 @media (min-width: 768px) and (max-height: 760px) {
@@ -213,11 +213,11 @@
   .au-table th {
     padding: 9px 8px;
   }
-  .admin-app .osas-sidebar nav button {
+  .lco-app .oswe-sidebar nav button {
     padding-top: 8px;
     padding-bottom: 8px;
   }
-  .admin-app .osas-main {
+  .lco-app .oswe-main {
     padding-top: 74px;
   }
 }
@@ -236,7 +236,7 @@
   .au-toolbar {
     flex-wrap: wrap;
   }
-  .au-toolbar .osas-search {
+  .au-toolbar .oswe-search {
     margin-left: 0;
   }
   .au-tabs {
@@ -266,7 +266,7 @@
     width: 100%;
     overflow-x: auto;
   }
-  .au-toolbar .osas-search {
+  .au-toolbar .oswe-search {
     margin-left: 0;
   }
   .au-filters {
@@ -275,7 +275,7 @@
   .au-filters label {
     min-width: 120px;
   }
-  .admin-app .osas-main {
+  .lco-app .oswe-main {
     padding-top: 74px;
   }
 }
@@ -407,11 +407,11 @@
   gap: 8px;
   flex-wrap: wrap;
 }
-.ad-toolbar .osas-search {
+.ad-toolbar .oswe-search {
   margin-left: auto;
 }
 .ad-toolbar > button,
-.ad-page .osas-heading > button {
+.ad-page .oswe-heading > button {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -615,7 +615,7 @@
   .au-view {
     padding: 6px;
   }
-  .admin-app .osas-main {
+  .lco-app .oswe-main {
     padding-top: 72px;
   }
   .ad-table td {
@@ -644,7 +644,7 @@
     width: 100%;
     overflow-x: auto;
   }
-  .ad-toolbar .osas-search {
+  .ad-toolbar .oswe-search {
     margin-left: 0;
   }
   .ad-setting-row {
@@ -686,7 +686,7 @@
     width: 100%;
     overflow-x: auto;
   }
-  .ad-toolbar .osas-search {
+  .ad-toolbar .oswe-search {
     margin-left: 0;
   }
   .ad-setting-row {
@@ -824,7 +824,7 @@
   align-items: center;
   gap: 10px;
 }
-.ap-search .osas-search {
+.ap-search .oswe-search {
   max-width: 450px;
 }
 .ap-search select {
@@ -1224,7 +1224,7 @@
   font-size: 10px;
   min-width: 0;
 }
-.ai-incidents .ad-toolbar .osas-search {
+.ai-incidents .ad-toolbar .oswe-search {
   margin-left: 0;
   max-width: 590px;
 }
@@ -1377,7 +1377,7 @@
   max-width: 160px;
   font-size: 10px;
 }
-.ab-filters .osas-search {
+.ab-filters .oswe-search {
   min-width: 180px;
 }
 .ab-table {
@@ -1506,7 +1506,7 @@
   }
 }
 @media (max-width: 767px) {
-  .ab-filters .osas-search {
+  .ab-filters .oswe-search {
     flex-basis: 100%;
   }
   .ab-bookings .au-tabs {
@@ -1540,7 +1540,7 @@
   font-size: 10px;
   min-width: 0;
 }
-.aa-audit .ad-toolbar .osas-search {
+.aa-audit .ad-toolbar .oswe-search {
   margin-left: 0;
   max-width: 480px;
 }
@@ -1671,22 +1671,22 @@
   min-width: 145px;
 }
 
-.admin-tutor-verification .ad-cards button[aria-pressed="true"] {
+.lco-tutor-verification .ad-cards button[aria-pressed="true"] {
   border-color: #087542;
   background: #edf7f2;
   box-shadow: 0 0 0 2px #087542;
 }
-.admin-tutor-verification .ad-toolbar > select {
+.lco-tutor-verification .ad-toolbar > select {
   width: auto;
   min-width: 175px;
 }
 
-.admin-service-management .ad-cards button[aria-pressed="true"] {
+.lco-service-management .ad-cards button[aria-pressed="true"] {
   border-color: #087542;
   background: #edf7f2;
   box-shadow: 0 0 0 2px #087542;
 }
-.admin-service-management .ad-toolbar > select {
+.lco-service-management .ad-toolbar > select {
   width: auto;
   min-width: 190px;
 }
@@ -1719,4 +1719,487 @@
   border-color: #087542;
   background: #edf7f2;
   box-shadow: 0 0 0 2px #087542;
+}
+
+.lco-user-management .user-management-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(120px, 160px)) auto;
+  align-items: end;
+  gap: 12px;
+  width: 100%;
+}
+.lco-user-management .user-management-toolbar > label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.lco-user-management .user-management-toolbar input,
+.lco-user-management .user-management-toolbar select {
+  width: 100%;
+  height: 38px;
+  margin: 0;
+}
+.lco-user-management .user-management-toolbar > div > button {
+  min-height: 38px;
+  white-space: nowrap;
+}
+.lco-user-management .au-table table {
+  min-width: 1050px;
+}
+.lco-user-management .au-table th:nth-child(1) {
+  width: 9%;
+}
+.lco-user-management .au-table th:nth-child(2) {
+  width: 18%;
+}
+.lco-user-management .au-table th:nth-child(3) {
+  width: 24%;
+}
+.lco-user-management .au-table th:nth-child(4) {
+  width: 6%;
+}
+.lco-user-management .au-table th:nth-child(5) {
+  width: 7%;
+}
+.lco-user-management .au-table th:nth-child(6) {
+  width: 10%;
+}
+.lco-user-management .au-table th:nth-child(7) {
+  width: 9%;
+}
+.lco-user-management .au-table th:nth-child(8) {
+  width: 10%;
+}
+.lco-user-management .au-table th:nth-child(9) {
+  width: 7%;
+}
+@media (max-width: 1200px) {
+  .lco-user-management .user-management-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lco-user-management .user-management-search {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 640px) {
+  .lco-user-management .user-management-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.lco-user-management {
+  gap: 10px;
+}
+.lco-user-management .au-metrics {
+  gap: 10px;
+}
+.lco-user-management .au-metrics button {
+  padding: 12px;
+  gap: 12px;
+}
+.lco-user-management .user-management-toolbar {
+  gap: 8px;
+}
+.lco-user-management .au-table th,
+.lco-user-management .au-table td {
+  padding: 8px;
+  vertical-align: middle;
+}
+.lco-user-management .au-table td:nth-child(4),
+.lco-user-management .au-table td:nth-child(5) {
+  white-space: nowrap;
+}
+
+/* Keep short user fields together instead of stretching them across the page. */
+.lco-user-management .au-table table {
+  width: 1180px;
+  min-width: 1180px;
+  table-layout: fixed;
+}
+.lco-user-management .au-table th:nth-child(1) {
+  width: 100px;
+}
+.lco-user-management .au-table th:nth-child(2) {
+  width: 225px;
+}
+.lco-user-management .au-table th:nth-child(3) {
+  width: 265px;
+}
+.lco-user-management .au-table th:nth-child(4) {
+  width: 65px;
+}
+.lco-user-management .au-table th:nth-child(5) {
+  width: 75px;
+}
+.lco-user-management .au-table th:nth-child(6) {
+  width: 130px;
+}
+.lco-user-management .au-table th:nth-child(7) {
+  width: 105px;
+}
+.lco-user-management .au-table th:nth-child(8) {
+  width: 115px;
+}
+.lco-user-management .au-table th:nth-child(9) {
+  width: 100px;
+}
+
+.lco-tutor-verification .ad-table table {
+  width: 100%;
+  min-width: 1120px;
+  table-layout: fixed;
+}
+.lco-tutor-verification .ad-table th,
+.lco-tutor-verification .ad-table td {
+  padding: 12px 10px;
+  vertical-align: middle;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+.lco-tutor-verification .ad-table th:nth-child(1) {
+  width: 7%;
+}
+.lco-tutor-verification .ad-table th:nth-child(2) {
+  width: 17%;
+}
+.lco-tutor-verification .ad-table th:nth-child(3) {
+  width: 9%;
+}
+.lco-tutor-verification .ad-table th:nth-child(4) {
+  width: 23%;
+}
+.lco-tutor-verification .ad-table th:nth-child(5) {
+  width: 9%;
+}
+.lco-tutor-verification .ad-table th:nth-child(6) {
+  width: 9%;
+}
+.lco-tutor-verification .ad-table th:nth-child(7) {
+  width: 9%;
+}
+.lco-tutor-verification .ad-table th:nth-child(8) {
+  width: 9%;
+}
+.lco-tutor-verification .ad-table th:nth-child(9) {
+  width: 8%;
+}
+.lco-tutor-verification .ad-cards {
+  gap: 10px;
+}
+.lco-tutor-verification .ad-cards button {
+  padding: 14px;
+  gap: 12px;
+}
+.lco-tutor-verification .ad-toolbar {
+  gap: 10px;
+}
+
+.lco-service-management .service-management-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.lco-service-management .service-management-search {
+  display: flex;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+.lco-service-management .service-management-search > svg {
+  position: absolute;
+  left: 12px;
+  pointer-events: none;
+}
+.lco-service-management .service-management-search input {
+  width: 100%;
+  padding-left: 36px;
+}
+.lco-service-management .service-management-toolbar input,
+.lco-service-management .service-management-toolbar select,
+.lco-service-management .service-management-toolbar button {
+  min-height: 36px;
+}
+.lco-service-management .ad-table table {
+  width: 100%;
+  min-width: 1100px;
+  table-layout: fixed;
+}
+.lco-service-management .ad-table th,
+.lco-service-management .ad-table td {
+  padding: 12px 10px;
+  vertical-align: middle;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+.lco-service-management .ad-table th:nth-child(1) {
+  width: 5%;
+}
+.lco-service-management .ad-table th:nth-child(2) {
+  width: 15%;
+}
+.lco-service-management .ad-table th:nth-child(3) {
+  width: 14%;
+}
+.lco-service-management .ad-table th:nth-child(4) {
+  width: 14%;
+}
+.lco-service-management .ad-table th:nth-child(5) {
+  width: 14%;
+}
+.lco-service-management .ad-table th:nth-child(6) {
+  width: 8%;
+}
+.lco-service-management .ad-table th:nth-child(7) {
+  width: 8%;
+}
+.lco-service-management .ad-table th:nth-child(8) {
+  width: 8%;
+}
+.lco-service-management .ad-table th:nth-child(9) {
+  width: 14%;
+}
+.lco-service-management .ad-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.lco-service-management .ad-actions button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+/* Compact the service list to the available desktop width. */
+.lco-service-management .ad-table table {
+  min-width: 0;
+  width: 100%;
+}
+.lco-service-management .ad-table th,
+.lco-service-management .ad-table td {
+  padding: 7px 6px;
+  line-height: 1.35;
+}
+.lco-service-management .ad-cards {
+  gap: 8px;
+}
+.lco-service-management .ad-cards button {
+  padding: 10px;
+  gap: 10px;
+}
+.lco-service-management .ad-actions {
+  gap: 4px;
+}
+.lco-service-management .ad-actions button {
+  min-height: 25px;
+  padding: 4px 5px;
+  line-height: 1.25;
+  gap: 4px;
+}
+.lco-service-management .ad-actions button svg {
+  flex-shrink: 0;
+}
+.lco-service-management .ad-catalog-person {
+  gap: 6px;
+}
+.lco-service-management .service-management-toolbar {
+  gap: 8px;
+}
+.lco-service-management .service-management-toolbar input,
+.lco-service-management .service-management-toolbar select,
+.lco-service-management .service-management-toolbar button {
+  min-height: 32px;
+}
+@media (max-width: 767px) {
+  .lco-service-management .ad-table table {
+    min-width: 760px;
+  }
+}
+
+.ab-bookings .ab-monitoring-filters {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ab-bookings .ab-booking-search {
+  position: relative;
+  flex: 1 1 260px;
+}
+.ab-bookings .ab-booking-search > svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.ab-bookings .ab-booking-search input {
+  width: 100%;
+  padding-left: 36px;
+}
+.ab-bookings .ab-date-field {
+  display: grid;
+  gap: 5px;
+  flex: 0 1 150px;
+  min-width: 140px;
+  font-size: 11px;
+}
+.ab-bookings .ab-date-field input {
+  width: 100%;
+}
+.ab-bookings .ab-monitoring-filters > select {
+  width: auto;
+  flex: 1 1 145px;
+  min-width: 135px;
+}
+.ab-bookings .ab-monitoring-filters input,
+.ab-bookings .ab-monitoring-filters select,
+.ab-bookings .ab-monitoring-filters button {
+  height: 36px;
+}
+.ab-bookings .ab-reset-filters {
+  width: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ap-payments .ap-payment-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+.ap-payment-search {
+  position: relative;
+  flex: 1 1 260px;
+}
+.ap-payment-search > svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.ap-payment-search input {
+  width: 100%;
+  padding-left: 34px;
+}
+.ap-date-field {
+  display: grid;
+  gap: 4px;
+  flex: 0 1 145px;
+  font-size: 12px;
+}
+.ap-date-field input {
+  width: 100%;
+}
+.ap-payments .ap-payment-filters input,
+.ap-payments .ap-payment-filters select,
+.ap-payments .ap-payment-filters button {
+  min-height: 36px;
+}
+.ap-payout-account {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px 16px;
+  padding: 14px;
+  background: #f0f8f3;
+  border: 1px solid #d5e8dc;
+  border-radius: 10px;
+}
+.ap-payout-account dt {
+  color: #52657a;
+}
+.ap-payout-account dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Incident report list: direct actions and balanced columns. */
+.ai-incidents .ai-table table {
+  min-width: 1100px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.ai-incidents .ai-table th {
+  padding: 10px 8px;
+  font-size: 10px;
+}
+.ai-incidents .ai-table td {
+  padding: 10px 8px;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.ai-incidents .ai-table th:nth-child(1),
+.ai-incidents .ai-table th:nth-child(2) {
+  width: 5%;
+}
+.ai-incidents .ai-table th:nth-child(3),
+.ai-incidents .ai-table th:nth-child(4) {
+  width: 12%;
+}
+.ai-incidents .ai-table th:nth-child(5) {
+  width: 11%;
+}
+.ai-incidents .ai-table th:nth-child(6) {
+  width: 8%;
+}
+.ai-incidents .ai-table th:nth-child(7),
+.ai-incidents .ai-table th:nth-child(8) {
+  width: 10%;
+}
+.ai-incidents .ai-table th:last-child {
+  width: 27%;
+}
+.ai-incidents .ai-table .au-person {
+  font-size: 11px;
+  align-items: center;
+}
+.ai-incidents .ai-table .au-person > span {
+  flex-shrink: 0;
+}
+.ai-incidents .ai-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ai-incidents .ai-table .ai-report-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 6px 8px;
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  margin: 0;
+}
+.ai-incidents .ai-report-actions button svg {
+  flex-shrink: 0;
+}
+.ai-incidents .ai-table .ai-pill {
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.ai-table tr.lco-notification-target > td,
+.ad-page tr.lco-notification-target > td,
+tr.lco-notification-target > td {
+  background: #e5f5ea;
+  box-shadow:
+    inset 0 2px #16804a,
+    inset 0 -2px #16804a;
+}
+tr.lco-notification-target {
+  outline: 2px solid #16804a;
+  outline-offset: -2px;
 }
