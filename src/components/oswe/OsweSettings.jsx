@@ -1,4 +1,4 @@
-// OSAS Settings: keeps edits as a draft until Save Changes, then delegates to the OSAS Supabase RPC and refresh flow.
+// OSWE Settings: keeps edits as a draft until Save Changes, then delegates to the OSWE Supabase RPC and refresh flow.
 import PortalAvatar from "../shared/PortalAvatar.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import { useEffect, useState } from "react";
@@ -23,7 +23,7 @@ const notificationTypes = [
   "Policy Update",
 ];
 const descriptions = [
-  "a case is referred to OSAS",
+  "a case is referred to OSWE",
   "high-priority incidents",
   "new evidence is submitted",
   "student clearance requests",
@@ -43,7 +43,7 @@ export const defaultSettings = {
   showArchived: false,
   notifications: notificationTypes.map(() => ({ email: true, app: true })),
 };
-// Defaults initialize the form only; saved values are loaded from the OSAS
+// Defaults initialize the form only; saved values are loaded from the OSWE
 // dashboard snapshot and written through its database RPC.
 export function loadSettings() {
   return normalizeSettings(defaultSettings);
@@ -56,10 +56,10 @@ export function normalizeSettings(value = {}) {
   }));
   return next;
 }
-// Match notification records to the OSAS preference row before rendering the
+// Match notification records to the OSWE preference row before rendering the
 // shared in-app inbox. Email switches are saved as preferences, while actual
 // email delivery is handled by the institution's notification service.
-export function filterOsasNotifications(rows = [], settings = defaultSettings) {
+export function filterOsweNotifications(rows = [], settings = defaultSettings) {
   const enabled = settings.notifications || defaultSettings.notifications;
   return rows.filter((notification) => {
     const text =
@@ -81,7 +81,7 @@ export function filterOsasNotifications(rows = [], settings = defaultSettings) {
   });
 }
 
-export default function OsasSettings({ settings, onSave }) {
+export default function OsweSettings({ settings, onSave }) {
   const auth = useAuth();
   const [draft, setDraft] = useState(() => normalizeSettings(settings)),
     [notice, setNotice] = useState(""),
@@ -119,7 +119,7 @@ export default function OsasSettings({ settings, onSave }) {
     // its follow-up snapshot refresh both complete.
     try {
       await onSave(next);
-      setNotice("OSAS preferences saved to Supabase.");
+      setNotice("OSWE preferences saved to Supabase.");
     } catch (cause) {
       setError(cause.message);
     }
@@ -140,13 +140,13 @@ export default function OsasSettings({ settings, onSave }) {
   }
   return (
     <form onSubmit={save} className="os-settings">
-      <div className="osas-heading">
+      <div className="oswe-heading">
         <div>
           <h1>
             Settings <Settings size={22} className="text-green-800" />
           </h1>
           <p>
-            Manage your OSAS account, notification, and interface
+            Manage your OSWE account, notification, and interface
             preferences.
           </p>
         </div>
@@ -159,10 +159,10 @@ export default function OsasSettings({ settings, onSave }) {
         <section className="os-card">
           <h2>
             <UserRound />
-            1. OSAS Profile Information
+            1. OSWE Profile Information
           </h2>
           <div className="os-profile">
-            <PortalAvatar role="osas" editable />
+            <PortalAvatar role="oswe" editable />
             {locked(
               "Full Name",
               [auth?.profile?.first_name, auth?.profile?.last_name]
@@ -172,12 +172,12 @@ export default function OsasSettings({ settings, onSave }) {
             {locked("University Email", auth?.user?.email || "")}
           </div>
           <div className="os-fields">
-            {locked("Position / Role", "OSAS Case Officer")}
+            {locked("Position / Role", "OSWE Case Officer")}
             {locked(
               "Employee / Staff ID",
               auth?.profile?.student_id ||
                 (auth?.user?.id
-                  ? `OSAS-${auth.user.id.toUpperCase()}`
+                  ? `OSWE-${auth.user.id.toUpperCase()}`
                   : "Loading account ID…"),
               !auth?.profile?.student_id
                 ? "System-generated account identifier; not an official CSU employee number."
