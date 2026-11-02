@@ -1,4 +1,4 @@
-﻿.admin-incident-details {
+﻿.lco-incident-details {
   margin: auto;
   width: min(960px, 95vw);
   max-height: 92dvh;
@@ -9,15 +9,15 @@
   font-size: 12px;
   box-shadow: 0 24px 70px #0003;
 }
-.admin-incident-details::backdrop {
+.lco-incident-details::backdrop {
   background: #15231d70;
 }
-.admin-incident-details[open] {
+.lco-incident-details[open] {
   display: flex;
   flex-direction: column;
 }
-.admin-incident-details > header,
-.admin-incident-details > footer {
+.lco-incident-details > header,
+.lco-incident-details > footer {
   padding: 18px 24px;
   display: flex;
   align-items: center;
@@ -25,17 +25,17 @@
   gap: 12px;
   flex-shrink: 0;
 }
-.admin-incident-details > header {
+.lco-incident-details > header {
   border-bottom: 1px solid #e5e7eb;
 }
-.admin-incident-details h2 {
+.lco-incident-details h2 {
   font-size: 19px;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 7px;
 }
-.admin-incident-details header p {
+.lco-incident-details header p {
   color: #718096;
   margin-top: 5px;
 }
@@ -100,7 +100,7 @@
   flex-shrink: 0;
   color: #1671ed;
 }
-.admin-incident-details > footer {
+.lco-incident-details > footer {
   border-top: 1px solid #e5e7eb;
   justify-content: flex-end;
 }
@@ -139,12 +139,12 @@
   .aid-body dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .admin-incident-details > footer {
+  .lco-incident-details > footer {
     flex-wrap: wrap;
   }
   .aid-body,
-  .admin-incident-details > header,
-  .admin-incident-details > footer {
+  .lco-incident-details > header,
+  .lco-incident-details > footer {
     padding: 14px;
   }
 }
