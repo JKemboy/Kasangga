@@ -22,7 +22,7 @@ import {
   reportStage,
   reportNotice,
   reportActivity,
-  adminOnlyReport,
+  lcoOnlyReport,
   reportDate,
   caseClearanceText,
   caseConditions,
@@ -88,7 +88,7 @@ export function ReportDetails({ row, about, student, go, onClose }) {
     return <AboutCaseDetails row={row} student={student} onClose={onClose} />;
   const activities = reportActivity(row, about);
   const stage = reportStage(row, about);
-  const adminOnly = !about && adminOnlyReport(row);
+  const lcoOnly = !about && lcoOnlyReport(row);
   return (
     <Modal
       title={`${about ? "CASE" : "IR"}-${about ? row.case_id : row.report_id} · ${row.incident_type}`}
@@ -99,7 +99,7 @@ export function ReportDetails({ row, about, student, go, onClose }) {
       }
       headerAside={
         <span
-          className={`mr-detail-status ${stage === "Resolved" ? "is-resolved" : stage === "OSAS Review" ? "is-osas" : ""}`}
+          className={`mr-detail-status ${stage === "Resolved" ? "is-resolved" : stage === "OSWE Review" ? "is-osas" : ""}`}
         >
           {stage}
         </span>
@@ -147,20 +147,20 @@ export function ReportDetails({ row, about, student, go, onClose }) {
                   </dd>
                 </>
               )}
-              {!about && !adminOnly && (
+              {!about && !lcoOnly && (
                 <>
-                  <dt>OSAS case</dt>
+                  <dt>OSWE case</dt>
                   <dd>
                     {row.case?.case_id
                       ? `CASE-${row.case.case_id}`
-                      : "Awaiting OSAS assessment"}
+                      : "Awaiting OSWE assessment"}
                   </dd>
                 </>
               )}
               {about && (
                 <>
                   <dt>Case officer</dt>
-                  <dd>{row.officer || "OSAS"}</dd>
+                  <dd>{row.officer || "OSWE"}</dd>
                   <dt>Decision</dt>
                   <dd>
                     {row.decision?.outcome ||
@@ -193,9 +193,9 @@ export function ReportDetails({ row, about, student, go, onClose }) {
                     file={file}
                     reviewLabel={
                       !about
-                        ? adminOnly
-                          ? "For Admin review"
-                          : "For Admin and OSAS review"
+                        ? lcoOnly
+                          ? "For LCO review"
+                          : "For LCO and OSWE review"
                         : undefined
                     }
                   />
@@ -204,8 +204,8 @@ export function ReportDetails({ row, about, student, go, onClose }) {
             ) : (
               <p className="mr-box">
                 No files attached.
-                {adminOnly && row.session
-                  ? " Admin can still review the linked session records."
+                {lcoOnly && row.session
+                  ? " LCO can still review the linked session records."
                   : ""}
               </p>
             )}
@@ -339,7 +339,7 @@ export default function MyReports({ go, args = {} }) {
         <div>
           <h1>My Reports</h1>
           <p>
-            Reports you filed, and OSAS cases where you are the reported
+            Reports you filed, and OSWE cases where you are the reported
             student.
           </p>
         </div>
@@ -375,8 +375,8 @@ export default function MyReports({ go, args = {} }) {
       <p className="mr-info">
         <ShieldCheck size={14} />
         {about
-          ? "Cases about you appear here once a formal case is opened by OSAS. The reporter's identity and statement are handled by OSAS."
-          : "Admin reviews every report first. Conduct matters are referred to OSAS. You can track review status and completion; actions against another student remain confidential."}
+          ? "Cases about you appear here once a formal case is opened by OSWE. The reporter's identity and statement are handled by OSWE."
+          : "LCO reviews every report first. Conduct matters are referred to OSWE. You can track review status and completion; actions against another student remain confidential."}
       </p>
       <div className="mr-toolbar">
         <nav className="mr-tabs" aria-label="Report status">
@@ -452,7 +452,7 @@ export default function MyReports({ go, args = {} }) {
                       </h3>
                       <p>
                         {about && stage === "Clearance Blocked"
-                          ? `${row.incident_type}${row.decision?.at ? ` - decision recorded ${reportDate(row.decision.at)}` : ""} by OSAS${row.officer ? ` (${row.officer})` : ""}`
+                          ? `${row.incident_type}${row.decision?.at ? ` - decision recorded ${reportDate(row.decision.at)}` : ""} by OSWE${row.officer ? ` (${row.officer})` : ""}`
                           : about
                             ? `From report IR-${row.report_id} · case opened ${reportDate(row.opened_at)}`
                             : `IR-${row.report_id} · filed ${reportDate(row.submitted_at)} as ${row.filing_role}`}
@@ -503,7 +503,7 @@ export default function MyReports({ go, args = {} }) {
                     <p>
                       <Info size={13} />
                       {about && stage === "Clearance Blocked"
-                        ? `Questions? Visit the OSAS office${row.officer_email ? ` or email ${row.officer_email}` : ""}.`
+                        ? `Questions? Visit the OSWE office${row.officer_email ? ` or email ${row.officer_email}` : ""}.`
                         : reportNotice(row, about)}
                     </p>
                     <button
