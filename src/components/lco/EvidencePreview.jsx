@@ -1,6 +1,6 @@
 import { Panel } from "./UserDetails.jsx";
 import { button } from "../tutor/workspace/ui.jsx";
-import EvidenceFile from "../osas/EvidenceFile.jsx";
+import EvidenceFile from "../oswe/EvidenceFile.jsx";
 export default function EvidencePreview({ record, onClose }) {
   return (
     <Panel
