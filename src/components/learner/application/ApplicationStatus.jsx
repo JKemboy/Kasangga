@@ -46,7 +46,7 @@ export default function ApplicationStatus({
     application.status === "Resubmission Required"
       ? latestReview?.requestedChanges || []
       : [];
-  const adminFeedback =
+  const lcoFeedback =
     latestReview?.reason || application.rejectionReason || "";
   const hasDecision = [
     "Approved",
@@ -68,8 +68,8 @@ export default function ApplicationStatus({
   const decisionDetail = hasDecision
     ? `${application.status}${decisionDate !== "Not available" ? ` · ${decisionDate}` : ""}`
     : application.status === "Under Review"
-      ? "Admin review is in progress."
-      : "Waiting for an Admin decision.";
+      ? "LCO review is in progress."
+      : "Waiting for an LCO decision.";
   const required = DOCUMENTS.filter((d) => d.required);
   const processed = required.every(
     (d) => docs[d.id]?.storagePath && !docs[d.id]?.error,
@@ -85,7 +85,7 @@ export default function ApplicationStatus({
         Tutor Application Status
       </h1>
       <p className="ta-subtitle">
-        Tutor approval is decided by an authorized Kasangga Admin.
+        Tutor approval is decided by an authorized Kasangga LCO.
       </p>
       <div className="ta-status-grid">
         <section className="ta-status-card">
@@ -131,10 +131,10 @@ export default function ApplicationStatus({
                 processed,
               ],
               [
-                "Admin review",
+                "LCO review",
                 application.reviewed_at
                   ? date(application.reviewed_at)
-                  : "Waiting for an Admin decision",
+                  : "Waiting for an LCO decision",
                 !!application.reviewed_at || hasDecision,
               ],
               ["Decision", decisionDetail, hasDecision],
@@ -166,22 +166,22 @@ export default function ApplicationStatus({
               {application.status === "Approved"
                 ? "Your tutor application was approved. You can continue to view this application status from your profile."
                 : application.status === "Rejected"
-                  ? "Your tutor application was rejected. Review the Admin feedback below before starting a new application."
+                  ? "Your tutor application was rejected. Review the LCO feedback below before starting a new application."
                   : application.status === "Resubmission Required"
-                    ? "The Admin requested changes. Your current status and application remain available here while you prepare the requested updates."
-                    : "Your application is submitted to Kasangga for Admin review. You can keep using your Learner account while it is being reviewed."}
+                    ? "The LCO requested changes. Your current status and application remain available here while you prepare the requested updates."
+                    : "Your application is submitted to Kasangga for LCO review. You can keep using your Learner account while it is being reviewed."}
             </p>
           </div>
-          {(adminFeedback || requestedChanges.length > 0) && (
+          {(lcoFeedback || requestedChanges.length > 0) && (
             <div className="ta-notice blue">
               <Info size={21} />
               <div>
                 <strong>
                   {application.status === "Rejected"
-                    ? "Admin feedback"
+                    ? "LCO feedback"
                     : "Changes requested"}
                 </strong>
-                {adminFeedback && <p>{adminFeedback}</p>}
+                {lcoFeedback && <p>{lcoFeedback}</p>}
                 {!!requestedChanges.length && (
                   <>
                     <p>Please resubmit or correct the following:</p>
@@ -271,7 +271,7 @@ export default function ApplicationStatus({
                             : "JPG image"}
                       </span>
                       <span className="ta-status-pill warning">
-                        Manual Review by Admin
+                        Manual Review by LCO
                       </span>
                       {docs[d.id].error && (
                         <p className="ta-muted">{docs[d.id].error}</p>

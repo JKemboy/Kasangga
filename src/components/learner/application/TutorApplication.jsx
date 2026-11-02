@@ -41,7 +41,7 @@ const STEPS = [
   "Review & Submit",
 ];
 const learnerReviewLabel = (status) =>
-  status === "Needs Manual Review" ? "Manual Review by Admin" : status;
+  status === "Needs Manual Review" ? "Manual Review by LCO" : status;
 export default function TutorApplication({ onClose }) {
   const work = useLearnerWorkspace();
   const auth = useAuth();
@@ -384,7 +384,7 @@ export default function TutorApplication({ onClose }) {
       const submitted = await loadMyTutorApplication(auth.user.id);
       if (!submitted || submitted.id !== saved.id)
         throw new Error(
-          "The application was submitted, but could not be reloaded from Supabase. Refresh your profile or contact an administrator before submitting again.",
+          "The application was submitted, but could not be reloaded from Supabase. Refresh your profile or contact an LCO before submitting again.",
         );
       setApplicationId(saved.id);
       setDraft(submitted);
@@ -510,10 +510,10 @@ export default function TutorApplication({ onClose }) {
               <div className="ta-ocr-result" role="status">
                 <header>
                   <strong>Document verification</strong>
-                  <span className="ta-ocr-status">Manual Review by Admin</span>
+                  <span className="ta-ocr-status">Manual Review by LCO</span>
                 </header>
                 <p>
-                  Your document was uploaded. An Admin will review the original
+                  Your document was uploaded. An LCO will review the original
                   file manually.
                 </p>
               </div>
@@ -538,12 +538,12 @@ export default function TutorApplication({ onClose }) {
                     {documentChecks[doc.id].checks.some(
                       (item) => item.status === "Not Matched",
                     )
-                      ? "Potential mismatch — Admin must review"
+                      ? "Potential mismatch — LCO must review"
                       : documentChecks[doc.id].checks.every(
                             (item) => item.status === "Matched",
                           )
-                        ? "Information Match — Admin must review"
-                        : "Manual Review by Admin"}
+                        ? "Information Match — LCO must review"
+                        : "Manual Review by LCO"}
                   </span>
                 </header>
                 <div className="ta-ocr-table">
@@ -692,7 +692,7 @@ export default function TutorApplication({ onClose }) {
             ["Current status", draft.status],
           ])}
           <p>
-            Your tutor application and documents have been submitted for Admin
+            Your tutor application and documents have been submitted for LCO
             review. Tutor access is added after approval.
           </p>
           <footer>
@@ -713,7 +713,7 @@ export default function TutorApplication({ onClose }) {
         <>
           <h1>Apply as Tutor</h1>
           <p className="ta-subtitle">
-            An authorized Kasangga Admin reviews your application before Tutor
+            An authorized Kasangga LCO reviews your application before Tutor
             capability is added to your account.
           </p>
           <div className="ta-card">
@@ -914,7 +914,7 @@ export default function TutorApplication({ onClose }) {
                       </div>
                       <h3>Payout Details</h3>
                       <p className="ta-muted">
-                        Use your own registered GCash account for Admin payout
+                        Use your own registered GCash account for LCO payout
                         reference. This does not enable automatic transfers.
                         Payout details are not shown on public tutor cards.
                       </p>
@@ -977,7 +977,7 @@ export default function TutorApplication({ onClose }) {
                       <p className="ta-muted">
                         {draft.status === "Resubmission Required"
                           ? "Your previously submitted documents are listed below. Keep them as-is or replace the files that need correction."
-                          : "Upload documents for an authorized Admin to review. Each file is stored in your private applicant folder."}
+                          : "Upload documents for an authorized LCO to review. Each file is stored in your private applicant folder."}
                       </p>
                       {draft.status === "Resubmission Required" &&
                         (resubmissionRequest?.reason ||
@@ -986,7 +986,7 @@ export default function TutorApplication({ onClose }) {
                           <div className="ta-notice ta-resubmission-request">
                             <Info size={22} />
                             <div>
-                              <strong>Admin requested these updates</strong>
+                              <strong>LCO requested these updates</strong>
                               {resubmissionRequest.reason && (
                                 <p>{resubmissionRequest.reason}</p>
                               )}
@@ -1019,7 +1019,7 @@ export default function TutorApplication({ onClose }) {
                         <Info size={22} />
                         <p>
                           Documents require manual review by an authorized
-                          Admin.
+                          LCO.
                         </p>
                       </div>
                     </>
@@ -1072,7 +1072,7 @@ export default function TutorApplication({ onClose }) {
                       </label>
                       <p className="ta-muted">
                         Your application and uploaded documents will be
-                        submitted to Kasangga for Admin review.
+                        submitted to Kasangga for LCO review.
                       </p>
                     </>
                   )}

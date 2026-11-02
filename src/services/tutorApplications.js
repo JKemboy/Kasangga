@@ -168,13 +168,13 @@ export async function loadTutorApplications(client = getSupabaseClient()) {
     .from("user_roles")
     .select("role")
     .eq("user_id", user.id)
-    .eq("role", "admin")
+    .eq("role", "lco")
     .eq("is_active", true);
   if (roleError)
-    throw new Error(`Could not verify admin access: ${roleError.message}`);
+    throw new Error(`Could not verify LCO access: ${roleError.message}`);
   if (!roles?.length)
     throw new Error(
-      "Active admin account required to review tutor applications.",
+      "Active LCO account required to review tutor applications.",
     );
 
   const { data, error } = await client
@@ -217,18 +217,18 @@ export async function saveTutorApplicationReview(
   status = null,
   client = getSupabaseClient(),
 ) {
-  const admin = await requireSessionUser(null, client);
+  const lco = await requireSessionUser(null, client);
   const { data: roles, error: roleError } = await client
     .from("user_roles")
     .select("role")
-    .eq("user_id", admin.id)
-    .eq("role", "admin")
+    .eq("user_id", lco.id)
+    .eq("role", "lco")
     .eq("is_active", true);
   if (roleError)
-    throw new Error(`Could not verify admin access: ${roleError.message}`);
+    throw new Error(`Could not verify LCO access: ${roleError.message}`);
   if (!roles?.length)
     throw new Error(
-      "Active admin account required to review tutor applications.",
+      "Active LCO account required to review tutor applications.",
     );
   const nextStatus = statusValues[status] || null;
   const latestHistory = application.history?.at(-1) || {};

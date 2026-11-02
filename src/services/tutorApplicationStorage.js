@@ -98,7 +98,7 @@ export async function downloadTutorApplicationDocument(
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
+      .eq("role", "lco")
       .eq("is_active", true);
     if (roleError)
       throw new Error(`Could not verify document access: ${roleError.message}`);
