@@ -4,7 +4,7 @@ const normalize = (value) =>
     .replace(/[_-]/g, " ")
     .trim();
 
-export function matchesAdminTransaction(record, filter, transferred = []) {
+export function matchesLcoTransaction(record, filter, transferred = []) {
   if (!filter) return true;
   const payment = normalize(record.paymentStatus || record.payment);
   const refund = normalize(record.refundStatus);
