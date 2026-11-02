@@ -1,3 +1,4 @@
+import { normalizeAllocation } from "./paymentAllocation.js";
 import { configDefaults } from "../components/lco/lcoData.js";
 import { sessionLifecycle } from "./sessionLifecycle.js";
 import { sessionAllocation } from "../components/tutor/workspace/earnings.js";
@@ -63,12 +64,17 @@ const modules = {
 };
 const amount = (value) => Number(value || 0);
 export function paymentAllocation(payment) {
-  if (payment.allocation) return payment.allocation;
+  if (payment.allocation)
+    return {
+      ...normalizeAllocation(payment.allocation, payment.amount),
+      source: payment.allocation.source,
+    };
   if (payment.paymentStatus !== "paid")
     return {
       gross: payment.amount,
       tutor: 0,
-      osas: 0,
+      admin: 0,
+      maintenance: 0,
       platform: 0,
       source: "Not allocated",
     };
@@ -78,7 +84,7 @@ export function paymentAllocation(payment) {
       status: "Completed",
       payment: "Paid",
     }),
-    source: "Estimated 90/5/5 split",
+    source: "Estimated 90% tutor / 10% platform split",
   };
 }
 export function summarizePayments(payments, { completedOnly = false } = {}) {
@@ -86,7 +92,8 @@ export function summarizePayments(payments, { completedOnly = false } = {}) {
     count: 0,
     gross: 0,
     tutor: 0,
-    osas: 0,
+    admin: 0,
+    maintenance: 0,
     platform: 0,
     estimated: false,
   };
@@ -99,11 +106,11 @@ export function summarizePayments(payments, { completedOnly = false } = {}) {
       continue;
     totals.count++;
     const allocation = paymentAllocation(payment);
-    for (const field of ["gross", "tutor", "osas", "platform"])
+    for (const field of ["gross", "tutor", "admin", "maintenance", "platform"])
       totals[field] += Math.round(allocation[field] * 100);
     totals.estimated ||= allocation.source !== "Recorded allocation";
   }
-  for (const field of ["gross", "tutor", "osas", "platform"])
+  for (const field of ["gross", "tutor", "admin", "maintenance", "platform"])
     totals[field] /= 100;
   return totals;
 }
@@ -364,12 +371,16 @@ export function mapLcoDatabase(input, now = new Date()) {
           (total, a) => ({
             gross: amount(p.gross_amount),
             tutor: total.tutor + amount(a.tutor_amount),
-            osas: total.osas + amount(a.osas_amount),
-            platform: total.platform + amount(a.platform_amount),
+            admin: total.admin + amount(a.osas_amount),
+            maintenance: total.maintenance + amount(a.platform_amount),
+            platform:
+              total.platform +
+              amount(a.osas_amount) +
+              amount(a.platform_amount),
             processingFee: total.processingFee + amount(a.processing_fee),
             source: "Recorded allocation",
           }),
-          { tutor: 0, osas: 0, platform: 0, processingFee: 0 },
+          { tutor: 0, admin: 0, maintenance: 0, platform: 0, processingFee: 0 },
         )
       : null;
     const reviews = history("refunds", refund?.refund_id),

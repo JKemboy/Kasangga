@@ -270,8 +270,9 @@ export function mapOsweRecords(db) {
     allocation: {
       gross: Number(s.amount),
       tutor: Number(s.tutor),
-      osas: Number(s.osas),
-      platform: Number(s.platform),
+      admin: Number(s.oswe ?? s.osas ?? 0),
+      maintenance: Number(s.platform || 0),
+      platform: Number(s.platform || 0) + Number(s.oswe ?? s.osas ?? 0),
     },
   }));
   const time = (value) => {
