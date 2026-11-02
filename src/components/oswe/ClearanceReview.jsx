@@ -1,6 +1,6 @@
 // Student Clearance Review dialog: derives enabled decisions from relevant database cases and saves an authorized decision through its parent.
 import { statusClass } from "../shared/statusColors.js";
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { useState, useRef, useEffect } from "react";
 import { X } from "lucide-react";
 import { button, primary, input } from "../tutor/workspace/ui.jsx";
@@ -15,7 +15,7 @@ export default function ClearanceReview({ record: r, onSave, onClose }) {
     d.showModal();
     return () => d.close();
   }, []);
-  const database = useOsasDatabase();
+  const database = useOsweDatabase();
   const cases = database.records?.cases || [];
   const initialRecords = database.records?.archive || [];
   const [linked, setLinked] = useState(null),
