@@ -1,8 +1,8 @@
 export const configDefaults = {
-  name: "Administrator",
+  name: "LCO",
   email: "",
   contact: "",
-  position: "System Administrator",
+  position: "System LCO",
   department: "Information Technology Services",
   emailVerification: true,
   twoFactor: true,
