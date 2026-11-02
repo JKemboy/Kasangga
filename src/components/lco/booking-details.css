@@ -23,7 +23,7 @@
   color: #718096;
   margin-top: 8px;
 }
-.admin-booking-details footer > .abd-muted {
+.lco-booking-details footer > .abd-muted {
   display: flex;
   gap: 5px;
   align-items: center;
@@ -49,7 +49,7 @@
   color: #718096;
   margin-top: 5px;
 }
-.admin-booking-details footer {
+.lco-booking-details footer {
   flex-wrap: wrap;
 }
 html dialog.workspace-modal.refund-transfer-modal {
