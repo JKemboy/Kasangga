@@ -147,7 +147,8 @@ export default function LcoPayments({
         "Tutor",
         "Gross Amount",
         "Original Tutor Share",
-        "Original OSWE Share",
+        "Original Admin Share (5%)",
+        "Maintenance Share (5%)",
         "Original Platform Share",
         "Payment Method",
         "Payment Status",
@@ -162,7 +163,8 @@ export default function LcoPayments({
           r.tutor,
           r.amount,
           a.tutor,
-          a.osas,
+          a.admin,
+          a.maintenance,
           a.platform,
           r.method,
           r.payment,
@@ -224,8 +226,8 @@ export default function LcoPayments({
           ],
           [
             Landmark,
-            "OSWE Share",
-            money(totals.osas),
+            "Admin Share (5%)",
+            money(totals.admin),
             "Institutional allocation",
           ],
           [
@@ -381,7 +383,7 @@ export default function LcoPayments({
                   "Tutor",
                   "Gross Amount",
                   "Tutor Share",
-                  "OSWE Share",
+                  "Admin Share (5%)",
                   "Platform Share",
                   "Payment Method",
                   "Payment Status",
@@ -414,7 +416,12 @@ export default function LcoPayments({
                     </td>
                     <td>{money(r.amount)}</td>
                     <td>{money(a.tutor)}</td>
-                    <td>{money(a.osas)}</td>
+                    <td>
+                      {money(a.admin)}
+                      <small className="block text-slate-500">
+                        Maintenance: {money(a.maintenance)}
+                      </small>
+                    </td>
                     <td>{money(a.platform)}</td>
                     <td>{r.method}</td>
                     <td>
