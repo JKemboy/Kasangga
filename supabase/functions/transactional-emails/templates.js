@@ -43,7 +43,7 @@ export function emailContent(job, appUrl) {
     session_reminder:
       "Your tutoring session starts in approximately 24 hours. Please check My Sessions for the latest details.",
     payment_transferred:
-      "Admin has marked your session payment as transferred. Check Earnings for the transfer details.",
+      "LCO has marked your session payment as transferred. Check Earnings for the transfer details.",
   }[job.kind];
   const amount =
     p.amount == null
