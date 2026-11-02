@@ -3,7 +3,7 @@ import EvidencePreview from "./EvidencePreview.jsx";
 import { useEffect, useRef, useState } from "react";
 import { X, Info, Check, Users } from "lucide-react";
 import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
-import { dateLabel } from "./adminData.js";
+import { dateLabel } from "./lcoData.js";
 import { reviewIncident } from "./incidentData.js";
 import "./incident-details.css";
 
@@ -25,10 +25,10 @@ export default function IncidentDetails({
     r.type,
   );
   const complete = [
-    "Admin Screening Complete",
-    "Resolved by Admin",
-    "Resolved by OSAS",
-    "Under OSAS Review",
+    "LCO Screening Complete",
+    "Resolved by LCO",
+    "Resolved by OSWE",
+    "Under OSWE Review",
   ].includes(r.status);
   useEffect(() => {
     const dialog = ref.current;
@@ -48,7 +48,7 @@ export default function IncidentDetails({
     setSaving(true);
     try {
       const next = reviewIncident(r, action, notes);
-      if (action === "Referred to OSAS" && !confirmReferral) {
+      if (action === "Referred to OSWE" && !confirmReferral) {
         setConfirmReferral(true);
         return;
       }
@@ -99,26 +99,26 @@ export default function IncidentDetails({
     ["Reported User", r.reported],
     ["Priority", pill(r.priority)],
     ["Submitted Date", dateLabel(r.date)],
-    ["Admin Status", pill(r.status)],
-    ["OSAS Referral Status", pill(r.referral)],
-    ...(r.osasCaseId
+    ["LCO Status", pill(r.status)],
+    ["OSWE Referral Status", pill(r.referral)],
+    ...(r.osweCaseId
       ? [
-          ["OSAS Case", r.osasCaseId],
-          ["OSAS Case Status", r.osasStatus],
+          ["OSWE Case", r.osweCaseId],
+          ["OSWE Case Status", r.osweStatus],
         ]
       : []),
-    ...(r.osasOutcome
+    ...(r.osweOutcome
       ? [
-          ["OSAS Decision", r.osasOutcome],
-          ["Decision Notes", r.osasNotes],
-          ["Policy Basis", r.osasBasis || "Not recorded"],
+          ["OSWE Decision", r.osweOutcome],
+          ["Decision Notes", r.osweNotes],
+          ["Policy Basis", r.osweBasis || "Not recorded"],
         ]
       : []),
   ];
   return (
     <dialog
       ref={ref}
-      className="admin-incident-details"
+      className="lco-incident-details"
       aria-labelledby="incident-details-title"
       onCancel={onClose}
       onClick={(e) => {
@@ -179,22 +179,22 @@ export default function IncidentDetails({
           <Info size={21} />
           <p>
             {technical
-              ? "This is a platform or technical issue. Admin can resolve it and record what was done."
-              : "Conduct concerns are referred to OSAS for institutional review."}
+              ? "This is a platform or technical issue. LCO can resolve it and record what was done."
+              : "Conduct concerns are referred to OSWE for institutional review."}
           </p>
         </div>
-        {r.referral === "Referred to OSAS" && (
+        {r.referral === "Referred to OSWE" && (
           <div className="aid-info !bg-purple-50">
             <div>
-              <h3>Referred to OSAS</h3>
+              <h3>Referred to OSWE</h3>
               <p>
                 {[...(r.history || [])]
                   .reverse()
-                  .find((h) => h.action === "Referred to OSAS")?.notes ||
+                  .find((h) => h.action === "Referred to OSWE")?.notes ||
                   "Referred for institutional assessment. Referral notes are not available in this database record."}
               </p>
               <small>
-                OSAS assesses the matter. Admin has no disciplinary controls.
+                OSWE assesses the matter. LCO has no disciplinary controls.
               </small>
             </div>
           </div>
@@ -220,17 +220,17 @@ export default function IncidentDetails({
       </div>
       <footer>
         {complete ? (
-          <p>Completed Admin review · {r.status}</p>
+          <p>Completed LCO review · {r.status}</p>
         ) : (
           <>
-            <button className={button} onClick={() => open("Referred to OSAS")}>
+            <button className={button} onClick={() => open("Referred to OSWE")}>
               <Users size={15} />
-              Refer to OSAS
+              Refer to OSWE
             </button>
             {technical && (
               <button
                 className={primary}
-                onClick={() => open("Resolved by Admin")}
+                onClick={() => open("Resolved by LCO")}
               >
                 <Check size={15} />
                 Handle Platform/Technical Issue
@@ -242,9 +242,9 @@ export default function IncidentDetails({
       {action && (
         <Modal
           title={
-            action === "Resolved by Admin"
+            action === "Resolved by LCO"
               ? "Handle Platform/Technical Issue"
-              : "Refer to OSAS"
+              : "Refer to OSWE"
           }
           subtitle={`${r.id} · ${r.issue}`}
           onClose={() => setAction("")}
@@ -253,15 +253,15 @@ export default function IncidentDetails({
             <div className="aid-info">
               <Info size={21} />
               <p>
-                {action === "Resolved by Admin"
-                  ? "Resolve only platform or technical issues. Conduct concerns go to OSAS. Participants arrange any session rescheduling."
-                  : "A referral does not establish misconduct. OSAS assesses whether a formal case is needed. The referral status is saved in the database."}
+                {action === "Resolved by LCO"
+                  ? "Resolve only platform or technical issues. Conduct concerns go to OSWE. Participants arrange any session rescheduling."
+                  : "A referral does not establish misconduct. OSWE assesses whether a formal case is needed. The referral status is saved in the database."}
               </p>
             </div>
             <label htmlFor="incident-resolution">
-              {action === "Resolved by Admin"
+              {action === "Resolved by LCO"
                 ? "What was done (required)"
-                : "Referral note for OSAS (required)"}
+                : "Referral note for OSWE (required)"}
             </label>
             <textarea
               id="incident-resolution"
@@ -275,14 +275,14 @@ export default function IncidentDetails({
                 setConfirmReferral(false);
               }}
               placeholder={
-                action === "Resolved by Admin"
+                action === "Resolved by LCO"
                   ? "Describe the steps taken to resolve this issue."
                   : "Describe the concern requiring institutional review."
               }
             />
             {confirmReferral && (
               <p className="aid-info">
-                Confirm this database referral to OSAS. No external notification
+                Confirm this database referral to OSWE. No external notification
                 will be sent.
               </p>
             )}
@@ -307,7 +307,7 @@ export default function IncidentDetails({
                 className={primary}
                 disabled={saving || notes.trim().length < 15}
               >
-                {action === "Resolved by Admin"
+                {action === "Resolved by LCO"
                   ? "Mark Resolved"
                   : confirmReferral
                     ? "Confirm Referral"
