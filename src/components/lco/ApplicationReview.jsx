@@ -13,13 +13,22 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import { button, primary, input } from "../tutor/workspace/ui.jsx";
-import { dateLabel } from "./adminData.js";
+import { dateLabel } from "./lcoData.js";
 import {
   analyzeTutorCredential,
+  extractTutorCredentialFields,
   readTutorCredential,
 } from "../../services/tutorCredentialVerification.js";
 import { DOCUMENTS } from "../learner/application/applicationRules.js";
 import "./application-review.css";
+
+const documentLabel = (kind) => {
+  if (/^student.?id$/i.test(kind)) return "Student ID";
+  if (kind === "enrollment") return "COR";
+  if (kind === "grades") return "Academic Record";
+  if (/^awards(?:_|$)/i.test(kind)) return "Awards";
+  return DOCUMENTS.find((item) => item.id === kind)?.title || "Document";
+};
 
 export default function ApplicationReview({
   application: r,
@@ -89,7 +98,7 @@ export default function ApplicationReview({
                 to: status,
                 reason: notes.trim(),
                 at: new Date().toISOString(),
-                by: "Admin User",
+                by: "LCO User",
               },
             ],
           }
@@ -150,7 +159,7 @@ export default function ApplicationReview({
     setLocalVerificationState(next);
     onVerificationUpdate?.(next);
     setOcrMessage(
-      "Information match confirmed by Admin. You may now approve after reviewing the original documents.",
+      "Information match confirmed by LCO. You may now approve after reviewing the original documents.",
     );
   }
   async function verifyAllDocuments() {
@@ -200,6 +209,16 @@ export default function ApplicationReview({
             ...previous,
             [key]: {
               ...verification,
+              fields: extractTutorCredentialFields(
+                doc.documentType || kind,
+                extracted.text,
+                {
+                  name: r.name || account?.name,
+                  studentId: r.studentId || account?.studentId,
+                  program: r.program || account?.program,
+                },
+              ),
+              confidence: extracted.confidence,
               pagesRead: extracted.pagesRead,
               totalPages: extracted.totalPages,
               truncated: extracted.truncated,
@@ -245,9 +264,9 @@ export default function ApplicationReview({
             {
               from: r.status,
               to: "Under Review",
-              reason: "Document checks completed. Awaiting Admin decision.",
+              reason: "Document checks completed. Awaiting LCO decision.",
               at,
-              by: "Admin User",
+              by: "LCO User",
             },
           ],
         };
@@ -317,7 +336,7 @@ export default function ApplicationReview({
   return (
     <dialog
       ref={ref}
-      className="admin-application-review"
+      className="lco-application-review"
       aria-labelledby="application-review-title"
       onCancel={onClose}
       onClick={(e) => {
@@ -353,43 +372,29 @@ export default function ApplicationReview({
         <div className="aar-columns">
           <section>
             <h3>Documents</h3>
-            {!final && (
-              <div className="my-3 space-y-2 rounded-lg border bg-green-50 p-3 text-xs">
-                <h4 className="font-semibold">Manual document review</h4>
-                <p>
-                  Open the original COR and grade evidence below, then mark each
-                  as reviewed. OCR is optional for manual approval.
-                </p>
-                {[
-                  [
-                    "identityConfirmed",
-                    "Applicant identity and student information match the documents.",
-                  ],
-                  [
-                    "currentEnrollment",
-                    "COR confirms enrollment for the current semester.",
-                  ],
-                  [
-                    "gradesRelevant",
-                    "Grade evidence supports the listed subject expertise.",
-                  ],
-                ].map(([key, label]) => (
-                  <label key={key} className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      checked={!!manual[key]}
-                      disabled={busy}
-                      onChange={(e) => updateManual(key, e.target.checked)}
-                    />
-                    {label}
-                  </label>
-                ))}
-                <p>
-                  Add at least 15 characters of Admin Notes explaining your
-                  review. Complete both required document reviews before
-                  approval.
-                </p>
-              </div>
+            {docs.length ? (
+              docs.map(([kind, doc]) => (
+                <div className="aar-document" key={kind}>
+                  <FileText size={24} />
+                  <div>
+                    <strong>{documentLabel(kind)}</strong>
+                    {ocrErrors[`${kind}:${doc.storagePath}`] && (
+                      <p className="text-red-700" role="alert">
+                        {ocrErrors[`${kind}:${doc.storagePath}`]}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    className={button}
+                    onClick={() => setViewingDocument({ kind, doc })}
+                  >
+                    <Eye size={14} />
+                    View
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p>No documents uploaded.</p>
             )}
             {!!docs.length && (
               <div className="aar-ocr-batch">
@@ -446,111 +451,41 @@ export default function ApplicationReview({
                 )}
               </div>
             )}
-            {docs.length ? (
-              docs.map(([kind, doc]) => (
-                <div className="aar-document" key={kind}>
-                  <FileText size={24} />
-                  <div>
-                    <strong>{doc.name}</strong>
-                    <p>
-                      {kind} ·{" "}
-                      {r.status === "Approved"
-                        ? "Accepted in approved application"
-                        : ocrResults[`${kind}:${doc.storagePath}`]
-                          ? "Complete"
-                          : ocrErrors[`${kind}:${doc.storagePath}`]
-                            ? "Incomplete"
-                            : doc.state || "Pending Review"}
-                    </p>
-                    <button
-                      className={button}
-                      onClick={() => setViewingDocument({ kind, doc })}
-                    >
-                      <Eye size={14} />
-                      View document
-                    </button>
-                    {!final &&
-                      DOCUMENTS.some(
-                        (item) => item.id === kind && item.required,
-                      ) && (
-                        <label className="mt-2 flex items-start gap-2 text-xs">
-                          <input
-                            type="checkbox"
-                            disabled={
-                              busy ||
-                              (!openedPaths.includes(doc.storagePath) &&
-                                !manual.reviewedPaths?.includes(
-                                  doc.storagePath,
-                                ))
-                            }
-                            checked={
-                              !!manual.reviewedPaths?.includes(doc.storagePath)
-                            }
-                            onChange={(e) =>
-                              updateManual(
-                                "reviewedPaths",
-                                e.target.checked
-                                  ? [
-                                      ...new Set([
-                                        ...(manual.reviewedPaths || []),
-                                        doc.storagePath,
-                                      ]),
-                                    ]
-                                  : (manual.reviewedPaths || []).filter(
-                                      (path) => path !== doc.storagePath,
-                                    ),
-                              )
-                            }
-                          />
-                          I reviewed this original document.
-                        </label>
-                      )}
-                    {ocrErrors[`${kind}:${doc.storagePath}`] && (
-                      <p className="text-red-700" role="alert">
-                        {ocrErrors[`${kind}:${doc.storagePath}`]}
-                      </p>
-                    )}
-                    {ocrResults[`${kind}:${doc.storagePath}`] && (
-                      <div className="aar-ocr-result">
-                        <strong>
-                          {ocrResults[`${kind}:${doc.storagePath}`].summary}
-                        </strong>
-                        {ocrResults[`${kind}:${doc.storagePath}`].truncated && (
-                          <p role="status">
-                            OCR read the first{" "}
-                            {ocrResults[`${kind}:${doc.storagePath}`].pagesRead}{" "}
-                            of{" "}
-                            {
-                              ocrResults[`${kind}:${doc.storagePath}`]
-                                .totalPages
-                            }{" "}
-                            PDF pages. Review the remaining pages manually.
-                          </p>
-                        )}
-                        <ul>
-                          {ocrResults[`${kind}:${doc.storagePath}`].checks.map(
-                            (item) => (
-                              <li key={item.label}>
-                                <span>{item.label}</span>
-                                {pill(item.status)}
-                                <small>{item.detail}</small>
-                              </li>
-                            ),
-                          )}
-                        </ul>
-
-                        <p>
-                          OCR and pattern matches are decision support only;
-                          Admin must inspect the original document.
-                        </p>
-                      </div>
-                    )}
+            <h3>OCR confidence</h3>
+            {(() => {
+              const measured = Object.values(ocrResults)
+                .map((result) => result.confidence)
+                .filter(Number.isFinite);
+              const confidence = measured.length
+                ? measured.reduce((sum, value) => sum + value, 0) /
+                  measured.length
+                : null;
+              return (
+                <div className="aar-confidence-panel">
+                  <div
+                    className="aar-meter"
+                    role="progressbar"
+                    aria-label="Document OCR confidence"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={
+                      confidence == null ? undefined : Math.round(confidence)
+                    }
+                  >
+                    <div style={{ width: (confidence ?? 0) + "%" }} />
                   </div>
+                  <p className="aar-muted">
+                    {confidence == null
+                      ? "Run document checks to measure OCR confidence."
+                      : Math.round(confidence) + "% document OCR confidence"}
+                  </p>
+                  <p className="aar-muted">
+                    OCR is decision support only; it does not prove a document
+                    is authentic.
+                  </p>
                 </div>
-              ))
-            ) : (
-              <p>No documents uploaded.</p>
-            )}
+              );
+            })()}
             <h3>Data / Regex match</h3>
             <table>
               <tbody>
@@ -580,12 +515,146 @@ export default function ApplicationReview({
               </tbody>
             </table>
           </section>
-          <section>
-            <label htmlFor="application-admin-notes">
-              <strong>Admin Notes</strong>
+          <section className="aar-review-summary">
+            <h3>Extracted information vs student record</h3>
+            {!Object.values(ocrResults).some(
+              (result) => result.fields?.length,
+            ) && (
+              <p className="aar-muted">
+                Run document checks to compare extracted information with the
+                student record. Review the original files before making a
+                decision.
+              </p>
+            )}
+            {docs.map(([kind, doc]) => {
+              const result = ocrResults[`${kind}:${doc.storagePath}`];
+              if (!result?.fields?.length) return null;
+              return (
+                <div className="aar-comparison" key={kind}>
+                  <h4>{doc.name}</h4>
+                  <div className="aar-comparison-scroll">
+                    <table aria-label={doc.name + " extracted information"}>
+                      <thead>
+                        <tr>
+                          {["Field", "Extracted (OCR)", "Record", "Result"].map(
+                            (label) => (
+                              <th key={label} scope="col">
+                                {label}
+                              </th>
+                            ),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {result.fields.map((field) => (
+                          <tr key={field.field}>
+                            <th scope="row">{field.field}</th>
+                            <td>{field.extracted}</td>
+                            <td>{field.comparedWith}</td>
+                            <td>{pill(field.status)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {Number.isFinite(result.confidence) && (
+                    <p className="aar-muted">
+                      Document OCR confidence: {Math.round(result.confidence)}%.
+                      Confidence is decision support, not proof of authenticity.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+            <div className="aar-match">
+              <strong>Information Match</strong>
+              {pill(
+                currentVerificationState?.matchConfirmed
+                  ? "Matched"
+                  : "Needs review",
+              )}
+            </div>
+            {!final && (
+              <details className="aar-manual-checklist">
+                <summary>Manual document review</summary>
+                <p>
+                  Open the original COR and grade evidence below, then mark each
+                  as reviewed. OCR is optional for manual approval.
+                </p>
+                {docs
+                  .filter(([kind]) =>
+                    DOCUMENTS.some((item) => item.id === kind && item.required),
+                  )
+                  .map(([kind, doc]) => (
+                    <label
+                      key={kind}
+                      className="mt-2 flex items-start gap-2 text-xs"
+                    >
+                      <input
+                        type="checkbox"
+                        disabled={
+                          busy ||
+                          (!openedPaths.includes(doc.storagePath) &&
+                            !manual.reviewedPaths?.includes(doc.storagePath))
+                        }
+                        checked={
+                          !!manual.reviewedPaths?.includes(doc.storagePath)
+                        }
+                        onChange={(e) =>
+                          updateManual(
+                            "reviewedPaths",
+                            e.target.checked
+                              ? [
+                                  ...new Set([
+                                    ...(manual.reviewedPaths || []),
+                                    doc.storagePath,
+                                  ]),
+                                ]
+                              : (manual.reviewedPaths || []).filter(
+                                  (path) => path !== doc.storagePath,
+                                ),
+                          )
+                        }
+                      />
+                      I reviewed the original {documentLabel(kind)} document.
+                    </label>
+                  ))}
+                {[
+                  [
+                    "identityConfirmed",
+                    "Applicant identity and student information match the documents.",
+                  ],
+                  [
+                    "currentEnrollment",
+                    "COR confirms enrollment for the current semester.",
+                  ],
+                  [
+                    "gradesRelevant",
+                    "Grade evidence supports the listed subject expertise.",
+                  ],
+                ].map(([key, label]) => (
+                  <label key={key} className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!manual[key]}
+                      disabled={busy}
+                      onChange={(e) => updateManual(key, e.target.checked)}
+                    />
+                    {label}
+                  </label>
+                ))}
+                <p>
+                  Add at least 15 characters of LCO Notes explaining your
+                  review. Complete both required document reviews before
+                  approval.
+                </p>
+              </details>
+            )}
+            <label htmlFor="application-lco-notes">
+              <strong>LCO Notes</strong>
             </label>
             <textarea
-              id="application-admin-notes"
+              id="application-lco-notes"
               className={input}
               placeholder="Internal notes for this review."
               rows={4}
@@ -658,7 +727,7 @@ export default function ApplicationReview({
             {!canApprove && (
               <p className="aar-review-gate" role="status">
                 Complete manual review of both required documents (or OCR checks
-                and Information Match) and add at least 15 characters of Admin
+                and Information Match) and add at least 15 characters of LCO
                 Notes to enable approval.
               </p>
             )}
