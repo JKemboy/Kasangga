@@ -15,7 +15,7 @@ export function validateGcashQr(file) {
     throw new Error("Choose an image up to 5 MB.");
 }
 
-export async function loadAdminGcashQr(client = getSupabaseClient()) {
+export async function loadLcoGcashQr(client = getSupabaseClient()) {
   const { data, error } = await client
     .from("system_settings")
     .select("setting_value")
@@ -31,7 +31,7 @@ export async function loadAdminGcashQr(client = getSupabaseClient()) {
   return { path, url: signed.data.signedUrl };
 }
 
-export async function saveAdminGcashQr(
+export async function saveLcoGcashQr(
   file,
   expectedPath,
   client = getSupabaseClient(),
