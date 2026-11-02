@@ -63,6 +63,7 @@ export function mapOsweRecords(db) {
         priority: r.priority === "normal" ? "Medium" : label(r.priority),
         date: day(r.submitted_at),
         submittedAt: r.submitted_at,
+        receivedAt: r.referred_at || r.submitted_at,
         referral:
           r.osas_referral_status === "not_referred"
             ? "Not Referred"
@@ -71,7 +72,7 @@ export function mapOsweRecords(db) {
         status: linked
           ? label(linked.case_status)
           : r.osas_referral_status === "closed_no_case"
-            ? "Closed / No Formal Case"
+            ? "Closed / No Finding"
             : r.report_status === "resolved"
               ? "Resolved"
               : r.osas_referral_status === "referred"
@@ -109,7 +110,9 @@ export function mapOsweRecords(db) {
       caseDatabaseId: c.case_id,
       databaseStatus: c.case_status,
       status:
-        decision?.condition && !decision.conditionDone
+        decision?.workflow !== "clearance_handoff" &&
+        decision?.condition &&
+        !decision.conditionDone
           ? "Pending Completion"
           : label(c.case_status),
       date: day(c.opened_at),
@@ -194,6 +197,8 @@ export function mapOsweRecords(db) {
       academicYear: r.academic_year,
       semester: r.semester,
       requested: day(r.requested_at),
+      requestedAt: r.requested_at,
+      reviewedAt: r.reviewed_at,
       reviewed: day(r.reviewed_at),
       status:
         r.clearance_status === "pending"
@@ -219,17 +224,23 @@ export function mapOsweRecords(db) {
     };
   });
   const archive = cases
-    .filter((c) => c.archived)
+    .filter((c) => c.archived || c.databaseStatus === "resolved")
     .map((c) => ({
       ...c,
       full: c,
+      status: "Resolved",
+      recordDate: day(
+        c.archivedAt || c.resolvedAt || c.decision?.at || c.openedAt,
+      ),
       officer: c.archivedBy || c.officer,
       incident: c.id,
       opened: c.date,
       resolved: day(c.resolvedAt),
       archived: day(c.archivedAt),
       outcome: c.decision?.outcome || c.resolution || "",
-      year: academicYear(c.archivedAt),
+      year: academicYear(
+        c.archivedAt || c.resolvedAt || c.decision?.at || c.openedAt,
+      ),
       evidence: evidence
         .filter((item) => item.reportDatabaseId === c.reportDatabaseId)
         .map((item) => ({
@@ -263,6 +274,37 @@ export function mapOsweRecords(db) {
       platform: Number(s.platform),
     },
   }));
+  const time = (value) => {
+    const parsed = Date.parse(value || "");
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  const newest = (dateOf, idOf) => (a, b) =>
+    time(dateOf(b)) - time(dateOf(a)) || Number(idOf(b)) - Number(idOf(a));
+  incidents.sort(
+    newest(
+      (r) => r.receivedAt || r.submittedAt,
+      (r) => r.reportDatabaseId,
+    ),
+  );
+  cases.sort(
+    newest(
+      (r) => r.openedAt,
+      (r) => r.caseDatabaseId,
+    ),
+  );
+  clearance.sort(
+    newest(
+      (r) =>
+        time(r.reviewedAt) > time(r.requestedAt) ? r.reviewedAt : r.requestedAt,
+      (r) => r.clearanceDatabaseId,
+    ),
+  );
+  archive.sort(
+    newest(
+      (r) => r.archivedAt || r.resolvedAt || r.recordDate,
+      (r) => r.caseDatabaseId,
+    ),
+  );
   return {
     incidents,
     cases,
