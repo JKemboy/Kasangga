@@ -1,6 +1,6 @@
 import StaffNotifications from "../shared/StaffNotifications.jsx";
 
-export default function AdminNotifications({ rows = [], error, onRead, go }) {
+export default function LcoNotifications({ rows = [], error, onRead, go }) {
   function open(row) {
     const view = {
       tutor_applications: "Tutor Verification",
@@ -11,7 +11,7 @@ export default function AdminNotifications({ rows = [], error, onRead, go }) {
       incident_reports: "Incident Reports",
       support_conversations: "Messages",
     }[row.entityType];
-    if (view) go(view);
+    if (view) go(view, row);
   }
   return (
     <StaffNotifications
