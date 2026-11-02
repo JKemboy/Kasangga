@@ -375,7 +375,7 @@ export default function MyReports({ go, args = {} }) {
       <p className="mr-info">
         <ShieldCheck size={14} />
         {about
-          ? "Cases about you appear here once a formal case is opened by OSWE. The reporter's identity and statement are handled by OSWE."
+          ? "Cases about you appear here after OSWE records a case decision. The reporter's identity and statement are handled by OSWE."
           : "LCO reviews every report first. Conduct matters are referred to OSWE. You can track review status and completion; actions against another student remain confidential."}
       </p>
       <div className="mr-toolbar">
@@ -415,7 +415,7 @@ export default function MyReports({ go, args = {} }) {
       {!loading && !error && !visible.length && (
         <p className="mr-empty" role="status">
           {about
-            ? "No formal cases about you match this view."
+            ? "No case records about you match this view."
             : "No reports filed by you match this view."}
         </p>
       )}

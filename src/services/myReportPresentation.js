@@ -77,12 +77,12 @@ export function reportNotice(report, about = false) {
     return lcoOnlyReport(report)
       ? `Resolved by Kasangga LCO.${refundSummary(report) ? ` ${refundSummary(report)}` : ""}`
       : report.osas_referral_status === "closed_no_case"
-        ? "Review completed. No formal case was opened."
+        ? "Review completed. No finding was recorded."
         : "Your report review is completed. Actions taken against another student remain confidential.";
   if (stage === "OSWE Review")
     return report.case
       ? "OSWE is reviewing this case. Check My Reports for status updates. Outcomes for the other student are kept private."
-      : "LCO referred this report to OSWE. It is awaiting OSWE assessment; no formal case is recorded yet.";
+      : "LCO referred this report to OSWE. It is awaiting OSWE assessment; evidence review is pending.";
   const message =
     report.report_status === "submitted"
       ? "Your report is awaiting LCO review."
@@ -93,7 +93,7 @@ export function reportActivity(report, about = false) {
   const events = about
     ? [
         { title: "Referred to OSWE by Kasangga LCO", at: report.referred_at },
-        { title: "Formal case opened by OSWE", at: report.opened_at },
+        { title: "Case review started by OSWE", at: report.opened_at },
         ...(report.activity || [])
           .filter((a) => a.type !== "opened")
           .map((a) => ({
@@ -189,7 +189,7 @@ export function completionFormHtml(record, student = {}) {
   const table = (rows) =>
     `<table>${rows.map(([label, value]) => `<tr><th>${escape(label)}</th><td>${escape(value || "Not recorded")}</td></tr>`).join("")}</table>`;
   const conditions = caseConditions(record);
-  return `<!doctype html><html><head><meta charset="utf-8"><title>CASE-${escape(record.case_id)} Completion Form</title><style>body{font:12px Arial,sans-serif;line-height:1.6;max-width:800px;margin:24px auto;padding:16px;color:#111}h1{font-size:20px;margin-top:0}h2{font-size:14px;margin-top:22px;border-bottom:1px solid #777}table{border-collapse:collapse;width:100%}th,td{border:1px solid #aaa;padding:7px;text-align:left;vertical-align:top}th{width:30%;background:#f3f5f4;font-weight:normal}.signatures{display:flex;gap:30px;margin-top:65px}.signatures>div{flex:1;text-align:center;border-top:1px solid #111;padding-top:8px}small{color:#555}@media print{body{margin:0}}</style></head><body><small>Caraga State University - Office of Student Affairs and Services</small><h1>OSWE Completion Form</h1><h2>Case</h2>${table(
+  return `<!doctype html><html><head><meta charset="utf-8"><title>CASE-${escape(record.case_id)} Completion Form</title><style>body{font:12px Arial,sans-serif;line-height:1.6;max-width:800px;margin:24px auto;padding:16px;color:#111}h1{font-size:20px;margin-top:0}h2{font-size:14px;margin-top:22px;border-bottom:1px solid #777}table{border-collapse:collapse;width:100%}th,td{border:1px solid #aaa;padding:7px;text-align:left;vertical-align:top}th{width:30%;background:#f3f5f4;font-weight:normal}.signatures{display:flex;gap:30px;margin-top:65px}.signatures>div{flex:1;text-align:center;border-top:1px solid #111;padding-top:8px}small{color:#555}@media print{body{margin:0}}</style></head><body><small>Caraga State University - OSWE</small><h1>OSWE Completion Form</h1><h2>Case</h2>${table(
     [
       ["Case ID", `CASE-${record.case_id}`],
       ["Incident Report ID", `IR-${record.report_id}`],
