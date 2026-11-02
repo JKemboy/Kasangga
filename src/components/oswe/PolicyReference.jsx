@@ -1,4 +1,4 @@
-import { useOsasDatabase } from "./OsasDatabaseContext.jsx";
+import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { input } from "../tutor/workspace/ui.jsx";
 
 export function decisionPolicies(policies = []) {
@@ -16,7 +16,7 @@ export const policyReference = (policy) =>
   [policy.title, policy.version].filter(Boolean).join(" - ");
 
 export default function PolicyReference({ value, onChange }) {
-  const database = useOsasDatabase();
+  const database = useOsweDatabase();
   const policies = decisionPolicies(database?.records?.policies);
   return (
     <>
