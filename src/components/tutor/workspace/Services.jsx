@@ -250,7 +250,7 @@ export default function Services({
           disabled={suspended || changing}
           title={
             suspended
-              ? "Suspended by Admin — editing is unavailable."
+              ? "Suspended by LCO — editing is unavailable."
               : undefined
           }
           onClick={() => {
@@ -266,7 +266,7 @@ export default function Services({
           disabled={suspended || changing}
           title={
             suspended
-              ? "Only an administrator can change a suspended service."
+              ? "Only an LCO can change a suspended service."
               : undefined
           }
           onClick={() => toggleService(service)}

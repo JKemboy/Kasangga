@@ -238,7 +238,7 @@ export default function ServiceDetails({
         )}
         {suspended && (
           <p className="mt-3 rounded bg-red-50 p-3 text-red-700">
-            Suspended by Admin. Editing and status changes are unavailable while
+            Suspended by LCO. Editing and status changes are unavailable while
             moderation applies.
           </p>
         )}

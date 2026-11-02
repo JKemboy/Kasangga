@@ -136,7 +136,7 @@ export async function currentTutorProfile(client) {
     throw databaseError(tutorProfileError, "loading the tutor profile");
   if (!tutorProfile)
     throw new Error(
-      "Your account does not have a tutor profile. Ask an administrator to complete tutor approval.",
+      "Your account does not have a tutor profile. Ask an LCO to complete tutor approval.",
     );
   return tutorProfile;
 }

@@ -35,7 +35,7 @@ function Allocation({ session: s }) {
       {[
         ["Gross Amount", "gross"],
         ["Tutor (90%)", "tutor"],
-        ["OSAS (5%)", "osas"],
+        ["OSWE (5%)", "osas"],
         ["Platform (5%)", "platform"],
       ].map(([label, share]) => (
         <div key={label}>
@@ -97,7 +97,7 @@ export function TransactionDetails({ session: s, onClose, onSession }) {
           [
             "Earnings Status",
             s.transferredAt
-              ? "Payout marked as transferred by Admin"
+              ? "Payout marked as transferred by LCO"
               : s.status === "Completed"
                 ? "Included in completed session earnings"
                 : "Counted once the session is completed",
@@ -182,14 +182,6 @@ export default function SessionDetails({
           p_reason: `${kind}: ${reason.trim()}`,
           p_acknowledged: acknowledged,
         });
-      } else if (action === "reschedule") {
-        if (!chosen) throw new Error("Select an available time.");
-        await chatRequest("request_chat_reschedule", {
-          p_booking_id: Number(s.id),
-          p_date: chosen.date,
-          p_start: chosen.time,
-          p_reason: reason.trim(),
-        });
       } else {
         if (action !== "incident")
           throw new Error("This action is not available here.");
@@ -206,7 +198,7 @@ export default function SessionDetails({
       window.dispatchEvent(new Event("campustutor:sessions-changed"));
       setFeedback(
         action === "incident"
-          ? "Report submitted for Admin and OSAS review."
+          ? "Report submitted for LCO and OSWE review."
           : action === "cancel"
             ? "Session cancelled. Refund eligibility will be reviewed separately."
             : "Reschedule request sent. The current schedule remains until the learner approves.",
@@ -421,45 +413,6 @@ export default function SessionDetails({
                   standing.
                 </p>
               )}
-              {action === "reschedule" && (
-                <>
-                  <p className="session-info">
-                    Current time:{" "}
-                    <strong>
-                      {dateLabel(s.date)}, {range(s)}
-                    </strong>
-                    . The booking only changes if the learner accepts.
-                  </p>
-                  <h3>Choose a new slot from your valid availability</h3>
-                  <p className="session-muted">
-                    Only future times without class or session conflicts are
-                    shown.
-                  </p>
-                  <div className="session-slot-list">
-                    {options.map((o) => (
-                      <button
-                        type="button"
-                        key={o.key}
-                        className={slot === o.key ? primary : button}
-                        aria-pressed={slot === o.key}
-                        onClick={() => setSlot(o.key)}
-                      >
-                        {dateLabel(o.date)} · {time(hour(o.time))} –{" "}
-                        {time(o.end)}
-                      </button>
-                    ))}
-                  </div>
-                  {actionLoading && (
-                    <p role="status">Loading available times...</p>
-                  )}
-                  {!actionLoading && !options.length && (
-                    <p role="status">
-                      No valid slots in the next 30 days. Add availability
-                      before requesting a reschedule.
-                    </p>
-                  )}
-                </>
-              )}
               {actionError && (
                 <p role="alert" className="text-red-700">
                   {actionError}
@@ -468,8 +421,8 @@ export default function SessionDetails({
               {action === "incident" && (
                 <>
                   <p className="session-muted">
-                    Reports go to Kasangga Admin. Conduct concerns are referred
-                    to OSAS.
+                    Reports go to Kasangga LCO. Conduct concerns are referred to
+                    OSWE.
                   </p>
                   <Field label="Booking">
                     <input
@@ -572,8 +525,8 @@ export default function SessionDetails({
                 <div className="session-info mt-3">
                   <ShieldCheck size={22} />
                   <p>
-                    Include accurate details and evidence. Admin reviews each
-                    report and refers conduct concerns to OSAS. Updates appear
+                    Include accurate details and evidence. LCO reviews each
+                    report and refers conduct concerns to OSWE. Updates appear
                     in Notifications.
                   </p>
                 </div>
