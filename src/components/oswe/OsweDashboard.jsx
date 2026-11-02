@@ -16,7 +16,6 @@ import { reportHtml } from "../lco/reportExport.js";
 import HeaderInbox from "../shared/HeaderInbox.jsx";
 import { useLogout } from "../shared/LogoutProvider.jsx";
 import OsweArchive from "./OsweArchive.jsx";
-import OsweCases from "./OsweCases.jsx";
 import OsweOverview from "./OsweOverview.jsx";
 import OswePolicies from "./OswePolicies.jsx";
 import OsweReports from "./OsweReports.jsx";
@@ -134,8 +133,12 @@ function OsweDashboardContent() {
   const navigate = useNavigate();
   const [view, setView] = useSectionNavigation(osweSections, "Overview");
   const [overviewCaseFilter, setOverviewCaseFilter] = useState({});
+  const [clearanceTarget, setClearanceTarget] = useState(null);
   useEffect(() => {
-    const open = () => setView("Case Archive");
+    const open = () => {
+      setGlobal("");
+      setView("Case Archive");
+    };
     window.addEventListener("campustutor:open-case-archive", open);
     return () =>
       window.removeEventListener("campustutor:open-case-archive", open);
@@ -145,6 +148,24 @@ function OsweDashboardContent() {
     window.addEventListener("campustutor:open-evidence-validation", open);
     return () =>
       window.removeEventListener("campustutor:open-evidence-validation", open);
+  }, [setView]);
+  useEffect(() => {
+    const open = (event) => {
+      setModal(null);
+      setGlobal("");
+      setQuery(event.detail?.studentName || "");
+      setClearanceTarget(event.detail?.clearanceId || null);
+      setStatus("");
+      setCollege("");
+      setRequested("");
+      setSemester("");
+      setPage(1);
+      setNotice("Decision recorded. Review the student clearance hold below.");
+      setView("Student Clearance Review");
+    };
+    window.addEventListener("campustutor:open-student-clearance", open);
+    return () =>
+      window.removeEventListener("campustutor:open-student-clearance", open);
   }, [setView]);
   const [settings, setSettings] = useState(loadSettings);
   // Apply the latest server settings snapshot; local state is only a UI cache
@@ -217,18 +238,6 @@ function OsweDashboardContent() {
     setConfirmed(false);
     setError("");
     setModal("Review Clearance");
-  }
-  async function save(e) {
-    e.preventDefault();
-    try {
-      await database.save("clearance", selected.clearanceDatabaseId, "review", {
-        status: decision,
-        notes: notes.trim(),
-      });
-      setModal(null);
-    } catch (cause) {
-      setError(cause.message);
-    }
   }
   function exportCsv() {
     const headers = [
@@ -739,9 +748,16 @@ function OsweDashboardContent() {
                 {notice}
               </p>
             )}
-            <section className="oswe-table-panel">
+            <section className="oswe-table-panel oswe-clearance-table">
               <div className="overflow-x-auto">
                 <table>
+                  <colgroup>
+                    {[3, 8, 13, 16, 11, 8, 8, 9, 8, 8, 8].map(
+                      (width, index) => (
+                        <col key={index} style={{ width: width + "%" }} />
+                      ),
+                    )}
+                  </colgroup>
                   <thead>
                     <tr>
                       {[
@@ -763,7 +779,15 @@ function OsweDashboardContent() {
                   </thead>
                   <tbody>
                     {visible.map((r, i) => (
-                      <tr key={r.id}>
+                      <tr
+                        key={r.clearanceDatabaseId || r.id}
+                        className={
+                          String(r.clearanceDatabaseId) ===
+                          String(clearanceTarget)
+                            ? "oswe-clearance-target"
+                            : undefined
+                        }
+                      >
                         <td>{(current - 1) * pageSize + i + 1}</td>
                         <td>{r.id}</td>
                         <td>{r.name}</td>
@@ -864,22 +888,6 @@ function OsweDashboardContent() {
         <ClearanceReview
           record={rows.find((r) => r.id === selected.id) || selected}
           onClose={() => setModal(null)}
-          onSave={async (updated) => {
-            await database.save(
-              "clearance",
-              updated.clearanceDatabaseId,
-              updated.clearanceDatabaseId ? "review" : "create_follow_up",
-              updated.clearanceDatabaseId
-                ? updated
-                : {
-                    ...updated,
-                    academicYear: "Case follow-up",
-                    semester: "Case follow-up",
-                  },
-            );
-            setModal(null);
-            return true;
-          }}
         />
       )}
       {modal === "Case Record" &&
@@ -888,7 +896,6 @@ function OsweDashboardContent() {
             record={database.records.cases.find(
               (c) => c.caseId === selected.caseId,
             )}
-            onSave={database.saveCase}
             onClose={() => setModal(null)}
           />
         )}
@@ -928,9 +935,8 @@ function OsweDashboardContent() {
               </p>
               <p>
                 For account access or technical assistance, contact your
-                authorized Kasangga LCO. Include the page and
-                case/report reference; never share passwords or verification
-                codes.
+                authorized Kasangga LCO. Include the page and case/report
+                reference; never share passwords or verification codes.
               </p>
               <button
                 type="button"
