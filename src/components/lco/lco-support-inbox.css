@@ -1,0 +1,23 @@
+.lco-support-chat .lco-support-resolved {
+  background: #eef1f5;
+  color: #566584;
+}
+
+.lco-support-chat .lco-support-status {
+  cursor: pointer;
+}
+
+.lco-support-chat .lco-support-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+
+@media (max-width: 800px) {
+  .lco-support-chat {
+    min-height: 0;
+  }
+
+  .lco-support-chat .chat-sidebar {
+    height: 32dvh;
+  }
+}
