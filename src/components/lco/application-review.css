@@ -1,4 +1,4 @@
-﻿.admin-application-review {
+﻿.lco-application-review {
   margin: auto;
   width: min(1010px, 95vw);
   max-height: 94dvh;
@@ -9,15 +9,15 @@
   font-size: 12px;
   box-shadow: 0 24px 70px #0003;
 }
-.admin-application-review::backdrop {
+.lco-application-review::backdrop {
   background: #15231d70;
 }
-.admin-application-review[open] {
+.lco-application-review[open] {
   display: flex;
   flex-direction: column;
 }
-.admin-application-review header,
-.admin-application-review footer {
+.lco-application-review header,
+.lco-application-review footer {
   padding: 16px 22px;
   display: flex;
   align-items: center;
@@ -25,17 +25,17 @@
   gap: 12px;
   flex-shrink: 0;
 }
-.admin-application-review header {
+.lco-application-review header {
   border-bottom: 1px solid #e5e7eb;
 }
-.admin-application-review h2 {
+.lco-application-review h2 {
   font-size: 18px;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 7px;
 }
-.admin-application-review header p,
+.lco-application-review header p,
 .aar-muted,
 .aar-document small {
   color: #718096;
@@ -139,10 +139,10 @@
 .aar-columns details {
   margin-top: 12px;
 }
-.admin-application-review footer {
+.lco-application-review footer {
   border-top: 1px solid #e5e7eb;
 }
-.admin-application-review footer > div {
+.lco-application-review footer > div {
   display: flex;
   gap: 8px;
 }
@@ -162,12 +162,12 @@
   .aar-columns {
     grid-template-columns: 1fr;
   }
-  .admin-application-review footer,
-  .admin-application-review footer > div {
+  .lco-application-review footer,
+  .lco-application-review footer > div {
     flex-wrap: wrap;
   }
-  .admin-application-review header,
-  .admin-application-review footer,
+  .lco-application-review header,
+  .lco-application-review footer,
   .aar-body {
     padding: 12px;
   }
@@ -246,10 +246,10 @@
 .aar-columns details {
   margin-top: 12px;
 }
-.admin-application-review footer {
+.lco-application-review footer {
   border-top: 1px solid #e5e7eb;
 }
-.admin-application-review footer > div {
+.lco-application-review footer > div {
   display: flex;
   gap: 8px;
 }
@@ -269,12 +269,12 @@
   .aar-columns {
     grid-template-columns: 1fr;
   }
-  .admin-application-review footer,
-  .admin-application-review footer > div {
+  .lco-application-review footer,
+  .lco-application-review footer > div {
     flex-wrap: wrap;
   }
-  .admin-application-review header,
-  .admin-application-review footer,
+  .lco-application-review header,
+  .lco-application-review footer,
   .aar-body {
     padding: 12px;
   }
@@ -393,10 +393,10 @@
 .aar-columns details {
   margin-top: 12px;
 }
-.admin-application-review footer {
+.lco-application-review footer {
   border-top: 1px solid #e5e7eb;
 }
-.admin-application-review footer > div {
+.lco-application-review footer > div {
   display: flex;
   gap: 8px;
 }
@@ -416,12 +416,12 @@
   .aar-columns {
     grid-template-columns: 1fr;
   }
-  .admin-application-review footer,
-  .admin-application-review footer > div {
+  .lco-application-review footer,
+  .lco-application-review footer > div {
     flex-wrap: wrap;
   }
-  .admin-application-review header,
-  .admin-application-review footer,
+  .lco-application-review header,
+  .lco-application-review footer,
   .aar-body {
     padding: 12px;
   }
@@ -565,4 +565,263 @@
 }
 .aar-reject-button:hover {
   background: #b91c1c;
+}
+
+.lco-application-review .aar-body {
+  padding: 20px 24px;
+}
+.aar-facts {
+  gap: 16px 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.aar-columns {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 24px;
+  align-items: start;
+}
+.aar-columns > section {
+  padding: 16px;
+  border: 1px solid #e2e8e5;
+  border-radius: 10px;
+  background: white;
+}
+.aar-document {
+  margin-top: 10px;
+  align-items: flex-start;
+}
+.aar-document > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.aar-ocr-batch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.aar-comparison {
+  margin-bottom: 18px;
+}
+.aar-comparison h4 {
+  margin-bottom: 8px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.aar-comparison-scroll {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+.aar-comparison table {
+  min-width: 420px;
+  border: 0;
+}
+.aar-comparison thead {
+  background: #f7faf8;
+}
+.aar-comparison th {
+  font-weight: 600;
+}
+.aar-review-summary > label {
+  display: block;
+  margin-top: 20px;
+}
+.lco-application-review > footer {
+  flex-wrap: wrap;
+  background: white;
+}
+@media (max-width: 800px) {
+  .aar-columns {
+    grid-template-columns: 1fr;
+  }
+  .lco-application-review .aar-body {
+    padding: 16px;
+  }
+}
+
+.lco-application-review .aar-columns {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 18px;
+}
+.lco-application-review .aar-columns > section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.lco-application-review .aar-facts {
+  gap: 14px 20px;
+  padding-bottom: 0;
+  border: 0;
+}
+.aar-document {
+  align-items: center;
+  padding: 10px;
+  gap: 10px;
+}
+.aar-document > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.aar-document-filename {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.aar-manual-checklist {
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #d9e6dd;
+  border-radius: 8px;
+}
+.aar-manual-checklist summary {
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.aar-manual-checklist > label {
+  margin-top: 8px;
+}
+.aar-confidence-panel {
+  margin-bottom: 18px;
+}
+.lco-application-review > footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+@media (max-width: 800px) {
+  .lco-application-review .aar-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Align the compact document list without changing the comparison panel. */
+.lco-application-review .aar-document {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 80px;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  margin: 0 0 10px;
+  padding: 12px;
+  border: 1px solid #e1e7ed;
+  border-radius: 8px;
+  background: #fff;
+}
+.lco-application-review .aar-document > svg {
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 8px;
+  border-radius: 7px;
+  background: #f1f5f4;
+  color: #526279;
+}
+.lco-application-review .aar-document > div {
+  min-width: 0;
+}
+.lco-application-review .aar-document strong {
+  display: block;
+  font-size: 12px;
+  line-height: 18px;
+}
+.lco-application-review .aar-document > button {
+  width: 80px;
+  min-height: 32px;
+  margin: 0;
+  justify-content: center;
+}
+.lco-application-review .aar-document label {
+  font-size: 10px;
+  line-height: 15px;
+}
+.lco-application-review .aar-ocr-batch {
+  margin: 14px 0 18px;
+}
+.lco-application-review .aar-ocr-batch-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.lco-application-review .aar-ocr-batch-actions > button {
+  min-height: 34px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+@media (max-width: 420px) {
+  .lco-application-review .aar-document {
+    grid-template-columns: 30px minmax(0, 1fr) 66px;
+    gap: 8px;
+    padding: 10px;
+  }
+  .lco-application-review .aar-document > button {
+    width: 66px;
+  }
+}
+
+/* Compact document controls and reserve more room for extracted results. */
+.lco-application-review .aar-columns {
+  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
+  gap: 16px;
+}
+.lco-application-review .aar-body {
+  padding: 16px 18px;
+}
+.lco-application-review .aar-document {
+  grid-template-columns: 30px minmax(0, 1fr) 68px;
+  gap: 8px;
+  min-height: 56px;
+  margin-bottom: 8px;
+  padding: 9px 10px;
+}
+.lco-application-review .aar-document > svg {
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+}
+.lco-application-review .aar-document > button {
+  width: 68px;
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+.lco-application-review .aar-ocr-batch-actions > button {
+  min-height: 30px;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+.lco-application-review .aar-comparison table {
+  min-width: 0;
+  table-layout: fixed;
+}
+.lco-application-review .aar-comparison th,
+.lco-application-review .aar-comparison td {
+  padding: 10px 8px;
+  line-height: 1.45;
+}
+.lco-application-review .aar-comparison th:nth-child(1) {
+  width: 19%;
+}
+.lco-application-review .aar-comparison th:nth-child(2) {
+  width: 28%;
+}
+.lco-application-review .aar-comparison th:nth-child(3) {
+  width: 28%;
+}
+.lco-application-review .aar-comparison th:nth-child(4) {
+  width: 25%;
+}
+.lco-application-review .aar-comparison .au-status {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: normal;
+  line-height: 1.4;
+}
+@media (max-width: 700px) {
+  .lco-application-review .aar-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
