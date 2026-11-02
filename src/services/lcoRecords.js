@@ -1,4 +1,4 @@
-import { configDefaults } from "../components/admin/adminData.js";
+import { configDefaults } from "../components/lco/lcoData.js";
 import { sessionLifecycle } from "./sessionLifecycle.js";
 import { sessionAllocation } from "../components/tutor/workspace/earnings.js";
 
@@ -107,7 +107,7 @@ export function summarizePayments(payments, { completedOnly = false } = {}) {
     totals[field] /= 100;
   return totals;
 }
-export function mapAdminDatabase(input, now = new Date()) {
+export function mapLcoDatabase(input, now = new Date()) {
   const tableNames = [
     "users",
     "user_roles",
@@ -445,16 +445,16 @@ export function mapAdminDatabase(input, now = new Date()) {
       details = JSON.parse(decision?.decision_details || "{}");
     } catch {}
     return {
-      osasCaseId: linkedCase ? `CASE-${linkedCase.case_id}` : "",
-      osasStatus: linkedCase ? label(linkedCase.case_status) : "",
-      osasOutcome:
+      osweCaseId: linkedCase ? `CASE-${linkedCase.case_id}` : "",
+      osweStatus: linkedCase ? label(linkedCase.case_status) : "",
+      osweOutcome:
         decision?.decision_type ||
         (r.osas_assessment?.action === "close" &&
           "Closed without a formal case") ||
         "",
-      osasNotes: details.notes || r.osas_assessment?.notes || "",
-      osasBasis: details.basis || "",
-      osasDecisionAt: decision?.decision_date || r.osas_assessment?.at || "",
+      osweNotes: details.notes || r.osas_assessment?.notes || "",
+      osweBasis: details.basis || "",
+      osweDecisionAt: decision?.decision_date || r.osas_assessment?.at || "",
       id: key(r.report_id),
       booking: r.booking_id ? key(r.booking_id) : "",
       reporterId: r.reported_by,
@@ -472,19 +472,19 @@ export function mapAdminDatabase(input, now = new Date()) {
       status:
         r.report_status === "resolved"
           ? r.osas_referral_status === "not_referred"
-            ? "Resolved by Admin"
-            : "Resolved by OSAS"
+            ? "Resolved by LCO"
+            : "Resolved by OSWE"
           : r.report_status === "screened"
-            ? "Admin Screening Complete"
+            ? "LCO Screening Complete"
             : r.osas_referral_status === "case_opened"
-              ? "Under OSAS Review"
+              ? "Under OSWE Review"
               : r.report_status === "submitted"
                 ? "Pending Review"
                 : label(r.report_status),
       referral: ["referred", "case_opened", "closed_no_case"].includes(
         r.osas_referral_status,
       )
-        ? "Referred to OSAS"
+        ? "Referred to OSWE"
         : ["Technical issue", "Platform / Technical"].includes(
               r.incident_type,
             ) || r.osas_referral_status === "not_required"
@@ -547,7 +547,7 @@ export function mapAdminDatabase(input, now = new Date()) {
     loadedAt: now.toISOString(),
   };
 }
-export function buildAdminReport(database, filters = {}, now = new Date()) {
+export function buildLcoReport(database, filters = {}, now = new Date()) {
   const {
     start = "",
     end = "",
