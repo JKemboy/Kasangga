@@ -4,7 +4,7 @@ import OswePolicies from "../oswe/OswePolicies.jsx";
 import { Modal, button, input, primary } from "../tutor/workspace/ui.jsx";
 import { listLcoPolicies, saveLcoPolicy } from "../../services/lcoPolicies.js";
 
-export default function LcoPolicies() {
+export default function LcoPolicies({ searchQuery, onSearchChange }) {
   const [rows, setRows] = useState([]),
     [loading, setLoading] = useState(true);
   const [error, setError] = useState(""),
@@ -89,6 +89,8 @@ export default function LcoPolicies() {
         </p>
       )}
       <OswePolicies
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
         policies={rows}
         onEdit={edit}
         settings={{ pageSize: 8, timezone: "Asia/Manila", language: "en-PH" }}

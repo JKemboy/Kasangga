@@ -1,3 +1,4 @@
+import { listLcoPolicies } from "../../services/lcoPolicies.js";
 import { getSupabaseClient } from "../../services/supabaseClient.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadLcoDatabase } from "../../services/lcoDatabase.js";
@@ -5,6 +6,7 @@ import { loadTutorApplications } from "../../services/tutorApplications.js";
 export default function useLcoRecords(userId, view) {
   const [database, setDatabase] = useState(null),
     [applications, setApplications] = useState([]),
+    [policies, setPolicies] = useState([]),
     [error, setError] = useState(""),
     [applicationsError, setApplicationsError] = useState(""),
     [refreshing, setRefreshing] = useState(false);
@@ -13,11 +15,13 @@ export default function useLcoRecords(userId, view) {
   const refresh = useCallback(async () => {
     const current = ++request.current;
     setRefreshing(true);
-    const [records, apps] = await Promise.allSettled([
+    const [records, apps, policyResult] = await Promise.allSettled([
       loadLcoDatabase(),
       loadTutorApplications(),
+      listLcoPolicies(),
     ]);
     if (!mounted.current || current !== request.current) return;
+    if (policyResult.status === "fulfilled") setPolicies(policyResult.value);
     if (records.status === "fulfilled") {
       setDatabase((previous) => ({
         ...records.value,
@@ -91,6 +95,7 @@ export default function useLcoRecords(userId, view) {
   return {
     database,
     applications,
+    policies,
     error,
     applicationsError,
     refreshing,

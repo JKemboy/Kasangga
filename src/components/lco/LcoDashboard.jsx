@@ -1,3 +1,4 @@
+import RecordSearch from "../shared/RecordSearch.jsx";
 import useSectionNavigation from "../shared/useSectionNavigation.js";
 import LcoPolicies from "./LcoPolicies.jsx";
 import LcoNotifications from "./LcoNotifications.jsx";
@@ -76,6 +77,7 @@ export default function LcoDashboardPage() {
   const {
     database,
     applications: apps,
+    policies,
     error: databaseError,
     applicationsError: appsError,
     refreshing,
@@ -164,7 +166,10 @@ export default function LcoDashboardPage() {
   const [open, setOpen] = useState(false),
     [modal, setModal] = useState(null),
     [query, setQuery] = useState(""),
-    [search, setSearch] = useState("");
+    [sectionSearch, setSectionSearch] = useState({});
+  const search = sectionSearch[view] || "";
+  const setSearch = (value) =>
+    setSectionSearch((current) => ({ ...current, [view]: value }));
   const [notificationTarget, setNotificationTarget] = useState(null);
   function go(label, notification = null) {
     setNotificationTarget(notification);
@@ -283,39 +288,28 @@ export default function LcoDashboardPage() {
           >
             <Menu size={20} />
           </button>
-          <form
-            className="oswe-global"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setModal(null);
-              if (
-                ![
-                  "Tutor Verification",
-                  "Service Management",
-                  "Bookings Monitoring",
-                  "Payments & Transactions",
-                  "Incident Reports",
-                ].includes(view)
-              ) {
-                setView("User Management");
-                setQuery(search);
-              }
+          <RecordSearch
+            label="Search users, applications, services, bookings, payments and reports..."
+            groups={[
+              ["User Management", rows],
+              ["Tutor Verification", apps || []],
+              ["Service Management", services],
+              ["Bookings Monitoring", database?.sessions || []],
+              ["Payments & Transactions", database?.payments || []],
+              ["Incident Reports", database?.incidents || []],
+              ["Policies & Procedures", policies],
+            ]}
+            onSelect={(section, row) => {
+              go(section);
+              setSectionSearch((current) => ({
+                ...current,
+                [section]: String(row.id || row.name || row.title || ""),
+              }));
+              if (section === "User Management")
+                setQuery(String(row.id || row.name || ""));
             }}
-          >
-            <Search size={16} />
-            <input
-              aria-label="Search LCO records"
-              placeholder="Search users, tutors, bookings, reports, or settings..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                if (view === "User Management") setQuery(e.target.value);
-              }}
-            />
-            <button aria-label="Search records">
-              <Search size={16} />
-            </button>
-          </form>
+          />
+
           <div className="ml-auto flex items-center gap-4">
             <HeaderInbox
               role="lco"
@@ -412,7 +406,7 @@ export default function LcoDashboardPage() {
           ) : // The view switch is the LCO section router. Section components
           // receive only the records and callbacks needed for their workflow.
           view === "Policies & Procedures" ? (
-            <LcoPolicies />
+            <LcoPolicies searchQuery={search} onSearchChange={setSearch} />
           ) : view === "Notifications" ? (
             <LcoNotifications
               rows={lcoNotifications}
