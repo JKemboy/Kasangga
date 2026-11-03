@@ -15,6 +15,24 @@ const escape = (value) =>
   );
 
 export function emailContent(job, appUrl) {
+  if (job.kind === "system_notification") {
+    const roles = ["learner", "tutor", "lco", "oswe"];
+    if (!roles.includes(job.recipient_role))
+      throw new Error("Unsupported recipient role");
+    const base = new URL(appUrl);
+    if (base.protocol !== "https:" && base.hostname !== "localhost")
+      throw new Error("APP_URL must use HTTPS");
+    const url = new URL(`/${job.recipient_role}-dashboard`, base);
+    const title = "You have a new Kasangga notification";
+    // Do not email case details, report statements, chat contents, or evidence.
+    const text =
+      "A new notification is available in your Kasangga account. Sign in and open Notifications to review it.";
+    return {
+      subject: `Kasangga — New notification (${job.recipient_role.toUpperCase()})`,
+      text: `${text}\n\nOpen your account: ${url.href}\n\nKasangga`,
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.6"><h1>${escape(title)}</h1><p>${escape(text)}</p><p><a href="${escape(url.href)}">Open your account</a></p></div>`,
+    };
+  }
   const p = job.payload;
   const title = titles[job.kind];
   if (!title) throw new Error("Unsupported email kind");

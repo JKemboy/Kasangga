@@ -57,8 +57,7 @@ export function normalizeSettings(value = {}) {
   return next;
 }
 // Match notification records to the OSWE preference row before rendering the
-// shared in-app inbox. Email switches are saved as preferences, while actual
-// email delivery is handled by the institution's notification service.
+// shared in-app inbox. The backend email queue reads the email switches.
 export function filterOsweNotifications(rows = [], settings = defaultSettings) {
   const enabled = settings.notifications || defaultSettings.notifications;
   return rows.filter((notification) => {
@@ -146,8 +145,7 @@ export default function OsweSettings({ settings, onSave }) {
             Settings <Settings size={22} className="text-green-800" />
           </h1>
           <p>
-            Manage your OSWE account, notification, and interface
-            preferences.
+            Manage your OSWE account, notification, and interface preferences.
           </p>
         </div>
         <div className="os-date">
@@ -237,9 +235,9 @@ export default function OsweSettings({ settings, onSave }) {
             </tbody>
           </table>
           <p className="os-help">
-            Preferences are saved to Supabase. Case updates create in-app
-            notifications; email delivery requires an institutional email
-            service.
+            Email alerts go to your account email address. Open Notifications in
+            your account to review the details. Email and in-app preferences are
+            saved separately.
           </p>
         </section>
         <section className="os-card">
