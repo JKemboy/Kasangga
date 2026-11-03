@@ -66,6 +66,12 @@ export default function ChatDetails({ chat, mode, close, role }) {
           style: "currency",
           currency: "PHP",
         }).format(value);
+  const allocation = data?.payment_details?.allocation;
+  const platformAmount =
+    allocation?.platform_amount != null || allocation?.osas_amount != null
+      ? Number(allocation?.platform_amount || 0) +
+        Number(allocation?.osas_amount || 0)
+      : null;
   const clock = (value) =>
     value
       ? new Date("2000-01-01T" + value).toLocaleTimeString("en-US", {
@@ -304,12 +310,8 @@ export default function ChatDetails({ chat, mode, close, role }) {
                       cash(data.payment_details?.allocation?.tutor_amount),
                     ],
                     [
-                      "Admin (5%)",
-                      cash(data.payment_details?.allocation?.osas_amount),
-                    ],
-                    [
-                      "Maintenance (5%)",
-                      cash(data.payment_details?.allocation?.platform_amount),
+                      "Platform (10%)",
+                      cash(platformAmount),
                     ],
                     [
                       "Transaction",

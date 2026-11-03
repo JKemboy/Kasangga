@@ -30,8 +30,6 @@ function Allocation({ session: s }) {
       {[
         ["Gross Amount", "gross"],
         ["Tutor (90%)", "tutor"],
-        ["Admin (5%)", "admin"],
-        ["Maintenance (5%)", "maintenance"],
         ["Platform (10%)", "platform"],
       ].map(([label, share]) => (
         <div key={label}>
