@@ -50,10 +50,12 @@ Deno.serve(async (request) => {
     logger: false,
     debug: false,
   });
+  let stage = "smtp_verify";
   try {
     // Verify without sending before claiming any jobs; bad credentials do not
     // consume the delivery queue or change booking/payment state.
     await transport.verify();
+    stage = "queue_processing";
     const client = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -73,9 +75,36 @@ Deno.serve(async (request) => {
         }) => transport.sendMail(message),
       ),
     );
-  } catch {
+  } catch (error) {
+    // Return only diagnostic categories: SMTP errors may contain credentials
+    // or addresses, so never expose the original message or response.
+    const code = String(error?.code || "");
+    const safeCodes = [
+      "EAUTH",
+      "ECONNECTION",
+      "ETIMEDOUT",
+      "ESOCKET",
+      "EDNS",
+      "ETLS",
+    ];
+    const category = safeCodes.includes(code) ? code : "UNKNOWN";
+    const responseCode = Number(error?.responseCode);
+    const smtpCode =
+      Number.isInteger(responseCode) &&
+      responseCode >= 400 &&
+      responseCode <= 599
+        ? responseCode
+        : null;
+    const enhancedCode =
+      String(error?.response || "").match(/\b[245]\.\d{1,3}\.\d{1,3}\b/)?.[0] ||
+      null;
+    const diagnostics = { stage, category, smtpCode, enhancedCode };
+    console.error("Email worker failed", diagnostics);
     return Response.json(
-      { error: "Email processing failed; inspect the outbox and server logs" },
+      {
+        error: "Email processing failed; inspect the outbox and server logs",
+        ...diagnostics,
+      },
       { status: 500 },
     );
   } finally {
