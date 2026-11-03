@@ -98,12 +98,12 @@ body {
 
 /* Shared report action across learner and tutor cards, details and chat. */
 button.report-issue-button {
-  border-color: #b91c1c;
-  background-color: #b91c1c;
-  color: #fff;
+  border-color: #15924f;
+  background-color: transparent;
+  color: #087542;
 }
 button.report-issue-button:hover {
-  border-color: #991b1b;
-  background-color: #991b1b;
-  color: #fff;
+  border-color: #087542;
+  background-color: #edf8f1;
+  color: #087542;
 }

@@ -162,7 +162,7 @@ export default function SessionCards({
                 )}
                 {s.lifecycle === "Upcoming" && active && (
                   <button
-                    className="tutor-session-cancel"
+                    className="tutor-session-cancel col-span-2 whitespace-nowrap"
                     onClick={() => onAction(s, "cancel")}
                   >
                     <XCircle size={15} />
@@ -171,7 +171,7 @@ export default function SessionCards({
                 )}
                 {!["Cancelled", "Canceled"].includes(s.status) && (
                   <button
-                    className="report-issue-button"
+                    className="report-issue-button col-span-2"
                     onClick={() => onAction(s, "incident")}
                   >
                     <Flag size={15} />

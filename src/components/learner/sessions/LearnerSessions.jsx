@@ -412,7 +412,7 @@ export default function LearnerSessions({ args = {} }) {
                           records.find((session) => session.id === id),
                         )
                       }
-                      className="min-h-8 rounded-md border border-red-200 px-1 py-0.5 text-xs font-semibold text-red-700"
+                      className="col-span-2 min-h-8 whitespace-nowrap rounded-md border border-red-200 px-2 py-1 text-xs font-semibold text-red-700"
                     >
                       <XCircle className="mr-2 inline h-4 w-4" />
                       Cancel Session
@@ -427,7 +427,7 @@ export default function LearnerSessions({ args = {} }) {
                           records.find((session) => session.id === id),
                         )
                       }
-                      className="report-issue-button min-h-8 rounded-md border border-[#dfe5ed] px-1 py-0.5 text-xs font-semibold"
+                      className="report-issue-button col-span-2 min-h-8 rounded-md border px-2 py-1 text-xs font-semibold"
                     >
                       <Flag className="mr-2 inline h-4 w-4" />
                       Report an Issue
