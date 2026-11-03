@@ -17,7 +17,12 @@ import { confirmedClasses } from "./scheduleReview.js";
 import { listTutorAvailability } from "../../../services/tutorAvailability.js";
 import { listTutorClassSchedule } from "../../../services/tutorSchedule.js";
 import { getSupabaseClient } from "../../../services/supabaseClient.js";
-import { topicTimeOptions, groupTopicDates } from "./topicTimeOptions.js";
+import {
+  topicTimeOptions,
+  groupTopicDates,
+  savedTopicRows,
+  isUnchangedTopicRow,
+} from "./topicTimeOptions.js";
 import { validateTopicService } from "./topicServiceRules.js";
 import "./create-service.css";
 const newTopic = () => ({
@@ -89,51 +94,7 @@ export default function CreateService({
           availability: (data.slots || [])
             .filter((slot) => String(slot.topicId) === String(topic.id))
             .flatMap((slot) => {
-              const bookings = (schedule.bookings || []).filter(
-                (booking) =>
-                  ((!booking.service_id && !booking.serviceId) ||
-                    String(booking.service_id || booking.serviceId) ===
-                      String(service.id)) &&
-                  String(booking.date || booking.session_date).slice(0, 10) ===
-                    slot.date &&
-                  ["pending", "confirmed", "completed"].includes(
-                    String(
-                      booking.status || booking.booking_status,
-                    ).toLowerCase(),
-                  ),
-              );
-              const rows = Array.from(
-                { length: Math.ceil((slot.end - slot.start) / 2) },
-                (_, i) => ({
-                  ...slot,
-                  start: slot.start + i * 2,
-                  end: Math.min(slot.end, slot.start + i * 2 + 2),
-                  duration: Math.min(2, slot.end - slot.start - i * 2),
-                  key: crypto.randomUUID(),
-                  id: slot.id,
-                }),
-              );
-              for (const booking of bookings) {
-                const start =
-                  typeof booking.start === "number"
-                    ? booking.start
-                    : hour(booking.start || booking.start_time);
-                const end =
-                  typeof booking.end === "number"
-                    ? booking.end
-                    : hour(booking.end || booking.end_time);
-                if (!rows.some((row) => row.start === start)) {
-                  rows.push({
-                    ...slot,
-                    start,
-                    end,
-                    duration: end - start,
-                    key: crypto.randomUUID(),
-                    id: slot.id,
-                  });
-                }
-              }
-              return rows;
+              return savedTopicRows(slot);
             }),
         }))
       : service
@@ -343,7 +304,7 @@ export default function CreateService({
           (!optionsFor(row).includes(row.start)
             ? "Choose an available start time."
             : "");
-        if (message && !isBooked(row))
+        if (message && !isBooked(row) && !isUnchangedTopicRow(row))
           return setError(topic.name + ": " + message);
       }
     setSaving(true);
@@ -735,7 +696,11 @@ export default function CreateService({
                         <div className="service-date-times">
                           {group.rows.map((row) => {
                             const choices = optionsFor(row),
-                              valid = choices.includes(row.start);
+                              valid = choices.includes(row.start),
+                              hasTime =
+                                Number.isFinite(row.start) &&
+                                Number.isFinite(row.end),
+                              booked = isBooked(row);
                             return (
                               <div className="service-group-time" key={row.key}>
                                 <select
@@ -749,11 +714,11 @@ export default function CreateService({
                                     !group.date ||
                                     scheduleLoading ||
                                     !!scheduleError ||
-                                    isBooked(row) ||
+                                    booked ||
                                     !choices.length
                                   }
                                   value={
-                                    valid ? formatTimeInput(row.start) : ""
+                                    hasTime ? formatTimeInput(row.start) : ""
                                   }
                                   onChange={(e) =>
                                     patchTime(
@@ -770,6 +735,14 @@ export default function CreateService({
                                         ? "No free times"
                                         : "Choose a free time"}
                                   </option>
+                                  {hasTime && !valid && (
+                                    <option
+                                      value={formatTimeInput(row.start)}
+                                      disabled
+                                    >
+                                      {time(row.start)}
+                                    </option>
+                                  )}
                                   {choices.map((start) => (
                                     <option
                                       key={start}
@@ -780,21 +753,27 @@ export default function CreateService({
                                   ))}
                                 </select>
                                 <span className="service-time-end">
-                                  {valid
+                                  {hasTime
                                     ? "to " + time(row.end)
                                     : "Choose time"}
                                 </span>
                                 <span
                                   className={
-                                    valid
+                                    booked || valid
                                       ? "service-slot-valid"
                                       : "create-service-hint"
                                   }
                                 >
-                                  {valid ? (
+                                  {booked ? (
+                                    "Booked time is locked"
+                                  ) : valid ? (
                                     <>
                                       <Check size={14} /> No conflicts
                                     </>
+                                  ) : isUnchangedTopicRow(row) ? (
+                                    "Saved time"
+                                  ) : hasTime ? (
+                                    "Saved time is no longer available. Choose another time or date."
                                   ) : group.date ? (
                                     "Choose another free time or date"
                                   ) : (
@@ -804,7 +783,7 @@ export default function CreateService({
                                 <button
                                   type="button"
                                   aria-label="Remove time"
-                                  disabled={isBooked(row)}
+                                  disabled={booked}
                                   onClick={() =>
                                     patch(
                                       topic.key,

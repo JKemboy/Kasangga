@@ -5,6 +5,37 @@ const decimal = (value) =>
     ? value
     : Number(String(value).split(":")[0]) +
       Number(String(value).split(":")[1]) / 60;
+
+// Only split the saved range. Bookings on the same date must never introduce
+// times into another topic's availability.
+export function savedTopicRows(slot, makeKey = () => crypto.randomUUID()) {
+  return Array.from(
+    { length: Math.ceil((slot.end - slot.start) / 2) },
+    (_, i) => ({
+      ...slot,
+      start: slot.start + i * 2,
+      end: Math.min(slot.end, slot.start + i * 2 + 2),
+      duration: Math.min(2, slot.end - slot.start - i * 2),
+      savedTime: {
+        date: slot.date,
+        start: slot.start + i * 2,
+        end: Math.min(slot.end, slot.start + i * 2 + 2),
+        repeat: !!slot.repeat,
+      },
+      key: makeKey(),
+    }),
+  );
+}
+
+export function isUnchangedTopicRow(row) {
+  return (
+    !!row.savedTime &&
+    row.date === row.savedTime.date &&
+    row.start === row.savedTime.start &&
+    row.end === row.savedTime.end &&
+    !!row.repeat === row.savedTime.repeat
+  );
+}
 export function topicTimeOptions({
   date,
   duration = 1,
