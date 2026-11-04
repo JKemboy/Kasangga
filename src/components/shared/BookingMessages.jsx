@@ -303,7 +303,7 @@ export default function BookingMessages({
                 {avatar(c.peer_name)}
                 <span className="chat-person-copy">
                   <strong>{c.peer_name}</strong>
-                  <small>{c.last_message || c.service_title}</small>
+                  {c.last_message && <small>{c.last_message}</small>}
                   <small className="chat-muted">{c.service_title}</small>
                 </span>
                 <span className="chat-person-meta">
