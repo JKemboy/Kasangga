@@ -2,6 +2,7 @@ import RecordSearch from "../shared/RecordSearch.jsx";
 import useSectionNavigation from "../shared/useSectionNavigation.js";
 import LcoPolicies from "./LcoPolicies.jsx";
 import LcoNotifications from "./LcoNotifications.jsx";
+import { lcoNotificationDestination } from "../../services/staffNotificationTargets.js";
 // LCO portal coordinator: loads the role-authorized Supabase snapshot, maintains the LCO inbox, and routes to each LCO section.
 import LcoCatalog from "./LcoCatalog.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
@@ -46,7 +47,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { Modal, button, primary } from "../tutor/workspace/ui.jsx";
+import { Modal, button, primary } from "../shared/staffUi.jsx";
 import LcoUsers from "./LcoUsers.jsx";
 import LcoSupportInbox from "./LcoSupportInbox.jsx";
 import "../oswe/oswe.css";
@@ -173,7 +174,9 @@ export default function LcoDashboardPage() {
   const [notificationTarget, setNotificationTarget] = useState(null);
   function go(label, notification = null) {
     setNotificationTarget(notification);
-    if (notification) setSearch("");
+    if (notification)
+      setSectionSearch((current) => ({ ...current, [label]: "" }));
+    if (notification && label === "User Management") setQuery("");
     setOpen(false);
     if (
       [
@@ -208,6 +211,12 @@ export default function LcoDashboardPage() {
       setNotificationError(cause.message);
       return false;
     }
+  }
+  function openNotification(row) {
+    const destination = lcoNotificationDestination(row, database || {});
+    if (!destination) return false;
+    go(destination.view, destination.target);
+    return true;
   }
   return (
     <LcoDatabaseContext.Provider
@@ -321,18 +330,7 @@ export default function LcoDashboardPage() {
               }))}
               inboxError={notificationError}
               onRead={readNotifications}
-              onNotification={(row) => {
-                const section = {
-                  incident_reports: "Incident Reports",
-                  bookings: "Bookings Monitoring",
-                  payments: "Payments & Transactions",
-                  refunds: "Payments & Transactions",
-                  services: "Service Management",
-                  tutor_applications: "Tutor Verification",
-                  support_conversations: "Messages",
-                }[row.entityType];
-                if (section) go(section, row);
-              }}
+              onNotification={openNotification}
               onNavigate={go}
             />
             <button
@@ -412,7 +410,7 @@ export default function LcoDashboardPage() {
               rows={lcoNotifications}
               error={notificationError}
               onRead={readNotifications}
-              go={go}
+              onOpen={openNotification}
             />
           ) : view === "Settings" ? (
             <LcoSettings
@@ -459,7 +457,10 @@ export default function LcoDashboardPage() {
               onQueryChange={setSearch}
             />
           ) : view === "Messages" ? (
-            <LcoSupportInbox />
+            <LcoSupportInbox
+              key={notificationTarget?.id || "messages"}
+              notificationTarget={notificationTarget}
+            />
           ) : view === "Incident Reports" ? (
             <LcoIncidents
               key={notificationTarget?.id || "incidents"}
@@ -488,6 +489,8 @@ export default function LcoDashboardPage() {
             <LcoReports users={rows} services={services} go={go} />
           ) : (
             <LcoUsers
+              key={notificationTarget?.id || "users"}
+              notificationTarget={notificationTarget}
               applications={apps}
               services={services}
               config={config}

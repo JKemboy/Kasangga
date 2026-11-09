@@ -27,7 +27,7 @@ import {
   primary,
   input,
   Avatar,
-} from "../tutor/workspace/ui.jsx";
+} from "../shared/staffUi.jsx";
 import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./lcoData.js";
 export default function LcoBookings({
@@ -88,6 +88,7 @@ export default function LcoBookings({
     filtered,
     6,
     setPage,
+    setSelected,
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 6)),
     current = Math.min(page, pages),

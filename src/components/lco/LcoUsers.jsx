@@ -6,7 +6,7 @@ import {
 // User Management: searches and reviews user records, then sends authorized changes to the LCO database callbacks.
 import UserExport from "./UserExport.jsx";
 import UserDetails from "./UserDetails.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Users,
   Search,
@@ -16,8 +16,9 @@ import {
   Eye,
   ArrowRight,
 } from "lucide-react";
-import { button, input, Avatar } from "../tutor/workspace/ui.jsx";
+import { button, input, Avatar } from "../shared/staffUi.jsx";
 export default function LcoUsers({
+  notificationTarget,
   rows: allRows,
   onUpdate,
   query,
@@ -43,6 +44,13 @@ export default function LcoUsers({
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
     [notice, setNotice] = useState("");
+  useEffect(() => {
+    if (notificationTarget?.entityType !== "users") return;
+    const user = rows.find(
+      (row) => String(row.userId) === String(notificationTarget.entityId),
+    );
+    if (user) setSelected(user);
+  }, [notificationTarget, allRows]);
   const filtered = rows.filter(
     (r) =>
       (tab === "All Users" || r.status === tab) &&

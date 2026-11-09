@@ -26,7 +26,7 @@ import {
   primary,
   input,
   Avatar,
-} from "../tutor/workspace/ui.jsx";
+} from "../shared/staffUi.jsx";
 import { dateLabel } from "./lcoData.js";
 export default function LcoIncidents({
   notificationTarget,
@@ -94,6 +94,7 @@ export default function LcoIncidents({
     filtered,
     7,
     setPage,
+    setSelected,
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),

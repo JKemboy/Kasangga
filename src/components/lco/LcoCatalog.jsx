@@ -27,7 +27,7 @@ import {
   primary,
   input,
   Avatar,
-} from "../tutor/workspace/ui.jsx";
+} from "../shared/staffUi.jsx";
 import { dateLabel, downloadData } from "./lcoData.js";
 function applicationDocumentKey(application) {
   return Object.entries(application.documents || {})
@@ -104,6 +104,7 @@ export default function LcoCatalog({
     filtered,
     7,
     setPage,
+    setSelected,
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),

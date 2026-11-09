@@ -35,6 +35,7 @@ export default function HeaderInbox({
 }) {
   const [panel, setPanel] = useState(null),
     [detail, setDetail] = useState(null);
+  const [actionError, setActionError] = useState("");
   const [read, setRead] = useState(() => {
     return [];
   });
@@ -116,6 +117,7 @@ export default function HeaderInbox({
             {panel !== "notifications" && <span>From users</span>}
           </header>
           {inboxError && <p role="alert">{inboxError}</p>}
+          {actionError && <p role="alert">{actionError}</p>}
           <div className="hi-list">
             {panel === "notifications"
               ? notifications.map((n) => {
@@ -125,10 +127,20 @@ export default function HeaderInbox({
                       className={`hi-item ${isRead(n) ? "" : "hi-unread"}`}
                       key={n.id}
                       onClick={async () => {
-                        if (!isRead(n) && !(await mark([n]))) return;
+                        setActionError("");
+                        if (!isRead(n))
+                          void mark([n]).catch((cause) =>
+                            setActionError(
+                              cause.message ||
+                                "Could not mark notification as read.",
+                            ),
+                          );
                         setPanel(null);
-                        if (onNotification) onNotification(n);
-                        else setDetail({ notification: n });
+                        if (
+                          !onNotification ||
+                          (await onNotification(n)) === false
+                        )
+                          setDetail({ notification: n });
                       }}
                     >
                       <span className={`hi-icon hi-${n.kind || "system"}`}>

@@ -13,9 +13,7 @@ export default function OsweNotifications({
       loading={loading}
       error={error}
       onRead={onRead}
-      onOpen={(row) => {
-        if (row.entityType && row.entityId) onOpen(row);
-      }}
+      onOpen={onOpen}
       subtitle="View referral, case, evidence, clearance and policy updates."
     />
   );

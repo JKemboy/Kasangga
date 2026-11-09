@@ -1,6 +1,7 @@
 // LCO Messages: lists and responds to learner/tutor support conversations using the support inbox service.
 import { useCallback, useEffect, useState } from "react";
 import { Search, Send, UserRound } from "lucide-react";
+import { button, primary } from "../shared/staffUi.jsx";
 import "../shared/booking-messages.css";
 import "./lco-support-inbox.css";
 import { useAuth } from "../../auth/AuthProvider.jsx";
@@ -15,16 +16,16 @@ const time = (value) => new Date(value).toLocaleString("en-PH", {
   timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short",
 });
 
-export default function LcoSupportInbox() {
+export default function LcoSupportInbox({ notificationTarget }) {
   const { user } = useAuth();
   const [threads, setThreads] = useState([]);
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(notificationTarget?.entityId || "");
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const active = threads.find((thread) => thread.id === selected);
+  const active = threads.find((thread) => String(thread.id) === String(selected));
   const filtered = threads.filter((thread) =>
     `${thread.subject} ${thread.category} ${thread.user?.first_name || ""} ${thread.user?.last_name || ""}`
       .toLowerCase().includes(query.toLowerCase()),
@@ -98,7 +99,7 @@ export default function LcoSupportInbox() {
           <header className="chat-header">
             <span className="chat-avatar" aria-hidden="true">{active ? fullName(active).split(/\s+/).slice(0, 2).map((part) => part[0]).join("") : <UserRound size={24} />}</span>
             <div className="chat-header-copy"><h2>{active ? fullName(active) : "Select a conversation"}</h2>{active && <><div className="chat-peer-status"><span>{active.status === "resolved" ? "Resolved" : "Support request"}</span></div><p>{active.subject}</p><small>{active.user?.csu_email} · {active.category}</small></>}</div>
-            {active && <button type="button" disabled={busy} onClick={resolve} className="chat-outline lco-support-status">{active.status === "resolved" ? "Reopen" : "Resolve"}</button>}
+            {active && <button type="button" disabled={busy} onClick={resolve} className={button + " lco-support-status"}>{active.status === "resolved" ? "Reopen" : "Resolve"}</button>}
           </header>
           {error && <p role="alert" className="chat-error">{error}</p>}
           <div className="chat-history" role="log" aria-label="Support messages">
@@ -106,7 +107,7 @@ export default function LcoSupportInbox() {
             {!active && <p className="chat-empty">Select a support conversation to read and reply.</p>}
           </div>
           <form onSubmit={reply} className="chat-composer">
-            <div className="chat-compose-row"><div className="chat-compose-input"><input value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={5000} placeholder="Type your message..." aria-label="Support reply" disabled={!active || busy} /></div><button className="chat-send" aria-label="Send reply" disabled={!active || busy || !draft.trim()}><Send size={22} /></button></div>
+            <div className="chat-compose-row"><div className="chat-compose-input"><input value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={5000} placeholder="Type your message..." aria-label="Support reply" disabled={!active || busy} /></div><button className={primary} aria-label="Send reply" disabled={!active || busy || !draft.trim()}><Send size={22} /></button></div>
             <p className="tutor-chat-note lco-support-note">{active ? `Replying to ${fullName(active)} · ${active.user?.csu_email || ""}` : "LCO replies are delivered to the user’s support conversation."}</p>
           </form>
         </section>

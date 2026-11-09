@@ -32,7 +32,7 @@ import {
   primary,
   input,
   Avatar,
-} from "../tutor/workspace/ui.jsx";
+} from "../shared/staffUi.jsx";
 import { money } from "../tutor/workspace/data.js";
 
 const initialTransactions = [];
@@ -128,6 +128,7 @@ export default function LcoPayments({
     filtered,
     7,
     setPage,
+    setSelected,
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 7)),
     current = Math.min(page, pages),

@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   CalendarDays,
 } from "lucide-react";
-import { button } from "../tutor/workspace/ui.jsx";
+import { button, Modal } from "./staffUi.jsx";
 
 const groups = {
   tutor_applications: ["Tutor Verification", ShieldCheck, "bg-violet-600"],
@@ -56,6 +56,7 @@ export default function StaffNotifications({
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [selected, setSelected] = useState(null);
   const unread = rows.filter((row) => !row.read).length;
   const categories = [...new Set(rows.map((row) => appearance(row)[0]))].sort();
   const filtered = rows
@@ -81,8 +82,16 @@ export default function StaffNotifications({
     setBusy(true);
     setActionError("");
     try {
-      if (!row.read && (await onRead([row.id])) === false) return;
-      onOpen?.(row);
+      if (!row.read && onRead) {
+        void Promise.resolve()
+          .then(() => onRead([row.id]))
+          .catch((cause) => {
+            setActionError(
+              cause.message || "Could not mark notification as read.",
+            );
+          });
+      }
+      if (!onOpen || (await onOpen(row)) === false) setSelected(row);
     } catch (cause) {
       setActionError(cause.message || "Could not open this notification.");
     } finally {
@@ -268,6 +277,19 @@ export default function StaffNotifications({
           </button>
         </div>
       </div>
+      {selected && (
+        <Modal title={selected.title} onClose={() => setSelected(null)}>
+          <p className="whitespace-pre-wrap break-words text-sm">
+            {selected.text}
+          </p>
+          {selected.detail && (
+            <p className="mt-2 text-xs text-slate-500">{selected.detail}</p>
+          )}
+          <p className="mt-3 text-xs text-slate-500">
+            {timestamp(selected.time)}
+          </p>
+        </Modal>
+      )}
     </section>
   );
 }

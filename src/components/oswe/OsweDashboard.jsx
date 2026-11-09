@@ -1,3 +1,4 @@
+import { osweNotificationDestination } from "../../services/staffNotificationTargets.js";
 import RecordSearch from "../shared/RecordSearch.jsx";
 import useSectionNavigation from "../shared/useSectionNavigation.js";
 import OsweNotifications from "./OsweNotifications.jsx";
@@ -51,13 +52,7 @@ import {
   CheckCircle,
   X,
 } from "lucide-react";
-import {
-  Modal,
-  Field,
-  button,
-  primary,
-  input,
-} from "../tutor/workspace/ui.jsx";
+import { Modal, Field, button, primary, input } from "../shared/staffUi.jsx";
 import "./oswe.css";
 
 const statuses = [
@@ -286,32 +281,33 @@ function OsweDashboardContent() {
     setPage(1);
   }
   function openNotification(notification) {
-    if (notification.entityType === "cases") {
-      const record = database.records?.cases?.find(
-        (c) => String(c.caseDatabaseId) === String(notification.entityId),
-      );
-      if (record) {
-        setSelected(record);
-        setModal("Case Record");
-        return;
-      }
+    const target = osweNotificationDestination(
+      notification,
+      database.records || {},
+    );
+    if (!target) return false;
+    if (target.kind !== "policy" && !target.record) return false;
+    setSectionSearch((current) => ({
+      ...current,
+      [target.view]: target.query || "",
+    }));
+    setOverviewCaseFilter({});
+    setStatus("");
+    setCollege("");
+    setRequested("");
+    setSemester("");
+    setPage(1);
+    setView(target.view);
+    if (target.kind === "case" && target.record) {
+      setSelected(target.record);
+      setModal("Case Record");
+    } else if (target.kind === "clearance" && target.record) {
+      review(target.record);
+    } else {
+      setModal(null);
+      if (target.kind !== "policy") return false;
     }
-    if (notification.entityType === "clearance_reviews") {
-      setView("Student Clearance Review");
-      return;
-    }
-    if (notification.entityType === "policies") {
-      setView("Policies & Procedures");
-      return;
-    }
-    if (["incident_reports", "cases"].includes(notification.entityType)) {
-      setGlobal(
-        notification.entityType === "incident_reports"
-          ? `IR-${notification.entityId}`
-          : String(notification.entityId),
-      );
-      setView("Case Review");
-    }
+    return true;
   }
   function openNav(label) {
     if (label === "Messages") return;
@@ -486,7 +482,9 @@ function OsweDashboardContent() {
         {database.error && (
           <p role="alert" className="oswe-alert">
             {database.error}
-            <button onClick={database.refresh}>Retry</button>
+            <button className={button} onClick={database.refresh}>
+              Retry
+            </button>
           </p>
         )}
         {database.loading && (
@@ -537,7 +535,6 @@ function OsweDashboardContent() {
             settings={settings}
             searchQuery={global}
             onSearchChange={setGlobal}
-            hideSearch
           />
         ) : [
             "Case Review",
@@ -693,17 +690,6 @@ function OsweDashboardContent() {
               >
                 Reset filters
               </button>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <label className="oswe-search">
-                <Search size={16} />
-                <input
-                  aria-label="Search students"
-                  placeholder="Search student ID, name, program, or case number..."
-                  value={query}
-                  onChange={(e) => change(setQuery, e.target.value)}
-                />
-              </label>
               <UserExport
                 rows={filtered}
                 onCsv={exportCsv}
@@ -739,6 +725,17 @@ function OsweDashboardContent() {
                     )
                 }
               />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <label className="oswe-search">
+                <Search size={16} />
+                <input
+                  aria-label="Search students"
+                  placeholder="Search student ID, name, program, or case number..."
+                  value={query}
+                  onChange={(e) => change(setQuery, e.target.value)}
+                />
+              </label>
             </div>
             {notice && (
               <p role="status" className="text-xs text-green-800">
@@ -887,15 +884,15 @@ function OsweDashboardContent() {
           onClose={() => setModal(null)}
         />
       )}
-      {modal === "Case Record" &&
-        database.records?.cases.find((c) => c.caseId === selected?.caseId) && (
-          <CaseShortcut
-            record={database.records.cases.find(
-              (c) => c.caseId === selected.caseId,
-            )}
-            onClose={() => setModal(null)}
-          />
-        )}
+      {modal === "Case Record" && selected && (
+        <CaseShortcut
+          record={
+            database.records?.cases.find((c) => c.caseId === selected.caseId) ||
+            selected
+          }
+          onClose={() => setModal(null)}
+        />
+      )}
       {modal && !["Review Clearance", "Case Record"].includes(modal) && (
         <Modal title={modal} onClose={() => setModal(null)}>
           {modal === "Case Record" ? (
