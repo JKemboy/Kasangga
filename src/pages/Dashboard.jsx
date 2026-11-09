@@ -63,7 +63,7 @@ export default function Dashboard() {
               <MyReports go={navigate} args={viewArgs} />
             </div>
           )}
-          {view === "notifications" && <LearnerNotifications />}
+          {view === "notifications" && <LearnerNotifications args={viewArgs} />}
         </main>
       </div>
     </LearnerWorkspace>

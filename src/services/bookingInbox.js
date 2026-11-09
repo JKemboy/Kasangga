@@ -145,30 +145,37 @@ export async function loadBookingInbox(role, userId) {
         text: row.message,
         time: row.created_at,
         read: row.is_read,
-        category:
-          entity === "incident_reports"
-            ? "Safety and Reports"
-            : entity === "services"
-              ? "Services"
-              : entity === "payments"
-                ? "Payments"
-                : "System",
-        view:
-          entity === "incident_reports"
-            ? "reports"
-            : entity === "services"
-              ? "services"
-              : entity === "bookings"
-                ? "sessions"
-                : "notifications",
+        category: ["incident_reports", "cases"].includes(entity)
+          ? "Safety and Reports"
+          : entity === "services"
+            ? "Services"
+            : entity === "payments"
+              ? "Payments"
+              : "System",
+        view: ["incident_reports", "cases"].includes(entity)
+          ? "reports"
+          : entity === "services"
+            ? "services"
+            : entity === "bookings"
+              ? "sessions"
+              : "notifications",
         args:
           entity === "incident_reports"
-            ? { reportId: id }
-            : entity === "services"
-              ? { serviceId: id }
-              : entity === "bookings"
-                ? { sessionId: id }
-                : { notificationId: `notification-${row.notification_id}` },
+            ? {
+                reportId: id,
+                ...(reports.received.some(
+                  (report) => String(report.report_id) === id,
+                )
+                  ? { tab: "received" }
+                  : {}),
+              }
+            : entity === "cases"
+              ? { caseId: id }
+              : entity === "services"
+                ? { serviceId: id }
+                : entity === "bookings"
+                  ? { sessionId: id }
+                  : { notificationId: `notification-${row.notification_id}` },
       };
     });
   }

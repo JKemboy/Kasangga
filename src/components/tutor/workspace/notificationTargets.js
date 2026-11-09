@@ -27,6 +27,8 @@ function destination(target) {
 
 export function notificationDestination(notification) {
   if (!notification) return null;
+  // Evidence requests need the upload form in the notification dialog.
+  if (notification.notificationType === "case_evidence_requested") return null;
   if (Object.hasOwn(notification, "target"))
     return destination(notification.target);
   if (Object.hasOwn(notification, "args")) return destination(notification);

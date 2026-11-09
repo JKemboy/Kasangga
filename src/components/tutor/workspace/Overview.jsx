@@ -478,8 +478,7 @@ export default function Overview({
                     aria-label={`Open notification: ${n.title}`}
                     className="flex w-full items-center gap-2 py-1 text-left hover:bg-green-50"
                     onClick={async () => {
-                      if (!n.read && (await inbox.markRead([n])) === false)
-                        return;
+                      if (!n.read) void inbox.markRead([n]);
                       openActivity(n);
                     }}
                   >

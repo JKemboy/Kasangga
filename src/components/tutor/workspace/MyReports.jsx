@@ -310,17 +310,28 @@ export default function MyReports({ go, args = {} }) {
     setFilter("All");
   }, [args.tab]);
   useEffect(() => {
-    const key = `${args.tab}:${args.reportId}`;
-    if (!args.reportId || key === openedRoute.current) return;
-    const about = args.tab === "received";
-    const row = reports[about ? "received" : "created"].find(
-      (r) => String(r.report_id) === String(args.reportId),
-    );
-    if (row) {
-      setSelectedKey(rowKey(row, about));
-      openedRoute.current = key;
+    const key = `${args.tab}:${args.reportId}:${args.caseId}`;
+    if ((!args.reportId && !args.caseId) || key === openedRoute.current) return;
+    const tabs =
+      args.tab === "received"
+        ? ["received", "created"]
+        : ["created", "received"];
+    for (const targetTab of tabs) {
+      const row = reports[targetTab].find((r) =>
+        args.caseId
+          ? r.case_id != null && String(r.case_id) === String(args.caseId)
+          : String(r.report_id) === String(args.reportId),
+      );
+      if (row) {
+        setTab(targetTab);
+        setFilter("All");
+        setQuery("");
+        setSelectedKey(rowKey(row, targetTab === "received"));
+        openedRoute.current = key;
+        break;
+      }
     }
-  }, [args.tab, args.reportId, reports]);
+  }, [args.tab, args.reportId, args.caseId, reports]);
   const about = tab === "received";
   const stages = about ? aboutStages : filedStages;
   const all = reports[tab];

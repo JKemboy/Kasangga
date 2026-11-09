@@ -3,7 +3,7 @@ import {
   tutorNotificationCategory,
 } from "../../../services/tutorNotificationCategories.js";
 // Tutor Notifications: displays tutor notifications and routes actionable items to their related workspace section.
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import useBookingInbox from "../../../services/useBookingInbox.js";
 import {
@@ -101,6 +101,9 @@ export default function Notifications({
   const [category, setCategory] = useState("All");
   const [tab, setTab] = useState("All");
   const [selectedId, setSelectedId] = useState(args.notificationId ?? null);
+  useEffect(() => {
+    setSelectedId(args.notificationId ?? null);
+  }, [args.notificationId]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
   const listRef = useRef(null);
@@ -286,9 +289,9 @@ export default function Notifications({
                   aria-label={`Open ${n.title}: ${n.text}`}
                   className={`grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-2 px-3 py-2 text-left transition-colors hover:bg-[#e8f4ed] focus-visible:relative focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green-700 lg:h-14 lg:grid-cols-[36px_minmax(0,1.35fr)_minmax(0,1fr)_142px_56px] lg:py-1.5 ${n.read ? "bg-white" : "bg-[#eff8f3]"}`}
                   onClick={async () => {
-                    if (!n.read && (await markRead(n.id)) === false) return;
+                    if (!n.read) void markRead(n.id);
                     const target = notificationDestination(n);
-                    if (target)
+                    if (target && target.view !== "notifications")
                       go(
                         target.view,
                         role === "learner" && target.view === "messages"
