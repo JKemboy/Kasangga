@@ -197,7 +197,7 @@ export default function LearnerFindTutor({ query = "" }) {
         className={
           list
             ? "mt-1 grid gap-2"
-            : "mt-1 grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
+            : "mt-1 grid gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,220px),1fr))]"
         }
       >
         {rows.map(({ tutor, service }) => (

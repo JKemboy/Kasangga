@@ -141,7 +141,7 @@ export default function LearnerOverview({ go }) {
         </p>
       )}
       {!loading && !error && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,220px),1fr))]">
           {rows.slice(0, 4).map(({ tutor, service }) => (
             <TutorServiceCard
               key={service.id}

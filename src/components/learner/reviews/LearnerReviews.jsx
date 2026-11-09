@@ -290,7 +290,7 @@ export default function LearnerReviews() {
                       ),
                     )
                   }
-                  className="h-8 rounded-md border border-[#15924f] text-xs font-semibold text-[#087542]"
+                  className={`h-8 cursor-pointer rounded-md border text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087542] ${activeTab === "Submitted" ? "border-[#15924f] text-[#087542]" : "border-[#087542] bg-[#087542] text-white hover:bg-[#065c34] active:bg-[#004727]"}`}
                 >
                   <Pencil className="mr-2 inline h-4 w-4" />
                   {activeTab === "Submitted" ? "Edit Review" : "Write Review"}
