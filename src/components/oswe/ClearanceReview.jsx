@@ -1,6 +1,6 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, ShieldCheck } from "lucide-react";
-import { button, primary, input } from "../tutor/workspace/ui.jsx";
+import { button, primary, input } from "../shared/staffUi.jsx";
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { reviewStudentClearance } from "../../services/osweCaseWorkflow.js";
 import "./case-shortcuts.css";
@@ -26,7 +26,8 @@ export default function ClearanceReview({ record, onClose }) {
   }, []);
   async function save(event) {
     event.preventDefault();
-    if (saving) return;
+    if (saving || choice !== "cleared" || !verified || notes.trim().length < 15)
+      return;
     setSaving(true);
     setError("");
     try {
@@ -36,7 +37,7 @@ export default function ClearanceReview({ record, onClose }) {
         );
       await reviewStudentClearance(
         r.clearanceDatabaseId,
-        choice,
+        "cleared",
         notes.trim(),
         verified,
       );
@@ -117,21 +118,15 @@ export default function ClearanceReview({ record, onClose }) {
         <form id="clearance-review-form" onSubmit={save} className="space-y-4">
           <h3>Clearance Decision</h3>
           <div className="ocx-outcomes">
-            {[
-              ["cleared", "Cleared"],
-              ["on_hold", "Place Clearance On Hold"],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                disabled={saving}
-                aria-pressed={choice === value}
-                className={choice === value ? primary : button}
-                onClick={() => setChoice(value)}
-              >
-                {label}
-              </button>
-            ))}
+            <button
+              type="button"
+              disabled={saving}
+              aria-pressed={choice === "cleared"}
+              className={choice === "cleared" ? primary : button}
+              onClick={() => setChoice("cleared")}
+            >
+              Cleared
+            </button>
           </div>
           <label className="block">
             Review notes
@@ -143,7 +138,7 @@ export default function ClearanceReview({ record, onClose }) {
               rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Record the submitted form and completed requirements, or the reason for keeping clearance on hold."
+              placeholder="Record the submitted form and completed requirements."
             />
           </label>
           {choice === "cleared" && (

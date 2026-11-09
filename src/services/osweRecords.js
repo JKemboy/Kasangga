@@ -1,4 +1,5 @@
 import { academicYear } from "./academicYear.js";
+import { clearanceAcademicTerm } from "./clearanceAcademicTerm.js";
 // OSWE record mapper: converts database snapshot tables into the case, clearance, evidence, archive, and report view models.
 const label = (value) =>
   String(value || "")
@@ -193,9 +194,7 @@ export function mapOsweRecords(db) {
       program: user?.program || user?.college || "",
       clearanceId: `CLR-${r.clearance_review_id}`,
       clearanceDatabaseId: r.clearance_review_id,
-      term: `${r.academic_year} · ${r.semester}`,
-      academicYear: r.academic_year,
-      semester: r.semester,
+      ...clearanceAcademicTerm(r.academic_year, r.semester),
       requested: day(r.requested_at),
       requestedAt: r.requested_at,
       reviewedAt: r.reviewed_at,
