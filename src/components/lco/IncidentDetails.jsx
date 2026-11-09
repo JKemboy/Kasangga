@@ -2,7 +2,7 @@ import { statusClass } from "../shared/statusColors.js";
 import EvidencePreview from "./EvidencePreview.jsx";
 import { useEffect, useRef, useState } from "react";
 import { X, Info, Check, Users } from "lucide-react";
-import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
+import { Modal, button, primary, input } from "../shared/staffUi.jsx";
 import { dateLabel } from "./lcoData.js";
 import { reviewIncident } from "./incidentData.js";
 import "./incident-details.css";

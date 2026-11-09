@@ -1,0 +1,109 @@
+/* Explicit action styles take precedence over legacy table and modal rules. */
+button.staff-button,
+.oswe-app .au-tabs button {
+  --staff-button-color: #087542;
+  --staff-button-background: #fff;
+  --staff-button-hover: #e5f5eb;
+  --staff-button-active: #ccebd8;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 32px !important;
+  height: auto !important;
+  max-width: 100%;
+  padding: 6px 10px !important;
+  border: 1px solid #15924f !important;
+  border-radius: 8px !important;
+  background: var(--staff-button-background) !important;
+  color: var(--staff-button-color) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  text-align: center;
+  white-space: normal !important;
+  cursor: pointer;
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    color 150ms;
+}
+
+button.staff-button-primary,
+.oswe-app .au-tabs button[aria-pressed="true"] {
+  --staff-button-color: #fff;
+  --staff-button-background: #087542;
+  --staff-button-hover: #065c34;
+  --staff-button-active: #004727;
+  border-color: #087542 !important;
+}
+
+button.staff-button:is([class*="text-red-"], [class*="bg-red-"]) {
+  --staff-button-color: #dc2626;
+  --staff-button-hover: #fef2f2;
+  --staff-button-active: #fee2e2;
+  border-color: #dc2626 !important;
+}
+
+button.staff-button-primary:is([class*="text-red-"], [class*="bg-red-"]) {
+  --staff-button-color: #fff;
+  --staff-button-background: #dc2626;
+  --staff-button-hover: #b91c1c;
+  --staff-button-active: #991b1b;
+}
+
+button.staff-button:not(:disabled):hover,
+.oswe-app .au-tabs button:not(:disabled):hover {
+  background: var(--staff-button-hover) !important;
+}
+
+button.staff-button:not(:disabled):active,
+.oswe-app .au-tabs button:not(:disabled):active {
+  background: var(--staff-button-active) !important;
+}
+
+button.staff-button:focus-visible,
+.oswe-app .au-tabs button:focus-visible {
+  outline: 2px solid #087542;
+  outline-offset: 2px;
+}
+
+button.staff-button:disabled,
+.oswe-app .au-tabs button:disabled {
+  border-color: #e2e8f0 !important;
+  background: #f8fafc !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed;
+}
+
+button.staff-button svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+button.staff-button-nowrap {
+  white-space: nowrap !important;
+}
+
+.oswe-app .oo-table th:last-child {
+  width: 120px;
+}
+
+.oswe-app .oo-table td button.staff-button:hover {
+  text-decoration: none;
+}
+
+@media (min-width: 641px) {
+  .oswe-app .oo-table td button.staff-button {
+    min-height: 28px !important;
+    padding: 5px 8px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  button.staff-button,
+  .oswe-app .au-tabs button {
+    min-height: 40px !important;
+  }
+}

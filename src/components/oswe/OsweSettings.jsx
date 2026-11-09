@@ -12,7 +12,7 @@ import {
   Settings,
   CalendarDays,
 } from "lucide-react";
-import { input, button, primary } from "../tutor/workspace/ui.jsx";
+import { input, button, primary } from "../shared/staffUi.jsx";
 
 const notificationTypes = [
   "New Case Referral",

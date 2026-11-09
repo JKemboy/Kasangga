@@ -5,7 +5,7 @@ import {
 import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
 import { useState } from "react";
 import { Panel } from "./UserDetails.jsx";
-import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
+import { Modal, button, primary, input } from "../shared/staffUi.jsx";
 import BookingDetails from "./BookingDetails.jsx";
 import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./lcoData.js";

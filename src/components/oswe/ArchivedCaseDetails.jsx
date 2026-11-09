@@ -8,7 +8,7 @@ import {
   History,
   Eye,
 } from "lucide-react";
-import { Modal, button } from "../tutor/workspace/ui.jsx";
+import { Modal, button } from "../shared/staffUi.jsx";
 import EvidenceFile from "./EvidenceFile.jsx";
 import "./case-shortcuts.css";
 import "./archive-details.css";

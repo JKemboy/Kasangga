@@ -1,6 +1,6 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShieldCheck, Image, Eye, X } from "lucide-react";
-import { button, primary, input, Modal } from "../tutor/workspace/ui.jsx";
+import { button, primary, input, Modal } from "../shared/staffUi.jsx";
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import EvidenceFile from "./EvidenceFile.jsx";
 import {

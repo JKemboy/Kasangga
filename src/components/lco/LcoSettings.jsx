@@ -10,7 +10,7 @@ import {
   UserRound,
   Info,
 } from "lucide-react";
-import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
+import { Modal, button, primary, input } from "../shared/staffUi.jsx";
 import SecurityFlow from "../shared/SecurityFlow.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";

@@ -19,7 +19,7 @@ import {
   ChevronRight,
   RotateCcw,
 } from "lucide-react";
-import { Modal, button, input } from "../tutor/workspace/ui.jsx";
+import { Modal, button, input } from "../shared/staffUi.jsx";
 
 import PolicyDetails from "./PolicyDetails.jsx";
 

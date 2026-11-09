@@ -1,5 +1,5 @@
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
-import { input } from "../tutor/workspace/ui.jsx";
+import { input } from "../shared/staffUi.jsx";
 
 export function decisionPolicies(policies = []) {
   const today = new Intl.DateTimeFormat("en-CA", {

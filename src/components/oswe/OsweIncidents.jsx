@@ -18,7 +18,7 @@ import {
   Info,
   ShieldAlert,
 } from "lucide-react";
-import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
+import { Modal, button, primary, input } from "../shared/staffUi.jsx";
 
 function Badge({ value }) {
   return <span className={statusClass(value, "oi-badge")}>{value}</span>;

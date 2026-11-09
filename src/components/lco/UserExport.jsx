@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Download } from "lucide-react";
-import { primary } from "../tutor/workspace/ui.jsx";
+import { primary } from "../shared/staffUi.jsx";
 
 export function summaryHtml(rows, kind = "users") {
   const services = kind === "services",

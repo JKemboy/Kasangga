@@ -6,7 +6,7 @@ import {
   button,
   primary,
   input,
-} from "../tutor/workspace/ui.jsx";
+} from "../shared/staffUi.jsx";
 import { dateLabel } from "./lcoData.js";
 import "./incident-details.css";
 import "./user-details.css";

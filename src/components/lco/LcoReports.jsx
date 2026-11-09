@@ -8,7 +8,7 @@ import UserExport from "./UserExport.jsx";
 import { reportRows, reportCsv, reportHtml } from "./reportExport.js";
 import { useState } from "react";
 import { ChartNoAxesCombined, Download } from "lucide-react";
-import { button, primary, input, Modal } from "../tutor/workspace/ui.jsx";
+import { button, primary, input, Modal } from "../shared/staffUi.jsx";
 import { money } from "../tutor/workspace/data.js";
 import { summarizeEarnings } from "../tutor/workspace/earnings.js";
 import { downloadData } from "./lcoData.js";

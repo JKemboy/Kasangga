@@ -4,7 +4,7 @@ import {
 } from "../../services/applicationApproval.js";
 import { useState } from "react";
 import { Check, Info } from "lucide-react";
-import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
+import { Modal, button, primary, input } from "../shared/staffUi.jsx";
 
 export function applicationDecision(
   record,

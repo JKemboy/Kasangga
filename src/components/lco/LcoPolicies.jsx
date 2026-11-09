@@ -1,7 +1,7 @@
 import { getSupabaseClient } from "../../services/supabaseClient.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import OswePolicies from "../oswe/OswePolicies.jsx";
-import { Modal, button, input, primary } from "../tutor/workspace/ui.jsx";
+import { Modal, button, input, primary } from "../shared/staffUi.jsx";
 import { listLcoPolicies, saveLcoPolicy } from "../../services/lcoPolicies.js";
 
 export default function LcoPolicies({ searchQuery, onSearchChange }) {

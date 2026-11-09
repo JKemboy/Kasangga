@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CreditCard, Save } from "lucide-react";
-import { button, primary, input } from "../tutor/workspace/ui.jsx";
+import { button, primary, input } from "../shared/staffUi.jsx";
 import {
   loadLcoGcashQr,
   saveLcoGcashQr,

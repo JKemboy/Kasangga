@@ -12,7 +12,7 @@ import {
   ScanLine,
   LoaderCircle,
 } from "lucide-react";
-import { button, primary, input } from "../tutor/workspace/ui.jsx";
+import { button, primary, input } from "../shared/staffUi.jsx";
 import { dateLabel } from "./lcoData.js";
 import {
   analyzeTutorCredential,
