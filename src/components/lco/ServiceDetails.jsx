@@ -1,7 +1,7 @@
 import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
 import { useEffect, useState } from "react";
 import { Panel } from "./UserDetails.jsx";
-import { Modal, button, primary, input } from "../tutor/workspace/ui.jsx";
+import { Modal, button, primary, input } from "../shared/staffUi.jsx";
 import { dateLabel } from "./lcoData.js";
 import { moderateService } from "./serviceActions.js";
 import { money } from "../tutor/workspace/data.js";
@@ -318,7 +318,6 @@ export default function ServiceDetails({
       )}
       {booking && (
         <BookingDetails
-          showRelatedTransaction={false}
           record={booking}
           tutor={s.tutor}
           onClose={() => setBooking(null)}

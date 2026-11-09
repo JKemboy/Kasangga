@@ -5,14 +5,8 @@ import {
   timestampLabel,
 } from "../../services/lcoRecords.js";
 import { useEffect, useRef, useState } from "react";
-import {
-  X,
-  LockKeyhole,
-  CreditCard,
-  CalendarDays,
-  TriangleAlert,
-} from "lucide-react";
-import { button, primary } from "../tutor/workspace/ui.jsx";
+import { X, LockKeyhole, TriangleAlert } from "lucide-react";
+import { button, primary } from "../shared/staffUi.jsx";
 import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./lcoData.js";
 import "./incident-details.css";
@@ -23,7 +17,6 @@ export function paymentSplit(amount) {
 }
 export default function BookingDetails({
   record: r,
-  showRelatedTransaction = true,
   tutor,
   incidents = [],
   onClose,
@@ -272,20 +265,6 @@ export default function BookingDetails({
             <LockKeyhole size={13} /> Monitoring only. LCO cannot reschedule or
             cancel bookings here.
           </span>
-        )}
-        {showRelatedTransaction && (
-          <button
-            className={button}
-            disabled={!r.transaction}
-            onClick={() => setTransaction(!transaction)}
-          >
-            {transaction ? (
-              <CalendarDays size={15} />
-            ) : (
-              <CreditCard size={15} />
-            )}
-            Related {transaction ? "Booking" : "Transaction"}
-          </button>
         )}
         <button className={primary} onClick={onClose}>
           Close
