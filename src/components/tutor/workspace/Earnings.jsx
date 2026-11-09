@@ -6,7 +6,7 @@ import {
 } from "../../../services/earningsFilters.js";
 // Earnings: presents tutor earnings and payment records supplied by the tutor workspace data/services.
 import { TransactionDetails } from "./SessionDetails.jsx";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   CalendarCheck,
   ChartColumnIncreasing,
@@ -133,8 +133,8 @@ export default function Earnings({ data, go, args = {} }) {
     (service) => String(service.id) === serviceId,
   );
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
-  const tableHeadRef = useRef(null);
+  const pageSize = 5;
+
   const totals = summarizeEarnings(data.sessions);
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const rows = data.sessions.filter((s) => {
@@ -176,47 +176,6 @@ export default function Earnings({ data, go, args = {} }) {
   );
   const paidResults =
     rows.length > 0 && rows.every((s) => s.payment === "Paid");
-
-  useLayoutEffect(() => {
-    let measuredWidth = 0;
-    let rowHeight = 48;
-    const measure = () => {
-      const table = tableHeadRef.current.closest("table");
-      const width = table.getBoundingClientRect().width;
-      if (width !== measuredWidth) {
-        measuredWidth = width;
-        rowHeight = 48;
-      }
-      // Keep the largest row at this width so pagination remains stable
-      // when wrapped content moves onto or off the current page.
-      for (const row of table.querySelectorAll("tbody tr")) {
-        rowHeight = Math.max(rowHeight, row.getBoundingClientRect().height);
-      }
-      const top = tableHeadRef.current.getBoundingClientRect().bottom;
-      setPageSize(
-        window.innerWidth >= 1024
-          ? Math.max(
-              1,
-              Math.min(
-                5,
-                Math.floor((window.innerHeight - top - 48) / rowHeight),
-              ),
-            )
-          : 5,
-      );
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(
-      tableHeadRef.current.closest("main")?.firstElementChild ||
-        tableHeadRef.current,
-    );
-    window.addEventListener("resize", measure);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
 
   function clearFilters() {
     setQuery("");
@@ -323,7 +282,7 @@ export default function Earnings({ data, go, args = {} }) {
           Transaction History
         </h2>
         <div className="grid w-full gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(220px,2fr)_repeat(3,minmax(150px,1fr))]">
-          <div className="relative min-w-44 flex-1 sm:w-56">
+          <div className="relative min-w-0">
             <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#263c73]" />
             <input
               aria-label="Search transactions"
@@ -349,7 +308,7 @@ export default function Earnings({ data, go, args = {} }) {
               </button>
             )}
           </div>
-          <label className="relative min-w-40 flex-1 sm:w-44">
+          <label className="relative min-w-0">
             <span className="sr-only">Date</span>
             <select
               aria-label="Transaction date"
@@ -375,7 +334,7 @@ export default function Earnings({ data, go, args = {} }) {
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 top-3 h-3.5 w-3.5 text-[#455780]" />
           </label>
-          <label className="relative min-w-40 flex-1 sm:w-44">
+          <label className="relative min-w-0">
             <span className="sr-only">Services</span>
             <select
               aria-label="Transaction service"
@@ -395,7 +354,7 @@ export default function Earnings({ data, go, args = {} }) {
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 top-3 h-3.5 w-3.5 text-[#455780]" />
           </label>
-          <div className="relative min-w-40 flex-1 sm:w-44">
+          <div className="relative min-w-0">
             <select
               aria-label="Payout status"
               className="h-9 w-full appearance-none rounded-md border border-[#dce4ef] bg-white pl-3 pr-8 text-xs font-medium outline-none focus:border-green-700 focus:ring-1 focus:ring-green-700"
@@ -426,7 +385,7 @@ export default function Earnings({ data, go, args = {} }) {
               <col key={label} style={{ width }} />
             ))}
           </colgroup>
-          <thead ref={tableHeadRef} className="bg-[#f7f9fc]">
+          <thead className="bg-[#f7f9fc]">
             <tr className="h-10">
               {headers.map(([label]) => (
                 <th

@@ -56,5 +56,35 @@ export async function listTutorSessions(client = getSupabaseClient()) {
         ? "Run supabase/manual/paid_sessions.sql in Supabase SQL Editor to enable tutor sessions."
         : error.message,
     );
-  return (data || []).filter(paidSession).map((row) => mapTutorSession(row));
+  const rows = (data || []).filter(paidSession);
+  const missing = rows.filter(
+    (row) => !row.transaction_reference && !row.payment_id,
+  );
+  if (missing.length) {
+    const { data: payments, error: paymentError } = await client
+      .from("payments")
+      .select("booking_id,payment_id,transaction_reference,payment_status")
+      .in(
+        "booking_id",
+        missing.map((row) => row.booking_id),
+      )
+      .order("payment_id", { ascending: true });
+    if (paymentError)
+      throw new Error(
+        `Unable to load transaction IDs: ${paymentError.message}`,
+      );
+    for (const row of missing) {
+      const related = (payments || []).filter(
+        (payment) => String(payment.booking_id) === String(row.booking_id),
+      );
+      const payment =
+        related.findLast((item) => item.payment_status === "paid") ||
+        related.at(-1);
+      if (payment) {
+        row.payment_id = payment.payment_id;
+        row.transaction_reference = payment.transaction_reference;
+      }
+    }
+  }
+  return rows.map((row) => mapTutorSession(row));
 }
