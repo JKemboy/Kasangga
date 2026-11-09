@@ -49,8 +49,14 @@
   text-align: center;
   vertical-align: middle;
 }
+.tutor-services-table thead th:first-child,
+.tutor-services-table [scope="rowgroup"] {
+  text-align: left;
+}
 .tutor-services-table [scope="rowgroup"] > div {
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  justify-content: start;
   align-items: center;
 }
 .tutor-services-table td > .inline-flex {
