@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, ChevronDown, ArrowRight } from "lucide-react";
-import { button, input } from "../tutor/workspace/ui.jsx";
+import { button, input } from "../shared/staffUi.jsx";
 export default function OverviewMonth({ value, onChange, onReports }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null),
@@ -94,7 +94,7 @@ export default function OverviewMonth({ value, onChange, onReports }) {
           <p>Overview reflects the selected month’s database records.</p>
           {onReports && (
             <button
-              className="ocx-link"
+              className={button}
               onClick={() => {
                 setOpen(false);
                 onReports();

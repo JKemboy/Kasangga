@@ -3,8 +3,7 @@ import { statusClass } from "../shared/statusColors.js";
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import OverviewMonth from "./OverviewMonth.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
-import ServiceMenu from "../lco/ServiceMenu.jsx";
-import { Eye, PenLine } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useState } from "react";
 import {
   FileText,
@@ -17,7 +16,7 @@ import {
   ClipboardList,
   Info,
 } from "lucide-react";
-import { Modal, button, input } from "../tutor/workspace/ui.jsx";
+import { Modal, button, input } from "../shared/staffUi.jsx";
 
 const colors = ["#ff6971", "#ffc629", "#1686ff", "#65d3a8", "#006039"];
 export default function OsweOverview({
@@ -223,7 +222,10 @@ export default function OsweOverview({
         <section className="oo-card oo-recent">
           <div className="oo-title">
             <h2>Recent Cases</h2>
-            <button onClick={() => onNavigate("Case Review", {})}>
+            <button
+              className={button}
+              onClick={() => onNavigate("Case Review", {})}
+            >
               View all cases <ArrowRight size={14} />
             </button>
           </div>
@@ -286,16 +288,15 @@ export default function OsweOverview({
                       </span>
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
-                      <ServiceMenu
-                        service={{ title: r.caseId }}
-                        options={[
-                          [Eye, "View case", "case"],
-                          [ShieldCheck, "Review evidence", "evidence"],
-                          [PenLine, "Add case action / note", "note"],
-                          [Info, "View incident report", "incident"],
-                        ]}
-                        onSelect={(view) => openCase(r, view)}
-                      />
+                      <button
+                        type="button"
+                        className={button + " staff-button-nowrap"}
+                        aria-label={`View case ${r.caseId}`}
+                        onClick={() => openCase(r)}
+                      >
+                        <Eye size={14} />
+                        View Case
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -12,7 +12,7 @@ import {
   CalendarDays,
   PhilippinePeso,
 } from "lucide-react";
-import { Modal, button, Avatar } from "../tutor/workspace/ui.jsx";
+import { Modal, button, Avatar } from "../shared/staffUi.jsx";
 import { money } from "../tutor/workspace/data.js";
 import { summarizePayments } from "../../services/lcoRecords.js";
 import IncidentDetails from "./IncidentDetails.jsx";
@@ -183,7 +183,9 @@ export default function LcoOverview({
         <section className="ad-panel">
           <div className="ao-title">
             <h2>Pending Tutor Applications</h2>
-            <button onClick={() => go("Tutor Verification")}>View All</button>
+            <button className={button} onClick={() => go("Tutor Verification")}>
+              View All
+            </button>
           </div>
           <div className="ao-table ao-applications">
             <table>
@@ -242,7 +244,9 @@ export default function LcoOverview({
         <section className="ad-panel">
           <div className="ao-title">
             <h2>Recent Incident Reports</h2>
-            <button onClick={() => go("Incident Reports")}>View All</button>
+            <button className={button} onClick={() => go("Incident Reports")}>
+              View All
+            </button>
           </div>
           <div className="ao-table ao-incidents">
             <table>
@@ -283,7 +287,10 @@ export default function LcoOverview({
       <section className="ad-panel">
         <div className="ao-title">
           <h2>Recent Bookings</h2>
-          <button onClick={() => setDetail({ kind: "bookings" })}>
+          <button
+            className={button}
+            onClick={() => setDetail({ kind: "bookings" })}
+          >
             View All
           </button>
         </div>

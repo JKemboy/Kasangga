@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   MoreVertical,
+  ChevronDown,
   UserRound,
   CalendarDays,
   Pencil,
   Ban,
 } from "lucide-react";
-import { button } from "../tutor/workspace/ui.jsx";
-export default function ServiceMenu({ service, onSelect, options }) {
+import { button } from "../shared/staffUi.jsx";
+export default function ServiceMenu({ service, onSelect, options, label }) {
   const [pos, setPos] = useState(null);
   const trigger = useRef(null),
     menu = useRef(null);
@@ -44,7 +45,7 @@ export default function ServiceMenu({ service, onSelect, options }) {
     <>
       <button
         ref={trigger}
-        className={button}
+        className={button + (label ? " staff-button-nowrap" : "")}
         aria-label={`Actions for ${service.title}`}
         aria-expanded={!!pos}
         onClick={() => {
@@ -59,7 +60,14 @@ export default function ServiceMenu({ service, onSelect, options }) {
           });
         }}
       >
-        <MoreVertical size={16} />
+        {label ? (
+          <>
+            {label}
+            <ChevronDown size={14} />
+          </>
+        ) : (
+          <MoreVertical size={16} />
+        )}
       </button>
       {pos &&
         createPortal(

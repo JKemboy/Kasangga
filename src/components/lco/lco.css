@@ -1812,8 +1812,8 @@
 
 /* Keep short user fields together instead of stretching them across the page. */
 .lco-user-management .au-table table {
-  width: 1180px;
-  min-width: 1180px;
+  width: 100%;
+  min-width: 1220px;
   table-layout: fixed;
 }
 .lco-user-management .au-table th:nth-child(1) {
@@ -1841,7 +1841,17 @@
   width: 115px;
 }
 .lco-user-management .au-table th:nth-child(9) {
-  width: 100px;
+  width: 136px;
+}
+.lco-user-management .au-table button.au-view {
+  min-height: 32px !important;
+  padding: 6px 10px !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+.lco-user-management .au-table button.au-view svg {
+  width: 14px;
+  height: 14px;
 }
 
 .lco-tutor-verification .ad-table table {
