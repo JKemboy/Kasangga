@@ -10,8 +10,9 @@ import {
   LockKeyhole,
   Info,
   RotateCcw,
+  Search,
 } from "lucide-react";
-import { button, input } from "../tutor/workspace/ui.jsx";
+import { button, input } from "../shared/staffUi.jsx";
 
 import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 
@@ -225,6 +226,18 @@ export default function OsweArchive({
           </button>
         ))}
       </div>
+      <label className="oswe-search">
+        <Search size={16} className="shrink-0" />
+        <input
+          aria-label="Search archived cases"
+          placeholder="Search case ID, report ID, student, or resolution..."
+          value={searchQuery}
+          onChange={(event) => {
+            onSearchChange(event.target.value);
+            setPage(1);
+          }}
+        />
+      </label>
       <div className="oa-filters">
         <select
           className={input}

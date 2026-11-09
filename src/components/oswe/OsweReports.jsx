@@ -9,13 +9,9 @@ import {
   Clock,
   CheckCircle,
   Users,
-  Database,
-  LockKeyhole,
   Download,
 } from "lucide-react";
-import { money } from "../tutor/workspace/data.js";
-import { summarizeEarnings } from "../tutor/workspace/earnings.js";
-import { Modal, button, input } from "../tutor/workspace/ui.jsx";
+import { Modal, button, input } from "../shared/staffUi.jsx";
 
 const colors = ["#16a34a", "#ffbe19", "#ab57f6", "#62a0ff", "#2dc8bc"];
 function Donut({ title, items, onSelect }) {
@@ -70,7 +66,6 @@ const group = (records, key) =>
 
 export default function OsweReports({ rows, settings }) {
   const database = useOsweDatabase();
-  const sessions = database.records?.sessions || [];
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
@@ -130,9 +125,6 @@ export default function OsweReports({ rows, settings }) {
     count: clearance.filter((r) => r.status === label).length,
     records: clearance.filter((r) => r.status === label),
   }));
-  const totals = summarizeEarnings(
-    invalid || !termMatches ? [] : sessions.filter((s) => inPeriod(s.date)),
-  );
   const endDate = new Date(
     (end || new Date().toISOString().slice(0, 10)) + "T12:00:00",
   );
@@ -161,18 +153,12 @@ export default function OsweReports({ rows, settings }) {
         caseStatus: caseStatus || "All",
         incident: incident || "All",
       },
-      source:
-        "Database cases, clearance reviews and recorded financial allocations.",
+      source: "Database cases and clearance reviews.",
       referredCases: cases.length,
       openCases: open.length,
       resolvedCases: resolved.length,
       clearanceReviews: reviewed.length,
       clearance: statuses.map(({ label, count }) => ({ label, count })),
-      financial: {
-        ...totals,
-        scope:
-          "Eligible completed paid sessions; date and academic filters only",
-      },
     };
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
@@ -406,56 +392,11 @@ export default function OsweReports({ rows, settings }) {
           onSelect={(r) => show(r.label, r.records)}
         />
       </div>
-      <section className="or-financial">
-        <div className="or-financial-heading">
-          <Database size={24} />
-          <div>
-            <h2>Payment Allocation</h2>
-            <p>
-              Read-only figures for eligible completed paid tutoring sessions.
-            </p>
-          </div>
-          <span>
-            <LockKeyhole size={15} />
-            Reporting only · Fixed allocation percentages
-          </span>
-        </div>
-        <div className="or-financial-grid">
-          {[
-            [
-              "Gross Eligible Session Payments",
-              money(totals.gross),
-              "For selected period",
-            ],
-            ["Tutor Share", "90%", money(totals.tutor)],
-            ["Admin Share", "5%", money(totals.admin)],
-            ["Maintenance", "5%", money(totals.maintenance)],
-            ["Platform Share", "10%", money(totals.platform)],
-            [
-              "Total Platform Allocation",
-              money(totals.platform),
-              `${totals.count} eligible sessions`,
-            ],
-            ["Payment Method", "GCash via PayMongo", "Demo payment records"],
-          ].map(([label, value, hint]) => (
-            <div key={label}>
-              <small>{label}</small>
-              <b>{value}</b>
-              <span>{hint}</span>
-            </div>
-          ))}
-        </div>
-        <p className="or-equation">
-          {money(totals.gross)} = {money(totals.tutor)} Tutor +{" "}
-          {money(totals.platform)} Platform (5% Maintenance + 5% Admin)
-        </p>
-      </section>
       {settings.tips && (
         <p className="or-explanation">
           Database records. Date and case filters apply to case counts; academic
-          filters apply to clearance reviews. Financial totals use stored
-          allocations and session dates. Missing incident types, priorities, and
-          resolution timestamps are not estimated.
+          filters apply to clearance reviews. Missing incident types,
+          priorities, and resolution timestamps are not estimated.
         </p>
       )}
       {detail && (
