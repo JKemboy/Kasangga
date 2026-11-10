@@ -10,21 +10,13 @@ export function policyPresentation(policy) {
   const system = policy.scope === "system";
   return {
     ...policy,
-    owner: system ? "System" : "Student Handbook",
+    owner: system ? "System" : "University Policies",
     version: /^\d{4}$/.test(policy.version || "")
       ? policy.version
       : system
         ? "2026"
         : "2021",
-    effectiveLabel: policy.effective
-      ? null
-      : system
-        ? "August 2026"
-        : "Since 2021",
-    updatedLabel: policy.updated
-      ? null
-      : system
-        ? "Oct 22, 2026"
-        : "Since 2021",
+    effectiveLabel: policy.effective ? null : "Not recorded",
+    updatedLabel: policy.updated ? null : "Not recorded",
   };
 }

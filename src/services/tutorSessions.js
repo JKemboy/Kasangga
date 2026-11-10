@@ -1,6 +1,7 @@
 import { paidSession, sessionLifecycle } from "./sessionLifecycle.js";
 import { getSupabaseClient } from "./supabaseClient.js";
 import { meetingPlatform } from "./sessionMeeting.js";
+import { attachCompletionProofs } from "./tutorSessionCompletion.js";
 
 const label = (value) =>
   String(value || "")
@@ -10,6 +11,7 @@ export function mapTutorSession(row, now = new Date()) {
   return {
     id: String(row.booking_id),
     booking: `BK-${row.booking_id}`,
+    completionProof: row.completionProof || null,
     serviceId: String(row.service_id),
     learnerId: row.learner_id,
     learnerUserId: row.learner_id,
@@ -86,5 +88,7 @@ export async function listTutorSessions(client = getSupabaseClient()) {
       }
     }
   }
-  return rows.map((row) => mapTutorSession(row));
+  return (await attachCompletionProofs(rows, client)).map((row) =>
+    mapTutorSession(row),
+  );
 }

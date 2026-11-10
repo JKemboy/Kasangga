@@ -29,6 +29,10 @@ import {
 } from "../../../services/myReportPresentation.js";
 import { button, Modal } from "./ui.jsx";
 import "./my-reports.css";
+import {
+  REPEATED,
+  incidentConfirmationLabel,
+} from "../../../services/incidentTypes.js";
 
 const rowKey = (row, about) =>
   `${about ? "case" : "report"}-${about ? row.case_id : row.report_id}`;
@@ -111,6 +115,16 @@ export function ReportDetails({ row, about, student, go, onClose }) {
           <div>
             <h3>{about ? "Case information" : "Report"}</h3>
             <dl className="mr-facts">
+              <dt>Category</dt>
+              <dd>{row.incident_category}</dd>
+              {row.incident_type === REPEATED && (
+                <>
+                  <dt>OSWE confirmation</dt>
+                  <dd>
+                    {incidentConfirmationLabel(row.oswe_confirmation_status)}
+                  </dd>
+                </>
+              )}
               <dt>Issue type</dt>
               <dd>{row.incident_type}</dd>
               <dt>{about ? "Case opened" : "Filed"}</dt>
@@ -462,6 +476,8 @@ export default function MyReports({ go, args = {} }) {
                           : `${about ? `CASE-${row.case_id} - ` : ""}${row.incident_type}`}
                       </h3>
                       <p>
+                        {row.incident_category}
+                        {" · "}
                         {about && stage === "Clearance Blocked"
                           ? `${row.incident_type}${row.decision?.at ? ` - decision recorded ${reportDate(row.decision.at)}` : ""} by OSWE${row.officer ? ` (${row.officer})` : ""}`
                           : about

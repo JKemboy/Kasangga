@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { ShieldCheck, Image, Eye, X } from "lucide-react";
+import { REPEATED } from "../../services/incidentTypes.js";
+import {
+  caseActions,
+  requiredDecisionConditions,
+  COMPLETION_INSTRUCTION,
+  THIRD_VIOLATION_BASIS,
+} from "../../services/osweDecisionRules.js";
+import { ShieldCheck, Image, Eye, Info, X } from "lucide-react";
 import { button, primary, input, Modal } from "../shared/staffUi.jsx";
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import EvidenceFile from "./EvidenceFile.jsx";
@@ -7,6 +14,7 @@ import {
   validateCaseEvidence,
   recordDecisionAndHold,
   recordNoViolation,
+  caseViolationHistory,
 } from "../../services/osweCaseWorkflow.js";
 import "./case-shortcuts.css";
 import "./case-review-flow.css";
@@ -17,12 +25,17 @@ export default function CaseReviewFlow({ record, onClose }) {
     [preview, setPreview] = useState(null),
     [saving, setSaving] = useState(false),
     [error, setError] = useState("");
+  const [overallInsufficient, setOverallInsufficient] = useState(false);
+  const [history, setHistory] = useState(null),
+    [historyError, setHistoryError] = useState("");
   const [form, setForm] = useState({
       outcome: "",
       notes: "",
       basis: "",
+      policyReference: "",
       condition: "",
       due: "",
+      appealStatus: "",
     }),
     [ack, setAck] = useState(false);
   useEffect(() => {
@@ -31,6 +44,21 @@ export default function CaseReviewFlow({ record, onClose }) {
     return () => dialog.close();
   }, []);
   const reportId = record.reportDatabaseId;
+  useEffect(() => {
+    let live = true;
+    setHistory(null);
+    setHistoryError("");
+    caseViolationHistory(reportId)
+      .then((value) => {
+        if (live) setHistory(value);
+      })
+      .catch((cause) => {
+        if (live) setHistoryError(cause.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, [reportId]);
   const report =
     database.records?.incidents.find((r) => r.reportDatabaseId === reportId) ||
     record;
@@ -42,6 +70,7 @@ export default function CaseReviewFlow({ record, onClose }) {
     evidence.every((e) => ["Validated", "Insufficient"].includes(e.status));
   const allInsufficient =
     evidence.length > 0 && evidence.every((e) => e.status === "Insufficient");
+  const noViolation = allInsufficient || overallInsufficient;
   const set = (key, value) =>
     setForm((current) => ({ ...current, [key]: value }));
   async function validate(item, result) {
@@ -63,7 +92,7 @@ export default function CaseReviewFlow({ record, onClose }) {
     setSaving(true);
     setError("");
     try {
-      if (allInsufficient) {
+      if (noViolation) {
         await recordNoViolation(reportId, form.notes);
         await database.refresh();
         onClose();
@@ -71,6 +100,10 @@ export default function CaseReviewFlow({ record, onClose }) {
         return;
       }
       if (!ack) throw new Error("Confirm the decision and clearance block.");
+      if (!form.violationConfirmed)
+        throw new Error(
+          "OSWE must explicitly confirm the violation after reviewing the evidence.",
+        );
       const clearanceId = await recordDecisionAndHold(reportId, form);
       await database.refresh();
       onClose();
@@ -88,15 +121,7 @@ export default function CaseReviewFlow({ record, onClose }) {
   const policies = database.records?.policies || [];
   const policyLabel = (policy) =>
     [policy.title, policy.version].filter(Boolean).join(" - ");
-  const outcomes = [
-    "No Violation",
-    "Case Dismissed",
-    "Counseled",
-    "Verbal Warning",
-    "Written Warning",
-    "Referred for Further Action",
-    "Clearance Hold Recommended",
-  ];
+  const outcomes = caseActions;
   return (
     <dialog
       ref={ref}
@@ -129,7 +154,7 @@ export default function CaseReviewFlow({ record, onClose }) {
             1. Case Details &amp; Evidence
           </li>
           <li aria-current={step === 2 ? "step" : undefined}>
-            {allInsufficient
+            {noViolation
               ? "2. Record Decision: No Violation"
               : "2. Case Action & Decision"}
           </li>
@@ -145,6 +170,19 @@ export default function CaseReviewFlow({ record, onClose }) {
                   ["Reporter", report.reporter],
                   ["Reported Student", report.student],
                   ["Incident Type", report.type],
+                  ["Category", report.category],
+                  ...(report.type === REPEATED
+                    ? [
+                        [
+                          "OSWE confirmation",
+                          report.confirmationStatus === "confirmed"
+                            ? "Confirmed by OSWE"
+                            : report.confirmationStatus === "not_confirmed"
+                              ? "Not confirmed by OSWE"
+                              : "Pending OSWE confirmation",
+                        ],
+                      ]
+                    : []),
                   ["Submitted", report.date],
                 ].map(([key, value]) => (
                   <div key={key}>
@@ -237,7 +275,27 @@ export default function CaseReviewFlow({ record, onClose }) {
             className="review-decision-form"
             onSubmit={submit}
           >
-            {allInsufficient ? (
+            {!allInsufficient && (
+              <label className="flex items-start gap-2 rounded-lg border border-slate-200 p-3 text-xs">
+                <input
+                  type="checkbox"
+                  checked={overallInsufficient}
+                  onChange={(event) => {
+                    setOverallInsufficient(event.target.checked);
+                    setAck(false);
+                    setForm((current) => ({
+                      ...current,
+                      outcome: "",
+                      violationConfirmed: false,
+                    }));
+                  }}
+                />
+                After OSWE review, the evidence is insufficient to establish a
+                violation. Record No Violation and archive without affecting
+                clearance.
+              </label>
+            )}
+            {noViolation ? (
               <section className="review-no-violation">
                 <h3>Record Decision: No Violation</h3>
                 <p className="ocx-muted">
@@ -266,20 +324,115 @@ export default function CaseReviewFlow({ record, onClose }) {
             ) : (
               <>
                 <h3>Case Action &amp; Decision</h3>
+                <p className="ocx-muted">
+                  The evidence is valid. Choose the case action. Every decision
+                  blocks the student's clearance until the conditions below are
+                  completed.
+                </p>
+                {history && !historyError && (
+                  <div className="review-violation-notice">
+                    <Info size={20} aria-hidden="true" />
+                    <div>
+                      <strong>
+                        {history.previousCount === 0
+                          ? "First"
+                          : history.previousCount === 1
+                            ? "Second"
+                            : history.previousCount === 2
+                              ? "Third"
+                              : `Violation ${history.previousCount + 1}: next`}{" "}
+                        recorded violation
+                      </strong>
+                      <p>
+                        of “{report.type}” for {report.student} in KASANGGA.
+                        OSWE applies: first violation, Verbal Warning (or
+                        Counseled); second, Written Warning; third, Referred for
+                        Further Action to the VPAA (Handbook 7.3.b, pp. 85–86).
+                      </p>
+                      <p>
+                        This count applies if OSWE confirms the current case.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <section className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
+                  <h3>Earlier confirmed violations of the same type</h3>
+                  <p>
+                    {THIRD_VIOLATION_BASIS}. Reports and No Violation outcomes
+                    are not counted as confirmed violations.
+                  </p>
+                  {historyError ? (
+                    <p role="alert" className="text-red-600">
+                      {historyError}
+                    </p>
+                  ) : !history ? (
+                    <p role="status">Loading confirmed history…</p>
+                  ) : (
+                    <>
+                      <p className="mt-2 font-semibold">
+                        {history.previousCount} earlier confirmed violation(s).
+                      </p>
+                      {(history.records || []).map((item) => (
+                        <p className="mt-1" key={item.case_id}>
+                          CASE-{item.case_id} · {item.action} ·{" "}
+                          {item.decision_date}
+                        </p>
+                      ))}
+                      {history.isThirdViolation && (
+                        <p className="mt-2 text-amber-800">
+                          If confirmed, this would be the third violation.{" "}
+                          {history.suggestedAction
+                            ? `${history.suggestedAction} is suggested; OSWE must choose and confirm the final decision.`
+                            : "The Section 7.3.b action mapping has not been supplied. No action is automatically suggested."}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </section>
                 <label>
-                  Outcome
+                  Case action
                   <select
                     className={input}
                     required
                     value={form.outcome}
-                    onChange={(e) => set("outcome", e.target.value)}
+                    onChange={(e) => {
+                      setForm((current) => ({
+                        ...current,
+                        outcome: e.target.value,
+                        condition: "",
+                        violationConfirmed: false,
+                      }));
+                      setAck(false);
+                    }}
                   >
-                    <option value="">Choose an outcome</option>
+                    <option value="">Choose a case action</option>
                     {outcomes.map((value) => (
-                      <option key={value}>{value}</option>
+                      <option key={value} value={value}>
+                        {value}
+                        {history?.suggestedAction === value &&
+                        history?.isThirdViolation
+                          ? " — Suggested"
+                          : ""}
+                      </option>
                     ))}
                   </select>
                 </label>
+                {form.outcome && (
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={!!form.violationConfirmed}
+                      onChange={(event) =>
+                        set("violationConfirmed", event.target.checked)
+                      }
+                    />
+                    I confirm the violation after OSWE review.{" "}
+                    {report.type === REPEATED
+                      ? "Student Handbook p. 78 applies to this repeated-incidents referral."
+                      : "This finding may be counted in future same-type violation history."}
+                  </label>
+                )}
                 <label>
                   Decision basis
                   <textarea
@@ -298,14 +451,15 @@ export default function CaseReviewFlow({ record, onClose }) {
                     className={input}
                     required
                     aria-label="Policy reference"
-                    value={form.basis}
+                    value={form.policyReference}
                     onChange={(event) => {
                       const policy = policies.find(
                         (item) => policyLabel(item) === event.target.value,
                       );
                       setForm((current) => ({
                         ...current,
-                        basis: event.target.value,
+                        policyReference: event.target.value,
+                        basis: current.basis || event.target.value,
                         policyId: policy?.id || null,
                       }));
                     }}
@@ -324,15 +478,48 @@ export default function CaseReviewFlow({ record, onClose }) {
                   </select>
                 </label>
                 <label>
-                  Clearance instructions / required completion
-                  <textarea
+                  Student Handbook basis / section
+                  <input
                     className={input}
                     required
+                    maxLength={2000}
+                    value={form.basis}
+                    onChange={(event) => set("basis", event.target.value)}
+                    placeholder="Record the applicable Handbook section and basis."
+                  />
+                </label>
+                <section className="rounded-lg border border-green-200 bg-green-50 p-3 text-xs">
+                  <h3>Required conditions</h3>
+                  <ul className="list-disc space-y-1 pl-4">
+                    {(form.outcome
+                      ? requiredDecisionConditions(form.outcome)
+                      : [COMPLETION_INSTRUCTION]
+                    ).map((condition) => (
+                      <li key={condition}>{condition}</li>
+                    ))}
+                  </ul>
+                </section>
+                <label>
+                  Additional conditions (optional)
+                  <textarea
+                    className={input}
                     maxLength={3000}
                     rows={3}
                     value={form.condition}
                     onChange={(e) => set("condition", e.target.value)}
-                    placeholder="Instructions for the student to complete, print and submit the signed form to OSWE."
+                    placeholder="Record any additional authorized instructions. The default conditions and Completion Form remain required."
+                  />
+                </label>
+                <label>
+                  Appeal status (as recorded, optional)
+                  <input
+                    className={input}
+                    value={form.appealStatus}
+                    maxLength={200}
+                    onChange={(event) =>
+                      set("appealStatus", event.target.value)
+                    }
+                    placeholder="Not recorded"
                   />
                 </label>
                 <label>
@@ -379,7 +566,7 @@ export default function CaseReviewFlow({ record, onClose }) {
             disabled={!reviewed || saving}
             onClick={() => setStep(2)}
           >
-            {allInsufficient
+            {noViolation
               ? "Record Decision (No Violation)"
               : "Proceed to Case Action"}
           </button>
@@ -388,11 +575,19 @@ export default function CaseReviewFlow({ record, onClose }) {
             type="submit"
             form="case-handoff-decision"
             className={primary}
-            disabled={!reviewed || (!allInsufficient && !ack) || saving}
+            disabled={
+              !reviewed ||
+              (!noViolation &&
+                (!ack ||
+                  !history ||
+                  !!historyError ||
+                  !form.violationConfirmed)) ||
+              saving
+            }
           >
             {saving
               ? "Saving..."
-              : allInsufficient
+              : noViolation
                 ? "Record No Violation & Archive"
                 : "Record Decision & Block Clearance"}
           </button>

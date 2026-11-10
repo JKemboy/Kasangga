@@ -6,6 +6,7 @@ import OsweDashboard from "../components/oswe/OsweDashboard.jsx";
 import TutorDashboard from "../components/tutor/TutorDashboard.jsx";
 
 import Register from "../pages/Register.jsx";
+import TermsConditions from "../pages/TermsConditions.jsx";
 import { LoginRoute, ProtectedRoute } from "../auth/AuthRoutes.jsx";
 
 function RootRedirect() {
@@ -21,6 +22,7 @@ function RootRedirect() {
 
 const router = createBrowserRouter([
   { path: "/", element: <RootRedirect /> },
+  { path: "/terms", element: <TermsConditions /> },
   {
     path: "/register",
     element: (

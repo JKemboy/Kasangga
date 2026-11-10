@@ -1,4 +1,5 @@
 import { evidenceExtension } from "./incidentEvidence.js";
+import { validateIncidentSelection } from "./incidentTypes.js";
 import { getSupabaseClient } from "./supabaseClient.js";
 export async function submitIncidentReport(
   values,
@@ -7,11 +8,12 @@ export async function submitIncidentReport(
   const booking = Number(values.sessionId || values.bookingId);
   const caseId = Number(values.caseId);
   const followUp = Number.isSafeInteger(caseId) && caseId > 0;
+  if (!followUp)
+    validateIncidentSelection(values.incidentCategory, values.incidentType);
   if (!followUp && (!Number.isSafeInteger(booking) || booking < 1))
     throw new Error("Choose the related booking before reporting an issue.");
   const files = values.evidence || [];
-  if (!files.length)
-    throw new Error("Attach at least one evidence file.");
+  if (!files.length) throw new Error("Attach at least one evidence file.");
   if (files.length > 5) throw new Error("Attach up to five evidence files.");
   const { data: auth, error: authError } = await client.auth.getUser();
   if (authError || !auth.user)
@@ -49,6 +51,7 @@ export async function submitIncidentReport(
       : {
           p_booking_id: booking,
           p_type: values.incidentType,
+          p_category: values.incidentCategory,
           p_description: values.reason,
           p_submission_key: key,
           p_files: uploaded,

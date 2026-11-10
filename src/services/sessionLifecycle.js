@@ -7,18 +7,30 @@ export function paidSession(row) {
   );
 }
 export function sessionLifecycle(row, now = new Date()) {
-  const status = String(row.booking_status).toLowerCase();
-  if (status === "completed")
-    return "Completed";
+  const status = String(
+    row.booking_status ?? row.bookingStatus ?? row.status,
+  ).toLowerCase();
+  if (status === "completed") return "Completed";
+  if (["cancelled", "canceled"].includes(status)) return "Cancelled";
   const time = (value) =>
     String(value).length === 5
       ? String(value) + ":00"
       : String(value).slice(0, 8);
   const start = new Date(
-    row.session_date + "T" + time(row.start_time) + "+08:00",
+    row.startAt ||
+      (row.session_date ?? row.date) +
+        "T" +
+        time(row.start_time ?? row.start) +
+        "+08:00",
   );
-  const end = new Date(row.session_date + "T" + time(row.end_time) + "+08:00");
+  const end = new Date(
+    row.endAt ||
+      (row.session_date ?? row.date) +
+        "T" +
+        time(row.end_time ?? row.end) +
+        "+08:00",
+  );
   if (now < start) return "Upcoming";
   if (now < end) return "Ongoing";
-  return now < end ? "Ongoing" : "Awaiting Completion";
+  return "Awaiting Completion";
 }

@@ -24,3 +24,19 @@ export const reviewStudentClearance = (id, status, notes, verified) =>
 
 export const recordNoViolation = (id, notes) =>
   request("oswe_record_no_violation", { p_report_id: id, p_notes: notes });
+export const caseViolationHistory = (reportId) =>
+  request("oswe_same_type_violation_history", { p_report_id: reportId });
+export async function listEscalationRules() {
+  const { data, error } = await getSupabaseClient()
+    .from("oswe_escalation_rules")
+    .select("*")
+    .order("incident_type");
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+export const saveEscalationRule = (type, action, excerpt) =>
+  request("save_oswe_escalation_rule", {
+    p_type: type,
+    p_action: action || null,
+    p_excerpt: excerpt,
+  });

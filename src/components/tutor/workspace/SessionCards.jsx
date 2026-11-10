@@ -187,7 +187,9 @@ export default function SessionCards({
                       onClick={() => onAction(s, "complete")}
                     >
                       <CheckCircle size={15} />
-                      Done Session
+                      {s.completionProof
+                        ? "View Proof / Remind Learner"
+                        : "Upload Completion Proof"}
                     </button>
                   )}
                 <button className="col-span-2" onClick={() => onDetails(s)}>

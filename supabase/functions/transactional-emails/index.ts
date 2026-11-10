@@ -79,32 +79,16 @@ Deno.serve(async (request) => {
     // Return only diagnostic categories: SMTP errors may contain credentials
     // or addresses, so never expose the original message or response.
     const code = String(error?.code || "");
-    const safeCodes = [
-      "EAUTH",
-      "ECONNECTION",
-      "ETIMEDOUT",
-      "ESOCKET",
-      "EDNS",
-      "ETLS",
-    ];
+    const safeCodes = ["EAUTH", "ECONNECTION", "ETIMEDOUT", "ESOCKET", "EDNS", "ETLS"];
     const category = safeCodes.includes(code) ? code : "UNKNOWN";
     const responseCode = Number(error?.responseCode);
-    const smtpCode =
-      Number.isInteger(responseCode) &&
-      responseCode >= 400 &&
-      responseCode <= 599
-        ? responseCode
-        : null;
-    const enhancedCode =
-      String(error?.response || "").match(/\b[245]\.\d{1,3}\.\d{1,3}\b/)?.[0] ||
-      null;
+    const smtpCode = Number.isInteger(responseCode) && responseCode >= 400 && responseCode <= 599
+      ? responseCode : null;
+    const enhancedCode = String(error?.response || "").match(/\b[245]\.\d{1,3}\.\d{1,3}\b/)?.[0] || null;
     const diagnostics = { stage, category, smtpCode, enhancedCode };
     console.error("Email worker failed", diagnostics);
     return Response.json(
-      {
-        error: "Email processing failed; inspect the outbox and server logs",
-        ...diagnostics,
-      },
+      { error: "Email processing failed; inspect the outbox and server logs", ...diagnostics },
       { status: 500 },
     );
   } finally {

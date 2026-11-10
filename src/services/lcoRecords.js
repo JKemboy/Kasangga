@@ -1,4 +1,9 @@
 import { normalizeAllocation } from "./paymentAllocation.js";
+import {
+  canonicalIncidentType,
+  incidentCategory,
+  SESSION_PAYMENT,
+} from "./incidentTypes.js";
 import { configDefaults } from "../components/lco/lcoData.js";
 import { sessionLifecycle } from "./sessionLifecycle.js";
 import { sessionAllocation } from "../components/tutor/workspace/earnings.js";
@@ -463,6 +468,9 @@ export function mapLcoDatabase(input, now = new Date()) {
         (r.osas_assessment?.action === "close" && "Closed without a finding") ||
         "",
       osweNotes: details.notes || r.osas_assessment?.notes || "",
+      osweRecordedDecision: decision
+        ? { ...details, outcome: decision.decision_type }
+        : null,
       osweBasis: details.basis || "",
       osweDecisionAt: decision?.decision_date || r.osas_assessment?.at || "",
       id: key(r.report_id),
@@ -471,11 +479,9 @@ export function mapLcoDatabase(input, now = new Date()) {
       reportedId: r.reported_against,
       reporter: fullName(r.reported_by),
       reported: fullName(r.reported_against),
-      type: ["Technical issue", "Platform / Technical"].includes(
-        r.incident_type,
-      )
-        ? "Platform / Technical"
-        : label(r.incident_type),
+      type: canonicalIncidentType(r.incident_type),
+      category: incidentCategory(r.incident_type),
+      confirmationStatus: r.oswe_confirmation_status || "pending",
       issue: r.description,
       description: r.description,
       priority: r.priority === "normal" ? "Medium" : label(r.priority),
@@ -495,9 +501,8 @@ export function mapLcoDatabase(input, now = new Date()) {
         r.osas_referral_status,
       )
         ? "Referred to OSWE"
-        : ["Technical issue", "Platform / Technical"].includes(
-              r.incident_type,
-            ) || r.osas_referral_status === "not_required"
+        : incidentCategory(r.incident_type) === SESSION_PAYMENT ||
+            r.osas_referral_status === "not_required"
           ? "Not Required"
           : "Not Referred",
       date: manilaDate(r.submitted_at),

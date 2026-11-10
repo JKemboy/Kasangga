@@ -1,3 +1,4 @@
+import { COMPLETION_INSTRUCTION } from "./osweDecisionRules.js";
 export const filedStages = ["LCO Review", "OSWE Review", "Resolved"];
 export const reportDate = (value) =>
   value
@@ -186,6 +187,8 @@ export function completionFormStatus(record) {
 export function completionFormHtml(record, student = {}) {
   if (!record.case_id || !record.decision)
     throw new Error("No recorded decision is available for this form.");
+  if (record.decision.outcome === "No Violation")
+    throw new Error("No Completion Form is required for No Violation.");
   const table = (rows) =>
     `<table>${rows.map(([label, value]) => `<tr><th>${escape(label)}</th><td>${escape(value || "Not recorded")}</td></tr>`).join("")}</table>`;
   const conditions = caseConditions(record);
@@ -193,7 +196,8 @@ export function completionFormHtml(record, student = {}) {
     [
       ["Case ID", `CASE-${record.case_id}`],
       ["Incident Report ID", `IR-${record.report_id}`],
-      ["Decision", record.decision.outcome],
+      ["Case action", record.decision.outcome],
+      ["Student Handbook basis", record.decision.basis],
       ["Recorded", record.decision.at],
       ["Concern", record.incident_type],
     ],
@@ -205,5 +209,5 @@ export function completionFormHtml(record, student = {}) {
       [student.college, student.program].filter(Boolean).join(" - "),
     ],
     ["CarSU Email", student.email],
-  ])}<h2>Conditions Completed</h2>${conditions.length ? conditions.map((c) => `<p>${c.completed ? "[x]" : "[ ]"} ${escape(c.text)} &nbsp; Date completed: ${escape(c.completed_at || "________________")}</p>`).join("") : "<p>No completion condition is recorded.</p>"}<p>Recorded status: ${conditions.every((c) => c.completed) && conditions.length ? "Completed" : "Pending OSWE verification"}</p><h2>Student Statement</h2><p>I confirm that I have completed the conditions above.</p><p>________________________________________________________________________</p><p>________________________________________________________________________</p><div class="signatures"><div>Student Signature over Printed Name / Date</div><div>OSWE Case Officer Signature / Date</div></div><p>Submit the signed form in person to OSWE for verification. Downloading this form does not mark any condition completed or release a clearance hold.</p><small>Generated from the recorded case details. Submission status: ${escape(completionFormStatus(record))}.</small></body></html>`;
+  ])}<h2>Conditions Completed</h2>${conditions.length ? conditions.map((c) => `<p>${c.completed ? "[x]" : "[ ]"} ${escape(c.text)} &nbsp; Date completed: ${escape(c.completed_at || "________________")}</p>`).join("") : "<p>No completion condition is recorded.</p>"}<p>Recorded status: ${conditions.every((c) => c.completed) && conditions.length ? "Completed" : "Pending OSWE verification"}</p><h2>Student Statement</h2><p>I confirm that I have completed the conditions above.</p><p>________________________________________________________________________</p><p>________________________________________________________________________</p><div class="signatures"><div>Student Signature over Printed Name / Date</div><div>OSWE Case Officer Signature / Date</div></div><p>${escape(COMPLETION_INSTRUCTION)} Downloading this form does not mark any condition completed or release a clearance hold.</p><small>Generated from the recorded case details. Submission status: ${escape(completionFormStatus(record))}.</small></body></html>`;
 }

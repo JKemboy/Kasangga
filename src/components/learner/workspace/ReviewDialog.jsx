@@ -88,8 +88,8 @@ export default function ReviewDialog({ record, review, onClose, onSave }) {
           />
         </label>
         <p className="ls-muted mt-5">
-          Reviews are available after the tutor marks the session completed.
-          Your review is saved to your account.
+          Reviews are available after the tutor uploads proof and you confirm
+          session completion. Your review is saved to your account.
         </p>
       </div>
       {error && (

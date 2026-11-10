@@ -3,6 +3,7 @@ import { X, ShieldCheck } from "lucide-react";
 import { button, primary, input } from "../shared/staffUi.jsx";
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import { reviewStudentClearance } from "../../services/osweCaseWorkflow.js";
+import { COMPLETION_INSTRUCTION } from "../../services/osweDecisionRules.js";
 import "./case-shortcuts.css";
 export default function ClearanceReview({ record, onClose }) {
   const database = useOsweDatabase(),
@@ -93,9 +94,8 @@ export default function ClearanceReview({ record, onClose }) {
         </dl>
         <div className="clr-effect">
           <ShieldCheck size={18} />
-          The student downloads the completion form in My Reports and submits
-          the signed form in person to OSWE. Confirm receipt and completion
-          before clearing.
+          {COMPLETION_INSTRUCTION} OSWE confirms receipt and completion before
+          clearing.
         </div>
         <h3>Recorded Cases &amp; Clearance Instructions</h3>
         {cases.map((c) => (

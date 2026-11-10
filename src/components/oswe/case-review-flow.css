@@ -20,3 +20,8 @@
 .oswe-clearance-target > td { background:#e5f5ea; box-shadow:inset 0 2px #16804a,inset 0 -2px #16804a; }
 
 .review-no-violation-choice { padding:18px;border:2px solid #087542;border-radius:12px;background:#f0f8f3;margin:18px 0; }.review-no-violation-choice strong { color:#006239; }.review-no-violation-choice p { color:#64748b;margin-top:4px; }.review-no-violation > label { display:grid;gap:8px; }.review-no-violation > label > span { color:#b91c1c; }
+
+.review-violation-notice { display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:8px;background:#e6f4fc;color:#23465f;font-size:13px;line-height:1.5;overflow-wrap:anywhere; }
+.review-violation-notice > svg { flex-shrink:0;margin-top:2px;color:#2875b9; }
+.review-violation-notice strong { display:block;margin-bottom:3px; }
+.review-violation-notice p { margin:0; }

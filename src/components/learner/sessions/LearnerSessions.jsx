@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { filterSessions } from "./sessionFilters.js";
 import { listLearnerSessions } from "../../../services/learnerSessions.js";
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
+import SessionCompletionProof from "../../shared/SessionCompletionProof.jsx";
 import {
   CalendarDays,
   Clock3,
@@ -103,6 +104,25 @@ export default function LearnerSessions({ args = {} }) {
   }, []);
   const [selectedDate, setSelectedDate] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const openedTarget = useRef(null);
+  useEffect(() => {
+    if (!args.sessionId || openedTarget.current === args.sessionId) return;
+    const target = records.find(
+      (session) => session.id === String(args.sessionId),
+    );
+    if (!target) return;
+    openedTarget.current = args.sessionId;
+    setActiveTab(
+      target.lifecycle === "Awaiting Completion" ? "Ongoing" : target.lifecycle,
+    );
+    setSelectedDate("all");
+    setSelectedStatus("all");
+    requestAnimationFrame(() =>
+      document
+        .getElementById(`learner-session-${target.id}`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" }),
+    );
+  }, [args.sessionId, records]);
   const now = new Date();
   const lifecycleFor = (session) => {
     if (
@@ -261,6 +281,7 @@ export default function LearnerSessions({ args = {} }) {
             paymentStatus,
             canManage,
             completedAt,
+            completionProof,
             duration,
             link,
             details: [
@@ -283,7 +304,11 @@ export default function LearnerSessions({ args = {} }) {
               initials,
             ],
           }) => (
-            <article key={id} className="learner-session-card">
+            <article
+              key={id}
+              id={`learner-session-${id}`}
+              className="learner-session-card"
+            >
               <div className="text-center font-bold text-[#087542]">
                 <p className="text-xs">{month}</p>
                 <p className="text-2xl text-[#101828]">{day}</p>
@@ -493,6 +518,24 @@ export default function LearnerSessions({ args = {} }) {
                   </button>
                 </div>
               </div>
+              {lifecycle === "Awaiting Completion" && (
+                <div className="learner-session-proof">
+                  <SessionCompletionProof
+                    bookingId={id}
+                    proof={completionProof}
+                    onConfirmed={async () => {
+                      await refresh();
+                      act("review", {
+                        ...records.find((session) => session.id === id),
+                        lifecycle: "Completed",
+                        bookingStatus: "Completed",
+                        status: "Completed",
+                        completedAt: new Date().toISOString(),
+                      });
+                    }}
+                  />
+                </div>
+              )}
             </article>
           ),
         )}

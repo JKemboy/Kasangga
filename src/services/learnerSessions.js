@@ -2,6 +2,7 @@
 import { paidSession, sessionLifecycle } from "./sessionLifecycle.js";
 import { getSupabaseClient } from "./supabaseClient.js";
 import { meetingPlatform } from "./sessionMeeting.js";
+import { attachCompletionProofs } from "./tutorSessionCompletion.js";
 
 const label = (value) =>
   String(value || "unknown")
@@ -44,6 +45,7 @@ export function mapLearnerSession(row, now = new Date()) {
   return {
     id: String(row.booking_id),
     bookingId: String(row.booking_id),
+    completionProof: row.completionProof || null,
     completedAt: row.completed_at || null,
     serviceId: row.service_id == null ? null : String(row.service_id),
     tutorUserId: row.tutor_user_id || row.user_id || null,
@@ -119,7 +121,8 @@ export async function listLearnerSessions(
         ? "Apply supabase/manual/paid_sessions.sql in Supabase SQL Editor to load your booked sessions."
         : error.message || "Unable to load your booked sessions.",
     );
-  return (data || [])
+  const rows = await attachCompletionProofs(data || [], client);
+  return rows
     .filter(
       (row) =>
         paidSession(row) ||

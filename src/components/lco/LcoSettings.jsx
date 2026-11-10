@@ -11,6 +11,7 @@ import {
   Info,
 } from "lucide-react";
 import { Modal, button, primary, input } from "../shared/staffUi.jsx";
+import AcademicSemesterSettings from "./AcademicSemesterSettings.jsx";
 import SecurityFlow from "../shared/SecurityFlow.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
@@ -282,6 +283,7 @@ export default function LcoSettings({ config, onSave }) {
           </div>
         </div>
       )}
+      {tab === "System Settings" && <AcademicSemesterSettings />}
       {tab === "System Settings" && (
         <p className="ad-help flex items-center gap-2">
           <Info size={14} />

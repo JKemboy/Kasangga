@@ -45,12 +45,12 @@ EMAIL_WORKER_SECRET=a private random secret of at least 32 characters
 The existing `kasangga-transactional-emails` cron job calls the worker every
 minute using `x-email-worker-secret`. Each run handles up to three emails.
 
-After deploying the worker with the new `system_notification` template, apply
-`scripts/sql/role-notification-emails.sql` to the linked project:
+The linked project already has the role-notification email SQL applied. Its
+one-time SQL and database check files were removed after verification at the
+user's request. Worker deployment remains:
 
 ```powershell
 supabase functions deploy transactional-emails
-supabase db query --linked --file scripts/sql/role-notification-emails.sql
 ```
 
 This SQL extends the existing email queue; it requires the original queue and
@@ -71,9 +71,8 @@ and future notifications written to `notifications`; events that do not create
 an inbox notification still need an explicit event integration.
 
 Template checks: `node scripts/check-email-templates.mjs`.
-For database checks, concatenate the setup SQL without its final `commit;` and
-`scripts/sql/check-role-notification-emails.sql`, then execute that combined file.
-It ends in `ROLLBACK`, so no test email is sent.
+The rollback-only database checks were previously completed; their SQL files
+are no longer included in the working tree.
 
 Troubleshooting: check Edge Functions → transactional-emails → Logs and
 `transactional_email_outbox`. `535 / 5.7.8` means SMTP authentication was rejected.

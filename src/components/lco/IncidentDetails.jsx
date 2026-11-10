@@ -1,10 +1,17 @@
 import { statusClass } from "../shared/statusColors.js";
 import EvidencePreview from "./EvidencePreview.jsx";
+import RecordedDecisionDetails from "../shared/RecordedDecisionDetails.jsx";
 import { useEffect, useRef, useState } from "react";
 import { X, Info, Check, Users } from "lucide-react";
 import { Modal, button, primary, input } from "../shared/staffUi.jsx";
 import { dateLabel } from "./lcoData.js";
 import { reviewIncident } from "./incidentData.js";
+import {
+  incidentCategory,
+  SESSION_PAYMENT,
+  REPEATED,
+  incidentConfirmationLabel,
+} from "../../services/incidentTypes.js";
 import "./incident-details.css";
 
 export default function IncidentDetails({
@@ -21,9 +28,7 @@ export default function IncidentDetails({
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const technical = ["Platform / Technical", "Technical issue"].includes(
-    r.type,
-  );
+  const technical = incidentCategory(r.type) === SESSION_PAYMENT;
   const complete = [
     "LCO Screening Complete",
     "Resolved by LCO",
@@ -68,6 +73,7 @@ export default function IncidentDetails({
     <span className={statusClass(value, "ai-pill")}>{value}</span>
   );
   const facts = [
+    ["Incident Category", incidentCategory(r.type)],
     ["Incident Report ID", r.id],
     [
       "Booking ID",
@@ -101,6 +107,9 @@ export default function IncidentDetails({
     ["Submitted Date", dateLabel(r.date)],
     ["LCO Status", pill(r.status)],
     ["OSWE Referral Status", pill(r.referral)],
+    ...(r.type === REPEATED
+      ? [["OSWE confirmation", incidentConfirmationLabel(r.confirmationStatus)]]
+      : []),
     ...(r.osweCaseId
       ? [
           ["OSWE Case", r.osweCaseId],
@@ -151,6 +160,7 @@ export default function IncidentDetails({
             </div>
           ))}
         </dl>
+        <RecordedDecisionDetails decision={r.osweRecordedDecision} />
         <h3>Description</h3>
         <div className="aid-description">
           <strong>
@@ -179,7 +189,7 @@ export default function IncidentDetails({
           <Info size={21} />
           <p>
             {technical
-              ? "This is a platform or technical issue. LCO can resolve it and record what was done."
+              ? "This is a session or payment issue. LCO reviews and resolves it. Eligible repeated incidents require a separate LCO review before referral."
               : "Conduct concerns are referred to OSWE for institutional review."}
           </p>
         </div>
@@ -223,17 +233,22 @@ export default function IncidentDetails({
           <p>Completed LCO review · {r.status}</p>
         ) : (
           <>
-            <button className={button} onClick={() => open("Referred to OSWE")}>
-              <Users size={15} />
-              Refer to OSWE
-            </button>
+            {!technical && (
+              <button
+                className={button}
+                onClick={() => open("Referred to OSWE")}
+              >
+                <Users size={15} />
+                Refer to OSWE
+              </button>
+            )}
             {technical && (
               <button
                 className={primary}
                 onClick={() => open("Resolved by LCO")}
               >
                 <Check size={15} />
-                Handle Platform/Technical Issue
+                Handle Session / Payment Issue
               </button>
             )}
           </>
@@ -243,7 +258,7 @@ export default function IncidentDetails({
         <Modal
           title={
             action === "Resolved by LCO"
-              ? "Handle Platform/Technical Issue"
+              ? "Handle Session / Payment Issue"
               : "Refer to OSWE"
           }
           subtitle={`${r.id} · ${r.issue}`}
@@ -254,7 +269,7 @@ export default function IncidentDetails({
               <Info size={21} />
               <p>
                 {action === "Resolved by LCO"
-                  ? "Resolve only platform or technical issues. Conduct concerns go to OSWE. Participants arrange any session rescheduling."
+                  ? "Resolve this session or payment issue. Student Handbook violations go to OSWE. Participants arrange any session rescheduling."
                   : "A referral does not establish misconduct. OSWE reviews the referred evidence and records the case decision. The referral status is saved in the database."}
               </p>
             </div>

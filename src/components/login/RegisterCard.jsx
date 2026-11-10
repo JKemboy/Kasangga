@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { Modal, button } from "../tutor/workspace/ui.jsx";
+import { TermsContent } from "../../pages/TermsConditions.jsx";
+import "./terms-modal.css";
 import { Link } from "react-router-dom";
 import SecurityNotice from "./SecurityNotice.jsx";
 import { registerWithGoogle } from "../../services/googleRegistration.js";
@@ -9,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 export default function RegisterCard({ loginMode = false }) {
   const auth = useAuth();
   const navigate = useNavigate();
+  const [termsOpen, setTermsOpen] = useState(false);
+  const termsCheckboxId = useId();
   const [busy, setBusy] = useState(false),
     [acceptedTerms, setAcceptedTerms] = useState(loginMode);
   const [error, setError] = useState(() => {
@@ -78,9 +83,11 @@ export default function RegisterCard({ loginMode = false }) {
           </p>
         </header>
         {!loginMode && (
-          <label className="flex items-start gap-2 text-left text-xs leading-5 text-slate-600">
+          <div className="flex items-start gap-2 text-left text-xs leading-5 text-slate-600">
             <input
               type="checkbox"
+              id={termsCheckboxId}
+              aria-label="I have read and agree to the Terms & Conditions"
               checked={acceptedTerms}
               onChange={(event) => {
                 setAcceptedTerms(event.target.checked);
@@ -89,19 +96,21 @@ export default function RegisterCard({ loginMode = false }) {
               className="mt-1 h-4 w-4 shrink-0 accent-[#006b3c]"
             />
             <span>
-              I have read and agree to the{" "}
-              <a
-                href="/Kasangga-Terms-Conditions.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-[#006b3c] underline underline-offset-2"
-                onClick={(event) => event.stopPropagation()}
+              <label htmlFor={termsCheckboxId}>
+                I have read and agree to the
+              </label>{" "}
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={termsOpen}
+                className="inline-flex items-center gap-1 font-semibold text-[#006b3c] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006b3c]"
+                onClick={() => setTermsOpen(true)}
               >
                 Terms &amp; Conditions
-              </a>
+              </button>
               .
             </span>
-          </label>
+          </div>
         )}
         <button
           onClick={register}
@@ -147,6 +156,24 @@ export default function RegisterCard({ loginMode = false }) {
         </p>
       </div>
       <SecurityNotice />
+      {termsOpen && (
+        <Modal
+          title="KASANGGA Terms & Conditions"
+          className="registration-terms-modal"
+          onClose={() => setTermsOpen(false)}
+          footer={
+            <button
+              type="button"
+              className={button}
+              onClick={() => setTermsOpen(false)}
+            >
+              Close
+            </button>
+          }
+        >
+          <TermsContent includeMetadata />
+        </Modal>
+      )}
     </div>
   );
 }

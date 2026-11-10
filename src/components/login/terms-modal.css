@@ -1,0 +1,17 @@
+html dialog.workspace-modal.registration-terms-modal {
+  width: min(720px, calc(100vw - 24px));
+  max-height: min(85dvh, 760px);
+  text-align: left;
+}
+
+html dialog.workspace-modal.registration-terms-modal > div:nth-child(2) {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+  scrollbar-gutter: stable;
+}
+
+html dialog.registration-terms-modal > .tutor-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+}

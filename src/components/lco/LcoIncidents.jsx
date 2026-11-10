@@ -1,4 +1,6 @@
+import { SESSION_PAYMENT, HANDBOOK } from "../../services/incidentTypes.js";
 import useNotificationTarget from "./useNotificationTarget.js";
+import RepeatedIncidentReview from "./RepeatedIncidentReview.jsx";
 // Incident Reports: lets LCO review reports, linked users, evidence, and referral status through saved-record callbacks.
 import { statusClass } from "../shared/statusColors.js";
 import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
@@ -20,13 +22,7 @@ import {
   Download,
   Info,
 } from "lucide-react";
-import {
-  Modal,
-  button,
-  primary,
-  input,
-  Avatar,
-} from "../shared/staffUi.jsx";
+import { Modal, button, primary, input, Avatar } from "../shared/staffUi.jsx";
 import { dateLabel } from "./lcoData.js";
 export default function LcoIncidents({
   notificationTarget,
@@ -78,7 +74,7 @@ export default function LcoIncidents({
       );
   const filtered = period.filter(
     (r) =>
-      (!type || r.type === type) &&
+      (!type || r.category === type || r.type === type) &&
       (!status ||
         (status === "pendingGroup"
           ? ["Pending Review", "Under LCO Review"].includes(r.status)
@@ -185,9 +181,9 @@ export default function LcoIncidents({
           ],
           [
             Laptop,
-            "Platform / Technical Issues",
-            period.filter((r) => r.type === "Platform / Technical").length,
-            () => setType("Platform / Technical"),
+            "Session / Payment Issues",
+            period.filter((r) => r.category === SESSION_PAYMENT).length,
+            () => setType(SESSION_PAYMENT),
           ],
           [
             Users,
@@ -197,7 +193,7 @@ export default function LcoIncidents({
           ],
           [
             Check,
-            "Resolved Platform Issues",
+            "Resolved Session / Payment Issues",
             period.filter((r) => r.status === "Resolved by LCO").length,
             () => setStatus("Resolved by LCO"),
           ],
@@ -210,7 +206,7 @@ export default function LcoIncidents({
                 ["pendingGroup", "Pending Review", "Under LCO Review"].includes(
                   status,
                 ),
-                type === "Platform / Technical",
+                type === SESSION_PAYMENT,
                 referral === "Referred to OSWE",
                 status === "Resolved by LCO",
               ][i]
@@ -240,10 +236,11 @@ export default function LcoIncidents({
           </button>
         ))}
       </div>
+      <RepeatedIncidentReview reports={rows} onOpen={setSelected} />
       <div className="ai-filters">
-        {select("All Incident Types", type, setType, [
-          "Platform / Technical",
-          "Institutional Conduct",
+        {select("All Incident Categories", type, setType, [
+          SESSION_PAYMENT,
+          HANDBOOK,
         ])}
         {select("All Review Statuses", status, setStatus, [
           "Pending Review",
@@ -350,7 +347,10 @@ export default function LcoIncidents({
                       {r.reported}
                     </div>
                   </td>
-                  <td>{pill(r.type)}</td>
+                  <td>
+                    <small>{r.category}</small>
+                    {pill(r.type)}
+                  </td>
                   <td>{dateLabel(r.date)}</td>
                   <td>{pill(r.status)}</td>
                   <td>{pill(r.referral)}</td>

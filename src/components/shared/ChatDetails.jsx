@@ -1,4 +1,5 @@
 import EvidencePicker from "./EvidencePicker.jsx";
+import IncidentTypeFields from "./IncidentTypeFields.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
   X,
@@ -19,6 +20,7 @@ export default function ChatDetails({ chat, mode, close, role }) {
     [sent, setSent] = useState(false),
     [files, setFiles] = useState([]),
     [kind, setKind] = useState(""),
+    [category, setCategory] = useState(""),
     [description, setDescription] = useState("");
   useEffect(() => {
     const d = ref.current;
@@ -46,6 +48,7 @@ export default function ChatDetails({ chat, mode, close, role }) {
       await submitIncidentReport({
         sessionId: chat.booking_id,
         incidentType: kind,
+        incidentCategory: category,
         reason: description,
         evidence: files,
         submissionKey: submissionKey.current,
@@ -179,24 +182,13 @@ export default function ChatDetails({ chat, mode, close, role }) {
                   }
                 />
               </label>
-              <label>
-                Incident type
-                <select
-                  required
-                  value={kind}
-                  onChange={(e) => setKind(e.target.value)}
-                >
-                  <option value="">Select incident type</option>
-                  {[
-                    "Inappropriate behavior or harassment",
-                    "No-show",
-                    "Payment concern",
-                    "Other",
-                  ].map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
-              </label>
+              <IncidentTypeFields
+                category={category}
+                type={kind}
+                onCategory={setCategory}
+                onType={setKind}
+                disabled={busy}
+              />
               <label>
                 Description
                 <textarea
@@ -309,10 +301,7 @@ export default function ChatDetails({ chat, mode, close, role }) {
                       "Tutor",
                       cash(data.payment_details?.allocation?.tutor_amount),
                     ],
-                    [
-                      "Platform (10%)",
-                      cash(platformAmount),
-                    ],
+                    ["Platform (10%)", cash(platformAmount)],
                     [
                       "Transaction",
                       data.payment_details?.transaction || "Not available",
@@ -369,7 +358,11 @@ export default function ChatDetails({ chat, mode, close, role }) {
             type="submit"
             className="chat-submit"
             disabled={
-              busy || !kind || description.trim().length < 20 || !files.length
+              busy ||
+              !category ||
+              !kind ||
+              description.trim().length < 20 ||
+              !files.length
             }
           >
             {busy ? "Submitting..." : "Submit Report"}

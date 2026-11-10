@@ -10,6 +10,11 @@ import {
 } from "lucide-react";
 import { Modal, button } from "../shared/staffUi.jsx";
 import EvidenceFile from "./EvidenceFile.jsx";
+import RecordedDecisionDetails from "../shared/RecordedDecisionDetails.jsx";
+import {
+  REPEATED,
+  incidentConfirmationLabel,
+} from "../../services/incidentTypes.js";
 import "./case-shortcuts.css";
 import "./archive-details.css";
 
@@ -65,6 +70,13 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
             {r.type} | {isArchived ? "Archived" : "Resolved"}{" "}
             {date(isArchived ? r.archived : r.resolved)} by {r.officer}
           </p>
+          {r.type === REPEATED && (
+            <p>
+              {incidentConfirmationLabel(
+                r.confirmationStatus || full.confirmationStatus,
+              )}
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -141,6 +153,7 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
               "The detailed decision basis is not attached to this archived reference."}
           </p>
         </section>
+        <RecordedDecisionDetails decision={full.decision || r.decision} />
         <section>
           <h3>
             <ShieldCheck size={16} />

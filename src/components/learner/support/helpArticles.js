@@ -151,7 +151,7 @@ export const helpArticles = [
     steps: [
       "Open My Sessions and choose Upcoming, Ongoing or Completed. Use the date and payment-status filters to narrow the cards.",
       "Open View Details for the booking reference, topic, time, amount and payment information.",
-      "A session that has ended may await completion confirmation before appearing under Completed. Contact your tutor through the booking conversation if completion is pending.",
+      "After the session ends, the tutor uploads completion proof. Review the proof under Ongoing, then confirm completion if the session was completed. You can rate your tutor immediately afterward.",
     ],
     view: "sessions",
     action: "Open My Sessions",

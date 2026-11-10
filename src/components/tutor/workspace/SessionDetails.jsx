@@ -1,13 +1,18 @@
 import ExternalMeeting from "../../shared/ExternalMeeting.jsx";
 import Details from "../../shared/SessionDetailRows.jsx";
 import EvidencePicker from "../../shared/EvidencePicker.jsx";
+import IncidentTypeFields from "../../shared/IncidentTypeFields.jsx";
 import { useRef, useState } from "react";
 import { ExternalLink, MessageCircle, Video, ShieldCheck } from "lucide-react";
 import { Modal, Avatar, Badge, Field, button, primary, input } from "./ui.jsx";
 import { money, hour, time } from "./data.js";
 import { meetingUrl } from "./sessionActions.js";
 import { chatRequest } from "../../../services/bookingMessages.js";
-import { completeTutorSession } from "../../../services/tutorSessionCompletion.js";
+import {
+  uploadCompletionProof,
+  validateCompletionProof,
+} from "../../../services/tutorSessionCompletion.js";
+import SessionCompletionProof from "../../shared/SessionCompletionProof.jsx";
 import { sessionAllocation } from "./earnings.js";
 import { submitIncidentReport } from "../../../services/incidentReports.js";
 
@@ -118,8 +123,10 @@ export default function SessionDetails({
     [actionLoading, setActionLoading] = useState(false),
     [actionError, setActionError] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
+  const [proofFile, setProofFile] = useState(null);
   const [reason, setReason] = useState(""),
     [kind, setKind] = useState(""),
+    [category, setCategory] = useState(""),
     [slot, setSlot] = useState(""),
     [files, setFiles] = useState([]);
   if (!s) return null;
@@ -138,6 +145,7 @@ export default function SessionDetails({
     setAction(value);
     setReason("");
     setKind("");
+    setCategory("");
     setSlot("");
     setFiles([]);
     setFeedback("");
@@ -146,12 +154,12 @@ export default function SessionDetails({
     setActionLoading(true);
     setActionError("");
     try {
-      await completeTutorSession(s.id);
+      await uploadCompletionProof(s.id, proofFile);
       changeAction("");
       window.dispatchEvent(new Event("campustutor:sessions-changed"));
       await refreshSessions?.();
       setFeedback(
-        "Session marked as completed and kept in My Sessions history.",
+        "Completion proof uploaded. The learner has been notified to confirm before rating.",
       );
     } catch (error) {
       setActionError(error.message);
@@ -182,6 +190,7 @@ export default function SessionDetails({
         await submitIncidentReport({
           sessionId: s.id,
           incidentType: kind,
+          incidentCategory: category,
           reason,
           evidence: files,
           submissionKey: reportKey.current,
@@ -241,6 +250,13 @@ export default function SessionDetails({
               {s.program && <p>{s.program}</p>}
             </div>
           </div>
+          {s.completionProof && (
+            <SessionCompletionProof
+              bookingId={s.id}
+              proof={s.completionProof}
+              tutor
+            />
+          )}
           <Details
             rows={[
               ["Booking ID", s.booking || s.id],
@@ -322,7 +338,7 @@ export default function SessionDetails({
           size={action === "reschedule" ? "large" : "default"}
           title={
             action === "complete"
-              ? "Mark Session Completed"
+              ? "Session Completion Proof"
               : action === "incident"
                 ? "Report an Issue"
                 : action === "cancel"
@@ -337,31 +353,37 @@ export default function SessionDetails({
                 <button className={button} onClick={() => changeAction("")}>
                   Cancel
                 </button>
-                <button
-                  form={
-                    action === "complete" ? undefined : "session-action-form"
-                  }
-                  type={action === "complete" ? "button" : "submit"}
-                  onClick={action === "complete" ? completeNow : undefined}
-                  className={primary}
-                  disabled={
-                    actionLoading ||
-                    (action === "cancel" &&
-                      (!kind || !reason.trim() || !acknowledged)) ||
-                    (action === "incident" &&
-                      (!kind || reason.trim().length < 20 || !files.length))
-                  }
-                >
-                  {actionLoading
-                    ? "Saving..."
-                    : action === "complete"
-                      ? "Done Session"
-                      : action === "incident"
-                        ? "Submit Report"
-                        : action === "cancel"
-                          ? "Cancel Session"
-                          : "Submit Report"}
-                </button>
+                {!(action === "complete" && s.completionProof) && (
+                  <button
+                    form={
+                      action === "complete" ? undefined : "session-action-form"
+                    }
+                    type={action === "complete" ? "button" : "submit"}
+                    onClick={action === "complete" ? completeNow : undefined}
+                    className={primary}
+                    disabled={
+                      actionLoading ||
+                      (action === "complete" && !proofFile) ||
+                      (action === "cancel" &&
+                        (!kind || !reason.trim() || !acknowledged)) ||
+                      (action === "incident" &&
+                        (!category ||
+                          !kind ||
+                          reason.trim().length < 20 ||
+                          !files.length))
+                    }
+                  >
+                    {actionLoading
+                      ? "Saving..."
+                      : action === "complete"
+                        ? "Upload Proof & Notify Learner"
+                        : action === "incident"
+                          ? "Submit Report"
+                          : action === "cancel"
+                            ? "Cancel Session"
+                            : "Submit Report"}
+                  </button>
+                )}
               </>
             ) : null
           }
@@ -379,11 +401,41 @@ export default function SessionDetails({
             />
           ) : action === "complete" ? (
             <div className="space-y-3">
-              <p>
-                Mark this paid session with {s.learner} as completed? It will
-                leave the active message list and remain visible under the
-                Completed tab in My Sessions.
-              </p>
+              {s.completionProof ? (
+                <SessionCompletionProof
+                  bookingId={s.id}
+                  proof={s.completionProof}
+                  tutor
+                />
+              ) : (
+                <>
+                  <p>
+                    Upload proof that your session with {s.learner} was
+                    completed. The learner must review and confirm it before the
+                    session is completed and rating becomes available.
+                  </p>
+                  <label className="block text-sm">
+                    Completion proof (JPG, PNG or PDF; up to 10 MB)
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,application/pdf"
+                      disabled={actionLoading}
+                      onChange={(event) => {
+                        const file = event.target.files[0];
+                        try {
+                          validateCompletionProof(file);
+                          setProofFile(file);
+                          setActionError("");
+                        } catch (error) {
+                          setProofFile(null);
+                          setActionError(error.message);
+                          event.target.value = "";
+                        }
+                      }}
+                    />
+                  </label>
+                </>
+              )}
               {actionError && (
                 <p role="alert" className="text-red-700">
                   {actionError}
@@ -427,7 +479,16 @@ export default function SessionDetails({
                   </Field>
                 </>
               )}
-              {action !== "reschedule" && (
+              {action === "incident" && (
+                <IncidentTypeFields
+                  category={category}
+                  type={kind}
+                  onCategory={setCategory}
+                  onType={setKind}
+                  disabled={actionLoading}
+                />
+              )}
+              {action !== "reschedule" && action !== "incident" && (
                 <Field label={action === "incident" ? "Issue Type" : "Reason"}>
                   <select
                     className={input}
@@ -439,22 +500,12 @@ export default function SessionDetails({
                       Select{" "}
                       {action === "incident" ? "an issue type" : "a reason"}
                     </option>
-                    {(action === "incident"
-                      ? [
-                          "No-show",
-                          "Inappropriate behavior or harassment",
-                          "Harassment",
-                          "Payment concern",
-                          "Technical issue",
-                          "Other",
-                        ]
-                      : [
-                          "Schedule conflict",
-                          "Personal emergency",
-                          "Illness",
-                          "Other",
-                        ]
-                    ).map((v) => (
+                    {[
+                      "Schedule conflict",
+                      "Personal emergency",
+                      "Illness",
+                      "Other",
+                    ].map((v) => (
                       <option key={v}>{v}</option>
                     ))}
                   </select>

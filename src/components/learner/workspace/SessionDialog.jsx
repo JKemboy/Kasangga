@@ -1,4 +1,5 @@
 import SessionDetailRows from "../../shared/SessionDetailRows.jsx";
+import SessionCompletionProof from "../../shared/SessionCompletionProof.jsx";
 import { useState } from "react";
 import { Info, TriangleAlert, Video } from "lucide-react";
 import {
@@ -120,6 +121,19 @@ export default function SessionDialog({
                 ],
               ]}
             />
+            {r.completionProof && (
+              <SessionCompletionProof
+                bookingId={r.bookingId}
+                proof={r.completionProof}
+                onConfirmed={() =>
+                  onOpen("review", {
+                    ...record,
+                    lifecycle: "Completed",
+                    bookingStatus: "Completed",
+                  })
+                }
+              />
+            )}
             {r.type === "Online" && (
               <>
                 <h3 className="session-section-title">External meeting</h3>

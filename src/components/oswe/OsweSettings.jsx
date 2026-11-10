@@ -13,6 +13,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { input, button, primary } from "../shared/staffUi.jsx";
+import EscalationRuleSettings from "./EscalationRuleSettings.jsx";
 
 const notificationTypes = [
   "New Case Referral",
@@ -340,6 +341,7 @@ export default function OsweSettings({ settings, onSave }) {
           </div>
         </section>
       </div>
+      <EscalationRuleSettings />
       <div className="os-save">
         <ShieldCheck size={22} />
         <span>

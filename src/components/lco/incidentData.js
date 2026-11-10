@@ -1,3 +1,8 @@
+import {
+  incidentCategory,
+  SESSION_PAYMENT,
+  HANDBOOK,
+} from "../../services/incidentTypes.js";
 export function reviewIncident(record, action, notes) {
   if (
     [
@@ -10,7 +15,10 @@ export function reviewIncident(record, action, notes) {
     throw new Error("This review is complete.");
   if (
     !["Resolved by LCO", "Referred to OSWE"].includes(action) ||
-    (action === "Resolved by LCO" && record.type !== "Platform / Technical")
+    (action === "Resolved by LCO" &&
+      incidentCategory(record.type) !== SESSION_PAYMENT) ||
+    (action === "Referred to OSWE" &&
+      incidentCategory(record.type) !== HANDBOOK)
   )
     throw new Error("Choose an action appropriate for this report.");
   if (notes.trim().length < 15)

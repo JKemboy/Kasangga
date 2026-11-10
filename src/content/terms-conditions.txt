@@ -1,0 +1,208 @@
+KASANGGA Terms & Conditions
+Version 2026 · Effective September 17, 2026 · Maintained by LCO (KASANGGA Admin) and the Office of Student Welfare and Engagement (OSWE)
+By creating a KASANGGA account, every user agrees to Part A (Caraga State University policies that apply to KASANGGA) and Part B (KASANGGA system terms). Where the two differ, the CSU Student Handbook and Philippine law prevail.
+1. About KASANGGA
+KASANGGA is a peer-to-peer tutoring system for Caraga State University students. Approved tutors offer paid sessions to fellow students. LCO, as KASANGGA Admin, runs the system and handles session, payment and refund matters. OSWE handles student discipline matters under the CSU Student Handbook.
+University rules still apply
+KASANGGA does not replace the CSU Student Handbook (2021 Edition). Students agree to be bound by it and by other CSU policies, including the Alcohol, No Smoking, ID-Wearing and dress code policies (Ch. 7.8, p. 89). Questions of interpretation of the Handbook go to the Vice President for Academic Affairs (Ch. 7.7, p. 89).
+2. Definitions
+User: any CSU student with a KASANGGA account.
+Learner: every account by default; a user who books and attends sessions.
+Tutor: a learner whose Tutor application was approved by LCO. The same account keeps its Learner role.
+Service: a subject a tutor offers, made of topics, each with its own hourly rate, session type and dates.
+Session: one booked 1-hour slot; back-to-back slots booked together form one longer session.
+Session proof: a file the tutor uploads after a session showing it took place.
+LCO (KASANGGA Admin): verifies tutors, moderates services, monitors bookings and payments, handles payment and session issues, and forwards Handbook-related reports to OSWE.
+OSWE: the Office of Student Welfare and Engagement. In KASANGGA it handles the student discipline matters that the Handbook assigns to the Office of Student Affairs and Services (OSAS).
+No-show: not appearing within 15 minutes after a session’s start time.
+Clearance block: a hold on a student’s clearance recorded by OSWE after a case decision, until its conditions are met.
+Part A — University Policies (CSU Student Handbook, 2021 Edition)
+Part A summarizes the provisions of the CSU Student Handbook (2021 Edition) that apply to KASANGGA. Page numbers refer to the printed Handbook. Where these Terms and the Handbook differ, the Handbook prevails.
+A1. Conduct and Offenses
+Source: CSU Student Handbook 2021, Ch. 6 (pp. 63–82)
+Basis of discipline and standard of conduct
+Every student must observe the laws of the land and all University policies; disciplinary cases follow the Handbook’s procedures (Ch. 6.2, Sec. 3, p. 64).
+Students are subject to disciplinary action only after due process (Ch. 6.2, Sec. 4, p. 65).
+Students must respect the interests and welfare of the University community and maintain an atmosphere conducive to education (Ch. 6.3.b, Sec. 4, pp. 66–67).
+Students are expected to govern their conduct so as not to harm or discredit themselves, the University or any other individual; responsibility is not limited to the classroom (Ch. 6.3.c, pp. 67–68).
+Acts outside University premises that affect the good name, order or welfare of the University may also be sanctioned (Violations of Published University Policies, item 5, p. 79).
+Offenses that apply to KASANGGA use
+Violation of the ID-Wearing Policy, including using another person’s ID or letting another person use yours (pp. 69, 73).
+Misuse of computer facilities or information systems, including unauthorized use of another person’s identification or password, and sending obscene, abusive, harassing or threatening messages or stalking (pp. 70, 74–75).
+Mental or bodily harm, including verbal abuse, threats, intimidation, harassment, sexual harassment and stalking (p. 75).
+Discrimination on the basis of race, color, religion, national origin, sex, age, disability or sexual orientation (p. 75).
+Offenses against persons, including acts of disrespect or discourtesy, intimidation, and any form of bullying including cyberbullying and the use of social media (p. 70).
+Misuse of University property or equipment, theft, and unauthorized access to University records (pp. 70–71, 75–76).
+Bribery or any enticement to obtain favor or advantage unfairly; unauthorized use of the CSU name or logo (p. 77).
+Violations of published University policies, rules and regulations, including those of the library and other facilities (p. 78).
+Falsification of records, giving false information to any University official, or using false identification (p. 79).
+Academic dishonesty, including plagiarism, fabrication of data or results, and deceiving a teacher about an academic requirement (p. 80).
+Obscenity; disorderly, lewd or indecent conduct (p. 80).
+KASANGGA application (system rule)
+Under the academic dishonesty provisions above, KASANGGA does not allow a tutor to do, or a learner to request, graded work; tutors guide learning only.
+Repeated offenses
+The Handbook treats minor offenses as major when committed four (4) or more times (Ch. 6.3.f, p. 72), and sends the third commission of other violations to the VPAA (Ch. 7.3.b, p. 86).
+OSWE applies the third-violation rule: a third violation of the same offense is charged as a major offense and transmitted to the VPAA (OSWE practice, based on Ch. 7.3.b, p. 86).
+A2. Discipline Procedure and Sanctions
+Source: CSU Student Handbook 2021, Ch. 6.4–6.6, 7.1–7.3, 7.12 (pp. 81–92)
+Who handles discipline
+All matters concerning student discipline fall under the Office of Student Affairs and Services, and all disciplinary matters must be filed with its Director (Ch. 6.6, p. 82). In KASANGGA, these are handled by OSWE.
+Procedures are fact-finding and non-adversarial, aimed at a fair and informed resolution (Ch. 6.4, p. 81).
+LCO does not decide disciplinary matters or impose sanctions. It forwards every report involving a possible Handbook violation to OSWE (KASANGGA system rule).
+Filing a complaint
+Any student may file a formal written complaint against a student directly at the office of the Director (Ch. 7.1, p. 82). A report filed in KASANGGA does not take away this right.
+A complaint states the nature and circumstances of the offense, with any evidence (Ch. 7.1, p. 82).
+Grave misconduct is submitted to the VPAA, who may form an ad hoc committee (Ch. 7.1, p. 82).
+All filed complaints are treated with utmost confidentiality (Ch. 7.1, p. 82).
+Due process
+Minor offenses: the Director advises the student through a complaint notice for a meeting and decides based on considerable verification of facts; a summary proceeding may apply depending on the nature and frequency of the violation (Ch. 7.2.a, p. 83).
+Major offenses: a written complaint is filed; the student receives a Complaint Notice and has one (1) calendar week from receipt to see the Director; the office interviews those involved and verifies the facts; grave misconduct goes to the VPAA (Ch. 7.2.b, pp. 83–84).
+The VPAA, through the office, notifies the student of the decision, and the office carries it out (Ch. 7.2.b, item 6, p. 84).
+Sanctions
+Sanctions are meant to be corrective and educational, not only punitive (Ch. 7.3, pp. 84–85).
+Minor offenses (non-wearing of ID, dress code, and similar): first commission in a semester is recorded with one (1) hour of community work; the second requires a written apology and two (2) hours; the third, four (4) hours; the fourth is charged as a major offense (Ch. 7.3.a, p. 85).
+Other violations: first commission, oral or written reprimand and a written apology; second, written reprimand, written apology and community work; third, charged as a major offense and sent to the VPAA (Ch. 7.3.b, pp. 85–86). OSWE applies this third-violation rule to repeated offenses in KASANGGA.
+Major offenses: disciplinary probation, mandatory community service of at least four (4) hours, written reprimand, disciplinary suspension, discretionary sanctions, or dismissal or expulsion, which only the University President can impose (Ch. 7.3.c, pp. 86–88).
+Corrective mechanism: referral to the Guidance Counselor, Health Services or an educational or counseling program (Ch. 7.12, p. 92).
+KASANGGA case actions
+OSWE records one case action per case: Counseled (Ch. 7.12, p. 92), Verbal Warning (oral reprimand, Ch. 7.3.b, p. 85), Written Warning (written reprimand, Ch. 7.3.b–7.3.c, pp. 86–87), or Referred for Further Action to the VPAA (Ch. 7.2.b and 7.3.b, pp. 84, 86).
+A3. Clearance, Confidentiality and Records
+Source: CSU Student Handbook 2021, Ch. 7.4–7.13 and Ch. 8 (pp. 88–93)
+Clearance block
+The University, through the student affairs office, colleges and other units, has the right to block a student’s clearance. A violation must be resolved within the semester or before the next enrollment; the block is lifted once the student complies. The University may refuse to enroll students with clearance issues (Ch. 7.13, p. 92).
+Confidentiality
+Under R.A. 10173, the Data Privacy Act of 2012, all complaints and their decisions are treated with utmost confidentiality (Ch. 7.4, p. 88).
+Records and withdrawal
+Records of major violations are kept for ten (10) years after final resolution, and the official Transcript of Records indicates any expulsion, suspension or unauthorized withdrawal (Ch. 7.5, p. 88).
+A student who leaves without permission while adjudged of a violation or while a charge is imminent is considered to have resigned, and may be placed on interim suspension until the charge is cleared (Ch. 7.6, p. 88).
+Community work assigned as a sanction follows the Do Day Slip procedure (Ch. 7.11, p. 91).
+Laws the University upholds
+Anti-Bullying Act of 2013 (R.A. 10627) (p. 93).
+Anti-Sexual Harassment Act of 1995 (R.A. 7877) (p. 93).
+Anti-Hazing Act of 2018 (R.A. 11053; printed in the Handbook as “R.A. 1053”) (pp. 92–93).
+Anti-Violence Against Women and Their Children Act of 2004 (R.A. 9262; printed in the Handbook as “R.A 9292”) (p. 93).
+Part B — KASANGGA System Terms
+B1. Accounts, Tutor Credibility and Verification
+Accounts
+Only bona fide CSU students may register, by signing in with their CarSU Google account (@carsu.edu.ph). On first sign-in, a student uploads their CSU Student ID so their name and student ID number can be checked against the University registry.
+One account per student. Every account starts as a Learner.
+Keep your CarSU Google account secure; you are responsible for all activity on your account.
+Your name and student ID from your verified records cannot be changed in KASANGGA.
+Every student lists the CSU-accredited organization(s) they belong to when signing up.
+Tutor eligibility
+Tutors must be enrolled in the course they intend to teach.
+Tutors must have a grade of 1.75 or better in the subject they intend to teach, regardless of their overall academic standing.
+Applicants submit their Certificate of Registration (COR) showing the subject and grade, together with their CSU Student ID.
+OCR and data matching only assist review. LCO, as KASANGGA Admin, makes every approval decision and may approve or decline.
+Approval adds Tutor capability to the same account; a declined application does not affect the Learner account.
+Tutors must stay enrolled and confirm their class schedule each semester before offering new dates.
+Tutor credibility
+Tutor credibility is monitored through session feedback and learner ratings.
+Tutor status is subject to suspension or revocation for poor performance or misconduct, with a written reason.
+B2. Terms and Conditions for Tutors
+Tutors agree to uphold
+Professionalism in every session and message.
+Confidentiality of learner information and session content.
+Appropriate tutor–tutee boundaries.
+Punctuality and attendance.
+Respectful communication.
+Accountability for their sessions and conduct.
+Program policies and standards
+Tutors must comply with KASANGGA’s policies and standards and with the CSU Student Handbook.
+Tutors must follow the approved rates (₱75 to ₱250 per hour) and the transparent payment policy: Tutor 90%, Platform 10%.
+Cancellations and no-shows must be reported promptly through KASANGGA.
+B3. Services, Sessions and Payment
+Services
+Approved tutors list services made of topics, each with its own rate, session type and available dates.
+Sessions are booked in 1-hour slots; back-to-back slots form one longer session.
+Sessions are held in approved venues or online, as set out in Venues for Tutoring Sessions.
+Booking and payment
+Topic rates are set by tutors from ₱75 to ₱250 per hour.
+A booking is confirmed only after the learner pays through GCash via PayMongo. The slot is held for 15 minutes while the learner pays.
+Times that clash with the tutor’s confirmed class schedule are not shown.
+Payment split
+Each paid session is split Tutor 90% and Platform 10%. The platform share covers platform maintenance (5%) and Admin (5%). Example: ₱200 Gross = ₱180 Tutor + ₱20 Platform (₱10 maintenance + ₱10 Admin).
+Payments, refunds, payouts and payment disputes are handled by LCO as KASANGGA Admin. OSWE does not receive or manage any money.
+B4. Venues for Tutoring Sessions
+In-person venues
+Classrooms may be used when no classes are scheduled or being held, subject to approval from the respective college dean.
+Library areas may also be used, provided tutors and tutees follow the building’s operating hours and policies.
+In-person sessions are held on the CSU campus between 7:00 AM and 8:00 PM.
+Online sessions
+Tutors and tutees both use the agreed platform (Google Meet or Zoom).
+Both ensure a stable internet connection.
+Both maintain privacy and observe professionalism throughout the session.
+B5. Cancellation, Attendance and Session Proof
+Rescheduling and cancellation
+Sessions cannot be rescheduled by the learner or the tutor; cancel and book again.
+A cancellation does not automatically guarantee a refund; LCO reviews every refund request.
+Learner cancels 24 hours or more before start: full refund after review. Less than 24 hours: no refund, except a documented emergency accepted by LCO.
+Tutor cancels, or a tutor no-show is confirmed: full refund to the learner.
+A third session-rule violation by the same student in one semester (no-show, late arrival or early end, or late cancellation) is referred by LCO to OSWE as Repeated Rule Violations, under Violations of Published University Policies, Rules or Regulations, and Agreements (Handbook p. 78). LCO may suspend Tutor capability while OSWE reviews the case.
+Attendance and no-shows
+A session ends at its scheduled time; lateness is not added.
+A party who has not joined or arrived 15 minutes after the start time is a no-show.
+Tutor no-show: the learner reports it within 24 hours; if confirmed, the learner is refunded and the tutor is not paid.
+Learner no-show: the tutor waits 15 minutes and uploads proof of waiting; the session counts as held.
+Session proof and completion
+After every session the tutor uploads session proof; the learner may add their own.
+The learner confirms only after the tutor’s proof is uploaded.
+With no confirmation or report within 48 hours after proof is uploaded, the session completes automatically.
+Session proof is visible only to LCO and, for referred cases, OSWE, and is attached to any report on that booking.
+B6. Payouts, Messages, Integrity and Reviews
+Payouts
+The tutor’s 90% share is sent to their GCash within 24 hours after the learner confirms the session.
+A payout is held while session proof is missing or a report about the booking is open.
+Messages
+Chats open with a booking and close 24 hours after the last session.
+Integrity
+Payments must go through KASANGGA. Tutors may not ask learners to pay outside the platform.
+Ratings and reviews must be honest and about the session.
+B7. Reporting and OSWE Case Procedure
+Handbook references: 7.2.b, 7.3, 7.12, 7.13
+Incident types and who handles them
+Session and payment issues, handled by LCO: No-Show, Late Arrival or Session Ended Early, Late Cancellation, Payment or Refund Issue, Meeting Link or Technical Issue, Request to Pay Outside KASANGGA, Other.
+Student Handbook violations, referred to OSWE: Harassment or Threats, Sexual Harassment, Bullying or Cyberbullying, Disrespectful or Abusive Behavior, Discrimination, Privacy or Consent Violation, Academic Dishonesty, False Information or Identity, Safety Concern.
+Repeated Rule Violations: LCO refers a student’s third violation of KASANGGA session rules in a semester (no-shows, late arrivals or early ends, late cancellations) to OSWE under Violations of Published University Policies, Rules or Regulations, and Agreements (Handbook p. 78), as confirmed by OSWE.
+Reporting an issue
+Users report problems through Report an Issue, with a description and their own evidence.
+LCO reviews every report: session and payment issues stay with LCO, and every possible Student Handbook violation is forwarded to OSWE. Students may also file a written complaint directly at the OSWE office (Handbook 7.1, p. 82).
+A report is an allegation, not a finding. Under the Handbook, giving false information to a University official (p. 79), knowingly starting a disciplinary proceeding without cause, and intimidating a witness (p. 78) are offenses. Retaliating against a reporter is also prohibited (KASANGGA system rule).
+Reporters follow their report in My Reports › Filed by Me, where they can open its details (what they reported, their evidence and its history) and see the final outcome, but not any action taken against another student.
+Case review
+A report becomes an OSWE case only when LCO refers it. The reported student sees the case in My Reports › About Me once it opens, with its details, decision, conditions and clearance status; the reporter’s identity stays confidential.
+OSWE reviews the case details, both parties and all evidence, including session proof, and marks each item Valid or Insufficient.
+Insufficient evidence: the case is recorded as No Violation and archived; clearance is not affected.
+Case actions (valid evidence)
+Counseled: referral to the Guidance Counselor or an educational or counseling program. Conditions: an evaluation session with the Guidance Counselor and the recommended program (7.12, p. 92).
+Verbal Warning: oral reprimand, for a first violation. Condition: a written apology addressed to OSWE (7.3.b, p. 85).
+Written Warning: written reprimand, for a second violation. Conditions: a written apology and mandatory work or community service under the Do Day Slip procedure (7.3.b–7.3.c, pp. 86–87; 7.11, p. 91).
+Referred for Further Action: a grave offense, or a third violation of the same offense, sent to the VPAA. Condition: comply with the VPAA’s decision (7.2.b and 7.3.b, pp. 84, 86).
+OSWE applies the third-violation rule: first violation, Verbal Warning or Counseled; second, Written Warning; third, Referred for Further Action (7.3.b, pp. 85–86).
+Clearance and resolution
+Every case action blocks the student’s clearance until its conditions are met. The University may block clearance for unresolved violations (7.13, p. 92); applying the block to every case action is a KASANGGA system rule.
+Conditions always include the OSWE Completion Form. The student downloads it from My Reports › About Me in KASANGGA, completes and signs it, and submits it in person at the OSWE office. OSWE checks it with the student before marking the condition complete.
+Once OSWE confirms every condition, the case is resolved and archived and the block is lifted, within the semester or before the next enrollment.
+Grave matters follow the Handbook’s due process for major offenses, including referral to the VPAA (7.2.b, pp. 83–84).
+B8. Privacy, Prohibited Use and Enforcement
+Privacy and data
+Personal data is processed under R.A. 10173 only for verification, booking, payment, safety and discipline.
+KASANGGA does not collect home addresses, emergency contacts, birthdates, social media accounts or unrelated government IDs.
+Tutor documents are visible only to LCO; session proof only to LCO and, for referred cases, OSWE.
+Records of major violations are kept by OSWE for ten (10) years (Handbook 7.5, p. 88).
+Prohibited use
+In-person sessions outside an approved CSU campus location
+Sharing, selling or lending an account, or using someone else’s
+Arranging sessions or payments outside KASANGGA
+Misrepresenting qualifications, grades or documents
+Using the CSU name or logo for a service
+Posting advertising or unrelated content
+Interfering with the system or accessing data that is not yours
+Enforcement
+Platform measures (LCO): removing content, holding a payout, refusing a refund, or suspending a service, Tutor capability or an account, each with a written reason in the audit log.
+Disciplinary sanctions (OSWE and the University only), under Part A and the Handbook.
+Platform measures can be reviewed by LCO through Help & Support.
+Changes and contact
+Users are notified in the app and by CarSU email before the Terms change. Questions about the Terms go to Help & Support; questions about discipline or clearance go to the OSWE office. Handbook interpretation is referred to the VPAA (7.7, p. 89).
+Source
+Caraga State University Student Handbook, 2021 Edition, Chapters 6–8 (printed pp. 63–93). Items marked as a KASANGGA system rule or OSWE practice are rules of this system, agreed with OSWE, and are not quoted from the Handbook.

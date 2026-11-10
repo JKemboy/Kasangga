@@ -1,5 +1,5 @@
 import { getSupabaseClient } from "./supabaseClient.js";
-export const CAMPUS_TUTOR_TERMS_VERSION = "2026-10-19";
+export const CAMPUS_TUTOR_TERMS_VERSION = "2026-11-09";
 export async function registerWithGoogle(
   origin,
   acceptedTerms,
@@ -12,7 +12,8 @@ export async function registerWithGoogle(
   );
   if (termsError || !nonce)
     throw new Error(
-      termsError?.message || "Could not record your Terms & Conditions acceptance.",
+      termsError?.message ||
+        "Could not record your Terms & Conditions acceptance.",
     );
   const { error } = await client.auth.signInWithOAuth({
     provider: "google",

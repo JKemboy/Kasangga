@@ -1,4 +1,5 @@
 import EvidencePicker from "../../shared/EvidencePicker.jsx";
+import IncidentTypeFields from "../../shared/IncidentTypeFields.jsx";
 import { useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { button, input, primary } from "../../tutor/workspace/ui.jsx";
@@ -8,6 +9,7 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
   const bookings = record.bookings || (record.id ? [sessionInfo(record)] : []);
   const [booking, setBooking] = useState(String(bookings[0]?.id || "")),
     [type, setType] = useState(""),
+    [category, setCategory] = useState(""),
     [description, setDescription] = useState(""),
     [files, setFiles] = useState([]),
     [error, setError] = useState(""),
@@ -25,6 +27,7 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
             sessionId: bookings.find((b) => String(b.id) === booking)?.id,
             name: record.name,
             incidentType: type,
+            incidentCategory: category,
             reason: description.trim(),
             evidence: files,
             submissionKey: submissionKey.current,
@@ -51,26 +54,13 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
             ))}
           </select>
         </label>
-        <label className="ls-field">
-          Incident type
-          <select
-            className={input}
-            required
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
-            <option value="">Select an incident type</option>
-            {[
-              "Inappropriate behavior or harassment",
-              "No-show",
-              "Payment concern",
-              "Technical issue",
-              "Other",
-            ].map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-        </label>
+        <IncidentTypeFields
+          category={category}
+          type={type}
+          onCategory={setCategory}
+          onType={setType}
+          disabled={busy}
+        />
         <label className="ls-field">
           Description
           <textarea
@@ -113,6 +103,7 @@ export default function LearnerReport({ record, onClose, onSubmit }) {
           disabled={
             busy ||
             !booking ||
+            !category ||
             !type ||
             description.trim().length < 20 ||
             !files.length

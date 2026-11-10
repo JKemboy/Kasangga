@@ -90,24 +90,34 @@ export default function PolicyDetails({
           </div>
         )}
         <article className="policy-content">
+          <p>
+            <strong>Basis:</strong>{" "}
+            {policy.basis ||
+              (policy.content?.startsWith("Basis:")
+                ? policy.content.split("\n")[0].slice(6).trim()
+                : `${policy.owner} — official source pending verification.`)}
+          </p>
           {policy.content ? (
-            policy.content.split(/\n\s*\n/).map((block, index) => {
-              if (block.startsWith("## "))
-                return <h3 key={index}>{block.slice(3)}</h3>;
-              if (block.split("\n").every((line) => line.startsWith("- ")))
+            policy.content
+              .replace(/^Basis:[^\n]*\n\s*\n/, "")
+              .split(/\n\s*\n/)
+              .map((block, index) => {
+                if (block.startsWith("## "))
+                  return <h3 key={index}>{block.slice(3)}</h3>;
+                if (block.split("\n").every((line) => line.startsWith("- ")))
+                  return (
+                    <ul key={index}>
+                      {block.split("\n").map((line, i) => (
+                        <li key={i}>{line.slice(2)}</li>
+                      ))}
+                    </ul>
+                  );
                 return (
-                  <ul key={index}>
-                    {block.split("\n").map((line, i) => (
-                      <li key={i}>{line.slice(2)}</li>
-                    ))}
-                  </ul>
+                  <p key={index} className="whitespace-pre-wrap">
+                    {block}
+                  </p>
                 );
-              return (
-                <p key={index} className="whitespace-pre-wrap">
-                  {block}
-                </p>
-              );
-            })
+              })
           ) : policy.documentPath &&
             /^https:\/\//i.test(policy.documentPath) ? (
             <a

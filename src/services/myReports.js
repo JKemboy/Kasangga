@@ -1,8 +1,18 @@
 import { getSupabaseClient } from "./supabaseClient.js";
+import { canonicalIncidentType, incidentCategory } from "./incidentTypes.js";
 export async function listMyReports(client = getSupabaseClient()) {
   const { data, error } = await client.rpc("my_reports_snapshot");
   if (error) throw new Error("Could not load your reports: " + error.message);
-  return { created: [], received: [], ...data };
+  const normalize = (row) => ({
+    ...row,
+    incident_type: canonicalIncidentType(row.incident_type),
+    incident_category: incidentCategory(row.incident_type),
+  });
+  return {
+    ...data,
+    created: (data?.created || []).map(normalize),
+    received: (data?.received || []).map(normalize),
+  };
 }
 
 // Generic report alerts do not expose statements, evidence or reporter identity.

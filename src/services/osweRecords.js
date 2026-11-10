@@ -1,4 +1,5 @@
 import { academicYear } from "./academicYear.js";
+import { canonicalIncidentType, incidentCategory } from "./incidentTypes.js";
 import { clearanceAcademicTerm } from "./clearanceAcademicTerm.js";
 // OSWE record mapper: converts database snapshot tables into the case, clearance, evidence, archive, and report view models.
 const label = (value) =>
@@ -59,7 +60,9 @@ export function mapOsweRecords(db) {
         student: name(r.reported_against),
         reporterStudentId: users.get(r.reported_by)?.student_id || "",
         studentId: users.get(r.reported_against)?.student_id || "",
-        type: r.incident_type,
+        type: canonicalIncidentType(r.incident_type),
+        category: incidentCategory(r.incident_type),
+        confirmationStatus: r.oswe_confirmation_status || "pending",
         description: r.description,
         priority: r.priority === "normal" ? "Medium" : label(r.priority),
         date: day(r.submitted_at),

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CheckCircle, Clock, Download, FileText, Info } from "lucide-react";
 import { Modal, button, primary } from "./ui.jsx";
+import { COMPLETION_INSTRUCTION } from "../../../services/osweDecisionRules.js";
 import {
   caseClearanceText,
   caseConditions,
@@ -136,49 +137,54 @@ export function ReportConditions({ row, student, details = false }) {
           </p>
         </div>
       </div>
-      {(conditions.length > 0 || blocked) && (
-        <section className="mr-form">
-          <div className="mr-form-heading">
-            <h3>
-              <FileText size={15} />
-              OSWE Completion Form
-            </h3>
-            <span className="mr-detail-status">
-              {completionFormStatus(row)}
-            </span>
-          </div>
-          <ol>
-            <li>
-              <b>Download</b> the form for CASE-{row.case_id}. Your recorded
-              details and conditions are filled in.
-            </li>
-            <li>
-              <b>Complete and sign</b> it after meeting the recorded conditions.
-            </li>
-            <li>
-              <b>Submit in person</b> to OSWE for verification.
-            </li>
-          </ol>
-          <div className="mr-form-actions">
-            <button
-              type="button"
-              className={primary}
-              onClick={() => setPreview(true)}
-            >
-              <Download size={13} className="mr-1 inline" />
-              Download Completion Form
-            </button>
-            <span className="mr-muted">
-              <Info size={13} className="mr-1 inline" />
-              Submitted face to face at the OSWE office, not online.
-            </span>
-          </div>
-          <small>
-            Downloading or previewing does not record submission or release a
-            hold.
-          </small>
-        </section>
-      )}
+      {row.decision.outcome !== "No Violation" &&
+        (conditions.length > 0 ||
+          blocked ||
+          row.decision.completion_form_required) && (
+          <section className="mr-form">
+            <div className="mr-form-heading">
+              <h3>
+                <FileText size={15} />
+                OSWE Completion Form
+              </h3>
+              <span className="mr-detail-status">
+                {completionFormStatus(row)}
+              </span>
+            </div>
+            <ol>
+              <li>
+                <b>Download</b> the form for CASE-{row.case_id}. Your recorded
+                details and conditions are filled in.
+              </li>
+              <li>
+                <b>Complete and sign</b> it after meeting the recorded
+                conditions.
+              </li>
+              <li>
+                <b>Submit in person</b> to OSWE for verification.
+              </li>
+            </ol>
+            <p className="mr-muted">{COMPLETION_INSTRUCTION}</p>
+            <div className="mr-form-actions">
+              <button
+                type="button"
+                className={primary}
+                onClick={() => setPreview(true)}
+              >
+                <Download size={13} className="mr-1 inline" />
+                Download Completion Form
+              </button>
+              <span className="mr-muted">
+                <Info size={13} className="mr-1 inline" />
+                Submitted face to face at the OSWE office, not online.
+              </span>
+            </div>
+            <small>
+              Downloading or previewing does not record submission or release a
+              hold.
+            </small>
+          </section>
+        )}
       {preview && (
         <CompletionFormPreview
           row={row}
@@ -219,6 +225,20 @@ export function AboutCaseDetails({ row, student, onClose }) {
               <dd>IR-{row.report_id}</dd>
               <dt>Concern</dt>
               <dd>{row.incident_type}</dd>
+              <dt>Category</dt>
+              <dd>{row.incident_category}</dd>
+              {row.incident_type === "Repeated Rule Violations" && (
+                <>
+                  <dt>OSWE confirmation</dt>
+                  <dd>
+                    {row.oswe_confirmation_status === "confirmed"
+                      ? "Confirmed by OSWE"
+                      : row.oswe_confirmation_status === "not_confirmed"
+                        ? "Not confirmed by OSWE"
+                        : "Pending OSWE confirmation"}
+                  </dd>
+                </>
+              )}
               <dt>Related booking</dt>
               <dd>
                 {row.booking_id
@@ -261,6 +281,10 @@ export function AboutCaseDetails({ row, student, onClose }) {
               )}
               <dt>{blocked ? "Effect" : "Clearance"}</dt>
               <dd>{caseClearanceText(row)}</dd>
+              <dt>Student Handbook basis</dt>
+              <dd>{row.decision?.basis || "Not recorded"}</dd>
+              <dt>Appeal status</dt>
+              <dd>{row.decision?.appeal_status || "Not recorded"}</dd>
             </dl>
             {row.decision && (
               <>

@@ -4,7 +4,7 @@ import {
 } from "../../services/policyPresentation.js";
 // Policies & Procedures: displays policy records and available authorized policy-management actions.
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BookOpen,
   Pencil,
@@ -18,10 +18,15 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
+  Filter,
 } from "lucide-react";
 import { Modal, button, input } from "../shared/staffUi.jsx";
 
 import PolicyDetails from "./PolicyDetails.jsx";
+import {
+  osweProcedures,
+  filterProcedures,
+} from "../../services/osweProcedures.js";
 
 export default function OswePolicies({
   settings,
@@ -33,18 +38,30 @@ export default function OswePolicies({
   hideSearch = false,
 }) {
   const database = useOsweDatabase();
-  const policies = (providedPolicies ?? database?.records?.policies ?? []).map(
-    policyPresentation,
-  );
+  const policies = (providedPolicies ?? database?.records?.policies ?? [])
+    .filter(
+      (p) =>
+        providedPolicies != null ||
+        osweProcedures.some((procedure) => procedure.title === p.title),
+    )
+    .map(policyPresentation);
   const [query, setQuery] = useState(""),
     [category, setCategory] = useState(""),
     [status, setStatus] = useState(""),
     [owner, setOwner] = useState(""),
+    [pendingCategory, setPendingCategory] = useState(""),
+    [pendingOwner, setPendingOwner] = useState(""),
     [month, setMonth] = useState(""),
     [recent, setRecent] = useState(false),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null),
     [categoriesOpen, setCategoriesOpen] = useState(false);
+  useEffect(() => {
+    setPendingCategory(category);
+  }, [category]);
+  useEffect(() => {
+    setPendingOwner(owner);
+  }, [owner]);
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
@@ -61,13 +78,12 @@ export default function OswePolicies({
   const cutoffDay = cutoff.toISOString().slice(0, 10);
   const available = policies.filter((p) => p.updated <= endDay);
   const updated = (p) => p.updated >= cutoffDay && p.updated <= endDay;
-  const categories = [
-    ...new Set([
-      ...policyCategories,
-      ...policies.map((p) => p.category).filter(Boolean),
-    ]),
-  ].sort();
-  const filtered = available.filter(
+  const categories = policyCategories;
+  const filtered = filterProcedures(available, {
+    category,
+    owner,
+    query: searchQuery ?? query,
+  }).filter(
     (p) =>
       (!category || p.category === category) &&
       (!status || p.status === status) &&
@@ -76,7 +92,7 @@ export default function OswePolicies({
           .trim()
           .toLowerCase() === owner.toLowerCase()) &&
       (!recent || updated(p)) &&
-      `${p.title} ${p.category} ${p.owner} ${p.id}`
+      `${p.title} ${p.category} ${p.owner} ${p.id} ${p.content || ""}`
         .toLowerCase()
         .includes((searchQuery ?? query).trim().toLowerCase()),
   );
@@ -108,6 +124,8 @@ export default function OswePolicies({
     setCategory("");
     setStatus("");
     setOwner("");
+    setPendingCategory("");
+    setPendingOwner("");
     setRecent(false);
     setMonth("");
     setPage(1);
@@ -226,12 +244,23 @@ export default function OswePolicies({
           />
         </label>
       )}
+      {providedPolicies == null && database?.loading && (
+        <p role="status">Loading procedures…</p>
+      )}
+      {providedPolicies == null && database?.error && (
+        <p role="alert" className="text-red-700">
+          {database.error}{" "}
+          <button className={button} onClick={() => database.refresh()}>
+            Retry
+          </button>
+        </p>
+      )}
       <div className="op-filters">
         <select
           aria-label="Policy category"
           className={input}
-          value={category}
-          onChange={(e) => change(setCategory, e.target.value)}
+          value={pendingCategory}
+          onChange={(e) => setPendingCategory(e.target.value)}
         >
           <option value="">All Categories ({policies.length})</option>
           {categories.map((c) => (
@@ -243,14 +272,26 @@ export default function OswePolicies({
         <select
           aria-label="Document owner"
           className={input}
-          value={owner}
-          onChange={(e) => change(setOwner, e.target.value)}
+          value={pendingOwner}
+          onChange={(e) => setPendingOwner(e.target.value)}
         >
           <option value="">All Document Owners</option>
-          {["Student Handbook", "System"].map((o) => (
+          {["University Policies", "System"].map((o) => (
             <option key={o}>{o}</option>
           ))}
         </select>
+        <button
+          type="button"
+          className={button}
+          onClick={() => {
+            setCategory(pendingCategory);
+            setOwner(pendingOwner);
+            setPage(1);
+          }}
+        >
+          <Filter size={14} />
+          Filter
+        </button>
         <button
           type="button"
           className={button + " op-reset"}
