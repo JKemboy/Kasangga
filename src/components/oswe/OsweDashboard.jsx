@@ -148,8 +148,11 @@ function OsweDashboardContent() {
   useEffect(() => {
     const open = (event) => {
       setModal(null);
-      setGlobal("");
-      setQuery(event.detail?.studentName || "");
+      setSectionSearch((current) => ({
+        ...current,
+        "Student Clearance Review": "",
+      }));
+      setQuery(event.detail?.studentId || event.detail?.studentName || "");
       setClearanceTarget(event.detail?.clearanceId || null);
       setStatus("");
       setCollege("");
@@ -163,6 +166,15 @@ function OsweDashboardContent() {
     return () =>
       window.removeEventListener("campustutor:open-student-clearance", open);
   }, [setView]);
+  useEffect(() => {
+    if (view !== "Student Clearance Review" || !clearanceTarget) return;
+    const frame = requestAnimationFrame(() => {
+      document
+        .querySelector(".oswe-clearance-target")
+        ?.scrollIntoView({ block: "nearest" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [view, clearanceTarget]);
   const [settings, setSettings] = useState(loadSettings);
   // Apply the latest server settings snapshot; local state is only a UI cache
   // and never a persistent settings store.
@@ -212,20 +224,26 @@ function OsweDashboardContent() {
   const global = sectionSearch[view] || "";
   const setGlobal = (value) =>
     setSectionSearch((current) => ({ ...current, [view]: value }));
-  const filtered = rows.filter(
-    (r) =>
-      (!status || r.status === status) &&
-      (!college ||
-        r.college === college ||
-        collegeProgramMap.some(
-          (c) => c.code === college && c.name === r.college,
-        )) &&
-      (!requested || r.requested === requested) &&
-      (!semester || r.term === semester) &&
-      `${r.id} ${r.name} ${r.program} ${r.caseId}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-  );
+  const filtered = rows
+    .filter(
+      (r) =>
+        (!status || r.status === status) &&
+        (!college ||
+          r.college === college ||
+          collegeProgramMap.some(
+            (c) => c.code === college && c.name === r.college,
+          )) &&
+        (!requested || r.requested === requested) &&
+        (!semester || r.term === semester) &&
+        `${r.id} ${r.name} ${r.program} ${r.caseId}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+    )
+    .sort(
+      (a, b) =>
+        Number(String(b.clearanceDatabaseId) === String(clearanceTarget)) -
+        Number(String(a.clearanceDatabaseId) === String(clearanceTarget)),
+    );
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize)),
     current = Math.min(page, pages),
     visible = filtered.slice((current - 1) * pageSize, current * pageSize);
@@ -799,6 +817,7 @@ function OsweDashboardContent() {
                               }}
                             >
                               {r.caseId}
+                              {r.incidentId ? ` / ${r.incidentId}` : ""}
                             </button>
                           )}
                         </td>
