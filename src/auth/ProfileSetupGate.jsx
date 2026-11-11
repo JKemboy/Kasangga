@@ -94,6 +94,12 @@ function Setup() {
     if (busy || ocrBusy) return;
     if (includeOther && !otherInterest.trim())
       return setError("Specify your other study interests.");
+    if (!values.gcashName.trim() || values.gcashName.trim().length > 150)
+      return setError("Enter your GCash account name (up to 150 characters).");
+    if (!/^\+639\d{9}$/.test(values.gcashNumber))
+      return setError(
+        "Enter a valid GCash number: +63 followed by 10 digits starting with 9.",
+      );
     const issue = profileError(values, verified);
     if (issue) return setError(issue);
     if (!/^\+639\d{9}$/.test(values.phone))
@@ -118,9 +124,12 @@ function Setup() {
         client,
       );
       try {
-        const { error } = await client.rpc("complete_learner_profile", {
-          details: { ...values, studentIdImagePath: imagePath },
-        });
+        const { error } = await client.rpc(
+          "complete_learner_profile_with_gcash",
+          {
+            details: { ...values, studentIdImagePath: imagePath },
+          },
+        );
         if (error) throw error;
       } catch (saveError) {
         if (imagePath !== previousImagePath) {
@@ -493,6 +502,54 @@ function Setup() {
                   inaccurate information before saving.
                 </span>
               </label>
+            )}
+            {extractionAttempted && (
+              <fieldset
+                disabled={busy || ocrBusy}
+                className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-2"
+              >
+                <legend className="mb-2 text-sm font-semibold">
+                  GCash Account
+                </legend>
+                <p className="text-xs text-slate-500 sm:col-span-2">
+                  Enter your own GCash account. This will also be used for your
+                  payouts if you become a tutor.
+                </p>
+                {field("gcashName", "GCash Account Name", 150)}
+                <label className="block text-xs font-medium">
+                  GCash Number <span className="text-red-600">*</span>
+                  <div className="mt-1 flex items-center overflow-hidden rounded-md border border-slate-200 bg-white">
+                    <span className="border-r border-slate-200 bg-slate-50 px-3 py-1.5 text-xs">
+                      +63
+                    </span>
+                    <input
+                      required
+                      type="tel"
+                      inputMode="numeric"
+                      aria-label="GCash number"
+                      maxLength={10}
+                      placeholder="9XXXXXXXXX"
+                      value={values.gcashNumber.replace(/^\+63/, "")}
+                      onChange={(event) => {
+                        let digits = event.target.value.replace(/\D/g, "");
+                        if (digits.startsWith("63") && digits.length > 10)
+                          digits = digits.slice(2);
+                        if (digits.startsWith("0")) digits = digits.slice(1);
+                        setValues({
+                          ...values,
+                          gcashNumber: digits
+                            ? "+63" + digits.slice(0, 10)
+                            : "",
+                        });
+                      }}
+                      className={input + " border-0"}
+                    />
+                  </div>
+                  <span className="mt-1 block text-[11px] text-slate-500">
+                    Enter 10 digits starting with 9.
+                  </span>
+                </label>
+              </fieldset>
             )}
             {error && (
               <p role="alert" className="text-sm text-red-700">

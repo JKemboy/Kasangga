@@ -1,3 +1,4 @@
+import TransferAccountSummary from "./TransferAccountSummary.jsx";
 import useNotificationTarget from "./useNotificationTarget.js";
 import { matchesLcoTransaction } from "../../services/lcoTransactionFilters.js";
 // Payments & Transactions: presents payment records and delegates allowed payment actions to database-backed services.
@@ -26,13 +27,7 @@ import {
   Search,
   Info,
 } from "lucide-react";
-import {
-  Modal,
-  button,
-  primary,
-  input,
-  Avatar,
-} from "../shared/staffUi.jsx";
+import { Modal, button, primary, input, Avatar } from "../shared/staffUi.jsx";
 import { money } from "../tutor/workspace/data.js";
 
 const initialTransactions = [];
@@ -544,26 +539,13 @@ export default function LcoPayments({
               recordTransfer(payout);
             }}
           >
-            <dl className="ap-payout-account">
-              <dt>Tutor</dt>
-              <dd>{payout.tutor}</dd>
-              <dt>Amount to transfer</dt>
-              <dd className="font-semibold text-green-800">
-                {money(originalAllocation(payout).tutor)}
-              </dd>
-              <dt>GCash account name</dt>
-              <dd>
-                {loadingAccount
-                  ? "Loading..."
-                  : account?.name || "Not provided"}
-              </dd>
-              <dt>GCash number</dt>
-              <dd>
-                {loadingAccount
-                  ? "Loading..."
-                  : account?.number || "Not provided"}
-              </dd>
-            </dl>
+            <TransferAccountSummary
+              label="Tutor"
+              recipient={payout.tutor}
+              amount={originalAllocation(payout).tutor}
+              account={account}
+              loading={loadingAccount}
+            />
             {!loadingAccount && !account?.number && (
               <p className="text-amber-800">
                 Ask the tutor to provide GCash payout details before recording a

@@ -235,7 +235,7 @@ export const helpArticles = [
     title: "How do I become a tutor?",
     steps: [
       "Open Profile and select Apply as Tutor. Your student information is taken from your account and cannot be edited in the application.",
-      "Enter the course code and description. Type each subject or area of expertise and click Add. Complete your bio, motivation and GCash payout reference details.",
+      "Enter the course code and description. Type each subject or area of expertise and click Add. Complete your bio and motivation. Your saved GCash account is used for tutor payouts.",
       "Upload your current-semester COR and grades relevant to your subjects. You can attach up to 10 certificate or award files; PDF, JPG and PNG files must be at most 10 MB each. CSU ID upload is not required in this application.",
       "Review your application, confirm the certification and submit it. Continue shows warnings for missing information. Tutor access becomes available after LCO approval.",
     ],
@@ -249,7 +249,7 @@ export const helpArticles = [
     steps: [
       "Open Profile to view your tutor application and its status.",
       "If LCO requests resubmission, read the requested changes, update the relevant information or documents and resubmit for review.",
-      "The Tutor switch displays your application status while approval is pending. GCash details in the application are payout references for LCO; entering them does not enable automatic transfers.",
+      "The Tutor switch displays your application status while approval is pending. Your saved GCash account is a payout reference for LCO; it does not enable automatic transfers.",
     ],
     view: "profile",
     action: "Open Profile",

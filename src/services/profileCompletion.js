@@ -39,6 +39,8 @@ export function profileValues(p = {}) {
     name: [p.first_name, p.last_name].filter(Boolean).join(" "),
     studentId: p.student_id || "",
     phone: p.phone_number || "",
+    gcashName: p.gcash_name || "",
+    gcashNumber: p.gcash_number || "",
     bio: p.short_bio || "",
     interests: p.study_interests || "",
     program: program?.name || "",
@@ -47,5 +49,9 @@ export function profileValues(p = {}) {
   };
 }
 export function needsProfile(p, user) {
-  return !!profileError(profileValues(p), !!user?.email_confirmed_at);
+  return (
+    !!profileError(profileValues(p), !!user?.email_confirmed_at) ||
+    !p?.gcash_name?.trim() ||
+    !/^\+639\d{9}$/.test(p?.gcash_number || "")
+  );
 }

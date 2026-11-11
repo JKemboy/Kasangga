@@ -1,9 +1,10 @@
+import TransferAccountSummary from "./TransferAccountSummary.jsx";
 import {
   paymentAllocation,
   timestampLabel,
 } from "../../services/lcoRecords.js";
 import { useLcoDatabase, useLcoRecordSeen } from "./LcoDatabaseContext.jsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Panel } from "./UserDetails.jsx";
 import { Modal, button, primary, input } from "../shared/staffUi.jsx";
 import BookingDetails from "./BookingDetails.jsx";
@@ -11,7 +12,10 @@ import { money } from "../tutor/workspace/data.js";
 import { dateLabel } from "./lcoData.js";
 import { paymentBookings, refundDecision } from "./paymentDetailsData.js";
 import "./booking-details.css";
-import { markRefundTransferred } from "../../services/lcoDatabase.js";
+import {
+  markRefundTransferred,
+  loadRefundGcashAccount,
+} from "../../services/lcoDatabase.js";
 export default function PaymentDetails({
   record: r,
   onSave,
@@ -27,6 +31,62 @@ export default function PaymentDetails({
   const { database, refresh } = useLcoDatabase();
   const [reference, setReference] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [gcash, setGcash] = useState(null);
+  const [gcashError, setGcashError] = useState("");
+  const [gcashRevision, setGcashRevision] = useState(0);
+  useEffect(() => {
+    let active = true;
+    setGcash(null);
+    setGcashError("");
+    if (r.refundId)
+      loadRefundGcashAccount(r.refundId)
+        .then((account) => {
+          if (active) setGcash({ ...account, refundId: r.refundId });
+        })
+        .catch((cause) => {
+          if (active) setGcashError(cause.message);
+        });
+    return () => {
+      active = false;
+    };
+  }, [r.refundId, gcashRevision]);
+  const refundGcash = (
+    <section aria-label="Learner refund GCash account">
+      <h4>Learner GCash account for refund</h4>
+      {gcashError ? (
+        <p role="alert">
+          {gcashError}{" "}
+          <button
+            type="button"
+            className={button}
+            onClick={() => setGcashRevision((v) => v + 1)}
+          >
+            Retry
+          </button>
+        </p>
+      ) : !gcash || gcash.refundId !== r.refundId ? (
+        <p role="status">Loading saved GCash account...</p>
+      ) : (
+        <>
+          <dl>
+            <div>
+              <dt>GCash account name</dt>
+              <dd>{gcash.name || "Not provided"}</dd>
+            </div>
+            <div>
+              <dt>GCash number</dt>
+              <dd>{gcash.number || "Not provided"}</dd>
+            </div>
+          </dl>
+          {(!gcash.name || !gcash.number) && (
+            <p className="abd-muted">
+              The learner has not saved complete GCash details in their account.
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  );
   const incidents = database?.incidents || [];
   const workspace = { sessions: database?.sessions || [] };
   const booking =
@@ -234,6 +294,7 @@ export default function PaymentDetails({
               ))}
             </dl>
             {r.refundDecision && <p>Decision note: {r.refundDecision.note}</p>}
+            {refundGcash}
             <p className="abd-muted">
               Original allocation is a reference. Provider refund processing is
               separate from this review.
@@ -249,25 +310,48 @@ export default function PaymentDetails({
         <Modal
           title={
             action === "Transferred"
-              ? "Mark Refund as Transferred"
+              ? "Record Refund Transfer"
               : `${action === "Approved" ? "Approve" : "Decline"} Refund`
           }
           subtitle={`${r.id} · ${money(r.amount)} · ${r.learner}`}
-          className={action === "Transferred" ? "refund-transfer-modal" : ""}
+
           onClose={() => setAction("")}
         >
           <form
-            className={`ud-form${action === "Transferred" ? " refund-transfer-form" : ""}`}
+            className={
+              action === "Transferred" ? "space-y-4 text-sm" : "ud-form"
+            }
             onSubmit={save}
           >
             {action === "Transferred" ? (
               <>
-                <p className="aid-info">
-                  Confirm the refund you handed or sent to the learner. This
-                  records the transfer only.
-                </p>
+                <TransferAccountSummary
+                  label="Learner"
+                  recipient={r.learner}
+                  amount={r.refundAmount}
+                  account={gcash?.refundId === r.refundId ? gcash : null}
+                  loading={!gcash && !gcashError}
+                />
+                {gcashError && (
+                  <p role="alert" className="text-red-600">
+                    {gcashError}{" "}
+                    <button
+                      type="button"
+                      className={button}
+                      onClick={() => setGcashRevision((v) => v + 1)}
+                    >
+                      Retry
+                    </button>
+                  </p>
+                )}
+                {gcash && (!gcash.name || !gcash.number) && (
+                  <p className="text-amber-800">
+                    Ask the learner to save their GCash account details before
+                    sending a refund.
+                  </p>
+                )}
                 <label>
-                  Receipt / reference (optional)
+                  Transfer reference (optional)
                   <input
                     className={input}
                     maxLength={150}
@@ -275,7 +359,7 @@ export default function PaymentDetails({
                     onChange={(e) => setReference(e.target.value)}
                   />
                 </label>
-                <label className="ud-check refund-transfer-check">
+                <label className="flex items-start gap-2">
                   <input
                     type="checkbox"
                     required
@@ -288,7 +372,7 @@ export default function PaymentDetails({
                   </span>
                 </label>
                 {error && <p role="alert">{error}</p>}
-                <div className="ud-actions">
+                <div className="flex justify-end gap-2">
                   <button
                     type="button"
                     className={button}
@@ -297,7 +381,7 @@ export default function PaymentDetails({
                     Cancel
                   </button>
                   <button className={primary} disabled={saving || !confirmed}>
-                    {saving ? "Saving..." : "Mark as Transferred"}
+                    {saving ? "Saving..." : "Confirm Transfer"}
                   </button>
                 </div>
               </>

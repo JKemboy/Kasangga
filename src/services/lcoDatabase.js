@@ -100,34 +100,27 @@ export async function markRefundTransferred(
   return true;
 }
 
+export async function loadRefundGcashAccount(
+  refundId,
+  client = getSupabaseClient(),
+) {
+  const { data, error } = await client.rpc("admin_refund_gcash_account", {
+    p_refund_id: refundId,
+  });
+  if (error)
+    throw new Error("Could not load learner GCash account: " + error.message);
+  return { name: data?.name || "", number: data?.number || "" };
+}
+
 export async function loadTutorPayoutAccount(
   userId,
   client = getSupabaseClient(),
 ) {
   if (!userId) throw new Error("This payment has no linked tutor account.");
-  const { data: profile, error: profileError } = await client
-    .from("tutor_profiles")
-    .select("application_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (profileError)
-    throw new Error("Could not load tutor profile: " + profileError.message);
-  if (!profile?.application_id)
-    throw new Error("No approved application is linked to this tutor profile.");
-  const { data, error } = await client
-    .from("tutor_applications")
-    .select("application_details")
-    .eq("user_id", userId)
-    .eq("application_id", profile.application_id)
-    .eq("application_status", "approved")
-    .order("reviewed_at", { ascending: false, nullsFirst: false })
-    .order("submitted_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { data, error } = await client.rpc("admin_tutor_gcash_account", {
+    p_user_id: userId,
+  });
   if (error)
-    throw new Error("Could not load tutor payout details: " + error.message);
-  return {
-    name: data?.application_details?.gcashName || "",
-    number: data?.application_details?.gcashNumber || "",
-  };
+    throw new Error("Could not load tutor GCash account: " + error.message);
+  return { name: data?.name || "", number: data?.number || "" };
 }

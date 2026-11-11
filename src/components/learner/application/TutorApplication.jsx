@@ -56,8 +56,8 @@ export default function TutorApplication({ onClose }) {
   const [draft, setDraft] = useState(() => ({
     courseCode: "",
     courseDescription: "",
-    gcashName: "",
-    gcashNumber: "",
+    gcashName: auth.profile?.gcash_name || "",
+    gcashNumber: auth.profile?.gcash_number || "",
     subjects: [],
     topics: {},
     bio: "",
@@ -109,7 +109,12 @@ export default function TutorApplication({ onClose }) {
               .filter(Boolean),
           );
           setApplicationId(application.id);
-          setDraft({ ...application, certified: resubmission });
+          setDraft({
+            ...application,
+            gcashName: auth.profile?.gcash_name || application.gcashName,
+            gcashNumber: auth.profile?.gcash_number || application.gcashNumber,
+            certified: resubmission,
+          });
           setComplete(true);
           setStatusView(true);
           if (resubmission) setStep(2);
@@ -654,8 +659,8 @@ export default function TutorApplication({ onClose }) {
             setDraft({
               courseCode: "",
               courseDescription: "",
-              gcashName: "",
-              gcashNumber: "",
+              gcashName: auth.profile?.gcash_name || "",
+              gcashNumber: auth.profile?.gcash_number || "",
               subjects: [],
               topics: {},
               bio: "",
@@ -912,50 +917,18 @@ export default function TutorApplication({ onClose }) {
                           </label>
                         ))}
                       </div>
-                      <h3>Payout Details</h3>
+                      <h3>GCash Account</h3>
                       <p className="ta-muted">
-                        Use your own registered GCash account for LCO payout
-                        reference. This does not enable automatic transfers.
-                        Payout details are not shown on public tutor cards.
+                        Your saved account will be used for tutor payouts.
                       </p>
                       <div className="ta-fields">
                         <label>
-                          GCash Account Name *
-                          <input
-                            maxLength={150}
-                            value={draft.gcashName || ""}
-                            onChange={(e) => patch("gcashName", e.target.value)}
-                            placeholder="Name registered with GCash"
-                          />
+                          GCash Account Name
+                          <input readOnly value={draft.gcashName || ""} />
                         </label>
                         <label>
-                          GCash Number *
-                          <div className="ta-add">
-                            <span>+63</span>
-                            <input
-                              type="tel"
-                              inputMode="numeric"
-                              maxLength={10}
-                              value={(draft.gcashNumber || "").replace(
-                                /^\+63/,
-                                "",
-                              )}
-                              placeholder="9XXXXXXXXX"
-                              onChange={(e) => {
-                                let digits = e.target.value.replace(/\D/g, "");
-                                if (digits.startsWith("0"))
-                                  digits = digits.slice(1);
-                                patch(
-                                  "gcashNumber",
-                                  digits ? "+63" + digits.slice(0, 10) : "",
-                                );
-                              }}
-                            />
-                          </div>
-                          <small>
-                            10 digits starting with 9. Double-check your account
-                            name and number.
-                          </small>
+                          GCash Number
+                          <input readOnly value={draft.gcashNumber || ""} />
                         </label>
                       </div>
                       <label>
@@ -1018,8 +991,7 @@ export default function TutorApplication({ onClose }) {
                       <div className="ta-notice blue">
                         <Info size={22} />
                         <p>
-                          Documents require manual review by an authorized
-                          LCO.
+                          Documents require manual review by an authorized LCO.
                         </p>
                       </div>
                     </>

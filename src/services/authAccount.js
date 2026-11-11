@@ -14,11 +14,23 @@ export async function loadAuthAccount(client, userId, signal) {
     .select("role")
     .eq("user_id", userId)
     .eq("is_active", true);
+  let gcashQuery = client
+    .from("account_gcash")
+    .select("gcash_name,gcash_number")
+    .eq("user_id", userId)
+    .maybeSingle();
   if (signal) {
+    gcashQuery = gcashQuery.abortSignal(signal);
     profileQuery = profileQuery.abortSignal(signal);
     rolesQuery = rolesQuery.abortSignal(signal);
   }
-  const [profile, roles] = await Promise.all([profileQuery, rolesQuery]);
+  const [profile, roles, gcash] = await Promise.all([
+    profileQuery,
+    rolesQuery,
+    gcashQuery,
+  ]);
+  if (gcash.error)
+    throw new Error("Could not load your saved GCash account. Please retry.");
   if (profile.error || roles.error)
     throw new Error(
       "Unable to load account permissions. Check the users/user_roles read policies or try again.",
@@ -36,7 +48,7 @@ export async function loadAuthAccount(client, userId, signal) {
     throw new Error(
       "No active portal role is assigned. Ask an LCO to provision your account.",
     );
-  return { profile: profile.data, roles: allowed };
+  return { profile: { ...profile.data, ...gcash.data }, roles: allowed };
 }
 export function privilegedAccountRole(roles) {
   return (
