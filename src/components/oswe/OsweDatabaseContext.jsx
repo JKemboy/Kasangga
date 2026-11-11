@@ -21,7 +21,7 @@ export function OsweDatabaseProvider({ children }) {
     try {
       // osas_dashboard_snapshot is the authoritative OSWE data/settings read.
       const { data, error } = await getSupabaseClient().rpc(
-        "osas_dashboard_snapshot",
+        "oswe_case_review_snapshot",
       );
       if (error) throw error;
       const next = mapOsweRecords(data);
@@ -29,9 +29,11 @@ export function OsweDatabaseProvider({ children }) {
         setRecords(next);
         setError("");
       }
+      return next;
     } catch (cause) {
       if (request === generation.current)
         setError(cause.message || "Unable to load OSWE records.");
+      return null;
     } finally {
       if (request === generation.current) setLoading(false);
     }

@@ -42,6 +42,18 @@ export function mapOsweRecords(db) {
       throw new Error(`OSWE snapshot is missing ${key}.`);
   const users = new Map(db.users.map((u) => [u.user_id, u]));
   const name = (id) => users.get(id)?.name || "Unavailable";
+  const party = (id) => {
+    const user = users.get(id);
+    return {
+      userId: id,
+      name: name(id),
+      studentId: user?.student_id || "",
+      college: user?.college || "",
+      program: user?.program || "",
+      email: user?.csu_email || "",
+      phone: user?.phone_number || "",
+    };
+  };
   const incidents = db.incident_reports
     .filter(
       (r) =>
@@ -56,6 +68,12 @@ export function mapOsweRecords(db) {
         booking: r.booking_id ? `BK-${r.booking_id}` : "No booking",
         reporterId: r.reported_by,
         studentUserId: r.reported_against,
+        reporterDetails: party(r.reported_by),
+        studentDetails: party(r.reported_against),
+        session:
+          (db.case_sessions || []).find(
+            (session) => String(session.booking_id) === String(r.booking_id),
+          ) || null,
         reporter: name(r.reported_by),
         student: name(r.reported_against),
         reporterStudentId: users.get(r.reported_by)?.student_id || "",
@@ -99,7 +117,7 @@ export function mapOsweRecords(db) {
       ? {
           ...json(latest.decision_details, { notes: latest.decision_details }),
           outcome: latest.decision_type,
-          at: latest.decision_date,
+          at: json(latest.decision_details).recordedAt || latest.decision_date,
           by: name(latest.decided_by),
         }
       : null;
@@ -113,10 +131,11 @@ export function mapOsweRecords(db) {
       caseId: `CASE-${c.case_id}`,
       caseDatabaseId: c.case_id,
       databaseStatus: c.case_status,
-      status:
-        decision?.workflow !== "clearance_handoff" &&
-        decision?.condition &&
-        !decision.conditionDone
+      status: decision?.referralPending
+        ? "Pending Referral"
+        : decision?.workflow !== "clearance_handoff" &&
+            decision?.condition &&
+            !decision.conditionDone
           ? "Pending Completion"
           : label(c.case_status),
       date: day(c.opened_at),
@@ -163,6 +182,12 @@ export function mapOsweRecords(db) {
       evidenceType: e.evidence_type,
       fileName: e.file_name,
       filePath: e.file_path,
+      storageBucket: e.storage_bucket || "incident-evidence",
+      sourceBookingId: e.source_booking_id,
+      sourceLabel:
+        e.storage_bucket === "session-completion-proofs"
+          ? "System · uploaded by tutor"
+          : "Submitted evidence",
       date: day(e.uploaded_at),
       time: e.uploaded_at,
       status:
@@ -207,6 +232,7 @@ export function mapOsweRecords(db) {
           ? "Pending Review"
           : label(r.clearance_status),
       caseId: linked[0]?.caseId || "None",
+      incidentId: linked[0]?.id || "",
       caseStatus: linked[0]?.status || "None",
       relatedCases: linked,
       holds: db.clearance_holds.filter(
@@ -257,6 +283,7 @@ export function mapOsweRecords(db) {
     category: p.category,
     version: p.version,
     effective: p.effective_date || "",
+    added: day(p.created_at),
     owner: p.document_owner,
     status: label(p.status),
     updated: day(p.updated_at),
