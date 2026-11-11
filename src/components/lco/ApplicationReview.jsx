@@ -1,4 +1,7 @@
-import { approvalChecksComplete } from "../../services/applicationApproval.js";
+import {
+  approvalChecksComplete,
+  manualReviewComplete,
+} from "../../services/applicationApproval.js";
 import ApplicationDecision from "./ApplicationDecision.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -153,17 +156,22 @@ export default function ApplicationReview({
   const docs = Object.entries(r.documents || {});
   const verificationComplete =
     currentVerificationState?.documentStatus === "Complete";
+  const manuallyReviewed = manualReviewComplete(r, currentVerificationState);
   function confirmInformationMatch() {
-    if (!verificationComplete || currentVerificationState?.matchConfirmed)
+    if (
+      (!verificationComplete && !manuallyReviewed) ||
+      currentVerificationState?.matchConfirmed
+    )
       return;
     const next = {
       ...currentVerificationState,
       matchConfirmed: true,
+      confirmationMethod: manuallyReviewed ? "manual" : "ocr-assisted",
     };
     setLocalVerificationState(next);
     onVerificationUpdate?.(next);
     setOcrMessage(
-      "Information match confirmed by LCO. You may now approve after reviewing the original documents.",
+      "Information match confirmed by LCO. OCR confidence is unchanged. Complete subject grades and review notes to approve.",
     );
   }
   async function verifyAllDocuments() {
@@ -252,9 +260,11 @@ export default function ApplicationReview({
           ? "Complete"
           : "Incomplete";
       const nextVerification = {
+        ...currentVerificationState,
         checksRun: true,
         documentStatus,
         matchConfirmed: false,
+        confirmationMethod: null,
       };
       setLocalVerificationState(nextVerification);
       onVerificationUpdate?.(nextVerification);
@@ -426,13 +436,13 @@ export default function ApplicationReview({
                       className={button}
                       disabled={
                         !!ocrBusy ||
-                        !verificationComplete ||
+                        (!verificationComplete && !manuallyReviewed) ||
                         !!currentVerificationState?.matchConfirmed
                       }
                       title={
                         currentVerificationState?.matchConfirmed
                           ? "Information match confirmed"
-                          : "Run all document checks before confirming"
+                          : "Complete the manual checklist or run all document checks before confirming"
                       }
                       onClick={confirmInformationMatch}
                     >
@@ -578,12 +588,21 @@ export default function ApplicationReview({
                   : "Needs review",
               )}
             </div>
+            {manuallyReviewed && (
+              <p role="status" className="aar-muted">
+                Manual review completed by LCO. Low OCR confidence does not
+                block approval. The original OCR percentage and findings remain
+                unchanged; the final decision belongs to LCO.
+              </p>
+            )}
             {!final && (
-              <details className="aar-manual-checklist">
+              <details className="aar-manual-checklist" open>
                 <summary>Manual document review</summary>
                 <p>
                   Open the original COR and grade evidence below, then mark each
-                  as reviewed. OCR is optional for manual approval.
+                  as reviewed. You can approve through manual review even when
+                  OCR fails or shows Needs Manual Review. OCR and Confirm
+                  Information Match are optional for this route.
                 </p>
                 {docs
                   .filter(([kind]) =>
@@ -766,9 +785,10 @@ export default function ApplicationReview({
             </div>
             {!canApprove && (
               <p className="aar-review-gate" role="status">
-                Complete manual review of both required documents (or OCR checks
-                and Information Match) and add at least 15 characters of LCO
-                Notes to enable approval.
+                To approve manually, review both original required documents,
+                complete the manual checklist, enter a qualifying grade (1.00 to
+                1.75) for every applied subject, and add at least 15 characters
+                of LCO Notes. OCR is optional.
               </p>
             )}
           </>
