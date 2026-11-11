@@ -1,4 +1,5 @@
 import "./learner-profile.css";
+import OwnGcashAccount from "../../shared/OwnGcashAccount.jsx";
 // Learner Profile: shows institutional profile data and saves editable profile details through the account services.
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
@@ -272,6 +273,7 @@ export default function LearnerProfile() {
           </div>
         </aside>
         <div className="space-y-2">
+          <OwnGcashAccount key={auth.user.id} />
           <section className="rounded-xl border border-[#e1e7ef] bg-white p-3">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-bold">Personal Information</h2>

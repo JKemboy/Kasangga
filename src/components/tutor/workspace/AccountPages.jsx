@@ -1,5 +1,6 @@
 // Tutor account sections: messages and read-only information from the approved application.
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
+import OwnGcashAccount from "../../shared/OwnGcashAccount.jsx";
 import BookingMessages from "../../shared/BookingMessages.jsx";
 import {
   CalendarDays,
@@ -168,6 +169,7 @@ export function Profile({
                 )}
               </section>
             </div>
+            <OwnGcashAccount />
             <section className="rounded-lg border border-[#e0e7f0] bg-white p-3">
               <h2 className="mb-2 text-sm font-bold tracking-tight text-black">
                 Tutor Status &amp; Performance
