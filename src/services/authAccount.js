@@ -3,15 +3,22 @@ import { normalizeRoles } from "./accountRoles.js";
 import { findCollege, findProgram } from "./collegeProgramMap.js";
 export const isCsuEmail = (email) =>
   /^[^\s@]+@carsu\.edu\.ph$/i.test(String(email || "").trim());
-export async function loadAuthAccount(client, userId) {
-  const [profile, roles] = await Promise.all([
-    client.from("users").select("*").eq("user_id", userId).maybeSingle(),
-    client
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("is_active", true),
-  ]);
+export async function loadAuthAccount(client, userId, signal) {
+  let profileQuery = client
+    .from("users")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  let rolesQuery = client
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("is_active", true);
+  if (signal) {
+    profileQuery = profileQuery.abortSignal(signal);
+    rolesQuery = rolesQuery.abortSignal(signal);
+  }
+  const [profile, roles] = await Promise.all([profileQuery, rolesQuery]);
   if (profile.error || roles.error)
     throw new Error(
       "Unable to load account permissions. Check the users/user_roles read policies or try again.",

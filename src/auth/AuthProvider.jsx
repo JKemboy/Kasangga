@@ -14,10 +14,19 @@ export default function AuthProvider({ children }) {
     let alive = true,
       receivedEvent = false,
       subscription;
+    const initializationTimeout = window.setTimeout(() => {
+      if (alive && !receivedEvent) {
+        setError(
+          "Account connection timed out. Check your connection and retry.",
+        );
+        setInitializing(false);
+      }
+    }, 15000);
     try {
       const client = getSupabaseClient();
       subscription = client.auth.onAuthStateChange((_event, next) => {
         receivedEvent = true;
+        window.clearTimeout(initializationTimeout);
         if (alive) {
           setSession((previous) =>
             previous?.access_token === next?.access_token &&
@@ -32,22 +41,26 @@ export default function AuthProvider({ children }) {
         .getSession()
         .then(({ data, error }) => {
           if (!alive || receivedEvent) return;
+          window.clearTimeout(initializationTimeout);
           if (error) setError(error.message);
           setSession(data?.session || null);
           setInitializing(false);
         })
         .catch((e) => {
+          window.clearTimeout(initializationTimeout);
           if (alive) {
             setError(e.message);
             setInitializing(false);
           }
         });
     } catch (e) {
+      window.clearTimeout(initializationTimeout);
       setError(e.message);
       setInitializing(false);
     }
     return () => {
       alive = false;
+      window.clearTimeout(initializationTimeout);
       subscription?.unsubscribe();
     };
   }, []);
@@ -64,15 +77,28 @@ export default function AuthProvider({ children }) {
       return;
     }
     setError("");
-    loadAuthAccount(getSupabaseClient(), session.user.id)
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      controller.abort();
+      if (alive) {
+        setError(
+          "Loading your account took too long. Please retry. If a database reset is still running, wait for it to finish first.",
+        );
+      }
+    }, 15000);
+    loadAuthAccount(getSupabaseClient(), session.user.id, controller.signal)
       .then((value) => {
-        if (alive) setAccount({ ...value, userId: session.user.id });
+        if (alive && !controller.signal.aborted)
+          setAccount({ ...value, userId: session.user.id });
       })
       .catch((e) => {
-        if (alive) setError(e.message);
-      });
+        if (alive && !controller.signal.aborted) setError(e.message);
+      })
+      .finally(() => window.clearTimeout(timeout));
     return () => {
       alive = false;
+      window.clearTimeout(timeout);
+      controller.abort();
     };
   }, [session, revision]);
   const ready = account?.userId === session?.user.id ? account : null;
