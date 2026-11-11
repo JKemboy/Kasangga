@@ -348,7 +348,9 @@ export default function OswePolicies({
                   </span>
                 </td>
                 <td>{p.version}</td>
-                <td>{p.effectiveLabel || date(p.effective)}</td>
+                <td>
+                  {p.effectiveLabel || date(p.effective || p.added)}
+                </td>
                 <td>{p.owner}</td>
                 <td>{p.updatedLabel || date(p.updated)}</td>
                 <td>

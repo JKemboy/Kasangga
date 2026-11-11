@@ -16,7 +16,7 @@ export function policyPresentation(policy) {
       : system
         ? "2026"
         : "2021",
-    effectiveLabel: policy.effective ? null : "Not recorded",
+    effectiveLabel: policy.effective || policy.added ? null : "Not recorded",
     updatedLabel: policy.updated ? null : "Not recorded",
   };
 }

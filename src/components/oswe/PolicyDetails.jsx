@@ -62,7 +62,10 @@ export default function PolicyDetails({
               </span>,
             ],
             ["Version", policy.version],
-            ["Effective Date", policy.effectiveLabel || date(policy.effective)],
+            [
+              "Effective Date",
+              policy.effectiveLabel || date(policy.effective || policy.added),
+            ],
             ["Document Owner", policy.owner],
             ["Status", policy.status],
             ["Last Updated", policy.updatedLabel || date(policy.updated)],

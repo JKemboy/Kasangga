@@ -9,6 +9,14 @@ export function mapPolicy(row) {
     category: row.category || "",
     version: row.version || "",
     effective: row.effective_date || "",
+    added: row.created_at
+      ? new Date(row.created_at).toLocaleDateString("en-CA", {
+          timeZone: "Asia/Manila",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        })
+      : "",
     owner: row.document_owner || "",
     status: String(row.status || "draft").replace(/^./, (c) => c.toUpperCase()),
     updated: row.updated_at?.slice(0, 10) || "",
