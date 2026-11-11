@@ -291,7 +291,11 @@ export default function Notifications({
                   onClick={async () => {
                     if (!n.read) void markRead(n.id);
                     const target = notificationDestination(n);
-                    if (target && target.view !== "notifications")
+                    if (
+                      target &&
+                      !target.href &&
+                      target.view !== "notifications"
+                    )
                       go(
                         target.view,
                         role === "learner" && target.view === "messages"
@@ -421,15 +425,25 @@ export default function Notifications({
               {selected.detail}
             </p>
             <div className="flex flex-wrap justify-end gap-2">
-              {destination && (
-                <button
-                  type="button"
+              {destination?.href ? (
+                <a
+                  href={destination.href}
                   className={`${primary} inline-flex items-center gap-2`}
-                  onClick={() => go(destination.view, destination.args)}
                 >
                   {destination.label}
                   <ArrowRight className="h-3.5 w-3.5" />
-                </button>
+                </a>
+              ) : (
+                destination && (
+                  <button
+                    type="button"
+                    className={`${primary} inline-flex items-center gap-2`}
+                    onClick={() => go(destination.view, destination.args)}
+                  >
+                    {destination.label}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                )
               )}
             </div>
           </div>

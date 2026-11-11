@@ -1,4 +1,5 @@
 const destinationLabels = {
+  application: "View application status",
   reports: "View My Reports",
   dashboard: "Open dashboard",
   services: "View service",
@@ -27,6 +28,13 @@ function destination(target) {
 
 export function notificationDestination(notification) {
   if (!notification) return null;
+  if (notification.notificationType === "tutor_application_approved")
+    return {
+      view: "dashboard",
+      args: {},
+      href: "/tutor-dashboard",
+      label: "Open Tutor Dashboard",
+    };
   // Evidence requests need the upload form in the notification dialog.
   if (notification.notificationType === "case_evidence_requested") return null;
   if (Object.hasOwn(notification, "target"))

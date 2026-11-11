@@ -145,20 +145,28 @@ export async function loadBookingInbox(role, userId) {
         text: row.message,
         time: row.created_at,
         read: row.is_read,
-        category: ["incident_reports", "cases"].includes(entity)
-          ? "Safety and Reports"
-          : entity === "services"
-            ? "Services"
-            : entity === "payments"
-              ? "Payments"
-              : "System",
-        view: ["incident_reports", "cases"].includes(entity)
-          ? "reports"
-          : entity === "services"
-            ? "services"
-            : entity === "bookings"
-              ? "sessions"
-              : "notifications",
+        category:
+          row.notification_type === "refund_transferred"
+            ? "Payments"
+            : ["incident_reports", "cases"].includes(entity)
+              ? "Safety and Reports"
+              : entity === "services"
+                ? "Services"
+                : entity === "payments"
+                  ? "Payments"
+                  : "System",
+        view:
+          entity === "tutor_applications"
+            ? role === "learner"
+              ? "application"
+              : "dashboard"
+            : ["incident_reports", "cases"].includes(entity)
+              ? "reports"
+              : entity === "services"
+                ? "services"
+                : entity === "bookings"
+                  ? "sessions"
+                  : "notifications",
         args:
           entity === "incident_reports"
             ? {
