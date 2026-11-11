@@ -9,7 +9,8 @@ export default function TutorServiceCard({ tutor, service, list = false }) {
   const bookmark = savedService(tutor, service);
   const courseCode = (service.subtitle || "")
     .trim()
-    .replace(/\s+/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/([a-z])\s*(\d)/gi, "$1 $2")
     .toUpperCase();
   return (
     <article
@@ -45,12 +46,10 @@ export default function TutorServiceCard({ tutor, service, list = false }) {
       </div>
       <div className="min-w-0 [overflow-wrap:anywhere]">
         <h2 className="tutor-service-title mt-1 text-sm font-bold">
-          {courseCode && <>{courseCode} </>}
-          {service.name}
+          {[courseCode, service.name].filter(Boolean).join(" - ")}
         </h2>
         {service.description && (
           <p className="tutor-service-description mt-1 whitespace-pre-line break-words text-xs leading-4 text-[#637191]">
-            <span className="font-semibold">Description: </span>
             {service.description}
           </p>
         )}
