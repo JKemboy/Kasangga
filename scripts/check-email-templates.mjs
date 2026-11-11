@@ -39,6 +39,41 @@ for (const kind of [
   assert.ok(email.subject.includes("123"));
   assert.ok(!email.html.includes("<script>"));
 }
+const approval = emailContent(
+  {
+    kind: "system_notification",
+    recipient_role: "tutor",
+    payload: { notification_type: "tutor_application_approved" },
+  },
+  "https://kasangga.example",
+);
+assert.ok(approval.subject.includes("Tutor application approved"));
+assert.ok(approval.text.includes("LCO has approved"));
+assert.ok(approval.text.includes("Learner access remains available"));
+assert.ok(approval.text.includes("/learner-dashboard?section=application"));
+for (const [type, subject, section] of [
+  ["report_resolved", "Your report has been resolved", "reports"],
+  [
+    "refund_transferred",
+    "Your refund has been marked as transferred",
+    "sessions",
+  ],
+]) {
+  const email = emailContent(
+    {
+      kind: "system_notification",
+      recipient_role: "learner",
+      payload: { notification_type: type },
+    },
+    "https://kasangga.example",
+  );
+  assert.ok(email.subject.includes(subject));
+  assert.ok(email.text.includes(`/learner-dashboard?section=${section}`));
+  if (type === "report_resolved")
+    assert.ok(
+      email.text.includes("resolution alone does not confirm a transfer"),
+    );
+}
 assert.throws(() =>
   emailContent(
     { kind: "system_notification", recipient_role: "admin" },

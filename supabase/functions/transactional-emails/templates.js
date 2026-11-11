@@ -23,6 +23,38 @@ export function emailContent(job, appUrl) {
     if (base.protocol !== "https:" && base.hostname !== "localhost")
       throw new Error("APP_URL must use HTTPS");
     const url = new URL(`/${job.recipient_role}-dashboard`, base);
+    const update = {
+      report_resolved: {
+        title: "Your report has been resolved",
+        text: "Your Kasangga report has been resolved. Open My Reports to review its status. Any refund is tracked separately; resolution alone does not confirm a transfer.",
+        section: "reports",
+      },
+      refund_transferred: {
+        title: "Your refund has been marked as transferred",
+        text: "LCO has recorded your refund as transferred. Check your recorded payment account and open My Sessions for the related booking. Contact LCO if you have not received the refund.",
+        section: "sessions",
+      },
+    }[job.payload?.notification_type];
+    if (update) {
+      url.searchParams.set("section", update.section);
+      return {
+        subject: `Kasangga — ${update.title}`,
+        text: `${update.text}\n\nOpen your account: ${url.href}\n\nKasangga`,
+        html: `<div style="font-family:Arial,sans-serif;line-height:1.6"><h1>${escape(update.title)}</h1><p>${escape(update.text)}</p><p><a href="${escape(url.href)}">Open your account</a></p></div>`,
+      };
+    }
+    if (job.payload?.notification_type === "tutor_application_approved") {
+      const accountUrl = new URL("/learner-dashboard", base);
+      accountUrl.searchParams.set("section", "application");
+      const title = "Your tutor application has been approved";
+      const text =
+        "LCO has approved your Kasangga tutor application. You can now switch to Tutor to create services and manage your availability. Your Learner access remains available.";
+      return {
+        subject: "Kasangga — Tutor application approved",
+        text: `${title}\n\n${text}\n\nView your application: ${accountUrl.href}\n\nKasangga`,
+        html: `<div style="font-family:Arial,sans-serif;line-height:1.6"><h1>${escape(title)}</h1><p>${escape(text)}</p><p><a href="${escape(accountUrl.href)}">View your application</a></p></div>`,
+      };
+    }
     const title = "You have a new Kasangga notification";
     // Do not email case details, report statements, chat contents, or evidence.
     const text =
