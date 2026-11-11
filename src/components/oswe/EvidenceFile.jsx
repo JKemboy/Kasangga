@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { incidentEvidenceUrl } from "../../services/incidentReports.js";
+import { completionProofUrl } from "../../services/tutorSessionCompletion.js";
 export default function EvidenceFile({ evidence, readOnly = false }) {
   const [url, setUrl] = useState(""),
     [error, setError] = useState("");
@@ -8,7 +9,9 @@ export default function EvidenceFile({ evidence, readOnly = false }) {
     setUrl("");
     setError("");
     if (evidence?.filePath)
-      incidentEvidenceUrl(evidence.filePath)
+      (evidence.storageBucket === "session-completion-proofs"
+        ? completionProofUrl
+        : incidentEvidenceUrl)(evidence.filePath)
         .then((value) => {
           if (active) setUrl(value);
         })
@@ -18,7 +21,7 @@ export default function EvidenceFile({ evidence, readOnly = false }) {
     return () => {
       active = false;
     };
-  }, [evidence?.filePath]);
+  }, [evidence?.filePath, evidence?.storageBucket]);
   if (error) return <p role="alert">Unable to open evidence: {error}</p>;
   if (!evidence?.filePath) return <p>No original file is attached.</p>;
   if (!url) return <p role="status">Loading private evidence...</p>;

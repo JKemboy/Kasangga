@@ -1,66 +1,204 @@
-import { useEffect, useRef, useState } from "react";
-import { REPEATED } from "../../services/incidentTypes.js";
+import PolicyRecommendationDetails from "../shared/PolicyRecommendationDetails.jsx";
+import { useEffect, useId, useRef, useState } from "react";
 import {
-  caseActions,
-  requiredDecisionConditions,
-  COMPLETION_INSTRUCTION,
-  THIRD_VIOLATION_BASIS,
-} from "../../services/osweDecisionRules.js";
-import { ShieldCheck, Image, Eye, Info, X } from "lucide-react";
+  ArrowLeft,
+  Check,
+  Eye,
+  FileText,
+  Image,
+  Info,
+  Mail,
+  Phone,
+  Plus,
+  ShieldCheck,
+  Users,
+  X,
+} from "lucide-react";
 import { button, primary, input, Modal } from "../shared/staffUi.jsx";
+import PortalAvatar from "../shared/PortalAvatar.jsx";
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import EvidenceFile from "./EvidenceFile.jsx";
 import {
   validateCaseEvidence,
   recordDecisionAndHold,
   recordNoViolation,
-  caseViolationHistory,
   startCaseReview,
+  caseReviewContext,
 } from "../../services/osweCaseWorkflow.js";
+import {
+  caseActions,
+  caseActionDescriptions,
+  evidenceReviewState,
+  clearanceConditionError,
+} from "../../services/osweDecisionRules.js";
 import "./case-shortcuts.css";
 import "./case-review-flow.css";
-export default function CaseReviewFlow({ record, onClose }) {
-  const database = useOsweDatabase(),
-    ref = useRef(null);
+
+export const caseReviewDate = (value) =>
+  value && !Number.isNaN(Date.parse(value))
+    ? new Date(
+        value.length === 10 ? `${value}T12:00:00+08:00` : value,
+      ).toLocaleDateString("en-PH", {
+        timeZone: "Asia/Manila",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Not recorded";
+const clock = (value) =>
+  value
+    ? new Date(`2000-01-01T${value}+08:00`).toLocaleTimeString("en-PH", {
+        timeZone: "Asia/Manila",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : "";
+export function CaseParty({ person, label }) {
+  return (
+    <div className="case-party">
+      <small>{label}</small>
+      <div className="case-party-identity">
+        <PortalAvatar
+          name={person?.name || "Unavailable"}
+          userId={person?.userId}
+        />
+        <div>
+          <strong>{person?.name || "Not recorded"}</strong>
+          <p>
+            {[person?.studentId, person?.college, person?.program]
+              .filter(Boolean)
+              .join(" · ") || "Student details not recorded"}
+          </p>
+        </div>
+      </div>
+      {person?.email && (
+        <p className="case-contact">
+          <Mail size={14} />
+          <a href={`mailto:${person.email}`}>{person.email}</a>
+        </p>
+      )}
+      {person?.phone && (
+        <p className="case-contact">
+          <Phone size={14} />
+          <span>{person.phone}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+function DecisionTextHint({ id, value, minimum, maximum }) {
+  const count = value.trim().length;
+  const remaining = Math.max(0, minimum - count);
+  return (
+    <span
+      id={id}
+      className={`case-text-hint ${remaining ? "needs-text" : "ready"}`}
+    >
+      <span>
+        Minimum {minimum} characters.{" "}
+        {remaining
+          ? `${remaining} more needed to proceed.`
+          : "Minimum reached."}
+      </span>
+      <span>
+        {count.toLocaleString()} / {maximum.toLocaleString()} characters
+      </span>
+    </span>
+  );
+}
+
+export default function CaseReviewFlow({
+  record,
+  onClose,
+  inline = false,
+  onRecorded,
+}) {
+  const database = useOsweDatabase();
+  const basisHintId = useId(),
+    confirmationBasisHintId = useId(),
+    overrideHintId = useId();
+  const ref = useRef(null),
+    top = useRef(null),
+    submitting = useRef(false);
   const [step, setStep] = useState(1),
-    [preview, setPreview] = useState(null),
-    [saving, setSaving] = useState(false),
+    [preview, setPreview] = useState(null);
+  const [saving, setSaving] = useState(false),
+    [ready, setReady] = useState(false),
     [error, setError] = useState("");
-  const [overallInsufficient, setOverallInsufficient] = useState(false);
-  const [reviewReady, setReviewReady] = useState(false);
-  const [history, setHistory] = useState(null),
-    [historyError, setHistoryError] = useState("");
+  const [decisionSaved, setDecisionSaved] = useState(false);
+  const [context, setContext] = useState(null),
+    [contextError, setContextError] = useState("");
+  const [confirmation, setConfirmation] = useState(null),
+    [confirmed, setConfirmed] = useState(false);
   const [form, setForm] = useState({
-      outcome: "",
-      notes: "",
-      basis: "",
-      policyReference: "",
-      condition: "",
-      due: "",
-      appealStatus: "",
-    }),
-    [ack, setAck] = useState(false);
+    outcome: "",
+    notes: "",
+    overrideReason: "",
+  });
+  const [conditionsByAction, setConditionsByAction] = useState({});
+  const reportId = record.reportDatabaseId,
+    refresh = database.refresh;
+  const linked = database.records?.cases.find(
+    (row) => String(row.reportDatabaseId) === String(reportId),
+  );
+  const incident = database.records?.incidents.find(
+    (row) => String(row.reportDatabaseId) === String(reportId),
+  );
+  const report = { ...record, ...incident, ...linked };
+  const evidence = (database.records?.evidence || []).filter(
+    (row) => String(row.reportDatabaseId) === String(reportId),
+  );
+  const validation = evidenceReviewState(evidence);
+  const history = context?.history;
+  const policySource = context?.recommendation?.winningSource;
+  const decisionBasis = policySource
+    ? [policySource.title, policySource.version, policySource.section].join(
+        " · ",
+      )
+    : "Manual OSWE assessment; no verified policy-based recommendation available.";
+  const defaults = form.outcome
+    ? (context?.editableDefaults || context?.defaults)?.[form.outcome] || []
+    : [];
+  const editable =
+    conditionsByAction[form.outcome] ??
+    defaults.map((text, index) => ({
+      id: form.outcome + "-default-" + index,
+      text,
+      source: "action_default",
+    }));
+  const conditions = form.outcome
+    ? [
+        ...editable.map((row) => ({ ...row, required: false })),
+        { text: context?.completionInstruction, required: true },
+      ].filter((row) => row.text != null)
+    : [];
+  const final = decisionSaved || !!linked?.decision || !!linked?.archived;
+
   useEffect(() => {
-    const dialog = ref.current;
-    dialog.showModal();
-    return () => dialog.close();
-  }, []);
-  const reportId = record.reportDatabaseId;
-  const refresh = database.refresh;
+    if (inline) return;
+    ref.current.showModal();
+    return () => ref.current?.close();
+  }, [inline]);
   useEffect(() => {
     let live = true;
-    setReviewReady(false);
+    setReady(false);
     setSaving(true);
+    setError("");
     startCaseReview(reportId)
       .then(async () => {
-        await refresh();
+        const next = await refresh();
+        if (!next)
+          throw new Error(
+            "The case was opened, but its current records could not be reloaded. Reopen the case to retry.",
+          );
         if (live) {
-          setReviewReady(true);
+          setReady(true);
           window.dispatchEvent(new Event("campustutor:sessions-changed"));
         }
       })
       .catch((cause) => {
-        if (live) setError(cause.message || "Could not start OSWE review.");
+        if (live) setError(cause.message);
       })
       .finally(() => {
         if (live) setSaving(false);
@@ -71,562 +209,734 @@ export default function CaseReviewFlow({ record, onClose }) {
   }, [reportId, refresh]);
   useEffect(() => {
     let live = true;
-    setHistory(null);
-    setHistoryError("");
-    caseViolationHistory(reportId)
-      .then((value) => {
-        if (live) setHistory(value);
-      })
-      .catch((cause) => {
-        if (live) setHistoryError(cause.message);
-      });
+    let request = 0;
+    setContext(null);
+    setContextError("");
+    const loadContext = async () => {
+      const current = ++request;
+      try {
+        const value = await caseReviewContext(reportId);
+        if (live && current === request) {
+          setContext(value);
+          setContextError("");
+        }
+      } catch (cause) {
+        if (live && current === request) setContextError(cause.message);
+      }
+    };
+    loadContext();
+    window.addEventListener("focus", loadContext);
+    window.addEventListener("campustutor:oswe-mapping-updated", loadContext);
     return () => {
       live = false;
+      window.removeEventListener("focus", loadContext);
+      window.removeEventListener(
+        "campustutor:oswe-mapping-updated",
+        loadContext,
+      );
     };
-  }, [reportId]);
-  const report =
-    database.records?.incidents.find((r) => r.reportDatabaseId === reportId) ||
-    record;
-  const evidence = (database.records?.evidence || []).filter(
-    (e) => e.reportDatabaseId === reportId,
-  );
-  const reviewed =
-    reviewReady &&
-    evidence.length > 0 &&
-    evidence.every((e) => ["Validated", "Insufficient"].includes(e.status));
-  const allInsufficient =
-    evidence.length > 0 && evidence.every((e) => e.status === "Insufficient");
-  const noViolation = allInsufficient || overallInsufficient;
+  }, [reportId, step]);
+  useEffect(() => {
+    if (step === 2 && validation.allInsufficient) {
+      setStep(1);
+      setConfirmation(null);
+      setConfirmed(false);
+    }
+  }, [step, validation.allInsufficient]);
+  useEffect(() => {
+    top.current?.scrollIntoView({ block: "start" });
+  }, [step]);
+
   const set = (key, value) =>
     setForm((current) => ({ ...current, [key]: value }));
+  const updateConditions = (rows) =>
+    setConditionsByAction((current) => ({ ...current, [form.outcome]: rows }));
+  function chooseAction(action) {
+    setForm((current) => ({
+      ...current,
+      outcome: action,
+      overrideReason: "",
+    }));
+    setError("");
+  }
   async function validate(item, result) {
-    if (saving || !reviewReady) return;
+    if (submitting.current || saving || !ready || final) return;
+    submitting.current = true;
     setSaving(true);
     setError("");
     try {
       await validateCaseEvidence(item.evidenceDatabaseId, result);
-      await database.refresh();
+      if (!(await refresh()))
+        throw new Error(
+          "Validation saved; reopen the case to reload its current evidence.",
+        );
     } catch (cause) {
       setError(cause.message);
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
+  }
+  function requestDecision(kind = "action") {
+    setError("");
+    if (!ready || !validation.complete || final) {
+      setError("Review every evidence item before recording a decision.");
+      return;
+    }
+    if (kind === "no_violation" && !validation.allInsufficient) {
+      setError(
+        "No Violation is available only when every evidence item is marked Insufficient.",
+      );
+      return;
+    }
+    if (kind === "action") {
+      const invalid = clearanceConditionError(conditions);
+      if (
+        !context ||
+        !caseActions.includes(form.outcome) ||
+        invalid ||
+        form.notes.trim().length < 30 ||
+        !decisionBasis.trim()
+      ) {
+        setError(
+          invalid ||
+            "Choose an action and explain the validated evidence and policy basis in at least 30 characters.",
+        );
+        return;
+      }
+      if (
+        history?.suggestedAction &&
+        history.suggestedAction !== form.outcome &&
+        form.overrideReason.trim().length < 15
+      ) {
+        setError(
+          "Explain why your action differs from the verified suggestion (at least 15 characters).",
+        );
+        return;
+      }
+    }
+    setConfirmed(false);
+    setConfirmation(kind);
   }
   async function submit(event) {
     event.preventDefault();
-    if (saving || !reviewReady) return;
+    if (
+      submitting.current ||
+      saving ||
+      !confirmed ||
+      !validation.complete ||
+      form.notes.trim().length < 30
+    )
+      return;
+    submitting.current = true;
     setSaving(true);
     setError("");
     try {
-      if (noViolation) {
-        await recordNoViolation(reportId, form.notes);
-        await database.refresh();
-        onClose();
-        window.dispatchEvent(new Event("campustutor:open-case-archive"));
-        return;
-      }
-      if (!ack) throw new Error("Confirm the decision and clearance block.");
-      if (!form.violationConfirmed)
+      const result =
+        confirmation === "no_violation"
+          ? await recordNoViolation(reportId, form.notes.trim())
+          : await recordDecisionAndHold(reportId, {
+              ...form,
+              basis: decisionBasis,
+              recommendationFingerprint: context?.recommendation?.fingerprint,
+              notes: form.notes.trim(),
+              conditions,
+              violationConfirmed: true,
+            });
+      setDecisionSaved(true);
+      if (!(await refresh()))
         throw new Error(
-          "OSWE must explicitly confirm the violation after reviewing the evidence.",
+          "Decision saved. Reload the page to view the committed record; do not submit another decision.",
         );
-      const clearanceId = await recordDecisionAndHold(reportId, form);
-      await database.refresh();
-      onClose();
-      window.dispatchEvent(
-        new CustomEvent("campustutor:open-student-clearance", {
-          detail: { clearanceId, studentName: report.student },
-        }),
-      );
+      window.dispatchEvent(new Event("campustutor:sessions-changed"));
+      if (onRecorded)
+        onRecorded({
+          reportId,
+          clearanceId: confirmation === "action" ? result : null,
+        });
+      else {
+        onClose();
+      }
+      if (confirmation === "action") {
+        window.dispatchEvent(
+          new CustomEvent("campustutor:open-student-clearance", {
+            detail: {
+              clearanceId: result,
+              studentName: report.student,
+              studentId: report.studentId,
+            },
+          }),
+        );
+      } else if (!onRecorded) {
+        window.dispatchEvent(new Event("campustutor:open-case-archive"));
+      }
     } catch (cause) {
+      setConfirmation(null);
       setError(cause.message);
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
-  const policies = database.records?.policies || [];
-  const policyLabel = (policy) =>
-    [policy.title, policy.version].filter(Boolean).join(" - ");
-  const outcomes = caseActions;
+  const session = report.session;
+  const sessionText = session
+    ? [
+        session.title,
+        session.type,
+        session.platform || session.location,
+        caseReviewDate(session.date),
+        session.start && `${clock(session.start)}–${clock(session.end)}`,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "No related session recorded";
+  const status = final
+    ? "Decision Recorded"
+    : ready
+      ? "Under Review"
+      : "Opening case…";
+  const Root = inline ? "section" : "dialog";
   return (
-    <dialog
+    <Root
       ref={ref}
-      className="ocx-dialog ocx-drawer case-review-flow"
+      className={`case-review-flow ${inline ? "case-review-inline" : "ocx-dialog case-review-dialog"}`}
       aria-label="Case review"
-      onCancel={(event) => {
-        if (saving) event.preventDefault();
-        else onClose();
-      }}
+      onCancel={
+        inline
+          ? undefined
+          : (event) => {
+              if (saving) event.preventDefault();
+              else onClose();
+            }
+      }
     >
-      <header>
-        <div>
-          <h2>{report.caseId || report.id} · Case Review</h2>
-          <p>
-            {report.student} · {report.type}
-          </p>
-        </div>
+      <div ref={top} className="case-review-top">
         <button
-          className={button}
-          disabled={saving}
+          type="button"
+          className="case-back-link"
           onClick={onClose}
-          aria-label="Close case review"
+          disabled={saving}
         >
-          <X size={18} />
+          <ArrowLeft size={16} />
+          Back to Case Review
         </button>
-      </header>
-      <div className="ocx-body">
-        <ol className="review-flow-steps">
+        <header className="case-review-banner">
+          <span className="case-document-icon">
+            <FileText size={25} />
+          </span>
+          <div>
+            <h2>
+              {report.caseId || report.id} · {report.type}
+            </h2>
+            <p>
+              Referred by LCO Admin ·{" "}
+              {caseReviewDate(report.referredAt || report.receivedAt)} ·
+              Assigned to {report.officer || "Unassigned"}
+            </p>
+          </div>
+          <div className="case-status-group">
+            <span className="case-badge warning">{status}</span>
+            <span
+              className={`case-badge ${report.priority === "High" ? "danger" : "neutral"}`}
+            >
+              {report.priority || "Not recorded"}
+            </span>
+          </div>
+        </header>
+        <ol className="review-flow-steps" aria-label="Case review steps">
           <li aria-current={step === 1 ? "step" : undefined}>
-            1. Case Details &amp; Evidence
+            <span>{step === 2 ? <Check size={16} /> : "1"}</span>Case Details
+            &amp; Evidence
           </li>
           <li aria-current={step === 2 ? "step" : undefined}>
-            {noViolation
-              ? "2. Record Decision: No Violation"
-              : "2. Case Action & Decision"}
+            <span>2</span>Case Decision
           </li>
         </ol>
+      </div>
+      <div className="case-review-content">
+        {error && (
+          <p role="alert" className="case-alert error">
+            {error}
+          </p>
+        )}
+        {final && (
+          <p role="status" className="case-alert info">
+            A decision is already recorded. Reopen it from Decision Recorded to
+            view the saved record.
+          </p>
+        )}
         {step === 1 ? (
           <>
-            <section>
-              <h3>Case Details</h3>
-              <dl className="ocx-facts">
+            <section className="case-panel">
+              <h3>
+                <FileText size={17} />
+                Case Details
+              </h3>
+              <dl className="case-detail-grid">
                 {[
-                  ["Report", report.id],
-                  ["Booking", report.booking],
-                  ["Reporter", report.reporter],
-                  ["Reported Student", report.student],
+                  ["Case ID", report.caseId || "Opening case…"],
+                  ["Incident Report ID", report.id],
+                  ["Booking ID", report.booking || "Not recorded"],
                   ["Incident Type", report.type],
-                  ["Category", report.category],
-                  ...(report.type === REPEATED
-                    ? [
-                        [
-                          "OSWE confirmation",
-                          report.confirmationStatus === "confirmed"
-                            ? "Confirmed by OSWE"
-                            : report.confirmationStatus === "not_confirmed"
-                              ? "Not confirmed by OSWE"
-                              : "Pending OSWE confirmation",
-                        ],
-                      ]
-                    : []),
-                  ["Submitted", report.date],
-                ].map(([key, value]) => (
-                  <div key={key}>
-                    <dt>{key}</dt>
+                  ["Priority", report.priority],
+                  ["Date Opened", caseReviewDate(report.openedAt)],
+                  ["Assigned OSWE", report.officer || "Unassigned"],
+                  ["Status", status],
+                  ["Session", sessionText],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
                     <dd>{value || "Not recorded"}</dd>
                   </div>
                 ))}
               </dl>
-              <div className="review-allegation">
-                <strong>Allegation as reported</strong>
-                <p>{report.description || "No description recorded."}</p>
-              </div>
             </section>
-            <section>
+            <section className="case-panel">
               <h3>
-                <ShieldCheck size={18} />
+                <Users size={17} />
+                Parties
+              </h3>
+              <div className="case-parties-grid">
+                <CaseParty label="Reporter" person={report.reporterDetails} />
+                <CaseParty
+                  label="Reported Student"
+                  person={report.studentDetails}
+                />
+              </div>
+              <p className="case-muted">
+                The reported student is a respondent. No finding has been made.
+              </p>
+            </section>
+            <section className="case-panel">
+              <h3>
+                <Info size={17} />
+                Incident Description
+              </h3>
+              <p className="case-description">
+                {report.description || "No description recorded."}
+              </p>
+            </section>
+            <section className="case-panel">
+              <h3>
+                <ShieldCheck size={17} />
                 Evidence ({evidence.length})
               </h3>
-              <p className="ocx-muted">
-                Review each item individually and mark it Valid or Insufficient.
-                A report is an allegation, not proof of misconduct.
+              <p className="case-muted">
+                Review each item and mark it Valid or Insufficient. Available
+                session proof is linked automatically when LCO refers a report.
               </p>
               {evidence.map((item) => (
                 <div className="review-evidence-item" key={item.id}>
                   <span className="review-evidence-icon">
-                    <Image size={24} />
+                    <Image size={23} />
                   </span>
                   <div className="review-evidence-name">
                     <strong>
-                      {item.id} · {item.evidenceType}
+                      {item.id} ·{" "}
+                      {item.sourceBookingId
+                        ? "Session Proof"
+                        : item.evidenceType?.startsWith("image/")
+                          ? "Screenshot / Image"
+                          : item.evidenceType?.startsWith("video/")
+                            ? "Video"
+                            : "Document"}
                     </strong>
+                    {item.sourceBookingId && (
+                      <span className="case-source-badge">
+                        System · uploaded by tutor
+                      </span>
+                    )}
                     <p>
-                      {item.fileName || item.filename} ·{" "}
-                      {item.reporter || "Submitted evidence"}
+                      {item.fileName} · {item.reporter} ·{" "}
+                      {caseReviewDate(item.time)}
                     </p>
-                    <span
-                      className={
-                        "review-validation " +
-                        (item.status === "Validated"
-                          ? "valid"
-                          : item.status === "Insufficient"
-                            ? "insufficient"
-                            : "")
-                      }
-                    >
-                      {item.status === "Validated" ? "Valid" : item.status}
-                    </span>
                   </div>
                   <div className="review-evidence-actions">
                     <button
+                      type="button"
                       className={button}
                       disabled={saving}
                       onClick={() => setPreview(item)}
                     >
-                      <Eye size={16} />
+                      <Eye size={15} />
                       Preview
                     </button>
-                    <button
-                      className={item.status === "Validated" ? primary : button}
-                      disabled={saving}
-                      aria-pressed={item.status === "Validated"}
-                      onClick={() => validate(item, "validated")}
-                    >
-                      Valid
-                    </button>
-                    <button
-                      className={
-                        item.status === "Insufficient" ? primary : button
-                      }
-                      disabled={saving}
-                      aria-pressed={item.status === "Insufficient"}
-                      onClick={() => validate(item, "insufficient")}
-                    >
-                      Insufficient
-                    </button>
+                    <div className="case-validation-toggle">
+                      <button
+                        type="button"
+                        className={
+                          item.status === "Validated" ? "selected-valid" : ""
+                        }
+                        aria-pressed={item.status === "Validated"}
+                        disabled={saving || !ready || final}
+                        onClick={() => validate(item, "validated")}
+                      >
+                        Valid
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          item.status === "Insufficient"
+                            ? "selected-insufficient"
+                            : ""
+                        }
+                        aria-pressed={item.status === "Insufficient"}
+                        disabled={saving || !ready || final}
+                        onClick={() => validate(item, "insufficient")}
+                      >
+                        Insufficient
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
               {!evidence.length && (
-                <p>
-                  No evidence is attached. Evidence must be provided before a
-                  decision can be recorded.
+                <p className="case-muted">
+                  No evidence is attached. A decision cannot be recorded until
+                  evidence is available and reviewed.
                 </p>
+              )}
+              {validation.complete && (
+                <div
+                  className={`case-alert ${validation.allInsufficient ? "warning" : "info"}`}
+                >
+                  <Info size={20} />
+                  <div>
+                    <strong>
+                      {validation.allInsufficient
+                        ? "Evidence is insufficient."
+                        : "Evidence is valid."}
+                    </strong>
+                    <p>
+                      {validation.allInsufficient
+                        ? "The decision is recorded as No Violation and the case is archived. This records an unsubstantiated allegation, not proof that the incident did not occur."
+                        : "Proceed to choose the case action and record the decision. Valid evidence does not automatically establish a violation."}
+                    </p>
+                  </div>
+                </div>
               )}
             </section>
           </>
         ) : (
           <form
-            id="case-handoff-decision"
+            id="case-action-form"
             className="review-decision-form"
-            onSubmit={submit}
+            onSubmit={(event) => {
+              event.preventDefault();
+              requestDecision();
+            }}
           >
-            {!allInsufficient && (
-              <label className="flex items-start gap-2 rounded-lg border border-slate-200 p-3 text-xs">
-                <input
-                  type="checkbox"
-                  checked={overallInsufficient}
-                  onChange={(event) => {
-                    setOverallInsufficient(event.target.checked);
-                    setAck(false);
-                    setForm((current) => ({
-                      ...current,
-                      outcome: "",
-                      violationConfirmed: false,
-                    }));
-                  }}
-                />
-                After OSWE review, the evidence is insufficient to establish a
-                violation. Record No Violation and archive without affecting
-                clearance.
-              </label>
-            )}
-            {noViolation ? (
-              <section className="review-no-violation">
-                <h3>Record Decision: No Violation</h3>
-                <p className="ocx-muted">
-                  The evidence is insufficient, so the decision is No Violation.
-                  The student's clearance is not affected and the case is
-                  archived.
+            <section className="case-panel">
+              <h3>
+                <Check size={18} />
+                Case Action &amp; Decision
+              </h3>
+              <p className="case-muted">
+                The evidence has been reviewed. Choose the case action. A
+                confirmed disciplinary decision blocks clearance until its
+                recorded conditions are verified.
+              </p>
+              <PolicyRecommendationDetails
+                compact
+                subject={report}
+                recommendation={context?.recommendation}
+                history={history}
+              />
+              {contextError && (
+                <p role="alert" className="case-alert error">
+                  Unable to load the policy recommendation: {contextError}
                 </p>
-                <div className="review-no-violation-choice">
-                  <strong>No Violation</strong>
-                  <p>Insufficient evidence after OSWE review.</p>
-                </div>
-                <label>
-                  Basis for the decision <span aria-hidden="true">*</span>
-                  <textarea
-                    className={input}
-                    required
-                    minLength={30}
-                    maxLength={5000}
-                    rows={5}
-                    value={form.notes}
-                    onChange={(e) => set("notes", e.target.value)}
-                    placeholder="Explain why the evidence is insufficient."
-                  />
-                </label>
-              </section>
-            ) : (
-              <>
-                <h3>Case Action &amp; Decision</h3>
-                <p className="ocx-muted">
-                  The evidence is valid. Choose the case action. Every decision
-                  blocks the student's clearance until the conditions below are
-                  completed.
-                </p>
-                {history && !historyError && (
-                  <div className="review-violation-notice">
-                    <Info size={20} aria-hidden="true" />
-                    <div>
-                      <strong>
-                        {history.previousCount === 0
-                          ? "First"
-                          : history.previousCount === 1
-                            ? "Second"
-                            : history.previousCount === 2
-                              ? "Third"
-                              : `Violation ${history.previousCount + 1}: next`}{" "}
-                        recorded violation
-                      </strong>
-                      <p>
-                        of “{report.type}” for {report.student} in KASANGGA.
-                        OSWE applies: first violation, Verbal Warning (or
-                        Counseled); second, Written Warning; third, Referred for
-                        Further Action to the VPAA (Handbook 7.3.b, pp. 85–86).
-                      </p>
-                      <p>
-                        This count applies if OSWE confirms the current case.
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <section className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
-                  <h3>Earlier confirmed violations of the same type</h3>
-                  <p>
-                    {THIRD_VIOLATION_BASIS}. Reports and No Violation outcomes
-                    are not counted as confirmed violations.
-                  </p>
-                  {historyError ? (
-                    <p role="alert" className="text-red-600">
-                      {historyError}
-                    </p>
-                  ) : !history ? (
-                    <p role="status">Loading confirmed history…</p>
-                  ) : (
-                    <>
-                      <p className="mt-2 font-semibold">
-                        {history.previousCount} earlier confirmed violation(s).
-                      </p>
-                      {(history.records || []).map((item) => (
-                        <p className="mt-1" key={item.case_id}>
-                          CASE-{item.case_id} · {item.action} ·{" "}
-                          {item.decision_date}
-                        </p>
-                      ))}
-                      {history.isThirdViolation && (
-                        <p className="mt-2 text-amber-800">
-                          If confirmed, this would be the third violation.{" "}
-                          {history.suggestedAction
-                            ? `${history.suggestedAction} is suggested; OSWE must choose and confirm the final decision.`
-                            : "The Section 7.3.b action mapping has not been supplied. No action is automatically suggested."}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </section>
-                <label>
-                  Case action
-                  <select
-                    className={input}
-                    required
-                    value={form.outcome}
-                    onChange={(e) => {
-                      setForm((current) => ({
-                        ...current,
-                        outcome: e.target.value,
-                        condition: "",
-                        violationConfirmed: false,
-                      }));
-                      setAck(false);
-                    }}
+              )}
+              <div
+                className="case-action-grid"
+                role="radiogroup"
+                aria-label="Case action"
+              >
+                {caseActions.map((action) => (
+                  <label
+                    key={action}
+                    className={`case-action-choice ${form.outcome === action ? "selected" : ""}`}
                   >
-                    <option value="">Choose a case action</option>
-                    {outcomes.map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                        {history?.suggestedAction === value &&
-                        history?.isThirdViolation
-                          ? " — Suggested"
-                          : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {form.outcome && (
-                  <label className="flex items-start gap-2">
                     <input
-                      type="checkbox"
+                      type="radio"
+                      name="case-action"
+                      value={action}
+                      checked={form.outcome === action}
+                      disabled={saving || !context || final}
+                      onChange={() => chooseAction(action)}
+                    />
+                    <span>
+                      <strong>{action}</strong>
+                      {history?.suggestedAction === action && (
+                        <span className="case-source-badge">Suggested</span>
+                      )}
+                      <small>{caseActionDescriptions[action]}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {form.outcome && (
+                <div className="case-conditions">
+                  <h4>Conditions for clearance</h4>
+                  {conditions.map((condition, index) => (
+                    <div
+                      className="case-condition-row"
+                      key={condition.required ? condition.text : condition.id}
+                    >
+                      <input
+                        aria-label={`Condition ${index + 1}`}
+                        className={input}
+                        value={
+                          condition.required
+                            ? "Submit the completed OSWE Completion Form"
+                            : condition.text
+                        }
+                        readOnly={condition.required}
+                        disabled={saving || final}
+                        maxLength={1000}
+                        onChange={(event) =>
+                          updateConditions(
+                            editable.map((row) =>
+                              row.id === condition.id
+                                ? { ...row, text: event.target.value }
+                                : row,
+                            ),
+                          )
+                        }
+                      />
+                      {condition.required ? (
+                        <span className="case-source-badge">Required</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={button}
+                          disabled={saving || final}
+                          aria-label={`Remove condition ${index + 1}`}
+                          onClick={() =>
+                            updateConditions(
+                              editable.filter((row) => row.id !== condition.id),
+                            )
+                          }
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="case-back-link"
+                    disabled={saving || final || editable.length >= 29}
+                    onClick={() =>
+                      updateConditions([
+                        ...editable,
+                        { id: crypto.randomUUID(), text: "" },
+                      ])
+                    }
+                  >
+                    <Plus size={14} />
+                    Add condition
+                  </button>
+                  <p className="case-muted">
+                    The student downloads the OSWE Completion Form from My
+                    Reports › About Me and submits the signed form in person at
+                    the OSWE office.
+                  </p>
+                  {form.outcome === "Referred for Further Action" && (
+                    <p className="case-muted">
+                      The case awaits the authority's actual decision. Record
+                      the response before verifying referral conditions; the
+                      clearance hold stays active.
+                    </p>
+                  )}
+                </div>
+              )}
+              {history?.suggestedAction &&
+                form.outcome &&
+                history.suggestedAction !== form.outcome && (
+                  <label className="case-form-field">
+                    Reason for departing from the suggestion *
+                    <textarea
+                      className={input}
+                      aria-label="Reason for departing from the suggestion *"
+                      aria-describedby={overrideHintId}
+                      minLength={15}
+                      maxLength={2000}
                       required
-                      checked={!!form.violationConfirmed}
+                      value={form.overrideReason}
                       onChange={(event) =>
-                        set("violationConfirmed", event.target.checked)
+                        set("overrideReason", event.target.value)
                       }
                     />
-                    I confirm the violation after OSWE review.{" "}
-                    {report.type === REPEATED
-                      ? "Student Handbook p. 78 applies to this repeated-incidents referral."
-                      : "This finding may be counted in future same-type violation history."}
+                    <DecisionTextHint
+                      id={overrideHintId}
+                      value={form.overrideReason}
+                      minimum={15}
+                      maximum={2000}
+                    />
                   </label>
                 )}
-                <label>
-                  Decision basis
-                  <textarea
-                    className={input}
-                    required
-                    minLength={30}
-                    maxLength={5000}
-                    rows={4}
-                    value={form.notes}
-                    onChange={(e) => set("notes", e.target.value)}
-                  />
-                </label>
-                <label>
-                  Policy reference
-                  <select
-                    className={input}
-                    required
-                    aria-label="Policy reference"
-                    value={form.policyReference}
-                    onChange={(event) => {
-                      const policy = policies.find(
-                        (item) => policyLabel(item) === event.target.value,
-                      );
-                      setForm((current) => ({
-                        ...current,
-                        policyReference: event.target.value,
-                        basis: current.basis || event.target.value,
-                        policyId: policy?.id || null,
-                      }));
-                    }}
-                  >
-                    <option value="">
-                      Select a policy ({policies.length})
-                    </option>
-                    {policies.map((policy) => (
-                      <option key={policy.id} value={policyLabel(policy)}>
-                        {policyLabel(policy)}
-                        {policy.status !== "Active"
-                          ? " (" + policy.status + ")"
-                          : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Student Handbook basis / section
-                  <input
-                    className={input}
-                    required
-                    maxLength={2000}
-                    value={form.basis}
-                    onChange={(event) => set("basis", event.target.value)}
-                    placeholder="Record the applicable Handbook section and basis."
-                  />
-                </label>
-                <section className="rounded-lg border border-green-200 bg-green-50 p-3 text-xs">
-                  <h3>Required conditions</h3>
-                  <ul className="list-disc space-y-1 pl-4">
-                    {(form.outcome
-                      ? requiredDecisionConditions(form.outcome)
-                      : [COMPLETION_INSTRUCTION]
-                    ).map((condition) => (
-                      <li key={condition}>{condition}</li>
-                    ))}
-                  </ul>
-                </section>
-                <label>
-                  Additional conditions (optional)
-                  <textarea
-                    className={input}
-                    maxLength={3000}
-                    rows={3}
-                    value={form.condition}
-                    onChange={(e) => set("condition", e.target.value)}
-                    placeholder="Record any additional authorized instructions. The default conditions and Completion Form remain required."
-                  />
-                </label>
-                <label>
-                  Appeal status (as recorded, optional)
-                  <input
-                    className={input}
-                    value={form.appealStatus}
-                    maxLength={200}
-                    onChange={(event) =>
-                      set("appealStatus", event.target.value)
-                    }
-                    placeholder="Not recorded"
-                  />
-                </label>
-                <label>
-                  Due date (optional)
-                  <input
-                    className={input}
-                    type="date"
-                    value={form.due}
-                    onChange={(e) => set("due", e.target.value)}
-                  />
-                </label>
-                <label className="review-confirm">
-                  <input
-                    type="checkbox"
-                    checked={ack}
-                    onChange={(e) => setAck(e.target.checked)}
-                    required
-                  />
-                  I confirm the decision. This resolves the case and places the
-                  student's clearance on hold until OSWE verifies the manually
-                  submitted form.
-                </label>
-              </>
-            )}
+              <label className="case-form-field">
+                Basis for the decision *
+                <textarea
+                  className={input}
+                  aria-label="Basis for the decision *"
+                  aria-describedby={basisHintId}
+                  rows={3}
+                  minLength={30}
+                  maxLength={5000}
+                  required
+                  placeholder="Summarize the validated evidence and the policy applied."
+                  value={form.notes}
+                  onChange={(event) => set("notes", event.target.value)}
+                />
+                <DecisionTextHint
+                  id={basisHintId}
+                  value={form.notes}
+                  minimum={30}
+                  maximum={5000}
+                />
+              </label>
+            </section>
           </form>
         )}
-        {error && (
-          <p role="alert" className="text-red-700">
-            {error}
-          </p>
-        )}
       </div>
-      <footer>
+      <footer className="case-review-footer">
         <button
+          type="button"
           className={button}
           disabled={saving}
           onClick={() => (step === 2 ? setStep(1) : onClose())}
         >
-          {step === 2 ? "Back" : "Close"}
+          <ArrowLeft size={15} />
+          {step === 2 ? "Back" : "Back to Case Review"}
         </button>
-        {step === 1 ? (
-          <button
-            className={primary}
-            disabled={!reviewed || saving}
-            onClick={() => setStep(2)}
-          >
-            {noViolation
-              ? "Record Decision (No Violation)"
-              : "Proceed to Case Action"}
-          </button>
-        ) : (
-          <button
-            type="submit"
-            form="case-handoff-decision"
-            className={primary}
-            disabled={
-              !reviewed ||
-              (!noViolation &&
-                (!ack ||
-                  !history ||
-                  !!historyError ||
-                  !form.violationConfirmed)) ||
-              saving
-            }
-          >
-            {saving
-              ? "Saving..."
-              : noViolation
-                ? "Record No Violation & Archive"
-                : "Record Decision & Block Clearance"}
-          </button>
-        )}
+        <div>
+          {step === 1 && !validation.complete && (
+            <span className="case-muted">
+              Mark every evidence item to continue.
+            </span>
+          )}
+          {step === 1 ? (
+            <button
+              type="button"
+              className={primary}
+              disabled={!ready || !validation.complete || saving || final}
+              onClick={() =>
+                validation.allInsufficient
+                  ? requestDecision("no_violation")
+                  : setStep(2)
+              }
+            >
+              {validation.allInsufficient
+                ? "Record Decision (No Violation)"
+                : "Proceed to Case Action"}
+            </button>
+          ) : (
+            <button
+              type="submit"
+              form="case-action-form"
+              className={primary}
+              disabled={
+                !ready ||
+                !validation.complete ||
+                saving ||
+                final ||
+                form.notes.trim().length < 30 ||
+                !context ||
+                !form.outcome ||
+                !!clearanceConditionError(conditions)
+              }
+            >
+              <Check size={15} />
+              Record Decision &amp; Block Clearance
+            </button>
+          )}
+        </div>
       </footer>
       {preview && (
         <Modal
-          title={preview.id + " · Evidence Preview"}
+          title={`${preview.id} · Evidence Preview`}
           onClose={() => setPreview(null)}
         >
           <EvidenceFile evidence={preview} />
         </Modal>
       )}
-    </dialog>
+      {confirmation && (
+        <Modal
+          title={
+            confirmation === "no_violation"
+              ? "Confirm No Violation decision"
+              : "Confirm decision and clearance hold"
+          }
+          onClose={() => {
+            if (!saving) setConfirmation(null);
+          }}
+        >
+          <form className="case-confirmation" onSubmit={submit}>
+            <p>
+              {confirmation === "no_violation"
+                ? "This records insufficient evidence / an unsubstantiated allegation as No Violation, archives the case, and does not impose a clearance hold."
+                : `${form.outcome}: record this decision and its ${conditions.length} clearance condition(s). A referral is not a final decision by the authority.`}
+            </p>
+            {confirmation === "no_violation" && (
+              <label className="case-form-field">
+                Basis for the decision *
+                <textarea
+                  className={input}
+                  aria-label="Basis for the decision *"
+                  aria-describedby={confirmationBasisHintId}
+                  rows={3}
+                  required
+                  minLength={30}
+                  maxLength={5000}
+                  placeholder="Explain why the evidence is insufficient; do not state that the incident necessarily did not occur."
+                  value={form.notes}
+                  onChange={(event) => set("notes", event.target.value)}
+                />
+                <DecisionTextHint
+                  id={confirmationBasisHintId}
+                  value={form.notes}
+                  minimum={30}
+                  maximum={5000}
+                />
+              </label>
+            )}
+            <label className="case-confirm-check">
+              <input
+                type="checkbox"
+                required
+                checked={confirmed}
+                onChange={(event) => setConfirmed(event.target.checked)}
+              />
+              {confirmation === "no_violation"
+                ? "I reviewed all evidence and confirm the insufficient-evidence determination."
+                : "I confirm the violation after OSWE review, the selected action, and the recorded clearance conditions."}
+            </label>
+            <div className="case-confirm-actions">
+              <button
+                type="button"
+                className={button}
+                disabled={saving}
+                onClick={() => setConfirmation(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={primary}
+                disabled={saving || !confirmed || form.notes.trim().length < 30}
+              >
+                {saving
+                  ? "Saving…"
+                  : confirmation === "no_violation"
+                    ? "Record Decision (No Violation)"
+                    : "Record Decision & Block Clearance"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </Root>
   );
 }
