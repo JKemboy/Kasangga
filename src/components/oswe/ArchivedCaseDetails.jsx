@@ -27,6 +27,7 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
   }, []);
   const full = r.full || {};
   const isArchived = !!full.archived;
+  const pendingReferral = !!full.decision?.referralPending;
   const evidence = r.evidence || full.evidence || [];
   const events = [
     { title: "Case review started", when: date(r.opened), by: "OSWE" },
@@ -46,7 +47,9 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
     {
       title: isArchived
         ? "Case resolved and archived"
-        : "Case resolved; clearance follow-up",
+        : pendingReferral
+          ? "Awaiting authority decision; clearance hold active"
+          : "Case resolved; clearance follow-up",
       when: date(isArchived ? r.archived : r.resolved),
       by: r.officer,
     },
@@ -63,11 +66,20 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
           <h2 id={titleId}>
             {r.caseId}{" "}
             <span className="archive-badge">
-              {isArchived ? "Archived" : "Resolved"}
+              {isArchived
+                ? "Archived"
+                : pendingReferral
+                  ? "Pending Referral"
+                  : "Resolved"}
             </span>
           </h2>
           <p>
-            {r.type} | {isArchived ? "Archived" : "Resolved"}{" "}
+            {r.type} |{" "}
+            {isArchived
+              ? "Archived"
+              : pendingReferral
+                ? "Pending Referral"
+                : "Resolved"}{" "}
             {date(isArchived ? r.archived : r.resolved)} by {r.officer}
           </p>
           {r.type === REPEATED && (

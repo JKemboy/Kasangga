@@ -72,6 +72,8 @@ export function reportStage(report, about = false) {
 }
 export function reportNotice(report, about = false) {
   const stage = reportStage(report, about);
+  if (about && report.case_status === "pending_referral")
+    return "OSWE recorded a referral for further action and is awaiting the authority's decision. The clearance hold remains active; follow OSWE's recorded instructions.";
   if (about) {
     if (report.case_id == null)
       return stage === "Resolved"
@@ -117,7 +119,7 @@ export function reportActivity(report, about = false) {
                 decision: report.decision?.outcome
                   ? `Decision recorded: ${report.decision.outcome}`
                   : "Decision recorded",
-                condition: "Conditions marked completed",
+                condition: "Clearance condition verification updated",
                 archive: "Case archived",
                 archive_insufficient: "Case closed without a finding",
                 request: "Follow-up evidence requested",
