@@ -5,6 +5,7 @@ import { button, primary } from "../shared/staffUi.jsx";
 import "../shared/booking-messages.css";
 import "./lco-support-inbox.css";
 import { useAuth } from "../../auth/AuthProvider.jsx";
+import { useLcoRecordSeen } from "./LcoDatabaseContext.jsx";
 import {
   listSupportConversations,
   listSupportMessages,
@@ -26,6 +27,7 @@ export default function LcoSupportInbox({ notificationTarget }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const active = threads.find((thread) => String(thread.id) === String(selected));
+  useLcoRecordSeen("support_conversations", active?.id);
   const filtered = threads.filter((thread) =>
     `${thread.subject} ${thread.category} ${thread.user?.first_name || ""} ${thread.user?.last_name || ""}`
       .toLowerCase().includes(query.toLowerCase()),

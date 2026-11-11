@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from "react";
+import { useLcoRecordSeen } from "../lco/LcoDatabaseContext.jsx";
 import { Archive, X } from "lucide-react";
 import "./case-shortcuts.css";
 import "./policy-details.css";
@@ -11,6 +12,7 @@ export default function PolicyDetails({
   onClose,
   onEdit,
 }) {
+  useLcoRecordSeen("policies", policy.policyId ?? policy.id);
   const dialog = useRef(null);
   const titleId = useId();
   const body = useRef(null);
