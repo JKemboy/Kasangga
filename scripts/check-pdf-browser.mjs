@@ -47,6 +47,11 @@ function makePdf() {
 
 try {
   const page = await browser.newPage();
+  const optimizedPdfRequests = [];
+  page.on("request", (request) => {
+    if (/\/\.vite\/deps\/pdfjs/i.test(request.url()))
+      optimizedPdfRequests.push(request.url());
+  });
   await page.addInitScript(() => {
     delete Map.prototype.getOrInsertComputed;
     delete WeakMap.prototype.getOrInsertComputed;
@@ -97,6 +102,11 @@ try {
   assert.ok(result.credentialText.includes("CS101"));
   assert.equal(result.pagesRead, 1);
   assert.ok(workerLoads > 0, "A real PDF worker must be exercised");
+  assert.deepEqual(
+    optimizedPdfRequests,
+    [],
+    "On-demand PDF loading must not use stale optimized dependency URLs",
+  );
   console.log(
     "PASS: schedule PDF renders for OCR and credential PDF text is extracted with getOrInsertComputed absent in browser and worker.",
   );
