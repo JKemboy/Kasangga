@@ -11,6 +11,7 @@ const read = (name) =>
 const roles = read("role-snapshots.json").rows;
 const extra = read("extras.json").rows[0].extra;
 const catalog = roles.find((r) => r.role === "lco").payload.snapshot;
+const badgeAudit = process.argv.includes("--lco-badges");
 const env = loadEnv("development", process.cwd(), "");
 const api = new URL(env.VITE_SUPABASE_URL);
 const { chromium } = await import(
@@ -80,6 +81,49 @@ const sections = {
 };
 try {
   for (const { role, payload } of roles) {
+    if (badgeAudit && role !== "lco") continue;
+    const noticeRows = badgeAudit
+      ? [
+          ...[900001, 900002].map((id) => ({
+            notification_id: id,
+            user_id: payload.user_id,
+            notification_type: "incident_submitted",
+            related_entity_type: "incident_reports",
+            related_entity_id: id,
+            title: "Incident report submitted",
+            message: "A report awaits LCO review.",
+            is_read: false,
+            created_at: "2026-11-11T08:00:00Z",
+          })),
+          {
+            notification_id: 900003,
+            user_id: payload.user_id,
+            notification_type: "payment_received",
+            related_entity_type: "payments",
+            related_entity_id: 900003,
+            title: "Payment received",
+            message: "A payment awaits review.",
+            is_read: false,
+            created_at: "2026-11-11T08:00:00Z",
+          },
+        ]
+      : null;
+    let rejectRead = false;
+    if (badgeAudit)
+      catalog.incident_reports = [900001, 900002].map((id) => ({
+        report_id: id,
+        reported_by: payload.user_id,
+        reported_against: catalog.users.find(
+          (u) => u.user_id !== payload.user_id,
+        ).user_id,
+        incident_type: "No-Show",
+        incident_category: "Session / Payment Issue",
+        description: "Rollback-free browser-only report fixture.",
+        priority: "normal",
+        report_status: "submitted",
+        osas_referral_status: "not_referred",
+        submitted_at: "2026-11-11T08:00:00Z",
+      }));
     if (
       process.argv.includes("--mobile-only") &&
       !["learner", "tutor"].includes(role)
@@ -139,7 +183,10 @@ try {
           list_my_learner_reviews: payload.reviews || [],
           find_tutor_services: payload.services || [],
           my_reports_snapshot: payload.reports || { created: [], received: [] },
-          my_reports_with_pending: payload.reports || { created: [], received: [] },
+          my_reports_with_pending: payload.reports || {
+            created: [],
+            received: [],
+          },
           list_my_pair_chats:
             payload.chats?.[0] instanceof Array
               ? payload.chats[0]
@@ -168,19 +215,41 @@ try {
       }
       const table = url.pathname.split("/rest/v1/")[1];
       if (table) {
+        if (
+          badgeAudit &&
+          table === "notifications" &&
+          request.method() === "PATCH"
+        ) {
+          if (rejectRead)
+            return send({ message: "Read-state save failed" }, 403);
+          const ids = (url.searchParams.get("notification_id") || "")
+            .slice(4, -1)
+            .split(",");
+          const changed = noticeRows.filter((row) =>
+            ids.includes(String(row.notification_id)),
+          );
+          changed.forEach((row) => {
+            row.is_read = true;
+          });
+          return send(
+            changed.map((row) => ({ notification_id: row.notification_id })),
+          );
+        }
         if (request.method() !== "GET")
           return send({ message: "UI audit blocks writes" }, 403);
         let rows =
-          table === "users"
-            ? [
-                ...catalog.users.filter(
-                  (row) => row.user_id !== payload.user_id,
-                ),
-                payload.profile,
-              ]
-            : table === "session_completion_proofs"
-              ? payload.proofs || []
-              : extra[table] || catalog[table] || [];
+          badgeAudit && table === "notifications"
+            ? noticeRows
+            : table === "users"
+              ? [
+                  ...catalog.users.filter(
+                    (row) => row.user_id !== payload.user_id,
+                  ),
+                  payload.profile,
+                ]
+              : table === "session_completion_proofs"
+                ? payload.proofs || []
+                : extra[table] || catalog[table] || [];
         if (table === "class_schedules")
           rows = rows.map((row) => ({
             ...row,
@@ -215,9 +284,11 @@ try {
     });
     const page = await context.newPage();
     page.on("pageerror", (error) => runtime.push(error.message));
-    const activeSections = process.argv.includes("--mobile-only")
-      ? ["sessions"]
-      : sections[role];
+    const activeSections = badgeAudit
+      ? ["Overview"]
+      : process.argv.includes("--mobile-only")
+        ? ["sessions"]
+        : sections[role];
     for (const section of activeSections) {
       await page.goto(
         `${base}/${role}-dashboard?section=${encodeURIComponent(section)}`,
@@ -260,6 +331,85 @@ try {
         );
         await page.setViewportSize({ width: 1366, height: 900 });
       }
+    }
+    if (badgeAudit) {
+      const sidebar = page.locator("aside").first();
+      const incidents = sidebar.getByRole("button", {
+        name: /^Incident Reports/,
+      });
+      const payments = sidebar.getByRole("button", {
+        name: /^Payments & Transactions/,
+      });
+      const notifications = sidebar.getByRole("button", {
+        name: /^Notifications/,
+      });
+      const badge = (button, count) =>
+        button.getByLabel(`${count} unread notifications`);
+      await badge(incidents, 2).waitFor();
+      await badge(notifications, 3).waitFor();
+      await incidents.click();
+      await page.locator(".ai-table tbody tr").first().waitFor();
+      assert.equal(
+        await badge(incidents, 2).count(),
+        1,
+        "Opening the section must not mark unseen records read",
+      );
+      const first = () =>
+        page
+          .locator(".ai-table tbody tr")
+          .filter({ hasText: "900001" })
+          .getByRole("button", { name: "View Report", exact: true });
+      rejectRead = true;
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.request().method() === "PATCH" &&
+            response.url().includes("notifications"),
+        ),
+        first().click(),
+      ]);
+      await page.getByRole("dialog").waitFor();
+      assert.equal(
+        await badge(incidents, 2).count(),
+        1,
+        "Failed database writes must preserve the unread badge",
+      );
+      await page
+        .getByRole("button", { name: "Close incident details" })
+        .click();
+      rejectRead = false;
+      await first().click();
+      await badge(incidents, 1).waitFor();
+      await badge(notifications, 2).waitFor();
+      await badge(payments, 1).waitFor();
+      await page
+        .getByRole("button", { name: "Close incident details" })
+        .click();
+      await page.reload();
+      await badge(incidents, 1).waitFor();
+      await incidents.click();
+      await page
+        .locator(".ai-table tbody tr")
+        .filter({ hasText: "900002" })
+        .getByRole("button", { name: "View Report", exact: true })
+        .click();
+      await page.waitForFunction(() => {
+        const button = [...document.querySelectorAll("aside button")].find(
+          (b) => b.textContent.includes("Incident Reports"),
+        );
+        return button && !button.querySelector(".portal-count-badge");
+      });
+      await badge(notifications, 1).waitFor();
+      await badge(payments, 1).waitFor();
+      assert.deepEqual(
+        noticeRows
+          .filter((row) => !row.is_read)
+          .map((row) => row.notification_id),
+        [900003],
+      );
+      console.log(
+        "PASS: section visits preserve badges; failed writes preserve unread state; opening each report clears only its badge and persists across reload.",
+      );
     }
     await page.screenshot({ path: join(root, `${role}-dashboard-ui.png`) });
     results.push({
