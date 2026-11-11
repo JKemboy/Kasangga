@@ -3,6 +3,7 @@ import {
   manualReviewComplete,
 } from "../../services/applicationApproval.js";
 import ApplicationDecision from "./ApplicationDecision.jsx";
+import { useLcoRecordSeen } from "./LcoDatabaseContext.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
   X,
@@ -43,6 +44,7 @@ export default function ApplicationReview({
   verificationState,
   onVerificationUpdate,
 }) {
+  useLcoRecordSeen("tutor_applications", r.id);
   const ref = useRef(null);
   const [notes, setNotes] = useState(r.notes || "");
   const [message, setMessage] = useState("");

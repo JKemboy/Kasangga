@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLcoRecordSeen } from "./LcoDatabaseContext.jsx";
 import { X, Ban, RotateCcw } from "lucide-react";
 import {
   Modal,
@@ -105,6 +106,7 @@ export default function UserDetails({
   onDocument,
   onClose,
 }) {
+  useLcoRecordSeen("users", r.userId);
   const [action, setAction] = useState(""),
     [form, setForm] = useState({
       category: "",

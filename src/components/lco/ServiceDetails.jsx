@@ -1,4 +1,4 @@
-import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
+import { useLcoDatabase, useLcoRecordSeen } from "./LcoDatabaseContext.jsx";
 import { useEffect, useState } from "react";
 import { Panel } from "./UserDetails.jsx";
 import { Modal, button, primary, input } from "../shared/staffUi.jsx";
@@ -14,6 +14,7 @@ export default function ServiceDetails({
   initialAction = "",
   onTutor,
 }) {
+  useLcoRecordSeen("services", s.id);
   const [action, setAction] = useState(""),
     [message, setMessage] = useState(""),
     [ack, setAck] = useState(false),
