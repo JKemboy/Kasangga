@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
 import { incidentGroups, REPEATED } from "../../services/incidentTypes.js";
-import {
-  caseActions,
-  THIRD_VIOLATION_BASIS,
-} from "../../services/osweDecisionRules.js";
+import { caseActions } from "../../services/osweDecisionRules.js";
 import {
   listEscalationRules,
-  saveEscalationRule,
+  saveOccurrenceMapping,
 } from "../../services/osweCaseWorkflow.js";
 import { input, button, primary } from "../shared/staffUi.jsx";
+const occurrenceLabel = (value) =>
+  ({ 1: "First", 2: "Second", 3: "Third" })[value];
 export default function EscalationRuleSettings() {
   const [rules, setRules] = useState([]),
     [type, setType] = useState(""),
+    [occurrence, setOccurrence] = useState(1),
     [action, setAction] = useState(""),
+    [basis, setBasis] = useState(""),
     [excerpt, setExcerpt] = useState(""),
     [ack, setAck] = useState(false),
     [busy, setBusy] = useState(false),
@@ -23,26 +24,35 @@ export default function EscalationRuleSettings() {
       .then(setRules)
       .catch((cause) => setError(cause.message));
   }, []);
-  async function save(removeType) {
+  useEffect(() => {
+    const rule = rules.find(
+      (r) => r.incident_type === type && (r.occurrence || 3) === occurrence,
+    );
+    setAction(rule?.suggested_action || "");
+    setBasis(rule?.handbook_basis || "");
+    setExcerpt(rule?.official_excerpt || "");
+    setAck(false);
+  }, [type, occurrence, rules]);
+  async function save(removeRule) {
     if (busy) return;
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      await saveEscalationRule(
-        removeType || type,
-        removeType ? null : action,
-        removeType ? "" : excerpt.trim(),
+      await saveOccurrenceMapping(
+        removeRule?.incident_type || type,
+        removeRule ? removeRule.occurrence || 3 : occurrence,
+        removeRule ? null : action,
+        removeRule ? "" : basis.trim(),
+        removeRule ? "" : excerpt.trim(),
       );
       setRules(await listEscalationRules());
-      setType("");
-      setAction("");
-      setExcerpt("");
+      window.dispatchEvent(new Event("campustutor:oswe-mapping-updated"));
       setAck(false);
       setNotice(
-        removeType
-          ? "Mapping disabled. Suggestions remain unassigned for this type."
-          : "Official mapping saved. Suggestions still require a manually confirmed decision.",
+        removeRule
+          ? "Mapping disabled for this incident type and occurrence."
+          : "Confirmed mapping saved. Suggestions apply only to this incident type and occurrence; OSWE still chooses the decision.",
       );
     } catch (cause) {
       setError(cause.message);
@@ -52,35 +62,52 @@ export default function EscalationRuleSettings() {
   }
   return (
     <section className="os-card mt-3">
-      <h2>{THIRD_VIOLATION_BASIS} — Suggested Action Mapping</h2>
+      <h2>Suggested Action Mapping</h2>
       <p className="mt-2 text-xs text-slate-500">
-        No disciplinary action is assumed. Configure a mapping only when the
-        official escalation rule is available. A suggestion never selects or
-        records a decision automatically.
+        Configure each incident type and confirmed same-type occurrence
+        separately. No blanket rule is applied to grave or major offenses.
+        Missing mappings require manual OSWE assessment.
       </p>
       {!rules.some((rule) => rule.active) && (
         <p className="mt-2 text-xs">
-          No official mappings configured. Suggested actions are unassigned.
+          No confirmed mappings configured. Suggested actions are unassigned.
         </p>
       )}
       {rules
         .filter((rule) => rule.active)
         .map((rule) => (
           <div
-            key={rule.incident_type}
+            key={`${rule.incident_type}-${rule.occurrence || 3}`}
             className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded border p-2 text-xs"
           >
             <span>
-              {rule.incident_type} → {rule.suggested_action}
+              {rule.incident_type} · {occurrenceLabel(rule.occurrence || 3)}{" "}
+              occurrence → {rule.suggested_action}
+              <small className="block text-slate-500">
+                {rule.handbook_basis}
+              </small>
             </span>
-            <button
-              type="button"
-              disabled={busy}
-              className={button}
-              onClick={() => save(rule.incident_type)}
-            >
-              Disable Mapping
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                className={button}
+                onClick={() => {
+                  setType(rule.incident_type);
+                  setOccurrence(rule.occurrence || 3);
+                }}
+              >
+                Edit Mapping
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                className={button}
+                onClick={() => save(rule)}
+              >
+                Disable Mapping
+              </button>
+            </div>
           </div>
         ))}
       <fieldset disabled={busy} className="mt-3 space-y-3">
@@ -90,26 +117,37 @@ export default function EscalationRuleSettings() {
             <select
               className={input + " mt-1"}
               value={type}
-              onChange={(event) => {
-                setType(event.target.value);
-                setAck(false);
-              }}
+              onChange={(e) => setType(e.target.value)}
             >
               <option value="">Select incident type</option>
-              {[...Object.values(incidentGroups).flat(), REPEATED].map(
-                (name) => (
-                  <option key={name}>{name}</option>
-                ),
-              )}
+              {[
+                ...new Set([...Object.values(incidentGroups).flat(), REPEATED]),
+              ].map((name) => (
+                <option key={name}>{name}</option>
+              ))}
             </select>
           </label>
           <label className="text-xs">
-            Official third-violation action
+            Confirmed same-type occurrence
+            <select
+              className={input + " mt-1"}
+              value={occurrence}
+              onChange={(e) => setOccurrence(Number(e.target.value))}
+            >
+              {[1, 2, 3].map((n) => (
+                <option key={n} value={n}>
+                  {occurrenceLabel(n)} occurrence
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs">
+            Approved suggested action
             <select
               className={input + " mt-1"}
               value={action}
-              onChange={(event) => {
-                setAction(event.target.value);
+              onChange={(e) => {
+                setAction(e.target.value);
                 setAck(false);
               }}
             >
@@ -119,34 +157,53 @@ export default function EscalationRuleSettings() {
               ))}
             </select>
           </label>
+          <label className="text-xs">
+            Verified policy reference
+            <input
+              className={input + " mt-1"}
+              maxLength={1000}
+              value={basis}
+              onChange={(e) => {
+                setBasis(e.target.value);
+                setAck(false);
+              }}
+              placeholder="Exact approved handbook section or policy reference"
+            />
+          </label>
         </div>
         <label className="block text-xs">
-          Official Section 7.3.b excerpt
+          Verified official excerpt
           <textarea
             rows={4}
             maxLength={5000}
             className={input + " mt-1"}
             value={excerpt}
-            onChange={(event) => {
-              setExcerpt(event.target.value);
+            onChange={(e) => {
+              setExcerpt(e.target.value);
               setAck(false);
             }}
-            placeholder="Paste the confirmed official rule before configuring a suggestion."
+            placeholder="Record the verified provision that supports this action for this incident type and occurrence."
           />
         </label>
         <label className="flex gap-2 text-xs">
           <input
             type="checkbox"
             checked={ack}
-            onChange={(event) => setAck(event.target.checked)}
+            onChange={(e) => setAck(e.target.checked)}
           />
-          I verified this mapping against the official Section 7.3.b text.
+          I verified this action and occurrence mapping against the applicable
+          official provision.
         </label>
         <button
           type="button"
           className={primary}
           disabled={
-            busy || !type || !action || excerpt.trim().length < 30 || !ack
+            busy ||
+            !type ||
+            !action ||
+            basis.trim().length < 5 ||
+            excerpt.trim().length < 30 ||
+            !ack
           }
           onClick={() => save()}
         >

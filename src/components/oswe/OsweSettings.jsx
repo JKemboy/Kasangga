@@ -13,7 +13,6 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { input, button, primary } from "../shared/staffUi.jsx";
-import EscalationRuleSettings from "./EscalationRuleSettings.jsx";
 
 const notificationTypes = [
   "New Case Referral",
@@ -341,7 +340,15 @@ export default function OsweSettings({ settings, onSave }) {
           </div>
         </section>
       </div>
-      <EscalationRuleSettings />
+      <section className="os-card mt-3">
+        <h2>Policy-based recommendations</h2>
+        <p className="os-help">
+          Case Review uses the current verified Policies and Terms provisions,
+          recorded case facts and confirmed history. Unverified sources and
+          ambiguous conflicts require manual OSWE assessment. Legacy occurrence
+          mappings do not override an approved policy.
+        </p>
+      </section>
       <div className="os-save">
         <ShieldCheck size={22} />
         <span>
