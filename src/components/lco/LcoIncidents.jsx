@@ -367,14 +367,6 @@ export default function LcoIncidents({
                       </button>
                       <button
                         type="button"
-                        className={button}
-                        onClick={() => related(r, "evidence")}
-                      >
-                        <Image size={14} />
-                        Preview Evidence
-                      </button>
-                      <button
-                        type="button"
                         className={primary}
                         onClick={() => open(r)}
                       >

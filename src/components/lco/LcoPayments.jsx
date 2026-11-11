@@ -428,52 +428,53 @@ export default function LcoPayments({
                       </span>
                     </td>
                     <td>
-                      <button
-                        className={button}
-                        aria-label={`View ${r.id}`}
-                        onClick={() => setSelected(r)}
-                      >
-                        View Transaction
-                      </button>
-                      <button
-                        className={
-                          button +
-                          " ml-2" +
-                          (r.refundStatus === "processed" ||
-                          r.transferredAt ||
-                          transferred.includes(r.id)
-                            ? " ap-transfer-complete"
-                            : "")
-                        }
-                        disabled={
-                          r.refundStatus === "approved"
-                            ? !!transferring
-                            : r.refundStatus === "processed" ||
-                              !!r.transferredAt ||
-                              transferred.includes(r.id) ||
-                              !!transferring ||
-                              r.paymentStatus !== "paid" ||
-                              ["pending", "approved"].includes(r.refundStatus)
-                        }
-                        onClick={() =>
-                          r.refundStatus === "approved"
-                            ? setSelected({
-                                ...r,
-                                initialAction: "Transferred",
-                              })
-                            : openPayout(r)
-                        }
-                      >
-                        {r.refundStatus === "processed"
-                          ? "Refund Transferred"
-                          : r.refundStatus === "approved"
-                            ? "Mark as Transferred"
-                            : r.transferredAt || transferred.includes(r.id)
-                              ? "Transferred"
-                              : transferring === r.id
-                                ? "Saving..."
-                                : "Mark as Transferred"}
-                      </button>
+                      <div className="ap-row-actions">
+                        <button
+                          className={button}
+                          aria-label={`View ${r.id}`}
+                          onClick={() => setSelected(r)}
+                        >
+                          View Transaction
+                        </button>
+                        <button
+                          className={
+                            button +
+                            (r.refundStatus === "processed" ||
+                            r.transferredAt ||
+                            transferred.includes(r.id)
+                              ? " ap-transfer-complete"
+                              : "")
+                          }
+                          disabled={
+                            r.refundStatus === "approved"
+                              ? !!transferring
+                              : r.refundStatus === "processed" ||
+                                !!r.transferredAt ||
+                                transferred.includes(r.id) ||
+                                !!transferring ||
+                                r.paymentStatus !== "paid" ||
+                                ["pending", "approved"].includes(r.refundStatus)
+                          }
+                          onClick={() =>
+                            r.refundStatus === "approved"
+                              ? setSelected({
+                                  ...r,
+                                  initialAction: "Transferred",
+                                })
+                              : openPayout(r)
+                          }
+                        >
+                          {r.refundStatus === "processed"
+                            ? "Refund Transferred"
+                            : r.refundStatus === "approved"
+                              ? "Mark as Transferred"
+                              : r.transferredAt || transferred.includes(r.id)
+                                ? "Transferred"
+                                : transferring === r.id
+                                  ? "Saving..."
+                                  : "Mark as Transferred"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
