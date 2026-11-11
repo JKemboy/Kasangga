@@ -1,4 +1,20 @@
 import { getSupabaseClient } from "./supabaseClient.js";
+export function serviceReviewSummary(entries, serviceId) {
+  const reviews = entries.filter(
+    (entry) =>
+      entry.serviceId != null &&
+      String(entry.serviceId) === String(serviceId) &&
+      Number.isFinite(entry.rating) &&
+      entry.rating >= 1 &&
+      entry.rating <= 5,
+  );
+  return {
+    reviewCount: reviews.length,
+    rating: reviews.length
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+      : null,
+  };
+}
 export async function getTutorCompletedSessions(
   tutorProfileId,
   client = getSupabaseClient(),

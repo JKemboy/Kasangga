@@ -1,5 +1,8 @@
 import "./services-table.css";
-import { listTutorReviews } from "../../../services/tutorReviews.js";
+import {
+  listTutorReviews,
+  serviceReviewSummary,
+} from "../../../services/tutorReviews.js";
 // My Services: lists tutor-owned services and sends create, edit, status, and availability changes to TutorDashboard callbacks.
 import ServiceDetails from "./ServiceDetails.jsx";
 import CreateService from "./CreateService.jsx";
@@ -160,17 +163,22 @@ export default function Services({
   const visible = rows.slice(start, start + pageSize);
 
   const [topicReviews, setTopicReviews] = useState([]);
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
   const [reviewsError, setReviewsError] = useState("");
   const tutorProfileId = data.services[0]?.tutorProfileId;
   useEffect(() => {
     if (!tutorProfileId) return;
     let active = true;
+    setReviewsLoaded(false);
+    setTopicReviews([]);
+    setReviewsError("");
     const load = async () => {
       try {
         const result = await listTutorReviews(tutorProfileId);
         if (active) {
           setTopicReviews(result.entries);
           setReviewsError("");
+          setReviewsLoaded(true);
         }
       } catch {
         if (active) setReviewsError("Ratings unavailable");
@@ -179,10 +187,12 @@ export default function Services({
     load();
     const timer = window.setInterval(load, 15000);
     window.addEventListener("focus", load);
+    window.addEventListener("campustutor:reviews-changed", load);
     return () => {
       active = false;
       window.clearInterval(timer);
       window.removeEventListener("focus", load);
+      window.removeEventListener("campustutor:reviews-changed", load);
     };
   }, [tutorProfileId]);
 
@@ -251,9 +261,7 @@ export default function Services({
           className={actionButton}
           disabled={suspended || changing}
           title={
-            suspended
-              ? "Suspended by LCO — editing is unavailable."
-              : undefined
+            suspended ? "Suspended by LCO — editing is unavailable." : undefined
           }
           onClick={() => {
             setError("");
@@ -411,6 +419,7 @@ export default function Services({
             </tr>
           </thead>
           {visible.map((service) => {
+            const summary = serviceReviewSummary(topicReviews, service.id);
             const sessions = data.sessions.filter(
               (session) =>
                 String(session.serviceId) === String(service.id) &&
@@ -442,19 +451,6 @@ export default function Services({
             return (
               <tbody key={service.id} className="border-t border-[#dce5e1]">
                 {topicRows.map((topic, index) => {
-                  const reviews = topicReviews.filter(
-                    (review) =>
-                      String(review.serviceId) === String(service.id) &&
-                      review.topic === topic.name,
-                  );
-                  const rating = reviews.length
-                    ? (
-                        reviews.reduce(
-                          (sum, review) => sum + review.rating,
-                          0,
-                        ) / reviews.length
-                      ).toFixed(1)
-                    : null;
                   const completed = sessions.filter(
                     (session) => session.topic === topic.name,
                   ).length;
@@ -513,15 +509,22 @@ export default function Services({
                           <StatusBadge status={service.status} />
                         </td>
                       )}
-                      <td className="px-3 py-3">
-                        <span className="inline-flex items-center gap-1">
-                          <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
-                          {reviewsError ||
-                            (rating
-                              ? rating + " (" + reviews.length + ")"
-                              : "No ratings yet")}
-                        </span>
-                      </td>
+                      {index === 0 && (
+                        <td
+                          rowSpan={topicRows.length}
+                          className="px-3 py-3 align-top"
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
+                            {reviewsError ||
+                              (!reviewsLoaded
+                                ? "Loading ratings..."
+                                : summary.reviewCount
+                                  ? `${summary.rating.toFixed(1)} (${summary.reviewCount} ${summary.reviewCount === 1 ? "rating" : "ratings"})`
+                                  : "No ratings yet")}
+                          </span>
+                        </td>
+                      )}
                       {index === 0 && (
                         <td
                           rowSpan={topicRows.length}
@@ -606,7 +609,12 @@ export default function Services({
         <ServiceDetails
           error={error}
           changing={changing}
-          service={detail}
+          service={{
+            ...detail,
+            ...serviceReviewSummary(topicReviews, detail.id),
+            ratingLoading: !reviewsLoaded && !reviewsError,
+            ratingError: reviewsError,
+          }}
           data={data}
           update={update}
           go={go}

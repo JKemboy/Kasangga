@@ -117,10 +117,15 @@ export default function ServiceDetails({
             ],
             [
               "Rating",
-              service.rating ? (
+              service.ratingLoading ? (
+                "Loading ratings..."
+              ) : service.ratingError ? (
+                "Ratings unavailable"
+              ) : service.reviewCount > 0 ? (
                 <span className="inline-flex items-center gap-1.5">
                   <Star size={16} className="fill-amber-400 text-amber-400" />
-                  {service.rating}
+                  {service.rating.toFixed(1)} ({service.reviewCount}{" "}
+                  {service.reviewCount === 1 ? "rating" : "ratings"})
                 </span>
               ) : (
                 "No ratings yet"
