@@ -1,4 +1,5 @@
 import { sessionAllocation } from "../tutor/workspace/earnings.js";
+import { useLcoRecordSeen } from "./LcoDatabaseContext.jsx";
 import { statusClass } from "../shared/statusColors.js";
 import {
   paymentAllocation,
@@ -22,6 +23,7 @@ export default function BookingDetails({
   onClose,
   onIncident,
 }) {
+  useLcoRecordSeen("bookings", r.id);
   const ref = useRef(null);
   const [transaction, setTransaction] = useState(false);
   useEffect(() => {

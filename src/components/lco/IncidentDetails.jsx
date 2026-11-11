@@ -1,4 +1,5 @@
 import { statusClass } from "../shared/statusColors.js";
+import { useLcoRecordSeen } from "./LcoDatabaseContext.jsx";
 import EvidencePreview from "./EvidencePreview.jsx";
 import RecordedDecisionDetails from "../shared/RecordedDecisionDetails.jsx";
 import { useEffect, useRef, useState } from "react";
@@ -21,6 +22,7 @@ export default function IncidentDetails({
   onBooking,
   onAccount,
 }) {
+  useLcoRecordSeen("incident_reports", r.id);
   const [preview, setPreview] = useState(false);
   const [confirmReferral, setConfirmReferral] = useState(false);
   const ref = useRef(null);

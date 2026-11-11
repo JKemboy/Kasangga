@@ -2,7 +2,7 @@ import {
   paymentAllocation,
   timestampLabel,
 } from "../../services/lcoRecords.js";
-import { useLcoDatabase } from "./LcoDatabaseContext.jsx";
+import { useLcoDatabase, useLcoRecordSeen } from "./LcoDatabaseContext.jsx";
 import { useState } from "react";
 import { Panel } from "./UserDetails.jsx";
 import { Modal, button, primary, input } from "../shared/staffUi.jsx";
@@ -18,6 +18,8 @@ export default function PaymentDetails({
   onClose,
   initialAction = "",
 }) {
+  useLcoRecordSeen("payments", r.id);
+  useLcoRecordSeen("refunds", r.refundId);
   const [bookingOpen, setBookingOpen] = useState(false),
     [action, setAction] = useState(initialAction),
     [note, setNote] = useState(""),
