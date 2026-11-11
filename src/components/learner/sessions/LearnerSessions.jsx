@@ -1,4 +1,4 @@
-import { listMyReports } from "../../../services/myReports.js";
+import { notificationHighlight } from "../../shared/notificationHighlight.js";
 import "./sessions.css";
 // My Sessions: loads the signed-in learner's paid sessions and groups them by their time-based lifecycle.
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
@@ -28,31 +28,6 @@ const tabs = ["Upcoming", "Ongoing", "Completed", "Cancelled"];
 export default function LearnerSessions({ args = {} }) {
   const work = useLearnerWorkspace();
   const [records, setRecords] = useState([]);
-  const [filedReports, setFiledReports] = useState([]);
-  const [reportsError, setReportsError] = useState("");
-  useEffect(() => {
-    let active = true;
-    async function loadReports() {
-      try {
-        const snapshot = await listMyReports();
-        if (active) {
-          setFiledReports(snapshot.created || []);
-          setReportsError("");
-        }
-      } catch {
-        if (active)
-          setReportsError("Report links are temporarily unavailable.");
-      }
-    }
-    loadReports();
-    window.addEventListener("focus", loadReports);
-    window.addEventListener("campustutor:sessions-changed", loadReports);
-    return () => {
-      active = false;
-      window.removeEventListener("focus", loadReports);
-      window.removeEventListener("campustutor:sessions-changed", loadReports);
-    };
-  }, []);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const request = useRef(0);
@@ -307,6 +282,9 @@ export default function LearnerSessions({ args = {} }) {
             <article
               key={id}
               id={`learner-session-${id}`}
+              {...notificationHighlight(
+                args.highlight && String(args.sessionId) === String(id),
+              )}
               className="learner-session-card"
             >
               <div className="text-center font-bold text-[#087542]">
@@ -457,32 +435,6 @@ export default function LearnerSessions({ args = {} }) {
                       <Flag className="mr-2 inline h-4 w-4" />
                       Report an Issue
                     </button>
-                  )}
-                  {filedReports
-                    .filter((report) => String(report.booking_id) === id)
-                    .map((report) => (
-                      <button
-                        key={report.report_id}
-                        type="button"
-                        className="col-span-2 min-h-8 rounded-md border border-[#15924f] px-2 py-1 text-xs font-semibold text-[#087542]"
-                        onClick={() =>
-                          work.go("reports", {
-                            tab: "created",
-                            reportId: String(report.report_id),
-                          })
-                        }
-                      >
-                        <Flag className="h-4 w-4" /> Report filed (IR-
-                        {report.report_id})
-                      </button>
-                    ))}
-                  {lifecycle === "Cancelled" && reportsError && (
-                    <p
-                      role="status"
-                      className="col-span-2 text-xs text-slate-500"
-                    >
-                      {reportsError}
-                    </p>
                   )}
                   {lifecycle === "Completed" && (
                     <button

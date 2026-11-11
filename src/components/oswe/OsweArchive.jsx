@@ -1,3 +1,4 @@
+import { notificationHighlight } from "../shared/notificationHighlight.js";
 import { academicYear } from "../../services/academicYear.js";
 // Case Archive: lists archived case records and opens them in read-only detail views.
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
@@ -38,6 +39,7 @@ export function matchesArchiveResolution(record, filter) {
 }
 
 export default function OsweArchive({
+  notificationTarget,
   settings,
   searchQuery = "",
   onSearchChange = () => {},
@@ -323,7 +325,13 @@ export default function OsweArchive({
           </thead>
           <tbody>
             {visible.map((r, i) => (
-              <tr key={r.caseId}>
+              <tr
+                key={r.caseId}
+                {...notificationHighlight(
+                  !!notificationTarget &&
+                    String(r.caseId) === String(notificationTarget.caseId),
+                )}
+              >
                 <td>{(current - 1) * size + i + 1}</td>
                 <td>{r.caseId}</td>
                 <td>{r.incident}</td>

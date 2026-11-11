@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { isOsweNotification } from "../src/services/osweNotificationScope.js";
 import {
   lcoNotificationDestination,
   osweNotificationDestination,
@@ -9,6 +10,42 @@ const notification = (entityType, entityId = "12") => ({
   entityType,
   entityId,
 });
+for (const entity of [
+  "cases",
+  "incident_reports",
+  "incident_evidence",
+  "clearance_reviews",
+  "clearance_holds",
+])
+  assert.equal(isOsweNotification(notification(entity)), true);
+for (const entity of [
+  "bookings",
+  "payments",
+  "refunds",
+  "services",
+  "policies",
+  "tutor_applications",
+])
+  assert.equal(isOsweNotification(notification(entity)), false);
+const heldClearance = {
+  clearanceDatabaseId: 3,
+  status: "On Hold",
+  holds: [{ hold_id: 19 }],
+};
+assert.equal(
+  osweNotificationDestination(notification("clearance_holds", 19), {
+    clearance: [heldClearance],
+  }).record,
+  heldClearance,
+);
+assert.equal(
+  osweNotificationDestination(notification("clearance_reviews", 7), {
+    clearance: [
+      { clearanceDatabaseId: 7, status: "Cleared", caseId: "CASE-9" },
+    ],
+  }).view,
+  "Case Archive",
+);
 const lcoRoutes = {
   tutor_applications: "Tutor Verification",
   bookings: "Bookings Monitoring",

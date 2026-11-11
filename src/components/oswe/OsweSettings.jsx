@@ -1,3 +1,4 @@
+import { isOsweNotification } from "../../services/osweNotificationScope.js";
 // OSWE Settings: keeps edits as a draft until Save Changes, then delegates to the OSWE Supabase RPC and refresh flow.
 import PortalAvatar from "../shared/PortalAvatar.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
@@ -61,6 +62,7 @@ export function normalizeSettings(value = {}) {
 export function filterOsweNotifications(rows = [], settings = defaultSettings) {
   const enabled = settings.notifications || defaultSettings.notifications;
   return rows.filter((notification) => {
+    if (!isOsweNotification(notification)) return false;
     const text =
       `${notification.notificationType || ""} ${notification.title || ""} ${notification.text || ""}`.toLowerCase();
     const index = text.includes("referral")

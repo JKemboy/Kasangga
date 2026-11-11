@@ -52,16 +52,38 @@ export function osweNotificationDestination(notification, records = {}) {
           ? same(row.caseDatabaseId, entityId)
           : same(row.reportDatabaseId, reportId),
       ) || incidents.find((row) => same(row.reportDatabaseId, reportId));
-    return { view: "Case Review", kind: "case", record };
+    return {
+      view:
+        record?.decision || record?.archived || record?.status === "Resolved"
+          ? "Case Archive"
+          : "Case Review",
+      kind: "case",
+      record,
+    };
   }
-  if (entityType === "clearance_reviews")
+  if (["clearance_reviews", "clearance_holds"].includes(entityType)) {
+    const record = (records.clearance || []).find((row) =>
+      entityType === "clearance_holds"
+        ? row.holds?.some((hold) =>
+            same(hold.hold_id ?? hold.clearance_hold_id, entityId),
+          )
+        : same(row.clearanceDatabaseId, entityId),
+    );
+    if (record?.status === "Cleared")
+      return {
+        view: "Case Archive",
+        kind: "case",
+        record: (records.cases || []).find(
+          (row) => row.caseId === record.caseId,
+        ),
+        query: record.caseId === "None" ? "" : record.caseId,
+      };
     return {
       view: "Student Clearance Review",
       kind: "clearance",
-      record: (records.clearance || []).find((row) =>
-        same(row.clearanceDatabaseId, entityId),
-      ),
+      record,
     };
+  }
   if (entityType === "policies")
     return {
       view: "Policies & Procedures",

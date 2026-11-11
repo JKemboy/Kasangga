@@ -1,5 +1,9 @@
 // OSWE Overview: derives case, incident, clearance, and review summaries from the OSWE database snapshot.
 import { statusClass } from "../shared/statusColors.js";
+import {
+  overviewCaseStatus,
+  pendingOverviewActions,
+} from "../../services/osweOverviewSummary.js";
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
 import OverviewMonth from "./OverviewMonth.jsx";
 import CaseShortcut from "./CaseShortcut.jsx";
@@ -12,13 +16,11 @@ import {
   Scale,
   CheckCircle,
   ArrowRight,
-  MoreHorizontal,
-  ClipboardList,
   Info,
 } from "lucide-react";
-import { Modal, button, input } from "../shared/staffUi.jsx";
+import { Modal, button } from "../shared/staffUi.jsx";
 
-const colors = ["#ff6971", "#ffc629", "#1686ff", "#65d3a8", "#006039"];
+const colors = ["#ff6971", "#ffc629", "#65d3a8", "#006039"];
 export default function OsweOverview({
   rows,
   settings,
@@ -73,10 +75,7 @@ export default function OsweOverview({
     .map((r) => ({
       ...r,
       name: r.student,
-      caseStatus:
-        r.databaseStatus === "resolved" || r.archived
-          ? "Resolved"
-          : r.status || "Open",
+      caseStatus: overviewCaseStatus(r),
       requested: r.date,
     }))
     .sort((a, b) =>
@@ -95,21 +94,17 @@ export default function OsweOverview({
   const review = cases.filter((r) => r.caseStatus === "Under Review");
   const clearance = records.filter((r) => r.status === "Pending Review");
   const resolved = cases.filter((r) => r.caseStatus.startsWith("Resolved"));
-  const followup = cases.filter(
-    (r) =>
-      ["Awaiting Evidence", "Pending Decision"].includes(r.status) ||
-      (r.evidenceRequest && r.status !== "Resolved"),
+  const pendingActions = pendingOverviewActions(
+    cases,
+    records,
+    database.records?.evidence || [],
   );
-  const groups = [
-    "Open",
-    "Under Review",
-    "Awaiting Evidence",
-    "Pending Decision",
-    "Resolved",
-  ].map((label) => ({
-    label,
-    records: cases.filter((r) => r.caseStatus === label),
-  }));
+  const groups = ["Open", "Under Review", "Pending Decision", "Resolved"].map(
+    (label) => ({
+      label,
+      records: cases.filter((r) => r.caseStatus === label),
+    }),
+  );
   let offset = 0;
   const gradient = groups
     .map((g, i) => {
@@ -136,7 +131,9 @@ export default function OsweOverview({
       items,
       clearanceAction,
       view:
-        items === evidence ? "evidence" : items === followup ? "note" : "case",
+        items === evidence || items === pendingActions.evidence
+          ? "evidence"
+          : "case",
     });
   return (
     <section className="oo-overview">
@@ -238,9 +235,7 @@ export default function OsweOverview({
                     "Case ID",
                     "Student / Reported User",
                     "Incident Type",
-                    "Priority",
                     "Date Opened",
-                    "Assigned OSWE Personnel",
                     "Case Status",
                     "Action",
                   ].map((h) => (
@@ -275,13 +270,7 @@ export default function OsweOverview({
                       <small>{r.caseId}</small>
                     </td>
                     <td>{r.type}</td>
-                    <td>
-                      <span className={statusClass(r.priority, "oo-status")}>
-                        {r.priority || "Not recorded"}
-                      </span>
-                    </td>
                     <td>{date(r.requested)}</td>
-                    <td>{r.officer}</td>
                     <td>
                       <span className={statusClass(r.caseStatus, "oo-status")}>
                         {r.caseStatus}
@@ -316,22 +305,21 @@ export default function OsweOverview({
             {[
               [
                 FileText,
-                evidence,
+                pendingActions.evidence,
                 "Evidence items requiring validation",
                 "#ffb800",
               ],
-              [ShieldCheck, review, "Cases awaiting review", "#7622df"],
               [
-                Scale,
-                clearance,
-                "Clearance reviews requiring action",
-                "#006536",
+                ShieldCheck,
+                pendingActions.review,
+                "Cases awaiting review",
+                "#7622df",
               ],
               [
-                ClipboardList,
-                followup,
-                "Cases requiring documentation / follow-up",
-                "#0878ff",
+                Scale,
+                pendingActions.clearance,
+                "Clearance reviews requiring action",
+                "#006536",
               ],
             ].map(([Icon, items, title, color]) => (
               <button
@@ -415,13 +403,27 @@ export default function OsweOverview({
                   className="flex w-full items-center justify-between gap-3 rounded border p-3 text-left hover:bg-green-50"
                   onClick={() => {
                     setDetail(null);
-                    detail.clearanceAction
-                      ? onClearance(r)
-                      : openCase(r, detail.view);
+                    const linkedClearance =
+                      r.decision &&
+                      (database.records?.clearance || []).find(
+                        (clearance) =>
+                          clearance.userId === r.studentUserId &&
+                          clearance.status !== "Cleared",
+                      );
+                    if (detail.clearanceAction) onClearance(r);
+                    else if (detail.view === "note" && linkedClearance)
+                      onClearance(linkedClearance);
+                    else openCase(r, detail.view);
                   }}
                 >
                   <span>
-                    <b>{r.name}</b>
+                    <b>
+                      {r.name ||
+                        r.student ||
+                        r.evidenceType ||
+                        r.fileName ||
+                        r.id}
+                    </b>
                     <span className="block text-slate-500">
                       {r.caseId} ·{" "}
                       {detail.clearanceAction ? r.status : r.caseStatus}

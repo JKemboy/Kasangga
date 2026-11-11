@@ -4,7 +4,11 @@ import OswePolicies from "../oswe/OswePolicies.jsx";
 import { Modal, button, input, primary } from "../shared/staffUi.jsx";
 import { listLcoPolicies, saveLcoPolicy } from "../../services/lcoPolicies.js";
 
-export default function LcoPolicies({ searchQuery, onSearchChange }) {
+export default function LcoPolicies({
+  searchQuery,
+  onSearchChange,
+  notificationTarget,
+}) {
   const [rows, setRows] = useState([]),
     [loading, setLoading] = useState(true);
   const [error, setError] = useState(""),
@@ -89,6 +93,7 @@ export default function LcoPolicies({ searchQuery, onSearchChange }) {
         </p>
       )}
       <OswePolicies
+        notificationTarget={notificationTarget}
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
         policies={rows}
@@ -118,6 +123,7 @@ export default function LcoPolicies({ searchQuery, onSearchChange }) {
                     aria-label={label}
                     className={input + " mt-1"}
                     type={type}
+                    readOnly={key === "title"}
                     maxLength={max}
                     required={
                       !["effective", "documentPath"].includes(key) ||

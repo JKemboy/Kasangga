@@ -1,4 +1,6 @@
-import { decisionAppealStatus } from "../../services/osweDecisionRules.js";
+import {
+  decisionHandbookBasis,
+} from "../../services/osweDecisionRules.js";
 export default function RecordedDecisionDetails({ decision }) {
   if (!decision) return null;
   const conditions = decision.conditions?.length
@@ -12,6 +14,16 @@ export default function RecordedDecisionDetails({ decision }) {
       <dl className="mt-2 grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)]">
         <dt className="font-medium">Case action</dt>
         <dd className="break-words">{decision.outcome || "Not recorded"}</dd>
+        {decision.workflow === "clearance_handoff" && (
+          <>
+            <dt className="font-medium">Clearance</dt>
+            <dd>
+              {decision.conditionDone
+                ? "Cleared"
+                : "Pending clearance completion"}
+            </dd>
+          </>
+        )}
         {decision.rationale && (
           <>
             <dt className="font-medium">Finding rationale</dt>
@@ -30,7 +42,15 @@ export default function RecordedDecisionDetails({ decision }) {
           </>
         )}
         <dt className="font-medium">Student Handbook basis</dt>
-        <dd className="break-words">{decision.basis || "Not recorded"}</dd>
+        <dd className="break-words">{decisionHandbookBasis(decision)}</dd>
+        {decision.notes && (
+          <>
+            <dt className="font-medium">Basis</dt>
+            <dd className="whitespace-pre-wrap break-words">
+              {decision.notes}
+            </dd>
+          </>
+        )}
         <dt className="font-medium">Required conditions</dt>
         <dd>
           {conditions.length ? (
@@ -45,8 +65,6 @@ export default function RecordedDecisionDetails({ decision }) {
             "No conditions recorded"
           )}
         </dd>
-        <dt className="font-medium">Appeal status</dt>
-        <dd className="break-words">{decisionAppealStatus(decision)}</dd>
       </dl>
     </section>
   );

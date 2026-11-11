@@ -1,3 +1,4 @@
+import { notificationHighlight } from "../../shared/notificationHighlight.js";
 import "./services-table.css";
 import {
   listTutorReviews,
@@ -131,7 +132,9 @@ export default function Services({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [edit, setEdit] = useState(openCreate ? {} : null);
-  const [detailId, setDetailId] = useState(args.serviceId || null);
+  const [detailId, setDetailId] = useState(
+    args.highlight ? null : args.serviceId || null,
+  );
   const [error, setError] = useState("");
   const [changing, setChanging] = useState(false);
   const tableHeadRef = useRef(null);
@@ -161,6 +164,13 @@ export default function Services({
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const visible = rows.slice(start, start + pageSize);
+  useEffect(() => {
+    if (!args.highlight || !args.serviceId) return;
+    const index = rows.findIndex(
+      (row) => String(row.id) === String(args.serviceId),
+    );
+    if (index >= 0) setPage(Math.floor(index / pageSize) + 1);
+  }, [args.highlight, args.serviceId, data.services]);
 
   const [topicReviews, setTopicReviews] = useState([]);
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
@@ -449,7 +459,14 @@ export default function Services({
                   },
                 ];
             return (
-              <tbody key={service.id} className="border-t border-[#dce5e1]">
+              <tbody
+                key={service.id}
+                className="border-t border-[#dce5e1]"
+                {...notificationHighlight(
+                  args.highlight &&
+                    String(service.id) === String(args.serviceId),
+                )}
+              >
                 {topicRows.map((topic, index) => {
                   const completed = sessions.filter(
                     (session) => session.topic === topic.name,

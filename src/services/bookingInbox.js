@@ -1,3 +1,4 @@
+import { storedNotificationTarget } from "./studentNotificationTargets.js";
 import {
   listMyReportAlerts,
   receivedReportNotifications,
@@ -148,42 +149,22 @@ export async function loadBookingInbox(role, userId) {
         category:
           row.notification_type === "refund_transferred"
             ? "Payments"
-            : ["incident_reports", "cases"].includes(entity)
+            : [
+                  "incident_reports",
+                  "cases",
+                  "clearance_reviews",
+                  "clearance_holds",
+                ].includes(entity)
               ? "Safety and Reports"
               : entity === "services"
                 ? "Services"
-                : entity === "payments"
+                : ["payments", "refunds"].includes(entity)
                   ? "Payments"
                   : "System",
-        view:
-          entity === "tutor_applications"
-            ? role === "learner"
-              ? "application"
-              : "dashboard"
-            : ["incident_reports", "cases"].includes(entity)
-              ? "reports"
-              : entity === "services"
-                ? "services"
-                : entity === "bookings"
-                  ? "sessions"
-                  : "notifications",
-        args:
-          entity === "incident_reports"
-            ? {
-                reportId: id,
-                ...(reports.received.some(
-                  (report) => String(report.report_id) === id,
-                )
-                  ? { tab: "received" }
-                  : {}),
-              }
-            : entity === "cases"
-              ? { caseId: id }
-              : entity === "services"
-                ? { serviceId: id }
-                : entity === "bookings"
-                  ? { sessionId: id }
-                  : { notificationId: `notification-${row.notification_id}` },
+        ...storedNotificationTarget(row, role, {
+          sessions,
+          received: reports.received,
+        }),
       };
     });
   }

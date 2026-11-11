@@ -61,6 +61,7 @@ export default function useLcoRecords(userId, view) {
       "cases",
       "case_decisions",
       "case_actions",
+      "policies",
     ])
       channel = channel.on(
         "postgres_changes",

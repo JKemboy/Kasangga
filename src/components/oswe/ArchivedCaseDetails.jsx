@@ -11,6 +11,7 @@ import {
 import { Modal, button } from "../shared/staffUi.jsx";
 import EvidenceFile from "./EvidenceFile.jsx";
 import RecordedDecisionDetails from "../shared/RecordedDecisionDetails.jsx";
+import { caseTimeline } from "../../services/caseTimeline.js";
 import {
   REPEATED,
   incidentConfirmationLabel,
@@ -29,21 +30,33 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
   const isArchived = !!full.archived;
   const pendingReferral = !!full.decision?.referralPending;
   const evidence = r.evidence || full.evidence || [];
+  const history = caseTimeline(full.history || []);
   const events = [
-    { title: "Case review started", when: date(r.opened), by: "OSWE" },
-    ...(full.history || []).map((event) => ({
-      title: event.action || event.status || "Case action recorded",
+    ...(!history.some(
+      (event) => String(event.action).toLowerCase() === "opened",
+    )
+      ? [{ title: "Case review started", when: date(r.opened), by: "OSWE" }]
+      : []),
+    ...history.map((event) => ({
+      title: event.title,
       when: event.at
         ? new Date(event.at).toLocaleString()
         : "Date not recorded",
       by: event.officer || event.by || "OSWE",
       notes: event.notes,
+      updates: event.updates,
     })),
-    {
-      title: `Decision recorded: ${r.outcome}`,
-      when: date(r.resolved),
-      by: r.officer,
-    },
+    ...(!history.some(
+      (event) => String(event.action).toLowerCase() === "decision",
+    )
+      ? [
+          {
+            title: `Decision recorded: ${r.outcome}`,
+            when: date(r.resolved),
+            by: r.officer,
+          },
+        ]
+      : []),
     {
       title: isArchived
         ? "Case resolved and archived"
@@ -208,6 +221,25 @@ export default function ArchivedCaseDetails({ record: r, date, onClose }) {
                   {event.when} · {event.by}
                 </p>
                 {event.notes && <div>{event.notes}</div>}
+                {event.updates?.length > 0 && (
+                  <details>
+                    <summary>Previous updates ({event.updates.length})</summary>
+                    <ul>
+                      {event.updates.map((update, index) => (
+                        <li key={index}>
+                          <b>
+                            {update.after?.completed ? "Completed" : "Pending"}
+                          </b>
+                          <p>
+                            {new Date(update.at).toLocaleString()} ·{" "}
+                            {update.officer || update.by || "OSWE"}
+                          </p>
+                          {update.notes && <div>{update.notes}</div>}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
               </li>
             ))}
           </ol>

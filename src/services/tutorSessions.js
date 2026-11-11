@@ -42,6 +42,7 @@ export function mapTutorSession(row, now = new Date()) {
       row.transaction_reference ||
       (row.payment_id ? String(row.payment_id) : ""),
     paymentReference: row.transaction_reference,
+    paymentId: row.payment_id == null ? null : String(row.payment_id),
     paymentMethod: row.payment_method,
     paidAt: row.paid_at,
     bookedAt: row.created_at,

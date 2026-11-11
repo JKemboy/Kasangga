@@ -1,4 +1,7 @@
 import { osweNotificationDestination } from "../../services/staffNotificationTargets.js";
+import { pendingClearanceReviews } from "../../services/osweDecisionRules.js";
+import { isOsweNotification } from "../../services/osweNotificationScope.js";
+import { notificationHighlight } from "../shared/notificationHighlight.js";
 import RecordSearch from "../shared/RecordSearch.jsx";
 import useSectionNavigation from "../shared/useSectionNavigation.js";
 import OsweNotifications from "./OsweNotifications.jsx";
@@ -55,12 +58,7 @@ import {
 import { Modal, Field, button, primary, input } from "../shared/staffUi.jsx";
 import "./oswe.css";
 
-const statuses = [
-  "Pending Review",
-  "Cleared",
-  "On Hold",
-  "Requires Resolution",
-];
+const statuses = ["Pending Review", "On Hold", "Requires Resolution"];
 
 const navigation = [
   ["Overview", LayoutDashboard],
@@ -123,13 +121,14 @@ function OsweDashboardContent() {
     };
   }, [accountOpen]);
   const database = useOsweDatabase();
-  const rows = database.records?.clearance || [];
+  const rows = pendingClearanceReviews(database.records?.clearance || []);
   const requestLogout = useLogout();
 
   const navigate = useNavigate();
   const [view, setView] = useSectionNavigation(osweSections, "Overview");
   const [overviewCaseFilter, setOverviewCaseFilter] = useState({});
   const [clearanceTarget, setClearanceTarget] = useState(null);
+  const [notificationRecord, setNotificationRecord] = useState(null);
   useEffect(() => {
     const open = () => {
       setGlobal("");
@@ -298,33 +297,52 @@ function OsweDashboardContent() {
     setter(value);
     setPage(1);
   }
+  const openedNotificationLink = useRef(null);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("notification");
+    if (!id || openedNotificationLink.current === id || !database.records)
+      return;
+    const row = (database.records?.notifications || []).find(
+      (item) => String(item.notificationId || item.id) === id,
+    );
+    if (row && openNotification(row)) openedNotificationLink.current = id;
+  }, [database.records?.notifications, database.records]);
   function openNotification(notification) {
+    if (!isOsweNotification(notification)) return false;
     const target = osweNotificationDestination(
       notification,
       database.records || {},
     );
     if (!target) return false;
-    if (target.kind !== "policy" && !target.record) return false;
     setSectionSearch((current) => ({
       ...current,
       [target.view]: target.query || "",
     }));
     setOverviewCaseFilter({});
+    setQuery("");
     setStatus("");
     setCollege("");
     setRequested("");
     setSemester("");
     setPage(1);
     setView(target.view);
+    setNotificationRecord(
+      target.record || (target.kind === "policy" ? { id: target.query } : null),
+    );
+    if (target.kind === "clearance" && target.record)
+      setClearanceTarget(target.record.clearanceDatabaseId);
+    else setClearanceTarget(null);
+    if (target.kind === "case" && target.record)
+      setSectionSearch((current) => ({
+        ...current,
+        [target.view]: target.record.caseId || target.record.id,
+      }));
     if (target.kind === "case" && target.record) {
       setSelected(target.record);
       setModal("Case Record");
     } else if (target.kind === "clearance" && target.record) {
       review(target.record);
-    } else {
-      setModal(null);
-      if (target.kind !== "policy") return false;
-    }
+    } else setModal(null);
     return true;
   }
   function openNav(label) {
@@ -547,9 +565,13 @@ function OsweDashboardContent() {
             }}
           />
         ) : view === "Reports & Analytics" ? (
-          <OsweReports rows={rows} settings={settings} />
+          <OsweReports
+            rows={database.records?.clearance || []}
+            settings={settings}
+          />
         ) : view === "Policies & Procedures" ? (
           <OswePolicies
+            notificationTarget={notificationRecord}
             settings={settings}
             searchQuery={global}
             onSearchChange={setGlobal}
@@ -560,6 +582,7 @@ function OsweDashboardContent() {
             "Evidence Validation",
           ].includes(view) ? (
           <OsweCaseWorkspace
+            notificationTarget={notificationRecord}
             initialFilter={overviewCaseFilter}
             settings={settings}
             searchQuery={global}
@@ -567,6 +590,7 @@ function OsweDashboardContent() {
           />
         ) : view === "Case Archive" ? (
           <OsweArchive
+            notificationTarget={notificationRecord}
             settings={settings}
             searchQuery={global}
             onSearchChange={setGlobal}
@@ -607,13 +631,6 @@ function OsweDashboardContent() {
                   "Pending Reviews",
                   "Awaiting review",
                   "gold",
-                ],
-                [
-                  CheckCircle,
-                  "Cleared",
-                  "Cleared",
-                  "Completed this semester",
-                  "green",
                 ],
                 [Clock, "On Hold", "On Hold", "Authorized hold active", "blue"],
                 [
@@ -793,6 +810,11 @@ function OsweDashboardContent() {
                     {visible.map((r, i) => (
                       <tr
                         key={r.clearanceDatabaseId || r.id}
+                        {...notificationHighlight(
+                          clearanceTarget != null &&
+                            String(r.clearanceDatabaseId) ===
+                              String(clearanceTarget),
+                        )}
                         className={
                           String(r.clearanceDatabaseId) ===
                           String(clearanceTarget)

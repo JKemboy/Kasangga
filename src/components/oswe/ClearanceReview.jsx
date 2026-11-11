@@ -8,17 +8,19 @@ import {
   recordReferralResponse,
   addReferralCondition,
 } from "../../services/osweCaseWorkflow.js";
-import { COMPLETION_INSTRUCTION } from "../../services/osweDecisionRules.js";
+import {
+  COMPLETION_INSTRUCTION,
+  clearanceRequirementsReady,
+} from "../../services/osweDecisionRules.js";
 import "./case-shortcuts.css";
 export default function ClearanceReview({ record, onClose }) {
   const database = useOsweDatabase(),
     ref = useRef(null);
-  const [choice, setChoice] = useState(""),
-    [notes, setNotes] = useState(""),
-    [verified, setVerified] = useState(false),
+  const [verified, setVerified] = useState(false),
     [saving, setSaving] = useState(false),
     [error, setError] = useState("");
-  const [verificationNotes, setVerificationNotes] = useState("");
+  const verificationNotes =
+    "OSWE verified the recorded requirement through the clearance checklist.";
   const [responseNotes, setResponseNotes] = useState({});
   const [authorityCondition, setAuthorityCondition] = useState({});
   const busy = useRef(false);
@@ -35,14 +37,7 @@ export default function ClearanceReview({ record, onClose }) {
       c.decision?.workflow === "clearance_handoff" &&
       !c.decision?.conditionDone,
   );
-  const requirementsReady = outstanding.every(
-    (c) =>
-      !c.decision.referralPending &&
-      (![1, 2].includes(c.decision.conditionTrackingVersion) ||
-        (c.decision.conditions?.length > 0 &&
-          c.decision.conditions.every((condition) => condition.completed) &&
-          c.decision.completionForm?.verifiedAt)),
-  );
+  const requirementsReady = clearanceRequirementsReady(outstanding);
   async function verify(action) {
     if (busy.current || isCleared) return;
     busy.current = true;
@@ -68,15 +63,7 @@ export default function ClearanceReview({ record, onClose }) {
   }, []);
   async function save(event) {
     event.preventDefault();
-    if (
-      busy.current ||
-      isCleared ||
-      saving ||
-      !requirementsReady ||
-      choice !== "cleared" ||
-      !verified ||
-      notes.trim().length < 15
-    )
+    if (busy.current || isCleared || saving || !requirementsReady || !verified)
       return;
     busy.current = true;
     setSaving(true);
@@ -89,11 +76,12 @@ export default function ClearanceReview({ record, onClose }) {
       await reviewStudentClearance(
         r.clearanceDatabaseId,
         "cleared",
-        notes.trim(),
+        "OSWE confirmed the signed form and all outstanding requirements through the clearance checklist.",
         verified,
       );
       await database.refresh();
       onClose();
+      window.dispatchEvent(new Event("campustutor:open-case-archive"));
     } catch (cause) {
       setError(cause.message);
     } finally {
@@ -149,22 +137,6 @@ export default function ClearanceReview({ record, onClose }) {
           clearing.
         </div>
         <h3>Recorded Cases &amp; Clearance Instructions</h3>
-        {!isCleared &&
-          outstanding.some((c) =>
-            [1, 2].includes(c.decision.conditionTrackingVersion),
-          ) && (
-            <label className="block mb-4">
-              Condition verification notes (at least 15 characters)
-              <textarea
-                className={input + " w-full mt-1"}
-                rows={2}
-                maxLength={2000}
-                value={verificationNotes}
-                onChange={(e) => setVerificationNotes(e.target.value)}
-                placeholder="Record what was received or verified in person before checking a condition."
-              />
-            </label>
-          )}
         {cases.map((c) => (
           <section key={c.caseId} className="rounded-lg border p-3 mb-3">
             <strong>
@@ -192,7 +164,6 @@ export default function ClearanceReview({ record, onClose }) {
                         saving ||
                         isCleared ||
                         c.decision.conditionDone ||
-                        verificationNotes.trim().length < 15 ||
                         (c.decision.referralPending &&
                           condition.text !== COMPLETION_INSTRUCTION)
                       }
@@ -203,7 +174,9 @@ export default function ClearanceReview({ record, onClose }) {
                             c.caseDatabaseId,
                             index,
                             completed,
-                            verificationNotes.trim(),
+                            completed
+                              ? "OSWE marked this requirement as completed."
+                              : "OSWE returned this requirement to pending.",
                           ),
                         );
                       }}
@@ -251,9 +224,7 @@ export default function ClearanceReview({ record, onClose }) {
                       <button
                         className={button}
                         disabled={
-                          saving ||
-                          !authorityCondition[c.caseId]?.trim() ||
-                          verificationNotes.trim().length < 15
+                          saving || !authorityCondition[c.caseId]?.trim()
                         }
                         onClick={() =>
                           verify(async () => {
@@ -333,44 +304,17 @@ export default function ClearanceReview({ record, onClose }) {
             onSubmit={save}
             className="space-y-4"
           >
-            <h3>Clearance Decision</h3>
-            <div className="ocx-outcomes">
-              <button
-                type="button"
-                disabled={saving}
-                aria-pressed={choice === "cleared"}
-                className={choice === "cleared" ? primary : button}
-                onClick={() => setChoice("cleared")}
-              >
-                Cleared
-              </button>
-            </div>
-            <label className="block">
-              Review notes
-              <textarea
+            <label className="flex gap-2 items-start">
+              <input
                 required
-                minLength={15}
-                maxLength={2000}
-                className={input + " w-full mt-1"}
-                rows={4}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Record the submitted form and completed requirements."
+                type="checkbox"
+                checked={verified}
+                onChange={(e) => setVerified(e.target.checked)}
               />
+              I received the signed form in person, verified all outstanding
+              case requirements, and authorize release of this student's
+              clearance holds.
             </label>
-            {choice === "cleared" && (
-              <label className="flex gap-2 items-start">
-                <input
-                  required
-                  type="checkbox"
-                  checked={verified}
-                  onChange={(e) => setVerified(e.target.checked)}
-                />
-                I received the signed form in person, verified all outstanding
-                case requirements, and authorize release of this student's
-                clearance holds.
-              </label>
-            )}
             {error && (
               <p role="alert" className="text-red-700">
                 {error}
@@ -395,15 +339,9 @@ export default function ClearanceReview({ record, onClose }) {
             type="submit"
             form="clearance-review-form"
             className={primary}
-            disabled={
-              saving ||
-              !requirementsReady ||
-              !choice ||
-              notes.trim().length < 15 ||
-              (choice === "cleared" && !verified)
-            }
+            disabled={saving || !requirementsReady || !verified}
           >
-            {saving ? "Saving..." : "Save Clearance Decision"}
+            {saving ? "Saving..." : "Cleared Clearance"}
           </button>
         )}
       </footer>

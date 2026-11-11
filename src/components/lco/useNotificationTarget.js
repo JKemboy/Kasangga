@@ -7,7 +7,6 @@ export default function useNotificationTarget(
   onOpen,
 ) {
   const scrolled = useRef(null);
-  const opened = useRef(null);
   const index = target
     ? rows.findIndex(
         (row) =>
@@ -18,13 +17,6 @@ export default function useNotificationTarget(
   useEffect(() => {
     if (index >= 0) setPage(Math.floor(index / pageSize) + 1);
   }, [index, pageSize, setPage, target]);
-  useEffect(() => {
-    if (!target || index < 0 || !onOpen) return;
-    const key = `${target.id}:${target.entityType}:${target.entityId}`;
-    if (opened.current === key) return;
-    opened.current = key;
-    onOpen(rows[index]);
-  }, [target, index, rows, onOpen]);
   return (row) => {
     const active =
       !!target &&

@@ -1,3 +1,4 @@
+import { notificationHighlight } from "../../shared/notificationHighlight.js";
 import "../../learner/sessions/sessions.css";
 import {
   ExternalLink,
@@ -43,6 +44,7 @@ export function MeetingBrand({ provider, compact = false }) {
 }
 export default function SessionCards({
   rows,
+  highlightId,
   onDetails,
   onMessage,
   onMeeting,
@@ -68,7 +70,11 @@ export default function SessionCards({
           (!s.completedAt ||
             Date.now() >= new Date(s.completedAt).getTime() + 86400000);
         return (
-          <article className="learner-session-card" key={s.id}>
+          <article
+            className="learner-session-card"
+            key={s.id}
+            {...notificationHighlight(String(highlightId) === String(s.id))}
+          >
             <div className="text-center font-bold text-[#087542]">
               <p>{date.toLocaleDateString("en-US", { month: "short" })}</p>
               <p className="text-2xl text-[#101828]">{date.getDate()}</p>

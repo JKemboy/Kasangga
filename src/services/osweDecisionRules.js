@@ -1,3 +1,32 @@
+import { procedureActionBasis } from "./osweProcedures.js";
+
+export function decisionHandbookBasis(decision = {}) {
+  if (decision.handbookBasis?.trim()) return decision.handbookBasis;
+  const basis = decision.basis?.trim();
+  if (basis && !/no verified|manual OSWE assessment|not recorded/i.test(basis))
+    return basis;
+  return procedureActionBasis[decision.outcome] || "Not recorded";
+}
+
+export function pendingClearanceReviews(records = []) {
+  return records.filter(
+    (record) => String(record.status).toLowerCase() !== "cleared",
+  );
+}
+
+export function clearanceRequirementsReady(cases = []) {
+  return cases.every(
+    (record) =>
+      !record.decision.referralPending &&
+      (![1, 2].includes(record.decision.conditionTrackingVersion) ||
+        (record.decision.conditions?.length > 0 &&
+          record.decision.conditions.every(
+            (condition) => condition.completed,
+          ) &&
+          !!record.decision.completionForm?.verifiedAt)),
+  );
+}
+
 export const COMPLETION_INSTRUCTION =
   "Download the Completion Form and submit the completed document in person at the OSWE office.";
 export const THIRD_VIOLATION_BASIS = "Student Handbook Section 7.3.b";

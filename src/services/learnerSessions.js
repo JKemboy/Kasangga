@@ -61,6 +61,7 @@ export function mapLearnerSession(row, now = new Date()) {
     bookingStatus,
     paymentMethod: row.payment_method || "",
     transactionId: row.transaction_reference || "",
+    paymentId: row.payment_id == null ? null : String(row.payment_id),
     bookedOn: row.booked_at || "",
     name: tutorName,
     course: row.service_title,

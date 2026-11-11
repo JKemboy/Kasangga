@@ -4,12 +4,12 @@ import {
   filterProcedures,
 } from "../src/services/osweProcedures.js";
 import { policyCategories } from "../src/services/policyPresentation.js";
-assert.equal(osweProcedures.length, 11);
-assert.equal(new Set(osweProcedures.map((p) => p.title)).size, 11);
+assert.equal(osweProcedures.length, 10);
+assert.equal(new Set(osweProcedures.map((p) => p.title)).size, 10);
 assert.equal(osweProcedures.filter((p) => p.owner === "System").length, 4);
 assert.equal(
   osweProcedures.filter((p) => p.owner === "University Policies").length,
-  7,
+  6,
 );
 for (const category of policyCategories) {
   const count = osweProcedures.filter((p) => p.category === category).length;

@@ -107,3 +107,15 @@ button.report-issue-button:hover {
   background-color: #edf8f1;
   color: #087542;
 }
+/* The record reached from a notification remains visible until navigation changes. */
+[data-notification-highlight="true"],
+[data-notification-highlight="true"] > td,
+[data-notification-highlight="true"] > tr > td,
+[data-notification-highlight="true"] > tr > th {
+  background-color: #e5f5ea !important;
+}
+[data-notification-highlight="true"] {
+  outline: 2px solid #16804a;
+  outline-offset: -2px;
+  scroll-margin-block: 90px;
+}

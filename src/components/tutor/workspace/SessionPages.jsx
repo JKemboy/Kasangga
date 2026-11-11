@@ -83,7 +83,9 @@ export function Sessions({
           : "Upcoming",
     ),
     [page, setPage] = useState(1),
-    [selected, setSelected] = useState(initialSession || null),
+    [selected, setSelected] = useState(
+      args.highlight ? null : initialSession || null,
+    ),
     [action, setAction] = useState("");
   const [, tick] = useState(0);
   useEffect(() => {
@@ -105,6 +107,30 @@ export function Sessions({
     ...session,
     lifecycle: lifecycleFor(session),
   }));
+  useEffect(() => {
+    if (!args.highlight || !args.sessionId) return;
+    const target = records.find(
+      (record) => String(record.id) === String(args.sessionId),
+    );
+    if (!target) return;
+    const nextTab =
+      target.lifecycle === "Awaiting Completion" ? "Ongoing" : target.lifecycle;
+    if (["Upcoming", "Ongoing", "Completed"].includes(nextTab)) setTab(nextTab);
+    setQuery("");
+    setType("All");
+    const peers = records.filter(
+      (record) =>
+        record.lifecycle === target.lifecycle && record.payment === "Paid",
+    );
+    setPage(
+      Math.floor(
+        Math.max(
+          0,
+          peers.findIndex((record) => record.id === target.id),
+        ) / 5,
+      ) + 1,
+    );
+  }, [args.highlight, args.sessionId, data.sessions]);
   const inTab = (session, name) =>
     session.lifecycle === name ||
     (name === "Ongoing" && session.lifecycle === "Awaiting Completion");
@@ -166,6 +192,7 @@ export function Sessions({
         ))}
       </nav>
       <SessionCards
+        highlightId={args.highlight ? args.sessionId : null}
         rows={rows.slice((page - 1) * 5, page * 5)}
         onDetails={(s) => {
           setSelected(s);

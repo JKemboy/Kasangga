@@ -1,3 +1,4 @@
+import { notificationHighlight } from "../../shared/notificationHighlight.js";
 import {
   AboutCaseDetails,
   ReportConditions as Conditions,
@@ -360,7 +361,8 @@ export default function MyReports({ go, args = {} }) {
         setTab(targetTab);
         setFilter("All");
         setQuery("");
-        setSelectedKey(rowKey(row, targetTab === "received"));
+        if (!args.highlight)
+          setSelectedKey(rowKey(row, targetTab === "received"));
         openedRoute.current = key;
         break;
       }
@@ -473,6 +475,12 @@ export default function MyReports({ go, args = {} }) {
                 <article
                   className={`mr-card ${stage === "Clearance Blocked" ? "mr-blocked" : stage === "Resolved" ? "mr-about-resolved" : about ? "mr-about-review" : ""}`}
                   key={rowKey(row, about)}
+                  {...notificationHighlight(
+                    args.highlight &&
+                      (args.caseId
+                        ? String(row.case_id) === String(args.caseId)
+                        : String(row.report_id) === String(args.reportId)),
+                  )}
                 >
                   <header>
                     <span className="mr-icon">

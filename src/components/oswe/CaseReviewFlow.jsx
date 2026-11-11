@@ -27,6 +27,7 @@ import {
 } from "../../services/osweCaseWorkflow.js";
 import {
   caseActions,
+  decisionHandbookBasis,
   caseActionDescriptions,
   evidenceReviewState,
   clearanceConditionError,
@@ -151,12 +152,7 @@ export default function CaseReviewFlow({
   );
   const validation = evidenceReviewState(evidence);
   const history = context?.history;
-  const policySource = context?.recommendation?.winningSource;
-  const decisionBasis = policySource
-    ? [policySource.title, policySource.version, policySource.section].join(
-        " · ",
-      )
-    : "Manual OSWE assessment; no verified policy-based recommendation available.";
+  const decisionBasis = decisionHandbookBasis({ outcome: form.outcome });
   const defaults = form.outcome
     ? (context?.editableDefaults || context?.defaults)?.[form.outcome] || []
     : [];
@@ -461,8 +457,8 @@ export default function CaseReviewFlow({
         )}
         {final && (
           <p role="status" className="case-alert info">
-            A decision is already recorded. Reopen it from Decision Recorded to
-            view the saved record.
+            A decision is already recorded. Open it from Case Archive to view
+            the saved record.
           </p>
         )}
         {step === 1 ? (

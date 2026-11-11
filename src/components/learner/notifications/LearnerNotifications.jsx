@@ -11,7 +11,8 @@ export default function LearnerNotifications({ args = {} }) {
         args={args}
         data={data}
         go={(view, args) => {
-          if (view === "messages") work.message(args);
+          if (view === "messages")
+            work.message({ ...args, name: args.name || args.learner });
           else work.go(view, args);
         }}
       />

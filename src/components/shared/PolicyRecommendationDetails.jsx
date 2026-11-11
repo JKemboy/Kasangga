@@ -1,5 +1,6 @@
 ﻿import "./policy-recommendation.css";
 import { Info } from "lucide-react";
+import { osweProcedures } from "../../services/osweProcedures.js";
 const citation = (source) =>
   source
     ? `${source.title} · ${source.version} · ${source.section}`
@@ -24,19 +25,30 @@ export default function PolicyRecommendationDetails({
   };
   const facts = data.facts || {},
     source = data.winningSource;
-  // Reference banner copy requested for Case Review; it does not confirm a finding or select a sanction.
   if (compact) {
+    const previous = facts.previousConfirmedSameType ?? history?.previousCount;
+    const reference = osweProcedures.find(
+      (procedure) => procedure.title === "Recording a Case Decision",
+    );
     return (
       <div className="policy-recommendation compact">
         <Info size={21} aria-hidden="true" />
         <div>
-          <strong>First recorded violation</strong>
+          <strong>
+            {previous == null
+              ? "Case decision reference"
+              : `${previous} prior confirmed same-type violation(s)`}
+          </strong>
           <p>
-            of &ldquo;Privacy or Consent Violation&rdquo; for{" "}
-            {subject?.student || "the reported student"} in KASANGGA. OSWE
-            applies: first violation, Verbal Warning (or Counseled); second,
-            Written Warning; third, Referred for Further Action to the VPAA
-            (Handbook 7.3.b, pp. 85&ndash;86).
+            {subject?.type || facts.incidentType || "Reported incident"} for{" "}
+            {subject?.student || "the reported student"}. {reference.title} (
+            {reference.version}): first violation, Verbal Warning (or
+            Counseled); second, Written Warning; third, Referred for Further
+            Action to the VPAA (Handbook 7.3.b, pp. 85&ndash;86).
+          </p>
+          <p>
+            The current allegation is not counted as a confirmed violation. OSWE
+            assesses the evidence and records the final decision.
           </p>
         </div>
       </div>

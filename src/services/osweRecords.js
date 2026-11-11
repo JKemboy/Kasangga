@@ -1,4 +1,5 @@
 import { academicYear } from "./academicYear.js";
+import { catalogPolicies } from "./osweProcedures.js";
 import { canonicalIncidentType, incidentCategory } from "./incidentTypes.js";
 import { clearanceAcademicTerm } from "./clearanceAcademicTerm.js";
 // OSWE record mapper: converts database snapshot tables into the case, clearance, evidence, archive, and report view models.
@@ -276,20 +277,22 @@ export function mapOsweRecords(db) {
           filename: item.fileName,
         })),
     }));
-  const policies = db.policies.map((p) => ({
-    id: `POL-${p.policy_id}`,
-    scope: p.policy_scope || "institutional",
-    title: p.title,
-    category: p.category,
-    version: p.version,
-    effective: p.effective_date || "",
-    added: day(p.created_at),
-    owner: p.document_owner,
-    status: label(p.status),
-    updated: day(p.updated_at),
-    documentPath: p.document_path,
-    content: p.content || "",
-  }));
+  const policies = catalogPolicies(
+    db.policies.map((p) => ({
+      id: `POL-${p.policy_id}`,
+      scope: p.policy_scope || "institutional",
+      title: p.title,
+      category: p.category,
+      version: p.version,
+      effective: p.effective_date || "",
+      added: day(p.created_at),
+      owner: p.document_owner,
+      status: label(p.status),
+      updated: day(p.updated_at),
+      documentPath: p.document_path,
+      content: p.content || "",
+    })),
+  );
   const sessions = db.financial_sessions.map((s) => ({
     ...s,
     id: String(s.id),

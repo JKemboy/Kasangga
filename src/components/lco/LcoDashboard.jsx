@@ -262,6 +262,15 @@ export default function LcoDashboardPage() {
     },
     [lcoNotifications, database, readNotifications],
   );
+  const openedNotificationLink = useRef(null);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("notification");
+    if (!id || openedNotificationLink.current === id || !database) return;
+    const row = (lcoNotifications || []).find(
+      (item) => String(item.notificationId || item.id) === id,
+    );
+    if (row && openNotification(row)) openedNotificationLink.current = id;
+  }, [lcoNotifications, database]);
   function openNotification(row) {
     const destination = lcoNotificationDestination(row, database || {});
     if (!destination) return false;
@@ -447,7 +456,7 @@ export default function LcoDashboardPage() {
           ) : // The view switch is the LCO section router. Section components
           // receive only the records and callbacks needed for their workflow.
           view === "Policies & Procedures" ? (
-            <LcoPolicies searchQuery={search} onSearchChange={setSearch} />
+            <LcoPolicies notificationTarget={notificationTarget} searchQuery={search} onSearchChange={setSearch} />
           ) : view === "Notifications" ? (
             <LcoNotifications
               rows={lcoNotifications}

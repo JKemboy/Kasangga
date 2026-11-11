@@ -1,3 +1,4 @@
+import { notificationHighlight } from "../shared/notificationHighlight.js";
 import {
   policyCategories,
   policyPresentation,
@@ -24,11 +25,12 @@ import { Modal, button, input } from "../shared/staffUi.jsx";
 
 import PolicyDetails from "./PolicyDetails.jsx";
 import {
-  osweProcedures,
+  catalogPolicies,
   filterProcedures,
 } from "../../services/osweProcedures.js";
 
 export default function OswePolicies({
+  notificationTarget,
   settings,
   policies: providedPolicies,
   onEdit,
@@ -38,13 +40,9 @@ export default function OswePolicies({
   hideSearch = false,
 }) {
   const database = useOsweDatabase();
-  const policies = (providedPolicies ?? database?.records?.policies ?? [])
-    .filter(
-      (p) =>
-        providedPolicies != null ||
-        osweProcedures.some((procedure) => procedure.title === p.title),
-    )
-    .map(policyPresentation);
+  const policies = catalogPolicies(
+    providedPolicies ?? database?.records?.policies ?? [],
+  ).map(policyPresentation);
   const [query, setQuery] = useState(""),
     [category, setCategory] = useState(""),
     [status, setStatus] = useState(""),
@@ -330,7 +328,15 @@ export default function OswePolicies({
           </thead>
           <tbody>
             {visible.map((p, i) => (
-              <tr key={p.id}>
+              <tr
+                key={p.id}
+                {...notificationHighlight(
+                  !!notificationTarget &&
+                    (p.id === notificationTarget.id ||
+                      String(p.policyId) ===
+                        String(notificationTarget.entityId)),
+                )}
+              >
                 <td>{(current - 1) * size + i + 1}</td>
                 <td>
                   <button
@@ -348,9 +354,7 @@ export default function OswePolicies({
                   </span>
                 </td>
                 <td>{p.version}</td>
-                <td>
-                  {p.effectiveLabel || date(p.effective || p.added)}
-                </td>
+                <td>{p.effectiveLabel || date(p.effective || p.added)}</td>
                 <td>{p.owner}</td>
                 <td>{p.updatedLabel || date(p.updated)}</td>
                 <td>

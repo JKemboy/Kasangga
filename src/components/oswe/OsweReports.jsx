@@ -1,12 +1,12 @@
 // OSWE Reports: builds case and clearance analytics from database records using the saved display preferences.
 import { useOsweDatabase } from "./OsweDatabaseContext.jsx";
+import { overviewCaseStatus } from "../../services/osweOverviewSummary.js";
 import { useState } from "react";
 import {
   ChartNoAxesCombined,
   BriefcaseBusiness,
   FileText,
   ShieldCheck,
-  Clock,
   CheckCircle,
   Users,
   Download,
@@ -104,13 +104,13 @@ export default function OsweReports({ rows, settings }) {
     .filter(
       (r) =>
         inPeriod(r.date) &&
-        (!caseStatus || r.status === caseStatus) &&
+        (!caseStatus || overviewCaseStatus(r) === caseStatus) &&
         (!incident || r.type === incident),
     )
     .map((r) => ({
       ...r,
       requested: r.date || r.requested || "",
-      caseStatus: r.status || "Open",
+      caseStatus: overviewCaseStatus(r),
     }));
   const resolved = cases.filter((r) => r.caseStatus.startsWith("Resolved"));
   const open = cases.filter((r) => !r.caseStatus.startsWith("Resolved"));
@@ -264,7 +264,7 @@ export default function OsweReports({ rows, settings }) {
             onChange={(e) => setCaseStatus(e.target.value)}
           >
             <option value="">All</option>
-            {[...new Set(rows.map((r) => r.caseStatus))].map((s) => (
+            {[...new Set(reviewRecords.map(overviewCaseStatus))].map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -294,7 +294,6 @@ export default function OsweReports({ rows, settings }) {
           [BriefcaseBusiness, cases.length, "Case Records", cases],
           [FileText, open.length, "Open Cases", open],
           [ShieldCheck, resolved.length, "Resolved Cases", resolved],
-          [Clock, "—", "Average Resolution Time", null],
           [CheckCircle, reviewed.length, "Clearance Reviews", reviewed],
           [
             Users,
@@ -356,11 +355,6 @@ export default function OsweReports({ rows, settings }) {
             </button>
           ))}
         </section>
-        <Donut
-          title="Cases by Priority"
-          items={group(cases, "priority")}
-          onSelect={(r) => show(r.label, r.records)}
-        />
       </div>
       <div className="or-bottom-charts">
         <section className="or-chart">
@@ -383,7 +377,7 @@ export default function OsweReports({ rows, settings }) {
             ))}
           </div>
           <p className="or-explanation">
-            Counts use clearance request dates within the selected period.
+            Counts use case opening dates within the selected period.
           </p>
         </section>
         <Donut
@@ -395,8 +389,8 @@ export default function OsweReports({ rows, settings }) {
       {settings.tips && (
         <p className="or-explanation">
           Database records. Date and case filters apply to case counts; academic
-          filters apply to clearance reviews. Missing incident types,
-          priorities, and resolution timestamps are not estimated.
+          filters apply to clearance reviews. Missing incident types and
+          resolution timestamps are not estimated.
         </p>
       )}
       {detail && (

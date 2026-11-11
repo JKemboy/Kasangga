@@ -1,4 +1,7 @@
-import { COMPLETION_INSTRUCTION } from "./osweDecisionRules.js";
+import {
+  COMPLETION_INSTRUCTION,
+  decisionHandbookBasis,
+} from "./osweDecisionRules.js";
 export const filedStages = ["LCO Review", "OSWE Review", "Resolved"];
 export const reportDate = (value) =>
   value
@@ -212,7 +215,7 @@ export function completionFormHtml(record, student = {}) {
       ["Case ID", `CASE-${record.case_id}`],
       ["Incident Report ID", `IR-${record.report_id}`],
       ["Case action", record.decision.outcome],
-      ["Student Handbook basis", record.decision.basis],
+      ["Student Handbook basis", decisionHandbookBasis(record.decision)],
       ["Recorded", record.decision.at],
       ["Concern", record.incident_type],
     ],

@@ -109,7 +109,9 @@ export default function Notifications({
   const listRef = useRef(null);
   const unreadCount = notifications.filter((n) => !n.read).length;
   const selected = notifications.find((n) => n.id === selectedId);
-  const destination = selected ? notificationDestination(selected) : null;
+  const destination = selected
+    ? notificationDestination(selected, { roles: auth?.roles || [] })
+    : null;
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const rows = notifications.filter((n) => {
     const searchable = [
@@ -290,7 +292,13 @@ export default function Notifications({
                   className={`grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-2 px-3 py-2 text-left transition-colors hover:bg-[#e8f4ed] focus-visible:relative focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green-700 lg:h-14 lg:grid-cols-[36px_minmax(0,1.35fr)_minmax(0,1fr)_142px_56px] lg:py-1.5 ${n.read ? "bg-white" : "bg-[#eff8f3]"}`}
                   onClick={async () => {
                     if (!n.read) void markRead(n.id);
-                    const target = notificationDestination(n);
+                    const target = notificationDestination(n, {
+                      roles: auth?.roles || [],
+                    });
+                    if (target?.href) {
+                      window.location.assign(target.href);
+                      return;
+                    }
                     if (
                       target &&
                       !target.href &&
@@ -304,7 +312,7 @@ export default function Notifications({
                               bookingId: n.bookingId,
                               name: n.title.replace(/^New message from /, ""),
                             }
-                          : target.args,
+                          : { ...target.args, highlight: true },
                       );
                     else setSelectedId(n.id);
                   }}

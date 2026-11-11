@@ -204,7 +204,7 @@ function GuideCard({ guide, go, onContact }) {
 }
 export default function Help({ go, args = {} }) {
   const [query, setQuery] = useState(args.topic || "");
-  const [contact, setContact] = useState(false);
+  const [contact, setContact] = useState(!!args.contact);
   const faqRows = faqs.filter((faq) => matches(faq, query));
   return (
     <div className="help-reference">

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "./supabaseClient.js";
+import { catalogPolicies, osweProcedures } from "./osweProcedures.js";
 
 export function mapPolicy(row) {
   return {
@@ -32,10 +33,16 @@ export async function listLcoPolicies(client = getSupabaseClient()) {
     .select("*")
     .order("policy_id");
   if (error) throw new Error(error.message);
-  return (data || []).map(mapPolicy);
+  return catalogPolicies((data || []).map(mapPolicy));
 }
 
 export function validatePolicy(value) {
+  if (
+    !osweProcedures.some((procedure) => procedure.title === value.title?.trim())
+  )
+    throw new Error(
+      "Choose one of the ten documented procedures. Procedure titles follow the reference document.",
+    );
   if (
     !value.title?.trim() ||
     !value.category?.trim() ||

@@ -1,3 +1,4 @@
+import { notificationHighlight } from "../../shared/notificationHighlight.js";
 import {
   earningsDateOptions,
   matchesEarningsDate,
@@ -121,7 +122,7 @@ function PayoutBadge({ session }) {
 
 export default function Earnings({ data, go, args = {} }) {
   const [selected, setSelected] = useState(
-    args.transactionId
+    args.transactionId && !args.highlight
       ? data.sessions.find((s) => s.transaction === args.transactionId) || null
       : null,
   );
@@ -404,6 +405,9 @@ export default function Earnings({ data, go, args = {} }) {
               return (
                 <tr
                   key={s.id}
+                  {...notificationHighlight(
+                    args.highlight && s.transaction === args.transactionId,
+                  )}
                   className="h-12"
                   tabIndex={0}
                   aria-label={`View transaction ${s.transaction || s.id}`}
