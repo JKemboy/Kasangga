@@ -3,6 +3,11 @@ import {
   findCollege,
 } from "../services/collegeProgramMap.js";
 import { applyIdFields } from "../services/studentIdOcr.js";
+import {
+  normalizePhilippineMobile,
+  philippineMobileDigits,
+  validPhilippineMobile,
+} from "../services/philippineMobile.js";
 import StudentIdUpload from "./StudentIdUpload.jsx";
 import LearnerOverview from "../components/learner/dashboard/LearnerOverview.jsx";
 import StudentShell from "../components/shared/StudentShell.jsx";
@@ -96,16 +101,29 @@ function Setup() {
       return setError("Specify your other study interests.");
     if (!values.gcashName.trim() || values.gcashName.trim().length > 150)
       return setError("Enter your GCash account name (up to 150 characters).");
-    if (!/^\+639\d{9}$/.test(values.gcashNumber))
-      return setError(
-        "Enter a valid GCash number: +63 followed by 10 digits starting with 9.",
+    const details = {
+      ...values,
+      phone: normalizePhilippineMobile(values.phone),
+      gcashNumber: normalizePhilippineMobile(values.gcashNumber),
+    };
+    const numberError = (id, message) => {
+      setError(message);
+      const field = document.getElementById(id);
+      field?.scrollIntoView({ block: "center", behavior: "smooth" });
+      field?.focus({ preventScroll: true });
+    };
+    if (!validPhilippineMobile(values.gcashNumber))
+      return numberError(
+        "setup-gcash-number",
+        "Check the GCash Number field. Enter a Philippine mobile number starting with 09, 9 or +639.",
       );
-    const issue = profileError(values, verified);
+    if (!validPhilippineMobile(values.phone))
+      return numberError(
+        "setup-phone-number",
+        "Check Phone Number under Personal Information. Enter a Philippine mobile number starting with 09, 9 or +639. This is separate from your GCash number.",
+      );
+    const issue = profileError(details, verified);
     if (issue) return setError(issue);
-    if (!/^\+639\d{9}$/.test(values.phone))
-      return setError(
-        "Enter a valid Philippine mobile number: +63 followed by 10 digits starting with 9.",
-      );
     if (!extractionAttempted || !idImage)
       return setError("Upload and extract your Student ID before saving.");
     if (!idReviewed)
@@ -127,7 +145,7 @@ function Setup() {
         const { error } = await client.rpc(
           "complete_learner_profile_with_gcash",
           {
-            details: { ...values, studentIdImagePath: imagePath },
+            details: { ...details, studentIdImagePath: imagePath },
           },
         );
         if (error) throw error;
@@ -304,15 +322,13 @@ function Setup() {
                         inputMode="numeric"
                         autoComplete="tel-national"
                         aria-label="Philippine mobile number"
+                        id="setup-phone-number"
                         required
-                        maxLength={10}
+                        maxLength={20}
                         placeholder="9XXXXXXXXX"
-                        value={values.phone.replace(/^\+63|^0/, "")}
+                        value={philippineMobileDigits(values.phone)}
                         onChange={(e) => {
-                          let digits = e.target.value.replace(/\D/g, "");
-                          if (digits.startsWith("63") && digits.length > 10)
-                            digits = digits.slice(2);
-                          if (digits.startsWith("0")) digits = digits.slice(1);
+                          const digits = philippineMobileDigits(e.target.value);
                           setValues({
                             ...values,
                             phone: digits ? "+63" + digits.slice(0, 10) : "",
@@ -527,14 +543,14 @@ function Setup() {
                       type="tel"
                       inputMode="numeric"
                       aria-label="GCash number"
-                      maxLength={10}
+                      id="setup-gcash-number"
+                      maxLength={20}
                       placeholder="9XXXXXXXXX"
-                      value={values.gcashNumber.replace(/^\+63/, "")}
+                      value={philippineMobileDigits(values.gcashNumber)}
                       onChange={(event) => {
-                        let digits = event.target.value.replace(/\D/g, "");
-                        if (digits.startsWith("63") && digits.length > 10)
-                          digits = digits.slice(2);
-                        if (digits.startsWith("0")) digits = digits.slice(1);
+                        const digits = philippineMobileDigits(
+                          event.target.value,
+                        );
                         setValues({
                           ...values,
                           gcashNumber: digits

@@ -3,6 +3,10 @@ import {
   findProgram,
   validAcademicPair,
 } from "./collegeProgramMap.js";
+import {
+  normalizePhilippineMobile,
+  validPhilippineMobile,
+} from "./philippineMobile.js";
 export function profileError(p, verified = true) {
   if (!verified) return "Verify your email before completing your profile.";
   for (const key of [
@@ -38,7 +42,9 @@ export function profileValues(p = {}) {
   return {
     name: [p.first_name, p.last_name].filter(Boolean).join(" "),
     studentId: p.student_id || "",
-    phone: p.phone_number || "",
+    phone: validPhilippineMobile(p.phone_number)
+      ? normalizePhilippineMobile(p.phone_number)
+      : p.phone_number || "",
     gcashName: p.gcash_name || "",
     gcashNumber: p.gcash_number || "",
     bio: p.short_bio || "",
@@ -49,9 +55,7 @@ export function profileValues(p = {}) {
   };
 }
 export function needsProfile(p, user) {
-  return (
-    !!profileError(profileValues(p), !!user?.email_confirmed_at) ||
-    !p?.gcash_name?.trim() ||
-    !/^\+639\d{9}$/.test(p?.gcash_number || "")
-  );
+  // Existing completed accounts must not restart ID/OCR onboarding when
+  // account-level GCash fields are introduced. New setup still validates them.
+  return !!profileError(profileValues(p), !!user?.email_confirmed_at);
 }
