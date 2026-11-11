@@ -1,0 +1,76 @@
+﻿.policy-recommendation {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #e7f3ff;
+  color: #123b64;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.policy-recommendation.unavailable {
+  background: #fff8e7;
+  color: #715116;
+}
+.policy-recommendation > strong {
+  font-size: 13px;
+}
+.policy-recommendation dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 8px 0;
+}
+.policy-recommendation dt {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.policy-recommendation details {
+  margin-top: 6px;
+}
+.policy-recommendation summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.policy-recommendation-match {
+  border-top: 1px solid #ccd9e4;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.policy-recommendation blockquote {
+  border-left: 2px solid currentColor;
+  padding-left: 10px;
+  margin: 6px 0;
+  white-space: pre-wrap;
+}
+.policy-recommendation-note {
+  margin-top: 8px;
+  font-size: 11px;
+}
+.policy-recommendation.compact {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #e7f3ff;
+  color: #123b64;
+}
+.policy-recommendation.compact > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #1765e8;
+}
+.policy-recommendation.compact > div {
+  min-width: 0;
+}
+.policy-recommendation.compact strong {
+  font-size: 13px;
+}
+.policy-recommendation.compact p {
+  margin: 2px 0 0;
+}
+@media (max-width: 640px) {
+  .policy-recommendation dl {
+    grid-template-columns: 1fr;
+  }
+}
