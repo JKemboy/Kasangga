@@ -1,0 +1,29 @@
+/* Keep the shared card identical inside discovery and dashboard containers. */
+.tutor-service-card p {
+  font-size: 12px;
+  line-height: 16px;
+}
+.tutor-service-card .tutor-service-title {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  color: #101828;
+}
+.tutor-service-card .tutor-service-name {
+  color: #101828;
+  font-weight: 600;
+}
+.tutor-service-card .tutor-service-description,
+.tutor-service-card .tutor-service-rating {
+  color: #637191;
+}
+.tutor-service-card .tutor-service-degree {
+  color: #566584;
+}
+.tutor-service-card .tutor-service-rate {
+  color: #087542;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+}

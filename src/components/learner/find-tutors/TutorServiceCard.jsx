@@ -2,13 +2,18 @@ import { Bookmark, CheckCircle2, Star } from "lucide-react";
 import { savedService } from "../../../services/savedTutors.js";
 import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
+import "./tutor-service-card.css";
 export default function TutorServiceCard({ tutor, service, list = false }) {
   const work = useLearnerWorkspace();
   const { name, degree, rating } = tutor;
   const bookmark = savedService(tutor, service);
+  const courseCode = (service.subtitle || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .toUpperCase();
   return (
     <article
-      className={`relative flex h-full min-w-0 flex-col rounded-xl border border-[#e0e7f0] transition-[border-color,box-shadow] hover:border-[#22c55e] focus-within:border-[#22c55e] bg-white px-3 pb-2 pt-8 text-center ${list ? "lg:grid lg:items-center lg:gap-4 lg:text-left lg:grid-cols-[90px_minmax(0,1fr)_220px]" : ""}`}
+      className={`tutor-service-card relative flex h-full min-w-0 flex-col rounded-xl border border-[#e0e7f0] transition-[border-color,box-shadow] hover:border-[#22c55e] focus-within:border-[#22c55e] bg-white px-3 pb-2 pt-8 text-center ${list ? "lg:grid lg:items-center lg:gap-4 lg:text-left lg:grid-cols-[90px_minmax(0,1fr)_220px]" : ""}`}
     >
       <span className="absolute left-2 top-2 rounded-full bg-[#dff8e8] px-2 py-0.5 text-xs text-[#087542]">
         {service.type === "Both" ? "Online / In-person" : service.type}
@@ -39,23 +44,21 @@ export default function TutorServiceCard({ tutor, service, list = false }) {
         </div>
       </div>
       <div className="min-w-0 [overflow-wrap:anywhere]">
-        <h2 className="mt-1 text-sm font-bold">{service.name}</h2>
-        {service.subtitle && (
-          <p className="mt-1 break-words text-xs font-semibold text-[#087542]">
-            Course code: {service.subtitle}
-          </p>
-        )}
+        <h2 className="tutor-service-title mt-1 text-sm font-bold">
+          {courseCode && <>{courseCode} </>}
+          {service.name}
+        </h2>
         {service.description && (
-          <p className="mt-1 whitespace-pre-line break-words text-xs leading-4 text-[#637191]">
+          <p className="tutor-service-description mt-1 whitespace-pre-line break-words text-xs leading-4 text-[#637191]">
             <span className="font-semibold">Description: </span>
             {service.description}
           </p>
         )}
-        <p className="mt-2 text-xs font-semibold">{name}</p>
-        <p className="text-xs text-[#566584]">{degree}</p>
+        <p className="tutor-service-name mt-2 text-xs font-semibold">{name}</p>
+        <p className="tutor-service-degree text-xs text-[#566584]">{degree}</p>
       </div>
       <div className="mt-auto min-w-0 pt-1">
-        <p className="mt-1 text-xs text-[#637191]">
+        <p className="tutor-service-rating mt-1 text-xs text-[#637191]">
           <Star className="mr-1 inline h-4 w-4 fill-[#ffb800] text-[#ffb800]" />
           {rating ? Number(rating).toFixed(1) : "No ratings yet"}
           {Number.isInteger(tutor.reviewCount) && (
@@ -65,7 +68,7 @@ export default function TutorServiceCard({ tutor, service, list = false }) {
             </span>
           )}
         </p>
-        <p className="mt-1 text-sm font-bold text-[#087542]">
+        <p className="tutor-service-rate mt-1 text-sm font-bold text-[#087542]">
           {"\u20b1"}
           {service.rate.toLocaleString()}
           <span className="font-normal text-[#637191]"> / hour</span>
