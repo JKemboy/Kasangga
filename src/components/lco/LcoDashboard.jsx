@@ -3,6 +3,11 @@ import useSectionNavigation from "../shared/useSectionNavigation.js";
 import LcoPolicies from "./LcoPolicies.jsx";
 import LcoNotifications from "./LcoNotifications.jsx";
 import { lcoNotificationDestination } from "../../services/staffNotificationTargets.js";
+import {
+  lcoUnreadNavigationCounts,
+  lcoRecordNotificationIds,
+} from "../../services/lcoNotificationBadges.js";
+import { getSupabaseClient } from "../../services/supabaseClient.js";
 // LCO portal coordinator: loads the role-authorized Supabase snapshot, maintains the LCO inbox, and routes to each LCO section.
 import LcoCatalog from "./LcoCatalog.jsx";
 import PortalAvatar from "../shared/PortalAvatar.jsx";
@@ -20,7 +25,7 @@ import LcoPayments from "./LcoPayments.jsx";
 import LcoSettings from "./LcoSettings.jsx";
 import LcoReports from "./LcoReports.jsx";
 import { loadConfig } from "./lcoData.js";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import {
   filterLcoNotifications,
@@ -75,6 +80,8 @@ export default function LcoDashboardPage() {
   const [lcoNotifications, setLcoNotifications] = useState([]);
   const [supportThreads, setSupportThreads] = useState([]);
   const [notificationError, setNotificationError] = useState("");
+  const confirmedReadIds = useRef(new Set());
+  const pendingReadIds = useRef(new Set());
   const {
     database,
     applications: apps,
@@ -89,24 +96,49 @@ export default function LcoDashboardPage() {
     config = database?.config || loadConfig();
   useEffect(() => {
     let alive = true;
+    let request = 0;
+    confirmedReadIds.current.clear();
+    pendingReadIds.current.clear();
     const refresh = async () => {
+      const current = ++request;
       try {
         const next = await loadLcoNotifications(auth.user.id);
-        if (alive) {
-          setLcoNotifications(next);
+        if (alive && current === request) {
+          setLcoNotifications(
+            next.map((item) =>
+              confirmedReadIds.current.has(item.id)
+                ? { ...item, read: true }
+                : item,
+            ),
+          );
           setNotificationError("");
         }
       } catch (cause) {
-        if (alive) setNotificationError(cause.message);
+        if (alive && current === request) setNotificationError(cause.message);
       }
     };
     refresh();
     const timer = window.setInterval(refresh, 15000);
     window.addEventListener("focus", refresh);
+    const client = getSupabaseClient();
+    const channel = client
+      .channel(`lco-notifications:${auth.user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${auth.user.id}`,
+        },
+        refresh,
+      )
+      .subscribe();
     return () => {
       alive = false;
       window.clearInterval(timer);
       window.removeEventListener("focus", refresh);
+      client.removeChannel(channel);
     };
   }, [auth.user.id]);
   useEffect(() => {
@@ -133,16 +165,10 @@ export default function LcoDashboardPage() {
     config,
   );
   const appsLoading = !database && refreshing;
-  const navigationCounts = {
-    Notifications: visibleLcoNotifications.filter((n) => !n.read).length,
-    Messages: supportThreads.filter((t) => t.status === "open").length,
-    "Tutor Verification": apps.filter((a) =>
-      ["Pending", "Under Review"].includes(a.status),
-    ).length,
-    "Payments & Transactions": (database?.payments || []).filter(
-      (p) => p.paymentStatus === "paid" && !p.transferredAt,
-    ).length,
-  };
+  const navigationCounts = lcoUnreadNavigationCounts(
+    visibleLcoNotifications,
+    database || {},
+  );
   const [verificationChecks, setVerificationChecks] = useState({}),
     [verificationError, setVerificationError] = useState("");
   async function updateApplication(record, status = null) {
@@ -198,20 +224,44 @@ export default function LcoDashboardPage() {
       setModal(null);
     } else setModal(label);
   }
-  async function readNotifications(ids) {
-    try {
-      await markLcoNotificationsRead(auth.user.id, ids);
-      setLcoNotifications((current) =>
-        current.map((item) =>
-          ids.includes(item.id) ? { ...item, read: true } : item,
-        ),
+  const readNotifications = useCallback(
+    async (ids) => {
+      const pending = [...new Set(ids.map(String))].filter(
+        (id) => !pendingReadIds.current.has(id),
       );
-      return true;
-    } catch (cause) {
-      setNotificationError(cause.message);
-      return false;
-    }
-  }
+      if (!pending.length) return true;
+      pending.forEach((id) => pendingReadIds.current.add(id));
+      try {
+        await markLcoNotificationsRead(auth.user.id, pending);
+        pending.forEach((id) => confirmedReadIds.current.add(id));
+        setNotificationError("");
+        setLcoNotifications((current) =>
+          current.map((item) =>
+            pending.includes(item.id) ? { ...item, read: true } : item,
+          ),
+        );
+        return true;
+      } catch (cause) {
+        setNotificationError(cause.message);
+        return false;
+      } finally {
+        pending.forEach((id) => pendingReadIds.current.delete(id));
+      }
+    },
+    [auth.user.id],
+  );
+  const markRecordSeen = useCallback(
+    (entityType, entityId) => {
+      const ids = lcoRecordNotificationIds(
+        lcoNotifications,
+        database || {},
+        entityType,
+        entityId,
+      );
+      return ids.length ? readNotifications(ids) : Promise.resolve(true);
+    },
+    [lcoNotifications, database, readNotifications],
+  );
   function openNotification(row) {
     const destination = lcoNotificationDestination(row, database || {});
     if (!destination) return false;
@@ -226,6 +276,7 @@ export default function LcoDashboardPage() {
         refresh: refreshDatabase,
         refreshing,
         error: databaseError,
+        markRecordSeen,
       }}
     >
       <div className="oswe-app lco-app">
@@ -263,15 +314,7 @@ export default function LcoDashboardPage() {
                 {navigationCounts[label] !== undefined && (
                   <CountBadge
                     count={navigationCounts[label]}
-                    label={
-                      label === "Messages"
-                        ? "open support conversations"
-                        : label === "Tutor Verification"
-                          ? "applications awaiting review"
-                          : label === "Payments & Transactions"
-                            ? "payments awaiting transfer or review"
-                            : "unread notifications"
-                    }
+                    label="unread notifications"
                   />
                 )}
               </button>
