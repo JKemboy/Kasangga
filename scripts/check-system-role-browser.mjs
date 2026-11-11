@@ -139,6 +139,7 @@ try {
           list_my_learner_reviews: payload.reviews || [],
           find_tutor_services: payload.services || [],
           my_reports_snapshot: payload.reports || { created: [], received: [] },
+          my_reports_with_pending: payload.reports || { created: [], received: [] },
           list_my_pair_chats:
             payload.chats?.[0] instanceof Array
               ? payload.chats[0]
@@ -148,6 +149,7 @@ try {
           get_service_topic_settings: catalog.service_topics || [],
           get_tutor_completed_sessions: 0,
           list_tutor_reviews: [],
+          list_tutor_service_reviews: [],
           lco_repeated_incident_candidates: [],
           get_tutor_class_blocks: [],
           get_tutor_booking_blocks: [],
