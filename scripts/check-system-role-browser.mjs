@@ -1,3 +1,7 @@
+import {
+  caseBrowserFixture,
+  checkCaseBrowser,
+} from "./oswe-case-browser-fixture.mjs";
 // UI smoke tests use exported real records with mocked HTTP/auth, never live writes.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -11,6 +15,8 @@ const read = (name) =>
 const roles = read("role-snapshots.json").rows;
 const extra = read("extras.json").rows[0].extra;
 const catalog = roles.find((r) => r.role === "lco").payload.snapshot;
+const ratingAudit = process.argv.includes("--tutor-ratings");
+const caseAudit = process.argv.includes("--oswe-case-review");
 const badgeAudit = process.argv.includes("--lco-badges");
 const env = loadEnv("development", process.cwd(), "");
 const api = new URL(env.VITE_SUPABASE_URL);
@@ -82,6 +88,53 @@ const sections = {
 try {
   for (const { role, payload } of roles) {
     if (badgeAudit && role !== "lco") continue;
+    if (caseAudit && role !== "oswe") continue;
+    if (ratingAudit && role !== "tutor") continue;
+    const ratingRows = [];
+    if (ratingAudit) {
+      const profile = catalog.tutor_profiles.find(
+        (p) => p.user_id === payload.user_id,
+      );
+      assert.ok(profile, "Tutor fixture profile required");
+      catalog.services = [900001, 900002].map((id) => ({
+        service_id: id,
+        tutor_profile_id: profile.tutor_profile_id,
+        title: "Identical service title",
+        subject: "ITE fixture",
+        description: "Browser-only ratings fixture",
+        category: "Computer Science",
+        level: "All Levels",
+        rate_per_hour: 100,
+        session_type: "online",
+        service_status: "active",
+        created_at: "2026-11-11T00:00:00Z",
+      }));
+      catalog.service_topics = catalog.services.flatMap((service) =>
+        [0, 1].map((i) => ({
+          topic_id: service.service_id * 10 + i,
+          service_id: service.service_id,
+          topic_name: i ? "Current topic B" : "Renamed topic A",
+          rate_per_hour: 100,
+          session_type: "online",
+          is_active: true,
+        })),
+      );
+      ratingRows.push(
+        ...[5, 3].map((rating, i) => ({
+          review_id: 900001 + i,
+          learner_name: "Review fixture",
+          rating,
+          review_text: "Browser-only review fixture",
+          reviewed_at: "2026-11-11T00:00:00Z",
+          service_id: 900001,
+          service_title: "Old title snapshot",
+          topic: i ? null : "Previous topic name",
+        })),
+      );
+    }
+    const caseFixture = caseAudit
+      ? caseBrowserFixture(payload.snapshot, payload.user_id)
+      : null;
     const noticeRows = badgeAudit
       ? [
           ...[900001, 900002].map((id) => ({
@@ -170,12 +223,33 @@ try {
           body: JSON.stringify(data),
         });
       if (url.pathname.startsWith("/auth/v1/")) return send(user);
+      if (
+        caseAudit &&
+        url.pathname.startsWith("/storage/v1/object/sign/") &&
+        request.method() === "GET"
+      )
+        return route.fulfill({
+          contentType: "image/png",
+          body: Buffer.from(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
+            "base64",
+          ),
+        });
       if (url.pathname.startsWith("/storage/v1/"))
         return send({ signedURL: "/object/sign/ui-fixture" });
       const rpc = url.pathname.split("/rpc/")[1];
       if (rpc) {
+        if (ratingAudit && rpc === "list_tutor_service_reviews")
+          return send(ratingRows);
+        if (caseFixture) {
+          const value = caseFixture.rpc(rpc, request.postDataJSON() || {});
+          if (value) return send(value.data, value.status || 200);
+        }
+
         const rpcData = {
           admin_dashboard_snapshot: catalog,
+          oswe_case_review_snapshot: roles.find((r) => r.role === "oswe")
+            .payload.snapshot,
           osas_dashboard_snapshot: roles.find((r) => r.role === "oswe").payload
             .snapshot,
           list_my_paid_learner_sessions: payload.learner_sessions || [],
@@ -214,6 +288,8 @@ try {
         return send(rpcData[rpc]);
       }
       const table = url.pathname.split("/rest/v1/")[1];
+      if (caseFixture && table === "oswe_escalation_rules")
+        return send(caseFixture.mappings);
       if (table) {
         if (
           badgeAudit &&
@@ -284,11 +360,15 @@ try {
     });
     const page = await context.newPage();
     page.on("pageerror", (error) => runtime.push(error.message));
-    const activeSections = badgeAudit
-      ? ["Overview"]
-      : process.argv.includes("--mobile-only")
-        ? ["sessions"]
-        : sections[role];
+    const activeSections = ratingAudit
+      ? ["services"]
+      : caseAudit
+        ? ["Case Review"]
+        : badgeAudit
+          ? ["Overview"]
+          : process.argv.includes("--mobile-only")
+            ? ["sessions"]
+            : sections[role];
     for (const section of activeSections) {
       await page.goto(
         `${base}/${role}-dashboard?section=${encodeURIComponent(section)}`,
@@ -332,6 +412,56 @@ try {
         await page.setViewportSize({ width: 1366, height: 900 });
       }
     }
+    if (ratingAudit) {
+      const groups = page
+        .getByRole("table", { name: "Tutoring services", exact: true })
+        .locator("tbody");
+      await groups
+        .nth(0)
+        .getByText("4.0 (2 ratings)", { exact: true })
+        .waitFor();
+      assert.equal(
+        await groups
+          .nth(0)
+          .getByText("4.0 (2 ratings)", { exact: true })
+          .count(),
+        1,
+        "Service aggregate must not repeat on each topic row",
+      );
+      assert.equal(
+        await groups
+          .nth(1)
+          .getByText("No ratings yet", { exact: true })
+          .count(),
+        1,
+        "Same-title services must not share reviews",
+      );
+      assert.match(await groups.nth(0).innerText(), /Renamed topic A/);
+      ratingRows.push({ ...ratingRows[0], review_id: 900003, rating: 4 });
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await groups
+        .nth(0)
+        .getByText("4.0 (3 ratings)", { exact: true })
+        .waitFor();
+      ratingRows[0].rating = 1;
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await groups
+        .nth(0)
+        .getByText("2.7 (3 ratings)", { exact: true })
+        .waitFor();
+      await groups
+        .nth(0)
+        .getByRole("button", { name: "View Details", exact: true })
+        .click();
+      await page
+        .getByRole("dialog")
+        .getByText("2.7 (3 ratings)", { exact: true })
+        .waitFor();
+      console.log(
+        "PASS: Real review mapping, renamed/missing topics, same-title service isolation, updated average/count on refresh and matching View Details.",
+      );
+    }
+    if (caseAudit) await checkCaseBrowser(page, caseFixture, root, base);
     if (badgeAudit) {
       const sidebar = page.locator("aside").first();
       const incidents = sidebar.getByRole("button", {
