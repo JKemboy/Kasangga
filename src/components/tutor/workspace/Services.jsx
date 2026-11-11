@@ -177,9 +177,11 @@ export default function Services({
       }
     };
     load();
+    const timer = window.setInterval(load, 15000);
     window.addEventListener("focus", load);
     return () => {
       active = false;
+      window.clearInterval(timer);
       window.removeEventListener("focus", load);
     };
   }, [tutorProfileId]);

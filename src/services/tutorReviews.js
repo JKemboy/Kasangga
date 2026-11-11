@@ -25,13 +25,13 @@ export async function listTutorReviews(
 ) {
   if (!/^\d+$/.test(String(tutorProfileId)))
     throw new Error("A valid tutor profile is required to load reviews.");
-  const { data, error } = await client.rpc("list_tutor_reviews", {
+  const { data, error } = await client.rpc("list_tutor_service_reviews", {
     p_tutor_profile_id: String(tutorProfileId),
   });
   if (error)
     throw new Error(
       error.code === "PGRST202"
-        ? "Apply supabase/manual/tutor_reviews.sql in Supabase SQL Editor to display tutor reviews."
+        ? "Apply scripts/tutor-service-review-ids.sql in Supabase SQL Editor to display tutor reviews."
         : error.message || "Unable to load tutor reviews.",
     );
   const entries = (data || []).map((row) => ({
