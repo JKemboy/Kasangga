@@ -10,10 +10,16 @@ export const reportDate = (value) =>
         ...(value.length > 10 ? { timeStyle: "short" } : {}),
       })
     : "Not recorded";
-export const aboutStages = ["Clearance Blocked", "Under Review", "Resolved"];
+export const aboutStages = [
+  "LCO Review",
+  "OSWE Review",
+  "Clearance Blocked",
+  "Under Review",
+  "Resolved",
+];
 export function reportSteps(report, about = false) {
   if (about)
-    return ["Referred to OSWE", "Case Review", "Decision Recorded", "Resolved"];
+    return ["Referred to OSWE", "OSWE Review", "Decision Recorded", "Resolved"];
   const referred =
     report.case ||
     report.referred_at ||
@@ -45,12 +51,13 @@ export function refundSummary(report) {
 }
 export function reportStage(report, about = false) {
   if (about) {
+    if (report.case_id == null) return reportStage(report, false);
     if (report.holds?.some((hold) => hold.status === "active"))
       return "Clearance Blocked";
     if (caseConditions(report).some((c) => !c.completed)) return "Under Review";
     return report.case_status === "resolved" || report.archived_at
       ? "Resolved"
-      : "Under Review";
+      : "OSWE Review";
   }
   if (
     report.report_status === "resolved" ||
@@ -66,6 +73,12 @@ export function reportStage(report, about = false) {
 export function reportNotice(report, about = false) {
   const stage = reportStage(report, about);
   if (about) {
+    if (report.case_id == null)
+      return stage === "Resolved"
+        ? "The report review is completed. Contact LCO for clarification."
+        : stage === "OSWE Review"
+          ? "A report about you has been referred to OSWE and is awaiting assessment. No case decision has been recorded."
+          : "A report about you is awaiting LCO review. No finding or case decision has been recorded.";
     if (stage === "Clearance Blocked")
       return "An active clearance hold is recorded for this case. Follow the recorded conditions and contact OSWE for verification and release.";
     if (caseConditions(report).some((c) => !c.completed))

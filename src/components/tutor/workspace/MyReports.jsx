@@ -35,7 +35,7 @@ import {
 } from "../../../services/incidentTypes.js";
 
 const rowKey = (row, about) =>
-  `${about ? "case" : "report"}-${about ? row.case_id : row.report_id}`;
+  `${about && row.case_id != null ? "case" : "report"}-${about && row.case_id != null ? row.case_id : row.report_id}`;
 const sessionTime = (value) => {
   if (!value) return "Not recorded";
   const [hours, minutes] = value.split(":");
@@ -88,6 +88,26 @@ function EvidenceLink({ file, reviewLabel }) {
   );
 }
 export function ReportDetails({ row, about, student, go, onClose }) {
+  if (about && row.case_id == null)
+    return (
+      <Modal title={`IR-${row.report_id} · Report about you`} onClose={onClose}>
+        <div className="space-y-3 p-2 text-sm">
+          <p>
+            {row.incident_type} · {row.incident_category}
+          </p>
+          <p>Submitted: {reportDate(row.submitted_at)}</p>
+          <p>Status: {reportStage(row, true)}</p>
+          <p>
+            <SessionSummary row={row} />
+          </p>
+          <p>{reportNotice(row, true)}</p>
+          <p>
+            The reporter's identity, statement, and evidence are handled
+            privately by LCO and OSWE.
+          </p>
+        </div>
+      </Modal>
+    );
   if (about)
     return <AboutCaseDetails row={row} student={student} onClose={onClose} />;
   const activities = reportActivity(row, about);
@@ -363,10 +383,7 @@ export default function MyReports({ go, args = {} }) {
       <header className="mr-heading">
         <div>
           <h1>My Reports</h1>
-          <p>
-            Reports you filed, and OSWE cases where you are the reported
-            student.
-          </p>
+          <p>Reports you filed, reports about you, and related OSWE cases.</p>
         </div>
         <button
           className={button}
@@ -400,7 +417,7 @@ export default function MyReports({ go, args = {} }) {
       <p className="mr-info">
         <ShieldCheck size={14} />
         {about
-          ? "Cases about you appear here after OSWE records a case decision. The reporter's identity and statement are handled by OSWE."
+          ? "Reports about you appear during LCO review, followed by OSWE case updates when applicable. The reporter's identity, statement, and evidence remain private."
           : "LCO reviews every report first. Conduct matters are referred to OSWE. You can track review status and completion; actions against another student remain confidential."}
       </p>
       <div className="mr-toolbar">
@@ -440,7 +457,7 @@ export default function MyReports({ go, args = {} }) {
       {!loading && !error && !visible.length && (
         <p className="mr-empty" role="status">
           {about
-            ? "No case records about you match this view."
+            ? "No reports or cases about you match this view."
             : "No reports filed by you match this view."}
         </p>
       )}
@@ -454,7 +471,7 @@ export default function MyReports({ go, args = {} }) {
               </h2>
               {group.map((row) => (
                 <article
-                  className={`mr-card ${stage === "Clearance Blocked" ? "mr-blocked" : about && stage === "Resolved" ? "mr-about-resolved" : about ? "mr-about-review" : ""}`}
+                  className={`mr-card ${stage === "Clearance Blocked" ? "mr-blocked" : stage === "Resolved" ? "mr-about-resolved" : about ? "mr-about-review" : ""}`}
                   key={rowKey(row, about)}
                 >
                   <header>
@@ -473,16 +490,18 @@ export default function MyReports({ go, args = {} }) {
                       <h3>
                         {about && stage === "Clearance Blocked"
                           ? `Clearance Blocked - CASE-${row.case_id}`
-                          : `${about ? `CASE-${row.case_id} - ` : ""}${row.incident_type}`}
+                          : `${about ? (row.case_id != null ? `CASE-${row.case_id} - ` : `IR-${row.report_id} - `) : ""}${row.incident_type}`}
                       </h3>
                       <p>
                         {row.incident_category}
                         {" · "}
                         {about && stage === "Clearance Blocked"
                           ? `${row.incident_type}${row.decision?.at ? ` - decision recorded ${reportDate(row.decision.at)}` : ""} by OSWE${row.officer ? ` (${row.officer})` : ""}`
-                          : about
-                            ? `From report IR-${row.report_id} · case opened ${reportDate(row.opened_at)}`
-                            : `IR-${row.report_id} · filed ${reportDate(row.submitted_at)} as ${row.filing_role}`}
+                          : about && row.case_id == null
+                            ? `IR-${row.report_id} · submitted ${reportDate(row.submitted_at)}`
+                            : about
+                              ? `From report IR-${row.report_id} · case opened ${reportDate(row.opened_at)}`
+                              : `IR-${row.report_id} · filed ${reportDate(row.submitted_at)} as ${row.filing_role}`}
                       </p>
                     </div>
                     <div className="mr-card-status">
@@ -496,13 +515,15 @@ export default function MyReports({ go, args = {} }) {
                       </b>
                       {about && (
                         <small>
-                          {stage === "Resolved"
-                            ? caseClearanceText(row)
-                            : row.decision
-                              ? `Decision: ${row.decision.outcome}`
-                              : row.resolution
-                                ? `Outcome: ${row.resolution}`
-                                : "No decision yet"}
+                          {row.case_id == null
+                            ? "No OSWE case opened"
+                            : stage === "Resolved"
+                              ? caseClearanceText(row)
+                              : row.decision
+                                ? `Decision: ${row.decision.outcome}`
+                                : row.resolution
+                                  ? `Outcome: ${row.resolution}`
+                                  : "No decision yet"}
                         </small>
                       )}
                     </div>
@@ -517,7 +538,10 @@ export default function MyReports({ go, args = {} }) {
                       </>
                     )}
                     {stage !== "Clearance Blocked" && (
-                      <Progress row={row} about={about} />
+                      <Progress
+                        row={row}
+                        about={about && row.case_id != null}
+                      />
                     )}
                     {about &&
                       row.decision &&
@@ -538,7 +562,9 @@ export default function MyReports({ go, args = {} }) {
                       type="button"
                       onClick={() => setSelectedKey(rowKey(row, about))}
                     >
-                      {about ? "View Case Details" : "View Details"}
+                      {about && row.case_id != null
+                        ? "View Case Details"
+                        : "View Details"}
                     </button>
                   </footer>
                 </article>

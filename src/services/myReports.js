@@ -1,7 +1,7 @@
 import { getSupabaseClient } from "./supabaseClient.js";
 import { canonicalIncidentType, incidentCategory } from "./incidentTypes.js";
 export async function listMyReports(client = getSupabaseClient()) {
-  const { data, error } = await client.rpc("my_reports_snapshot");
+  const { data, error } = await client.rpc("my_reports_with_pending");
   if (error) throw new Error("Could not load your reports: " + error.message);
   const normalize = (row) => ({
     ...row,
