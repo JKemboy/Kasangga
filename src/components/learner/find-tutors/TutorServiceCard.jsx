@@ -45,13 +45,14 @@ export default function TutorServiceCard({ tutor, service, list = false }) {
             Course code: {service.subtitle}
           </p>
         )}
-        <p className="mt-1 text-xs font-semibold">{name}</p>
-        <p className="text-xs text-[#566584]">{degree}</p>
         {service.description && (
-          <p className="mt-1 line-clamp-2 whitespace-pre-line break-words text-xs leading-4 text-[#637191]">
+          <p className="mt-1 whitespace-pre-line break-words text-xs leading-4 text-[#637191]">
+            <span className="font-semibold">Description: </span>
             {service.description}
           </p>
         )}
+        <p className="mt-2 text-xs font-semibold">{name}</p>
+        <p className="text-xs text-[#566584]">{degree}</p>
       </div>
       <div className="mt-auto min-w-0 pt-1">
         <p className="mt-1 text-xs text-[#637191]">
