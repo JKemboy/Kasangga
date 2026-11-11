@@ -9,6 +9,8 @@ export const validateCaseEvidence = (id, result) =>
     p_evidence_id: id,
     p_result: result,
   });
+export const startCaseReview = (reportId) =>
+  request("oswe_start_case_review", { p_report_id: reportId });
 export const recordDecisionAndHold = (id, decision) =>
   request("oswe_record_decision_and_hold", {
     p_report_id: id,

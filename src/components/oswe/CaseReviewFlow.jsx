@@ -15,6 +15,7 @@ import {
   recordDecisionAndHold,
   recordNoViolation,
   caseViolationHistory,
+  startCaseReview,
 } from "../../services/osweCaseWorkflow.js";
 import "./case-shortcuts.css";
 import "./case-review-flow.css";
@@ -26,6 +27,7 @@ export default function CaseReviewFlow({ record, onClose }) {
     [saving, setSaving] = useState(false),
     [error, setError] = useState("");
   const [overallInsufficient, setOverallInsufficient] = useState(false);
+  const [reviewReady, setReviewReady] = useState(false);
   const [history, setHistory] = useState(null),
     [historyError, setHistoryError] = useState("");
   const [form, setForm] = useState({
@@ -44,6 +46,29 @@ export default function CaseReviewFlow({ record, onClose }) {
     return () => dialog.close();
   }, []);
   const reportId = record.reportDatabaseId;
+  const refresh = database.refresh;
+  useEffect(() => {
+    let live = true;
+    setReviewReady(false);
+    setSaving(true);
+    startCaseReview(reportId)
+      .then(async () => {
+        await refresh();
+        if (live) {
+          setReviewReady(true);
+          window.dispatchEvent(new Event("campustutor:sessions-changed"));
+        }
+      })
+      .catch((cause) => {
+        if (live) setError(cause.message || "Could not start OSWE review.");
+      })
+      .finally(() => {
+        if (live) setSaving(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [reportId, refresh]);
   useEffect(() => {
     let live = true;
     setHistory(null);
@@ -66,6 +91,7 @@ export default function CaseReviewFlow({ record, onClose }) {
     (e) => e.reportDatabaseId === reportId,
   );
   const reviewed =
+    reviewReady &&
     evidence.length > 0 &&
     evidence.every((e) => ["Validated", "Insufficient"].includes(e.status));
   const allInsufficient =
@@ -74,7 +100,7 @@ export default function CaseReviewFlow({ record, onClose }) {
   const set = (key, value) =>
     setForm((current) => ({ ...current, [key]: value }));
   async function validate(item, result) {
-    if (saving) return;
+    if (saving || !reviewReady) return;
     setSaving(true);
     setError("");
     try {
@@ -88,7 +114,7 @@ export default function CaseReviewFlow({ record, onClose }) {
   }
   async function submit(event) {
     event.preventDefault();
-    if (saving) return;
+    if (saving || !reviewReady) return;
     setSaving(true);
     setError("");
     try {
