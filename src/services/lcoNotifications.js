@@ -47,11 +47,19 @@ export function filterLcoNotifications(rows, config) {
 
 export async function markLcoNotificationsRead(userId, ids) {
   if (!userId || !ids.length) return;
-  const { error } = await getSupabaseClient()
+  const { data, error } = await getSupabaseClient()
     .from("notifications")
     .update({ is_read: true })
     .eq("user_id", userId)
-    .in("notification_id", ids);
+    .in("notification_id", ids)
+    .select("notification_id");
   if (error)
     throw new Error(`Could not mark notifications read: ${error.message}`);
+  const updated = new Set(
+    (data || []).map((row) => String(row.notification_id)),
+  );
+  if (ids.some((id) => !updated.has(String(id))))
+    throw new Error(
+      "Could not save every notification read state. Please retry.",
+    );
 }
