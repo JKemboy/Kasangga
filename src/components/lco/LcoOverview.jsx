@@ -289,7 +289,7 @@ export default function LcoOverview({
           <h2>Recent Bookings</h2>
           <button
             className={button}
-            onClick={() => setDetail({ kind: "bookings" })}
+            onClick={() => go("Bookings Monitoring")}
           >
             View All
           </button>
