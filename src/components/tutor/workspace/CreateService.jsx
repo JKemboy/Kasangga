@@ -1,5 +1,6 @@
 import {
   CSU_MEETING_PLACES,
+  MIN_SERVICE_RATE,
   MAX_SERVICE_RATE,
   formatServiceDate,
   splitMeetingLocation,
@@ -485,14 +486,20 @@ export default function CreateService({
                     <input
                       className={
                         input +
-                        (Number(topic.rate) > MAX_SERVICE_RATE
+                        (topic.rate !== "" &&
+                        (Number(topic.rate) < MIN_SERVICE_RATE ||
+                          Number(topic.rate) > MAX_SERVICE_RATE)
                           ? " !border-red-600 !bg-red-50 !text-red-700 ring-1 ring-red-600"
                           : "")
                       }
-                      aria-invalid={Number(topic.rate) > MAX_SERVICE_RATE}
+                      aria-invalid={
+                        topic.rate !== "" &&
+                        (Number(topic.rate) < MIN_SERVICE_RATE ||
+                          Number(topic.rate) > MAX_SERVICE_RATE)
+                      }
                       type="number"
                       required
-                      min="1"
+                      min={MIN_SERVICE_RATE}
                       max={MAX_SERVICE_RATE}
                       step="0.01"
                       value={topic.rate}
@@ -500,11 +507,14 @@ export default function CreateService({
                       disabled={topic.availability.some(isBooked)}
                       onChange={(e) => patch(topic.key, "rate", e.target.value)}
                     />
-                    {Number(topic.rate) > MAX_SERVICE_RATE && (
-                      <p role="alert" className="text-xs text-red-700">
-                        Rate must be PHP 250 or below per hour.
-                      </p>
-                    )}
+                    {topic.rate !== "" &&
+                      (Number(topic.rate) < MIN_SERVICE_RATE ||
+                        Number(topic.rate) > MAX_SERVICE_RATE) && (
+                        <p role="alert" className="text-xs text-red-700">
+                          Rate must be PHP {MIN_SERVICE_RATE} to PHP{" "}
+                          {MAX_SERVICE_RATE} per hour.
+                        </p>
+                      )}
                   </Field>
                   <fieldset>
                     <legend>Session type *</legend>

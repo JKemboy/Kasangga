@@ -12,6 +12,7 @@ export const CSU_MEETING_PLACES = [
   "CSU Gymnasium",
   "PE Building",
 ];
+export const MIN_SERVICE_RATE = 75;
 export const MAX_SERVICE_RATE = 250;
 export function formatServiceDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return "Choose a date";

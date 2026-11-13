@@ -1,3 +1,4 @@
+import { MIN_SERVICE_RATE, MAX_SERVICE_RATE } from "./serviceFormOptions.js";
 import { listTutorReviews } from "./tutorReviews.js";
 // Tutor service API: reads and writes tutor-owned services, topics, and time slots through Supabase-backed operations.
 import { getSupabaseClient } from "./supabaseClient.js";
@@ -230,6 +231,21 @@ export async function saveTutorService(
   id = null,
   client = getSupabaseClient(),
 ) {
+  const rates = Array.isArray(values.topicDetails)
+    ? values.topicDetails.map((topic) => topic.rate)
+    : [values.rate];
+  if (
+    rates.some(
+      (rate) =>
+        !/^\d+(?:\.\d{1,2})?$/.test(String(rate)) ||
+        Number(rate) < MIN_SERVICE_RATE ||
+        Number(rate) > MAX_SERVICE_RATE,
+    )
+  ) {
+    throw new Error(
+      `Hourly rates must be between PHP ${MIN_SERVICE_RATE} and PHP ${MAX_SERVICE_RATE}, with up to two decimals.`,
+    );
+  }
   const tutor = await currentTutorProfile(client);
   let serviceId;
 
