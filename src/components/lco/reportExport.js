@@ -16,16 +16,7 @@ export function reportRows({
     ["Summary", "Services", offerings.length],
     ["Summary", "Bookings", bookings.length],
     ...Object.entries(financial)
-      .filter(([k]) =>
-        [
-          "count",
-          "gross",
-          "tutor",
-          "admin",
-          "maintenance",
-          "platform",
-        ].includes(k),
-      )
+      .filter(([k]) => ["count", "gross", "tutor", "platform"].includes(k))
       .map(([k, v]) => [
         "Financial",
         k,

@@ -243,9 +243,7 @@ export default function PaymentDetails({
                 {[
                   ["Gross Amount", split.gross],
                   ["Tutor share", split.tutor],
-                  ["Admin share (5%)", split.admin],
                   ["Platform share (10%)", split.platform],
-                  ["Maintenance (5%)", split.maintenance],
                 ].map(([label, value]) => (
                   <tr key={label}>
                     <td>{label}</td>

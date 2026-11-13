@@ -336,8 +336,6 @@ export default function LcoReports({ users, services, go }) {
           {[
             ["Gross Session Payments", financial.gross],
             ["Tutor Share", financial.tutor],
-            ["Admin Share (5%)", financial.admin],
-            ["Maintenance (5%)", financial.maintenance],
             ["Platform Revenue", financial.platform],
           ].map(([label, value]) => (
             <div key={label}>

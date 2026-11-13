@@ -19,7 +19,6 @@ import {
   CreditCard,
   PhilippinePeso,
   UserRound,
-  Landmark,
   PieChart,
   Check,
   Download,
@@ -143,8 +142,6 @@ export default function LcoPayments({
         "Tutor",
         "Gross Amount",
         "Original Tutor Share",
-        "Original Admin Share (5%)",
-        "Maintenance Share (5%)",
         "Original Platform Share",
         "Payment Method",
         "Payment Status",
@@ -159,8 +156,6 @@ export default function LcoPayments({
           r.tutor,
           r.amount,
           a.tutor,
-          a.admin,
-          a.maintenance,
           a.platform,
           r.method,
           r.payment,
@@ -221,12 +216,6 @@ export default function LcoPayments({
             "Allocated to tutors",
           ],
           [
-            Landmark,
-            "Admin Share (5%)",
-            money(totals.admin),
-            "Institutional allocation",
-          ],
-          [
             PieChart,
             "Platform Revenue",
             money(totals.platform),
@@ -245,7 +234,6 @@ export default function LcoPayments({
                 background: [
                   "#006037",
                   "#0876ff",
-                  "#ffb400",
                   "#7525d5",
                   "#005a31",
                 ][i],
@@ -379,7 +367,6 @@ export default function LcoPayments({
                   "Tutor",
                   "Gross Amount",
                   "Tutor Share",
-                  "Admin Share (5%)",
                   "Platform Share",
                   "Payment Method",
                   "Payment Status",
@@ -412,12 +399,6 @@ export default function LcoPayments({
                     </td>
                     <td>{money(r.amount)}</td>
                     <td>{money(a.tutor)}</td>
-                    <td>
-                      {money(a.admin)}
-                      <small className="block text-slate-500">
-                        Maintenance: {money(a.maintenance)}
-                      </small>
-                    </td>
                     <td>{money(a.platform)}</td>
                     <td>{r.method}</td>
                     <td>
