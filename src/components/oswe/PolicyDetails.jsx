@@ -4,6 +4,25 @@ import { Archive, X } from "lucide-react";
 import "./case-shortcuts.css";
 import "./policy-details.css";
 
+function policyText(text) {
+  return text.split("\n").map((line, index) => {
+    const label = line.match(/^([^:\n.!?]{1,90}:)(\s|$)/);
+    return (
+      <span key={index}>
+        {index > 0 && <br />}
+        {label ? (
+          <>
+            <strong>{label[1]}</strong>
+            {line.slice(label[1].length)}
+          </>
+        ) : (
+          line
+        )}
+      </span>
+    );
+  });
+}
+
 export default function PolicyDetails({
   policy,
   policies,
@@ -107,19 +126,29 @@ export default function PolicyDetails({
               .replace(/^Basis:[^\n]*\n\s*\n/, "")
               .split(/\n\s*\n/)
               .map((block, index) => {
-                if (block.startsWith("## "))
-                  return <h3 key={index}>{block.slice(3)}</h3>;
+                if (block.startsWith("## ")) {
+                  const [heading, ...lines] = block.split("\n");
+                  return (
+                    <div key={index}>
+                      <h3>{heading.slice(3)}</h3>
+                      {lines.length > 0 && <p>{policyText(lines.join("\n"))}</p>}
+                    </div>
+                  );
+                }
+                // Saved policies also use plain, standalone section headings.
+                if (/^[^\n.!?:]{1,80}$/.test(block.trim()))
+                  return <h3 key={index}>{block}</h3>;
                 if (block.split("\n").every((line) => line.startsWith("- ")))
                   return (
                     <ul key={index}>
                       {block.split("\n").map((line, i) => (
-                        <li key={i}>{line.slice(2)}</li>
+                        <li key={i}>{policyText(line.slice(2))}</li>
                       ))}
                     </ul>
                   );
                 return (
                   <p key={index} className="whitespace-pre-wrap">
-                    {block}
+                    {policyText(block)}
                   </p>
                 );
               })
