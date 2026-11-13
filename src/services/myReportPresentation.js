@@ -127,6 +127,7 @@ export function reportActivity(report, about = false) {
                 archive_insufficient: "Case closed without a finding",
                 request: "Follow-up evidence requested",
               }[a.type] || "Case updated",
+            type: a.type,
             at: a.at,
           })),
       ]
@@ -151,9 +152,24 @@ export function reportActivity(report, about = false) {
             ]
           : []),
       ];
+  const seen = new Set();
   return events
     .filter((e) => e.at)
-    .sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    .sort((a, b) => String(a.at).localeCompare(String(b.at)))
+    .filter((event) => {
+      const key = JSON.stringify([event.title, event.at]);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .reduce((activity, event) => {
+      // The student snapshot omits individual condition details. Show a single
+      // summary at the latest verification time for consecutive condition edits.
+      if (event.type === "condition" && activity.at(-1)?.type === "condition")
+        activity[activity.length - 1] = event;
+      else activity.push(event);
+      return activity;
+    }, []);
 }
 const escape = (v) =>
   String(v ?? "").replace(
