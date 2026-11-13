@@ -59,7 +59,13 @@ export async function listTutorSessions(client = getSupabaseClient()) {
         ? "Run supabase/manual/paid_sessions.sql in Supabase SQL Editor to enable tutor sessions."
         : error.message,
     );
-  const rows = (data || []).filter(paidSession);
+  const rows = (data || []).filter(
+    (row) =>
+      paidSession(row) ||
+      ["cancelled", "canceled"].includes(
+        String(row.booking_status).toLowerCase(),
+      ),
+  );
   const missing = rows.filter(
     (row) => !row.transaction_reference && !row.payment_id,
   );

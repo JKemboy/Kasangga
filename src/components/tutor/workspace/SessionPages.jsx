@@ -1,4 +1,6 @@
-// Tutor My Sessions: filters paid bookings into upcoming, ongoing, and done groups using the session lifecycle helper.
+// Tutor My Sessions: groups active, completed, and cancelled bookings by lifecycle.
+import { sessionLifecycle } from "../../../services/sessionLifecycle.js";
+const SESSION_TABS = ["Upcoming", "Ongoing", "Completed", "Cancelled"];
 import SessionDetails from "./SessionDetails.jsx";
 import { Search, ListFilter, ChevronDown, Info } from "lucide-react";
 import SessionCards from "./SessionCards.jsx";
@@ -74,9 +76,9 @@ export function Sessions({
   const [query, setQuery] = useState(args.query || ""),
     [type, setType] = useState("All"),
     [tab, setTab] = useState(
-      initialSession?.lifecycle === "Completed"
-        ? "Completed"
-        : ["Upcoming", "Ongoing", "Completed", "Done"].includes(args.tab)
+      ["Completed", "Cancelled"].includes(initialSession?.lifecycle)
+        ? initialSession.lifecycle
+        : [...SESSION_TABS, "Done"].includes(args.tab)
           ? args.tab === "Done"
             ? "Completed"
             : args.tab
@@ -93,19 +95,9 @@ export function Sessions({
     return () => window.clearInterval(timer);
   }, []);
   const now = new Date();
-  const lifecycleFor = (session) => {
-    if (session.status === "Completed") return "Completed";
-    const start = new Date(session.startAt);
-    const end = new Date(session.endAt);
-    return now < start
-      ? "Upcoming"
-      : now < end
-        ? "Ongoing"
-        : "Awaiting Completion";
-  };
   const records = data.sessions.map((session) => ({
     ...session,
-    lifecycle: lifecycleFor(session),
+    lifecycle: sessionLifecycle(session, now),
   }));
   useEffect(() => {
     if (!args.highlight || !args.sessionId) return;
@@ -115,12 +107,13 @@ export function Sessions({
     if (!target) return;
     const nextTab =
       target.lifecycle === "Awaiting Completion" ? "Ongoing" : target.lifecycle;
-    if (["Upcoming", "Ongoing", "Completed"].includes(nextTab)) setTab(nextTab);
+    if (SESSION_TABS.includes(nextTab)) setTab(nextTab);
     setQuery("");
     setType("All");
     const peers = records.filter(
       (record) =>
-        record.lifecycle === target.lifecycle && record.payment === "Paid",
+        record.lifecycle === target.lifecycle &&
+        (record.lifecycle === "Cancelled" || record.payment === "Paid"),
     );
     setPage(
       Math.floor(
@@ -137,7 +130,7 @@ export function Sessions({
   const rows = records.filter(
     (s) =>
       (!args.serviceId || s.serviceId === String(args.serviceId)) &&
-      s.payment === "Paid" &&
+      (s.lifecycle === "Cancelled" || s.payment === "Paid") &&
       inTab(s, tab) &&
       (type === "All" || s.type === type) &&
       matches(s, query),
@@ -168,7 +161,7 @@ export function Sessions({
         </label>
       </div>
       <nav className="session-tabs" aria-label="Session status">
-        {["Upcoming", "Ongoing", "Completed"].map((t) => (
+        {SESSION_TABS.map((t) => (
           <button
             key={t}
             aria-pressed={tab === t}
@@ -181,7 +174,8 @@ export function Sessions({
             {
               records.filter(
                 (session) =>
-                  session.payment === "Paid" &&
+                  (session.lifecycle === "Cancelled" ||
+                    session.payment === "Paid") &&
                   (!args.serviceId ||
                     session.serviceId === String(args.serviceId)) &&
                   inTab(session, t),
