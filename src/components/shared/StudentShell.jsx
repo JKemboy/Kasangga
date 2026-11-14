@@ -1,3 +1,4 @@
+import SidebarCampus from "./SidebarCampus.jsx";
 import { loadMyTutorApplication } from "../../services/tutorApplications.js";
 import { Modal, button, primary } from "../tutor/workspace/ui.jsx";
 import PortalAvatar from "./PortalAvatar.jsx";
@@ -103,7 +104,7 @@ export default function StudentShell({
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[230px] flex-col bg-[#00542f] text-white transition-transform md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-[230px] flex-col bg-[#00452d] text-white transition-transform md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-[76px] shrink-0 items-center bg-[#003e24] px-5">
           <img
@@ -189,20 +190,7 @@ export default function StudentShell({
             Logout
           </button>
         </nav>
-        <div className="relative mt-auto min-h-20 flex-1 overflow-hidden">
-          <img
-            src="/images/csubuilding.jpg"
-            alt="Caraga State University"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#00542f] via-[#00542f]/20 to-[#003e24]" />
-          <div className="absolute bottom-4 px-5">
-            <p className="font-serif text-base text-amber-300">
-              Caraga State University
-            </p>
-            <p className="mt-1 text-[9px]">Excellence. Service. Commitment.</p>
-          </div>
-        </div>
+        <SidebarCampus />
       </aside>
       <header className="fixed inset-x-0 top-0 z-20 flex h-[64px] items-center gap-3 border-b border-slate-100 bg-white px-4 md:left-[230px] lg:px-6">
         <button
