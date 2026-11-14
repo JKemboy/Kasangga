@@ -1,3 +1,4 @@
+import SidebarCampus from "../shared/SidebarCampus.jsx";
 import RecordSearch from "../shared/RecordSearch.jsx";
 import useSectionNavigation from "../shared/useSectionNavigation.js";
 import LcoPolicies from "./LcoPolicies.jsx";
@@ -333,13 +334,7 @@ export default function LcoDashboardPage() {
             <LogOut size={18} />
             Logout
           </button>
-          <div className="oswe-campus">
-            <img src="/images/csubuilding.jpg" alt="Caraga State University" />
-            <div>
-              <strong>Caraga State University</strong>
-              <p>Excellence. Service. Commitment.</p>
-            </div>
-          </div>
+          <SidebarCampus />
         </aside>
         <header className="oswe-topbar" aria-label="LCO top navigation">
           <button
