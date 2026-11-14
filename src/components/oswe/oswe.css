@@ -10,7 +10,7 @@
   width: 220px;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(125deg, #003d24, #005a35);
+  background: #00452d;
   color: white;
   z-index: 40;
 }
@@ -68,42 +68,6 @@
   padding: 14px 0;
   border-top: 1px solid #ffffff40;
   font-size: 12px;
-}
-.oswe-campus {
-  position: relative;
-  flex: 1;
-  min-height: 90px;
-  overflow: hidden;
-}
-.oswe-campus img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 65%;
-}
-.oswe-campus:after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(#00512f, transparent 40%, #004025 92%);
-}
-.oswe-campus > div {
-  position: absolute;
-  bottom: 20px;
-  left: 15px;
-  right: 10px;
-  z-index: 1;
-}
-.oswe-campus strong {
-  font-family: Georgia, serif;
-  color: #ffe100;
-  font-size: 17px;
-}
-.oswe-campus p {
-  font-size: 10px;
-  margin-top: 5px;
 }
 .oswe-topbar {
   height: 64px;

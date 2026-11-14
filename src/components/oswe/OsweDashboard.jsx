@@ -1,3 +1,4 @@
+import SidebarCampus from "../shared/SidebarCampus.jsx";
 import { osweNotificationDestination } from "../../services/staffNotificationTargets.js";
 import { pendingClearanceReviews } from "../../services/osweDecisionRules.js";
 import { isOsweNotification } from "../../services/osweNotificationScope.js";
@@ -416,13 +417,7 @@ function OsweDashboardContent() {
           <LogOut size={18} />
           Logout
         </button>
-        <div className="oswe-campus">
-          <img src="/images/csubuilding.jpg" alt="Caraga State University" />
-          <div>
-            <strong>Caraga State University</strong>
-            <p>Excellence. Service. Commitment.</p>
-          </div>
-        </div>
+        <SidebarCampus />
       </aside>
       <header className="oswe-topbar">
         <button
