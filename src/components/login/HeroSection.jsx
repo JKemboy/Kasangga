@@ -6,7 +6,7 @@ const campusPhoto = "/images/csubuilding.jpg";
 
 export default function HeroSection() {
   return (
-    <aside className="hero-panel relative hidden min-h-0 overflow-hidden bg-[#004625] text-white lg:block lg:h-screen">
+    <aside className="hero-panel relative hidden min-h-0 overflow-hidden bg-[#002d1c] text-white lg:block lg:h-screen">
       <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
         <defs>
           <clipPath id="hero-wave" clipPathUnits="objectBoundingBox">
@@ -14,25 +14,27 @@ export default function HeroSection() {
           </clipPath>
         </defs>
       </svg>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_60%,rgba(0,115,73,.38),transparent_43%),linear-gradient(135deg,#004425,#003b22)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_60%,rgba(0,83,58,.24),transparent_43%),linear-gradient(135deg,#00351f,#002619)]" />
       <div className="hero-line hero-line-one" />
       <div className="hero-line hero-line-two" />
       <div className="dot-grid absolute right-10 top-20 h-24 w-36 opacity-35" />
-      <img
-        className="campus-photo absolute inset-x-0 bottom-0 h-[29%] w-full object-cover object-center sm:h-[33%] lg:h-[39%]"
-        src={campusPhoto}
-        alt="Caraga State University campus"
-      />
-      <div className="absolute inset-x-0 bottom-0 h-[39%] bg-gradient-to-b from-transparent via-transparent to-[#003b22]/35 lg:h-[48%]" />
-      <div className="relative z-10 px-5 pb-16 pt-4 sm:px-10 sm:pt-7 md:px-12 lg:px-[14%] lg:pb-28 lg:pt-11">
+      <div className="campus-scene absolute inset-x-0 bottom-0">
+        <img
+          className="campus-photo absolute inset-x-0 bottom-0 w-full"
+          src={campusPhoto}
+          alt="Caraga State University campus"
+        />
+      </div>
+      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-b from-transparent via-transparent to-black/45" />
+      <div className="hero-copy relative z-10">
         <CampusLogo />
-        <div className="mt-4 sm:mt-5 lg:mt-7">
-          <h2 className="text-[clamp(1.8rem,7vw,2.75rem)] font-extrabold leading-[1.08] tracking-tight sm:text-[42px] md:text-[49px] lg:text-[40px]">
+        <div className="hero-intro">
+          <h2 className="text-[calc(clamp(2.25rem,3.2vw,3.5rem)+2px)] font-extrabold leading-[1.08] tracking-tight">
             Welcome to
             <br />
             <span>Kasangga</span>
           </h2>
-          <p className="mt-2 max-w-[390px] text-[11px] leading-[1.4] text-white/90 sm:mt-3 sm:text-[14px] lg:mt-4 lg:text-[16px] lg:leading-[1.55]">
+          <p className="mt-2 max-w-[390px] text-[13px] leading-[1.4] text-white/90 sm:mt-3 sm:text-[16px] lg:mt-4 lg:text-[18px] lg:leading-[1.55]">
             Your peer-to-peer tutoring platform
             <br className="hidden sm:block" /> for Caraga State University
             students.
@@ -56,11 +58,11 @@ export default function HeroSection() {
           </FeatureItem>
         </div>
       </div>
-      <div className="absolute bottom-2 left-5 z-10 sm:bottom-3 sm:left-10 md:left-12 lg:bottom-4 lg:left-[9%]">
-        <p className="font-serif text-[15px] text-[#ffc107] drop-shadow-sm sm:text-[19px] lg:text-[24px]">
+      <div className="hero-caption absolute z-10">
+        <p className="font-serif text-[17px] text-[#ffc107] drop-shadow-sm sm:text-[21px] lg:text-[26px]">
           Caraga State University
         </p>
-        <p className="mt-px text-[9px] tracking-wide text-white sm:text-[11px] lg:mt-0.5 lg:text-[14px]">
+        <p className="mt-px text-[11px] tracking-wide text-white sm:text-[13px] lg:mt-0.5 lg:text-[16px]">
           Excellence. Service. Commitment.
         </p>
       </div>
