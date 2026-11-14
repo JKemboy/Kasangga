@@ -71,10 +71,34 @@ export default function RegisterCard({ loginMode = false }) {
   }
   return (
     <div className="mt-6 w-full max-w-[390px] overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-md">
-      <div className="space-y-5 p-5 text-center">
+      <div className="space-y-4 px-5 pb-5 pt-7 text-center">
         <header>
-          <h2 className="text-xl font-bold">
-            {loginMode ? "Welcome back!" : "Create your account"}
+          {loginMode && (
+            <svg
+              className="mx-auto mb-5 h-14 w-16"
+              viewBox="0 0 160 145"
+              aria-hidden="true"
+            >
+              <circle cx="64" cy="30" r="17" fill="#ffc107" />
+              <circle cx="114" cy="30" r="17" fill="#006b3c" />
+              <path
+                d="M22 58C48 57 67 66 86 81V137C66 121 45 117 22 119Z"
+                fill="#006b3c"
+              />
+              <path
+                d="M94 81C112 66 134 57 158 58V119C134 117 113 122 94 137Z"
+                fill="#ffc107"
+              />
+            </svg>
+          )}
+          <h2 className="text-xl font-extrabold text-[#101828]">
+            {loginMode ? (
+              <>
+                Welcome to <span className="text-[#006b24]">KASANGGA</span>
+              </>
+            ) : (
+              "Create your account"
+            )}
           </h2>
           <p className="mt-2 text-sm text-slate-500">
             {loginMode
@@ -142,9 +166,6 @@ export default function RegisterCard({ loginMode = false }) {
             {error}
           </p>
         )}
-        <p className="text-xs text-slate-500">
-          Choose your @carsu.edu.ph account.
-        </p>
         <p className="text-xs">
           {loginMode ? "New to Kasangga? " : "Already registered? "}
           <Link
