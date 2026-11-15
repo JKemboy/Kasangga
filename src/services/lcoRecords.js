@@ -1,4 +1,5 @@
 import { normalizeAllocation } from "./paymentAllocation.js";
+import { newestRecords } from "./newestRecords.js";
 import {
   canonicalIncidentType,
   incidentCategory,
@@ -449,74 +450,82 @@ export function mapLcoDatabase(input, now = new Date()) {
     booking.allocation = payments.find(
       (p) => p.id === booking.transaction,
     )?.allocation;
-  const incidents = db.incident_reports.map((r) => {
-    const linkedCase = (db.cases || []).find(
-      (c) => key(c.report_id) === key(r.report_id),
-    );
-    const decision = (db.case_decisions || [])
-      .filter((d) => key(d.case_id) === key(linkedCase?.case_id))
-      .sort((a, b) => Number(b.decision_id) - Number(a.decision_id))[0];
-    let details = {};
-    try {
-      details = JSON.parse(decision?.decision_details || "{}");
-    } catch {}
-    return {
-      osweCaseId: linkedCase ? `CASE-${linkedCase.case_id}` : "",
-      osweStatus: linkedCase ? label(linkedCase.case_status) : "",
-      osweOutcome:
-        decision?.decision_type ||
-        (r.osas_assessment?.action === "close" && "Closed without a finding") ||
-        "",
-      osweNotes: details.notes || r.osas_assessment?.notes || "",
-      osweRecordedDecision: decision
-        ? { ...details, outcome: decision.decision_type }
-        : null,
-      osweBasis: details.basis || "",
-      osweDecisionAt: decision?.decision_date || r.osas_assessment?.at || "",
-      id: key(r.report_id),
-      booking: r.booking_id ? key(r.booking_id) : "",
-      reporterId: r.reported_by,
-      reportedId: r.reported_against,
-      reporter: fullName(r.reported_by),
-      reported: fullName(r.reported_against),
-      type: canonicalIncidentType(r.incident_type),
-      category: incidentCategory(r.incident_type),
-      confirmationStatus: r.oswe_confirmation_status || "pending",
-      issue: r.description,
-      description: r.description,
-      priority: r.priority === "normal" ? "Medium" : label(r.priority),
-      status:
-        r.report_status === "resolved"
-          ? r.osas_referral_status === "not_referred"
-            ? "Resolved by LCO"
-            : "Resolved by OSWE"
-          : r.report_status === "screened"
-            ? "LCO Screening Complete"
-            : r.osas_referral_status === "case_opened"
-              ? "Under OSWE Review"
-              : r.report_status === "submitted"
-                ? "Pending Review"
-                : label(r.report_status),
-      referral: ["referred", "case_opened", "closed_no_case"].includes(
-        r.osas_referral_status,
-      )
-        ? "Referred to OSWE"
-        : incidentCategory(r.incident_type) === SESSION_PAYMENT ||
-            r.osas_referral_status === "not_required"
-          ? "Not Required"
-          : "Not Referred",
-      date: manilaDate(r.submitted_at),
-      history: history("incident_reports", r.report_id),
-      evidence: db.incident_evidence
-        .filter((e) => key(e.report_id) === key(r.report_id))
-        .map((e) => ({
-          id: key(e.evidence_id),
-          name: e.file_name,
-          path: e.file_path,
-          type: e.evidence_type,
-        })),
-    };
-  });
+  const incidents = [...db.incident_reports]
+    .sort(
+      newestRecords(
+        (r) => r.submitted_at,
+        (r) => r.report_id,
+      ),
+    )
+    .map((r) => {
+      const linkedCase = (db.cases || []).find(
+        (c) => key(c.report_id) === key(r.report_id),
+      );
+      const decision = (db.case_decisions || [])
+        .filter((d) => key(d.case_id) === key(linkedCase?.case_id))
+        .sort((a, b) => Number(b.decision_id) - Number(a.decision_id))[0];
+      let details = {};
+      try {
+        details = JSON.parse(decision?.decision_details || "{}");
+      } catch {}
+      return {
+        osweCaseId: linkedCase ? `CASE-${linkedCase.case_id}` : "",
+        osweStatus: linkedCase ? label(linkedCase.case_status) : "",
+        osweOutcome:
+          decision?.decision_type ||
+          (r.osas_assessment?.action === "close" &&
+            "Closed without a finding") ||
+          "",
+        osweNotes: details.notes || r.osas_assessment?.notes || "",
+        osweRecordedDecision: decision
+          ? { ...details, outcome: decision.decision_type }
+          : null,
+        osweBasis: details.basis || "",
+        osweDecisionAt: decision?.decision_date || r.osas_assessment?.at || "",
+        id: key(r.report_id),
+        booking: r.booking_id ? key(r.booking_id) : "",
+        reporterId: r.reported_by,
+        reportedId: r.reported_against,
+        reporter: fullName(r.reported_by),
+        reported: fullName(r.reported_against),
+        type: canonicalIncidentType(r.incident_type),
+        category: incidentCategory(r.incident_type),
+        confirmationStatus: r.oswe_confirmation_status || "pending",
+        issue: r.description,
+        description: r.description,
+        priority: r.priority === "normal" ? "Medium" : label(r.priority),
+        status:
+          r.report_status === "resolved"
+            ? r.osas_referral_status === "not_referred"
+              ? "Resolved by LCO"
+              : "Resolved by OSWE"
+            : r.report_status === "screened"
+              ? "LCO Screening Complete"
+              : r.osas_referral_status === "case_opened"
+                ? "Under OSWE Review"
+                : r.report_status === "submitted"
+                  ? "Pending Review"
+                  : label(r.report_status),
+        referral: ["referred", "case_opened", "closed_no_case"].includes(
+          r.osas_referral_status,
+        )
+          ? "Referred to OSWE"
+          : incidentCategory(r.incident_type) === SESSION_PAYMENT ||
+              r.osas_referral_status === "not_required"
+            ? "Not Required"
+            : "Not Referred",
+        date: manilaDate(r.submitted_at),
+        history: history("incident_reports", r.report_id),
+        evidence: db.incident_evidence
+          .filter((e) => key(e.report_id) === key(r.report_id))
+          .map((e) => ({
+            id: key(e.evidence_id),
+            name: e.file_name,
+            path: e.file_path,
+            type: e.evidence_type,
+          })),
+      };
+    });
   const config = { ...configDefaults };
   for (const setting of db.system_settings)
     if (Object.hasOwn(config, setting.setting_key)) {

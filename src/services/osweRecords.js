@@ -1,4 +1,5 @@
 import { academicYear } from "./academicYear.js";
+import { newestRecords as newest } from "./newestRecords.js";
 import { catalogPolicies } from "./osweProcedures.js";
 import { canonicalIncidentType, incidentCategory } from "./incidentTypes.js";
 import { clearanceAcademicTerm } from "./clearanceAcademicTerm.js";
@@ -311,8 +312,6 @@ export function mapOsweRecords(db) {
     const parsed = Date.parse(value || "");
     return Number.isFinite(parsed) ? parsed : 0;
   };
-  const newest = (dateOf, idOf) => (a, b) =>
-    time(dateOf(b)) - time(dateOf(a)) || Number(idOf(b)) - Number(idOf(a));
   incidents.sort(
     newest(
       (r) => r.receivedAt || r.submittedAt,
@@ -334,7 +333,12 @@ export function mapOsweRecords(db) {
   );
   archive.sort(
     newest(
-      (r) => r.archivedAt || r.resolvedAt || r.recordDate,
+      (r) =>
+        r.archivedAt ||
+        r.resolvedAt ||
+        r.decision?.at ||
+        r.openedAt ||
+        r.recordDate,
       (r) => r.caseDatabaseId,
     ),
   );

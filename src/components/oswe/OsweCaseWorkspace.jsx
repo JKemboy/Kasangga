@@ -1,4 +1,5 @@
 import { notificationHighlight } from "../shared/notificationHighlight.js";
+import { newestRecords } from "../../services/newestRecords.js";
 import { useState } from "react";
 import { FileText, Search } from "lucide-react";
 import { button, primary } from "../shared/staffUi.jsx";
@@ -62,8 +63,10 @@ export default function OsweCaseWorkspace({
           .includes(search),
     )
     .sort(
-      (a, b) =>
-        (Date.parse(b.receivedAt) || 0) - (Date.parse(a.receivedAt) || 0),
+      newestRecords(
+        (r) => r.receivedAt || r.submittedAt || r.openedAt,
+        (r) => r.reportDatabaseId,
+      ),
     );
   const size = Math.max(1, Number(settings?.pageSize) || 10),
     pages = Math.max(1, Math.ceil(filtered.length / size)),
