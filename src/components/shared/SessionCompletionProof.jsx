@@ -17,12 +17,14 @@ export default function SessionCompletionProof({
     [reviewed, setReviewed] = useState(false),
     [url, setUrl] = useState("");
   async function run(action) {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     try {
-      if (action === "view")
+      if (action === "view") {
+        setUrl("");
         setUrl(await completionProofUrl(proof.storage_path));
-      else if (action === "confirm") {
+      } else if (action === "confirm") {
         await confirmLearnerCompletion(bookingId);
         await onConfirmed?.();
       } else {
@@ -70,7 +72,7 @@ export default function SessionCompletionProof({
           rel="noopener noreferrer"
           className="block underline"
         >
-          Open {proof.file_name}
+          Open {proof.file_name || "completion proof"}
         </a>
       )}
       {!proof.learner_confirmed_at &&
