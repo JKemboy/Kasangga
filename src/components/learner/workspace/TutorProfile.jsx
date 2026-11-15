@@ -1,5 +1,6 @@
 import { savedService } from "../../../services/savedTutors.js";
 import { profileSamples } from "./profileSamples.js";
+import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import {
   Bookmark,
   MessageCircle,
@@ -129,13 +130,11 @@ export default function TutorProfile({
           {t.image || t.avatar ? (
             <img src={t.image || t.avatar} alt={t.name} />
           ) : (
-            <span>
-              {t.name
-                .split(" ")
-                .slice(0, 2)
-                .map((n) => n[0])
-                .join("")}
-            </span>
+            <PortalAvatar
+              name={t.name}
+              userId={t.avatarUserId || t.userId}
+              className="grid h-full w-full place-items-center rounded-full"
+            />
           )}
           {t.online && <i />}
         </div>
