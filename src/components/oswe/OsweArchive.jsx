@@ -12,8 +12,9 @@ import {
   Info,
   RotateCcw,
   Search,
+  Download,
 } from "lucide-react";
-import { button, input } from "../shared/staffUi.jsx";
+import { button, primary, input } from "../shared/staffUi.jsx";
 
 import ArchivedCaseDetails from "./ArchivedCaseDetails.jsx";
 
@@ -45,6 +46,7 @@ export default function OsweArchive({
   onSearchChange = () => {},
 }) {
   const database = useOsweDatabase();
+  const [notice, setNotice] = useState("");
   const records = database.records?.archive || [];
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [year, setYear] = useState(""),
@@ -108,11 +110,13 @@ export default function OsweArchive({
             },
           );
   function change(setter, value) {
+    setNotice("");
     setter(value);
     setSelectedMetric(null);
     setPage(1);
   }
   function reset() {
+    setNotice("");
     onSearchChange("");
     setSelectedMetric(null);
     setYear("");
@@ -129,6 +133,45 @@ export default function OsweArchive({
     if (value === "all" || value === "resolved" || value === "month")
       setYear("");
     setScope(value === "resolved" || value === "month" ? value : "");
+  }
+  function exportArchive() {
+    const columns = [
+      ["Case ID", (r) => r.caseId],
+      ["Incident Report ID", (r) => r.incident],
+      ["Student", (r) => r.student],
+      ["Student ID", (r) => r.studentId],
+      ["Incident Type", (r) => r.type],
+      ["Date Opened", (r) => r.opened],
+      ["Resolution Date", (r) => r.resolved],
+      ["Case Outcome / Resolution", (r) => r.outcome],
+      ["Resolved / Archived Date", (r) => r.recordDate],
+      ["Officer", (r) => r.officer],
+      ["Academic Year", (r) => r.year],
+    ];
+    const cell = (value) => {
+      const text = String(value ?? "");
+      const safe = /^[\s]*[=+@-]/.test(text) ? "'" + text : text;
+      return '"' + safe.replaceAll('"', '""') + '"';
+    };
+    const csv = [
+      columns.map(([label]) => label),
+      ...filtered.map((row) => columns.map(([, value]) => value(row))),
+    ]
+      .map((row) => row.map(cell).join(","))
+      .join("\r\n");
+    const url = URL.createObjectURL(
+      new Blob(["\uFEFF" + csv], {
+        type: "text/csv;charset=utf-8",
+      }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "kasangga-case-archive.csv";
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setNotice(
+      `Exported ${filtered.length} archived case${filtered.length === 1 ? "" : "s"}.`,
+    );
   }
   const badge = (r) => (
     <span
@@ -154,20 +197,36 @@ export default function OsweArchive({
             authorized reference and accountability.
           </p>
         </div>
-        <select
-          className={input + " oa-year"}
-          aria-label="Archive academic year"
-          value={year}
-          onChange={(e) => change(setYear, e.target.value)}
-        >
-          <option value="">All academic years</option>
-          {academicYears.map((value) => (
-            <option key={value} value={value}>
-              A.Y. {value}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <select
+            className={input + " oa-year"}
+            aria-label="Archive academic year"
+            value={year}
+            onChange={(e) => change(setYear, e.target.value)}
+          >
+            <option value="">All academic years</option>
+            {academicYears.map((value) => (
+              <option key={value} value={value}>
+                A.Y. {value}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className={primary + " inline-flex items-center gap-2"}
+            onClick={exportArchive}
+            disabled={invalid || filtered.length === 0}
+            title="Download all matching archived cases as CSV"
+          >
+            <Download size={16} /> Export CSV
+          </button>
+        </div>
       </div>
+      {notice && (
+        <p role="status" className="text-xs text-green-800">
+          {notice}
+        </p>
+      )}
       <div className="op-metrics oi-metrics oa-metrics">
         {[
           [
