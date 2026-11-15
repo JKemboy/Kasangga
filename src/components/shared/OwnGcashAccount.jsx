@@ -2,10 +2,7 @@ import { useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import { saveMyGcashAccount } from "../../services/accountGcash.js";
-import {
-  philippineMobileDigits,
-  normalizePhilippineMobile,
-} from "../../services/philippineMobile.js";
+import { philippineMobileDigits } from "../../services/philippineMobile.js";
 import { button, primary, input } from "../tutor/workspace/ui.jsx";
 
 export default function OwnGcashAccount() {
@@ -73,7 +70,10 @@ export default function OwnGcashAccount() {
               type="button"
               className={button}
               onClick={() => {
-                setDraft(account);
+                setDraft({
+                  ...account,
+                  number: philippineMobileDigits(account.number),
+                });
                 setEditing(true);
                 setError("");
                 setNotice("");
@@ -114,18 +114,19 @@ export default function OwnGcashAccount() {
                 readOnly={!editing}
                 disabled={saving}
                 type="tel"
-                inputMode="tel"
-                maxLength={20}
-                value={philippineMobileDigits(
-                  editing ? draft.number : account.number,
-                )}
-                placeholder={editing ? "9XXXXXXXXX" : "Not provided"}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    number: normalizePhilippineMobile(event.target.value),
-                  })
+                inputMode="numeric"
+                maxLength={10}
+                pattern="9[0-9]{9}"
+                value={
+                  editing ? draft.number : philippineMobileDigits(account.number)
                 }
+                placeholder={editing ? "9XXXXXXXXX" : "Not provided"}
+                onChange={(event) => {
+                  const number = event.target.value;
+                  if (/^[0-9]{0,10}$/.test(number)) {
+                    setDraft({ ...draft, number });
+                  }
+                }}
               />
             </div>
           </label>
