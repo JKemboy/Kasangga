@@ -24,11 +24,11 @@ html dialog:is(.lco-incident-details, .lco-application-review) h2 {
 html dialog :is(.aid-body, .aar-body) {
   padding: 12px 14px;
 }
-html dialog .aid-body dl {
+html dialog .aid-body > dl {
   gap: 12px 16px;
   margin-bottom: 14px;
 }
-html dialog .aid-body dt {
+html dialog .aid-body > dl dt {
   font-size: 11px;
   margin-bottom: 3px;
 }

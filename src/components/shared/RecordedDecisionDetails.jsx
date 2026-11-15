@@ -11,7 +11,7 @@ export default function RecordedDecisionDetails({ decision }) {
   return (
     <section className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs">
       <h3 className="font-semibold">Recorded Decision</h3>
-      <dl className="mt-2 grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)]">
+      <dl className="mt-2 grid items-start gap-x-4 gap-y-2 sm:grid-cols-[140px_minmax(0,1fr)] [&>dt]:m-0 [&>dd]:m-0 [&>dd]:min-w-0 [&>dd]:whitespace-pre-wrap [&>dd]:[overflow-wrap:anywhere]">
         <dt className="font-medium">Case action</dt>
         <dd className="break-words">{decision.outcome || "Not recorded"}</dd>
         {decision.workflow === "clearance_handoff" && (

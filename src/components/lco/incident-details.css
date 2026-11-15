@@ -44,13 +44,13 @@
   min-height: 0;
   padding: 20px 24px;
 }
-.aid-body dl {
+.aid-body > dl {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px 24px;
   margin-bottom: 22px;
 }
-.aid-body dt {
+.aid-body > dl dt {
   color: #718096;
   font-size: 11px;
   margin-bottom: 5px;
@@ -136,7 +136,7 @@
   border-top: 1px solid #e5e7eb;
 }
 @media (max-width: 600px) {
-  .aid-body dl {
+  .aid-body > dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .lco-incident-details > footer {
