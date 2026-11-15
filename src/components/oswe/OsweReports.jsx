@@ -13,15 +13,28 @@ import {
 } from "lucide-react";
 import { Modal, button, input } from "../shared/staffUi.jsx";
 
-const colors = ["#16a34a", "#ffbe19", "#ab57f6", "#62a0ff", "#2dc8bc"];
+const statusColor = (label) => {
+  const status = label.trim().toLowerCase();
+  if (status.startsWith("resolved") || status === "cleared") return "#16a34a";
+  if (
+    status.startsWith("pending") ||
+    status.startsWith("awaiting") ||
+    status === "new"
+  )
+    return "#ffbe19";
+  if (status === "on hold" || status === "requires resolution")
+    return "#ef4444";
+  if (status === "closed / no finding") return "#64748b";
+  return "#62a0ff";
+};
 function Donut({ title, items, onSelect }) {
   const total = items.reduce((n, r) => n + r.count, 0);
   let offset = 0;
   const gradient = items
-    .map((r, i) => {
+    .map((r) => {
       const start = offset;
       offset += total ? (r.count / total) * 100 : 0;
-      return `${colors[i % colors.length]} ${start}% ${offset}%`;
+      return `${statusColor(r.label)} ${start}% ${offset}%`;
     })
     .join(",");
   return (
@@ -42,9 +55,9 @@ function Donut({ title, items, onSelect }) {
           </span>
         </div>
         <div className="or-legend">
-          {items.map((r, i) => (
+          {items.map((r) => (
             <button type="button" key={r.label} onClick={() => onSelect(r)}>
-              <i style={{ background: colors[i % colors.length] }} />
+              <i style={{ background: statusColor(r.label) }} />
               <span>{r.label}</span>
               <b>
                 {r.count} ({total ? ((r.count / total) * 100).toFixed(1) : "0"}
