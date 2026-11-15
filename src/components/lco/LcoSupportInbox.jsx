@@ -4,6 +4,7 @@ import { Search, Send, UserRound } from "lucide-react";
 import { button, primary } from "../shared/staffUi.jsx";
 import "../shared/booking-messages.css";
 import "./lco-support-inbox.css";
+import PortalAvatar from "../shared/PortalAvatar.jsx";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import { useLcoRecordSeen } from "./LcoDatabaseContext.jsx";
 import {
@@ -90,7 +91,7 @@ export default function LcoSupportInbox({ notificationTarget }) {
           </div>
           <div className="chat-conversations">
             {filtered.map((thread) => <button key={thread.id} type="button" onClick={() => setSelected(thread.id)} className={`chat-person ${selected === thread.id ? "selected" : ""}`}>
-              <span className="chat-avatar" aria-hidden="true">{fullName(thread).split(/\s+/).slice(0, 2).map((part) => part[0]).join("") || <UserRound size={22} />}</span>
+              <PortalAvatar className="chat-avatar" name={fullName(thread)} userId={thread.user_id} />
               <span className="chat-person-copy"><strong>{fullName(thread)}</strong><small>{thread.subject}</small><small className="chat-muted">{thread.category}</small></span>
               <span className="chat-person-meta"><small>{new Date(thread.updated_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila" })}</small><b className={thread.status === "resolved" ? "lco-support-resolved" : ""}>{thread.status}</b></span>
             </button>)}
@@ -99,13 +100,13 @@ export default function LcoSupportInbox({ notificationTarget }) {
         </aside>
         <section className="chat-main" aria-label="Support conversation">
           <header className="chat-header">
-            <span className="chat-avatar" aria-hidden="true">{active ? fullName(active).split(/\s+/).slice(0, 2).map((part) => part[0]).join("") : <UserRound size={24} />}</span>
+            {active ? <PortalAvatar className="chat-avatar" name={fullName(active)} userId={active.user_id} /> : <span className="chat-avatar"><UserRound size={24} /></span>}
             <div className="chat-header-copy"><h2>{active ? fullName(active) : "Select a conversation"}</h2>{active && <><div className="chat-peer-status"><span>{active.status === "resolved" ? "Resolved" : "Support request"}</span></div><p>{active.subject}</p><small>{active.user?.csu_email} · {active.category}</small></>}</div>
             {active && <button type="button" disabled={busy} onClick={resolve} className={button + " lco-support-status"}>{active.status === "resolved" ? "Reopen" : "Resolve"}</button>}
           </header>
           {error && <p role="alert" className="chat-error">{error}</p>}
           <div className="chat-history" role="log" aria-label="Support messages">
-            {messages.map((message) => { const mine = message.sender_id !== active?.user_id; return <article key={message.id} className={`chat-message ${mine ? "mine" : ""}`}>{!mine && <span className="chat-avatar" aria-hidden="true">{fullName(active).split(/\s+/).slice(0, 2).map((part) => part[0]).join("")}</span>}<div className="chat-bubble"><p>{message.message}</p><small>{mine ? "LCO" : fullName(active)} · {time(message.created_at)}</small></div>{mine && <span className="chat-avatar" aria-hidden="true">AD</span>}</article>; })}
+            {messages.map((message) => { const mine = message.sender_id !== active?.user_id; return <article key={message.id} className={`chat-message ${mine ? "mine" : ""}`}>{!mine && <PortalAvatar className="chat-avatar" name={fullName(active)} userId={message.sender_id} />}<div className="chat-bubble"><p>{message.message}</p><small>{mine ? "LCO" : fullName(active)} · {time(message.created_at)}</small></div>{mine && <PortalAvatar className="chat-avatar" name="LCO" userId={message.sender_id} />}</article>; })}
             {!active && <p className="chat-empty">Select a support conversation to read and reply.</p>}
           </div>
           <form onSubmit={reply} className="chat-composer">

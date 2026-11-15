@@ -1,6 +1,7 @@
 // Support conversation: reads and sends learner support messages through the shared support inbox service.
 import { useCallback, useEffect, useState } from "react";
 import { Search, Send, UserRound } from "lucide-react";
+import PortalAvatar from "../../shared/PortalAvatar.jsx";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { useLearnerWorkspace } from "../workspace/LearnerWorkspace.jsx";
 import {
@@ -79,7 +80,6 @@ export default function LearnerSupportMessages() {
     } catch (cause) { setError(cause.message); }
     finally { setBusy(false); }
   }
-  const initials = (value) => value.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   return (
     <div className="booking-chat tutor-booking-chat learner-booking-chat">
       <h1>Messages</h1>
@@ -105,7 +105,7 @@ export default function LearnerSupportMessages() {
           <header className="chat-header"><span className="chat-avatar">KS</span><div className="chat-header-copy"><h2>Kasangga Support</h2><div className="chat-peer-status"><span>{active?.status === "resolved" ? "Resolved" : "LCO support"}</span></div><p>{active?.subject || "Send a message to contact the LCO team."}</p><small>{active?.category || "Support messages are private to you and LCO."}</small></div></header>
           {error && <p role="alert" className="chat-error">{error}</p>}
           <div className="chat-history" role="log" aria-label="Support messages">
-            {messages.map((message) => { const mine = message.sender_id === user?.id; return <article key={message.id} className={`chat-message ${mine ? "mine" : ""}`}>{!mine && <span className="chat-avatar">KS</span>}<div className="chat-bubble"><p>{message.message}</p><small>{mine ? "You" : "Kasangga LCO"} · {stamp(message.created_at)}</small></div>{mine && <span className="chat-avatar">{initials([user?.user_metadata?.first_name, user?.user_metadata?.last_name].filter(Boolean).join(" ") || "You")}</span>}</article>; })}
+            {messages.map((message) => { const mine = message.sender_id === user?.id; return <article key={message.id} className={`chat-message ${mine ? "mine" : ""}`}>{!mine && <PortalAvatar className="chat-avatar" name="Kasangga LCO" userId={message.sender_id} />}<div className="chat-bubble"><p>{message.message}</p><small>{mine ? "You" : "Kasangga LCO"} · {stamp(message.created_at)}</small></div>{mine && <PortalAvatar className="chat-avatar" name={[user?.user_metadata?.first_name, user?.user_metadata?.last_name].filter(Boolean).join(" ") || "You"} userId={message.sender_id} />}</article>; })}
             {!messages.length && <p className="chat-empty">{active ? "No messages in this conversation yet." : "Type a message below to contact support."}</p>}
           </div>
           <form onSubmit={submit} className="chat-composer"><div className="chat-compose-row"><div className="chat-compose-input"><input value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={5000} placeholder="Type your message..." aria-label="Message Kasangga Support" disabled={busy} /></div><button className="chat-send" aria-label="Send message" disabled={busy || !draft.trim()}><Send size={22} /></button></div><p className="tutor-chat-note">Internal text messaging only · LCO support can see and reply to this conversation.</p></form>
