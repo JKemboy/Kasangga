@@ -15,6 +15,7 @@ import {
   UserRound,
 } from "lucide-react";
 import ChatDetails from "./ChatDetails.jsx";
+import PortalAvatar from "./PortalAvatar.jsx";
 import "./booking-messages.css";
 import { useAuth } from "../../auth/AuthProvider.jsx";
 import {
@@ -231,25 +232,11 @@ export default function BookingMessages({
         .includes(query.toLowerCase()),
   );
   const avatar = (name, details) => (
-    <span className="chat-avatar" aria-hidden="true">
-      {details?.image && /^https:\/\//i.test(details.image) ? (
-        <img
-          src={details.image}
-          alt=""
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-        />
-      ) : name ? (
-        name
-          .split(/\s+/)
-          .slice(0, 2)
-          .map((n) => n[0])
-          .join("")
-      ) : (
-        <UserRound size={24} />
-      )}
-    </span>
+    <PortalAvatar
+      className="chat-avatar"
+      name={name || ""}
+      userId={details?.peer_user_id || details?.user_id}
+    />
   );
   return (
     <div
@@ -300,7 +287,7 @@ export default function BookingMessages({
                   setPanel("");
                 }}
               >
-                {avatar(c.peer_name)}
+                {avatar(c.peer_name, c)}
                 <span className="chat-person-copy">
                   <strong>{c.peer_name}</strong>
                   {c.last_message && <small>{c.last_message}</small>}
@@ -323,7 +310,7 @@ export default function BookingMessages({
         </aside>
         <section className="chat-main" aria-label="Chat conversation">
           <header className="chat-header">
-            {avatar(chat?.peer_name, session)}
+            {avatar(chat?.peer_name, chat)}
             <div className="chat-header-copy">
               <h2>{chat?.peer_name || "Select a conversation"}</h2>
               {chat && (
@@ -472,7 +459,7 @@ export default function BookingMessages({
                     </div>
                   )}
                   <div className={"chat-message " + (mine ? "mine" : "")}>
-                    {!mine && avatar(chat?.peer_name)}
+                    {!mine && avatar(chat?.peer_name, { user_id: m.sender_id })}
                     <div className="chat-bubble">
                       <p>
                         {m.message_content
